@@ -18,6 +18,11 @@ class DashboardController extends AccountBaseController
     {
         $company = company();
 
+        // SuperAdmin has no tenant context — send them to the SuperAdmin panel
+        if (!$company) {
+            return redirect()->route('superadmin.dashboard');
+        }
+
         $this->subscription  = $company->subscription;
         $this->documentCount = Document::count();
         $this->qbConnections = QuickBooksConnection::active()->get();

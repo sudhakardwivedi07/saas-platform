@@ -1,0 +1,194 @@
+@extends('layouts.app')
+
+@section('title', 'Create Plan')
+@section('page-title', 'Create Plan')
+
+@section('content')
+<div class="max-w-2xl mx-auto space-y-4">
+
+    <a href="{{ route('plans.index') }}" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+        <span class="material-icons text-base">arrow_back</span> Back to Plans
+    </a>
+
+    @if($errors->any())
+    <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
+        <ul class="list-disc list-inside space-y-1">
+            @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+        </ul>
+    </div>
+    @endif
+
+    <form method="POST" action="{{ route('plans.store') }}">
+        @csrf
+        <div class="card">
+            <div class="card-body space-y-5">
+
+                <h3 class="font-semibold text-gray-800 text-lg">Plan Details</h3>
+
+                {{-- Name --}}
+                <div class="form-group">
+                    <label class="form-label">Plan Name <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" class="form-control" value="{{ old('name') }}"
+                           placeholder="e.g. Starter, Business, Enterprise" required>
+                    @error('name')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                </div>
+
+                {{-- Description --}}
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea name="description" class="form-control" rows="2"
+                              placeholder="Brief description shown to users">{{ old('description') }}</textarea>
+                </div>
+
+                {{-- Pricing --}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label">Monthly Price ($) <span class="text-red-500">*</span></label>
+                        <input type="number" name="monthly_price" step="0.01" min="0"
+                               class="form-control" value="{{ old('monthly_price', 0) }}" required>
+                        @error('monthly_price')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Annual Price ($) <span class="text-xs text-gray-400">(optional)</span></label>
+                        <input type="number" name="annual_price" step="0.01" min="0"
+                               class="form-control" value="{{ old('annual_price') }}" placeholder="Leave blank to disable">
+                    </div>
+                </div>
+
+                {{-- Limits --}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-group">
+                        <label class="form-label">Max Users <span class="text-xs text-gray-400">(blank = unlimited)</span></label>
+                        <input type="number" name="max_users" min="1"
+                               class="form-control" value="{{ old('max_users') }}" placeholder="e.g. 10">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Storage (GB) <span class="text-xs text-gray-400">(blank = unlimited)</span></label>
+                        <input type="number" name="max_storage_gb" min="1"
+                               class="form-control" value="{{ old('max_storage_gb') }}" placeholder="e.g. 50">
+                    </div>
+                </div>
+
+                <hr class="border-gray-100">
+
+                {{-- Toggles --}}
+                <div class="grid grid-cols-2 gap-x-6 gap-y-4">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="hidden" name="is_free" value="0">
+                        <input type="checkbox" name="is_free" value="1" class="w-4 h-4 rounded accent-blue-600"
+                               {{ old('is_free') ? 'checked' : '' }} id="chk_free"
+                               onchange="toggleFree(this)">
+                        <div>
+                            <p class="font-medium text-gray-700 text-sm">Free Plan</p>
+                            <p class="text-xs text-gray-400">Set price to $0 and mark as free</p>
+                        </div>
+                    </label>
+
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="hidden" name="is_recommended" value="0">
+                        <input type="checkbox" name="is_recommended" value="1" class="w-4 h-4 rounded accent-blue-600"
+                               {{ old('is_recommended') ? 'checked' : '' }}>
+                        <div>
+                            <p class="font-medium text-gray-700 text-sm">Recommended</p>
+                            <p class="text-xs text-gray-400">Highlight this plan to users</p>
+                        </div>
+                    </label>
+
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="hidden" name="is_trial_allowed" value="0">
+                        <input type="checkbox" name="is_trial_allowed" value="1" class="w-4 h-4 rounded accent-blue-600"
+                               {{ old('is_trial_allowed') ? 'checked' : '' }} id="chk_trial"
+                               onchange="document.getElementById('trial_days_group').style.display=this.checked?'block':'none'">
+                        <div>
+                            <p class="font-medium text-gray-700 text-sm">Free Trial</p>
+                            <p class="text-xs text-gray-400">Allow trial before payment</p>
+                        </div>
+                    </label>
+
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="hidden" name="is_active" value="0">
+                        <input type="checkbox" name="is_active" value="1" class="w-4 h-4 rounded accent-blue-600"
+                               {{ old('is_active', true) ? 'checked' : '' }}>
+                        <div>
+                            <p class="font-medium text-gray-700 text-sm">Active</p>
+                            <p class="text-xs text-gray-400">Visible when adding companies</p>
+                        </div>
+                    </label>
+                </div>
+
+                {{-- Trial days --}}
+                <div id="trial_days_group" class="{{ old('is_trial_allowed') ? '' : 'hidden' }}">
+                    <div class="form-group">
+                        <label class="form-label">Trial Period (days)</label>
+                        <input type="number" name="trial_days" min="1" max="365"
+                               class="form-control max-w-xs" value="{{ old('trial_days', 14) }}">
+                    </div>
+                </div>
+
+                <hr class="border-gray-100">
+
+                {{-- Features --}}
+                <div class="form-group">
+                    <label class="form-label">Features <span class="text-xs text-gray-400">(one per line)</span></label>
+                    <textarea name="features" class="form-control font-mono text-sm" rows="5"
+                              placeholder="Up to 10 users&#10;50GB storage&#10;Priority support&#10;Custom branding">{{ old('features') }}</textarea>
+                    <p class="text-xs text-gray-400 mt-1">Enter each feature on its own line. Shown as a bullet list.</p>
+                </div>
+
+                <hr class="border-gray-100">
+
+                {{-- Stripe --}}
+                <div>
+                    <h4 class="font-medium text-gray-700 mb-3 flex items-center gap-2">
+                        <span class="material-icons text-indigo-500">credit_card</span>
+                        Stripe Price IDs
+                        <span class="text-xs text-gray-400 font-normal">(optional — leave blank to use inline pricing)</span>
+                    </h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="form-group">
+                            <label class="form-label text-xs">Monthly Price ID</label>
+                            <input type="text" name="stripe_monthly_price_id" class="form-control font-mono text-sm"
+                                   value="{{ old('stripe_monthly_price_id') }}" placeholder="price_xxxxxxxx">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label text-xs">Annual Price ID</label>
+                            <input type="text" name="stripe_annual_price_id" class="form-control font-mono text-sm"
+                                   value="{{ old('stripe_annual_price_id') }}" placeholder="price_xxxxxxxx">
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">
+                        If left blank, Stripe checkout will use inline pricing based on the price you set above.
+                    </p>
+                </div>
+
+                {{-- Sort --}}
+                <div class="form-group">
+                    <label class="form-label">Sort Order</label>
+                    <input type="number" name="sort" min="0" class="form-control max-w-xs"
+                           value="{{ old('sort', 0) }}" placeholder="0 = first">
+                    <p class="text-xs text-gray-400 mt-1">Lower number = shown first.</p>
+                </div>
+
+                {{-- Buttons --}}
+                <div class="flex items-center gap-3 pt-2">
+                    <button type="submit" class="btn btn-primary">Create Plan</button>
+                    <a href="{{ route('plans.index') }}" class="btn btn-secondary">Cancel</a>
+                </div>
+
+            </div>
+        </div>
+    </form>
+</div>
+@endsection
+
+@push('scripts')
+<script>
+function toggleFree(chk) {
+    const priceInput = document.querySelector('[name=monthly_price]');
+    if (chk.checked) { priceInput.value = '0'; priceInput.setAttribute('readonly', true); }
+    else             { priceInput.removeAttribute('readonly'); }
+}
+// Init trial days visibility
+document.getElementById('chk_trial')?.dispatchEvent(new Event('change'));
+</script>
+@endpush

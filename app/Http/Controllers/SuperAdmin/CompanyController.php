@@ -88,11 +88,12 @@ class CompanyController extends AccountBaseController
     public function index(Request $request)
     {
         $this->companies = Company::withoutGlobalScopes()
-            ->with(['package', 'subscription'])
-            ->when($request->search, fn ($q) => $q->where('company_name', 'like', "%{$request->search}%"))
-            ->when($request->status, fn ($q) => $q->where('status', $request->status))
+            ->with(['package', 'subscription', 'onboardedBy', 'adminUser'])
+            ->withCount('users')
             ->orderByDesc('created_at')
-            ->paginate(20);
+            ->get();
+
+        $this->packages = Package::active()->orderBy('name')->get();
 
         return view('super-admin.companies.index', $this->data);
     }

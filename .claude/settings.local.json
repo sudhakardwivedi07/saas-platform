@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan:*)",
+      "Bash(php -r \"require 'vendor/autoload.php';\")",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(gh auth:*)",
+      "Bash(git config:*)",
+      "Bash(where git-credential-manager:*)",
+      "Bash(where git-credential-manager-core:*)",
+      "Bash(git-credential-wincred)",
+      "Bash(cmdkey /list)",
+      "Bash(php -r \"echo 'PHP OK';\")",
+      "Bash(php -r ':*)"
+    ]
+  }
+}

@@ -42,6 +42,7 @@ class Company extends BaseModel
         'client_package_id',
         'stripe_customer_id',
         'trial_ends_at',
+        'last_active_at',
         'timezone',
         'date_format',
         'time_format',
@@ -49,7 +50,8 @@ class Company extends BaseModel
     ];
 
     protected $casts = [
-        'trial_ends_at' => 'datetime',
+        'trial_ends_at'  => 'datetime',
+        'last_active_at' => 'datetime',
     ];
 
     // ─── Relationships ─────────────────────────────────────────────────────────
@@ -110,6 +112,18 @@ class Company extends BaseModel
     public function quickbooksConnections(): HasMany
     {
         return $this->hasMany(QuickBooksConnection::class);
+    }
+
+    /** The SuperAdmin who created/onboarded this firm. */
+    public function onboardedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /** Primary admin user for this company (client_admin role). */
+    public function adminUser(): HasOne
+    {
+        return $this->hasOne(User::class)->whereHas('roles', fn ($q) => $q->where('name', 'client_admin'))->latestOfMany();
     }
 
     // ─── Computed Properties ───────────────────────────────────────────────────

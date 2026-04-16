@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\AccountBaseController;
+use App\Models\GlobalSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -17,6 +18,7 @@ class AccountController extends AccountBaseController
 
     public function index()
     {
+        $this->setting = GlobalSetting::first();
         return view('super-admin.account.index', $this->data);
     }
 

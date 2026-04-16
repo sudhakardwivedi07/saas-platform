@@ -3,68 +3,69 @@
 @section('page-title', 'Edit: ' . $company->company_name)
 
 @section('content')
-<div class="max-w-2xl">
-<div class="card">
-    <div class="card-header">
-        <h3>Edit Company</h3>
-        <a href="{{ route('superadmin.companies.show', $company) }}" class="btn btn-secondary text-xs">← Back</a>
+<div class="ph">
+    <div>
+        <h1>Edit Company</h1>
+        <p>{{ $company->company_name }}</p>
     </div>
-    <div class="card-body">
-        <form id="company-form" method="POST" action="{{ route('superadmin.companies.update', $company) }}">
-            @csrf @method('PUT')
-
-            <div class="grid grid-cols-2 gap-4">
-                <div class="form-group col-span-2">
-                    <label class="form-label">Company Name *</label>
-                    <input type="text" name="company_name" class="form-control"
-                           value="{{ old('company_name', $company->company_name) }}" required>
-                </div>
-                <div class="form-group col-span-2">
-                    <label class="form-label">App Name <span class="text-gray-400 font-normal">(white-label display name)</span></label>
-                    <input type="text" name="app_name" class="form-control"
-                           value="{{ old('app_name', $company->app_name) }}"
-                           placeholder="Leave blank to use company name">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Company Email</label>
-                    <input type="email" name="company_email" class="form-control"
-                           value="{{ old('company_email', $company->company_email) }}">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Phone</label>
-                    <input type="text" name="company_phone" class="form-control"
-                           value="{{ old('company_phone', $company->company_phone) }}">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Status *</label>
-                    <select name="status" class="form-control">
-                        @foreach(['active','inactive','suspended'] as $s)
-                        <option value="{{ $s }}" {{ $company->status === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Package</label>
-                    <select name="package_id" class="form-control">
-                        <option value="">— No Package —</option>
-                        @foreach($packages as $pkg)
-                        <option value="{{ $pkg->id }}" {{ $company->package_id == $pkg->id ? 'selected' : '' }}>
-                            {{ $pkg->name }} (${{ number_format($pkg->monthly_price,0) }}/mo)
-                        </option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
-
-            <div class="flex gap-3 pt-4 border-t border-gray-100">
-                <button type="submit" class="btn btn-primary">
-                    <span class="material-icons text-lg">save</span> Save Changes
-                </button>
-                <a href="{{ route('superadmin.companies.show', $company) }}" class="btn btn-secondary">Cancel</a>
-            </div>
-        </form>
+    <div class="ph-actions">
+        <a href="{{ route('superadmin.companies.show', $company) }}" class="btn btn-ghost btn-sm">← Back</a>
     </div>
 </div>
+
+<div class="acc-card" style="max-width:640px">
+    <div class="acc-title">Company Details</div>
+    <form id="company-form" method="POST" action="{{ route('superadmin.companies.update', $company) }}">
+        @csrf @method('PUT')
+
+        <div class="f-group">
+            <label class="f-label">Company Name *</label>
+            <input type="text" name="company_name" class="f-inp"
+                   value="{{ old('company_name', $company->company_name) }}" required>
+        </div>
+        <div class="f-group">
+            <label class="f-label">App Name <span style="color:var(--text-3);font-weight:400">(white-label display name)</span></label>
+            <input type="text" name="app_name" class="f-inp"
+                   value="{{ old('app_name', $company->app_name) }}"
+                   placeholder="Leave blank to use company name">
+        </div>
+        <div class="form-2col">
+            <div class="f-group">
+                <label class="f-label">Company Email</label>
+                <input type="email" name="company_email" class="f-inp"
+                       value="{{ old('company_email', $company->company_email) }}">
+            </div>
+            <div class="f-group">
+                <label class="f-label">Phone</label>
+                <input type="text" name="company_phone" class="f-inp"
+                       value="{{ old('company_phone', $company->company_phone) }}">
+            </div>
+            <div class="f-group">
+                <label class="f-label">Status *</label>
+                <select name="status" class="f-sel">
+                    @foreach(['active','inactive','suspended'] as $s)
+                    <option value="{{ $s }}" {{ $company->status === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="f-group">
+                <label class="f-label">Package</label>
+                <select name="package_id" class="f-sel">
+                    <option value="">— No Package —</option>
+                    @foreach($packages as $pkg)
+                    <option value="{{ $pkg->id }}" {{ $company->package_id == $pkg->id ? 'selected' : '' }}>
+                        {{ $pkg->name }} (${{ number_format($pkg->monthly_price,0) }}/mo)
+                    </option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:8px;padding-top:14px;border-top:1px solid var(--border)">
+            <a href="{{ route('superadmin.companies.show', $company) }}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+    </form>
 </div>
 @endsection
 

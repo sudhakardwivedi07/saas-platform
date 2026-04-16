@@ -3,7 +3,6 @@
 @section('page-title','Edit: {{ $slug }}')
 
 @php
-{{-- Define placeholder arrays here so Blade does NOT parse the {{}} inside them --}}
 $phButtons = ['{{name}}','{{email}}','{{app_name}}','{{company}}','{{login_url}}','{{billing_url}}','{{support_email}}','{{date}}'];
 $phList = [
     ['{{name}}',          "Recipient's full name"],
@@ -23,127 +22,112 @@ $phList = [
 @endphp
 
 @section('content')
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-    {{-- Editor --}}
-    <div class="lg:col-span-2">
-        <div class="card">
-            <div class="card-header">
-                <h3>Template Editor</h3>
-                @if($template && $template->company_id)
-                <span class="badge badge-blue">Custom Version</span>
-                @else
-                <span class="badge badge-gray">Global Default (editing creates custom copy)</span>
-                @endif
-            </div>
-            <div class="card-body">
-                <form id="template-form" data-ajax-form method="POST"
-                      action="{{ route('email-templates.update', $slug) }}" data-reload="false">
-                    @csrf
-
-                    <div class="form-group">
-                        <label class="form-label">Template Name</label>
-                        <input type="text" name="name" class="form-control"
-                               value="{{ old('name', $template?->name ?? $slug) }}" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Subject Line <span>*</span></label>
-                        <input type="text" name="subject" class="form-control"
-                               value="{{ old('subject', $template?->subject ?? '') }}" required>
-                        <p class="form-text">Supports placeholders e.g. <code>@{{app_name}}</code></p>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="form-group">
-                            <label class="form-label">From Name</label>
-                            <input type="text" name="from_name" class="form-control"
-                                   value="{{ old('from_name', $template?->from_name ?? '') }}"
-                                   placeholder="Leave blank to use default">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">From Email</label>
-                            <input type="email" name="from_email" class="form-control"
-                                   value="{{ old('from_email', $template?->from_email ?? '') }}"
-                                   placeholder="Leave blank to use default">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label">Email Body (HTML) <span>*</span></label>
-                        <div style="border:1.5px solid #e2e8f0;border-radius:.5rem;overflow:hidden">
-                            <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:.5rem .75rem;display:flex;gap:.5rem;flex-wrap:wrap">
-                                @foreach($phButtons as $ph)
-                                <button type="button" onclick="insertPlaceholder('{{ $ph }}')"
-                                        class="btn btn-ghost btn-sm font-mono text-xs" style="padding:.25rem .5rem">
-                                    {{ $ph }}
-                                </button>
-                                @endforeach
-                            </div>
-                            <textarea id="body-editor" name="body" rows="16"
-                                      style="width:100%;padding:1rem;border:0;font-family:monospace;font-size:.85rem;resize:vertical;outline:none;background:#fff"
-                                      required>{{ old('body', $template?->body ?? '') }}</textarea>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-3 pt-2">
-                        <button type="submit" class="btn btn-primary">
-                            <span class="material-icons text-lg">save</span> Save Template
-                        </button>
-                        <a href="{{ route('email-templates.index') }}" class="btn btn-secondary">Cancel</a>
-                        <button type="button" onclick="previewTemplate()" class="btn btn-ghost">
-                            <span class="material-icons text-lg">visibility</span> Preview
-                        </button>
-                    </div>
-                </form>
-            </div>
+<div class="ph">
+    <div class="ph-left">
+        <h1>{{ ucwords(str_replace('_',' ',$slug)) }}</h1>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+            @if($template && $template->company_id)
+            <span class="badge b-blue">Custom Version</span>
+            @else
+            <span class="badge b-gray">Global Default (editing creates custom copy)</span>
+            @endif
         </div>
     </div>
+    <div class="ph-actions">
+        <a href="{{ route('email-templates.index') }}" class="btn btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
 
-    {{-- Sidebar: placeholder reference --}}
-    <div class="space-y-4">
-        <div class="card">
-            <div class="card-header"><h3>Available Placeholders</h3></div>
-            <div class="card-body space-y-3">
+<div style="display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:start">
+    <div class="acc-card">
+        <form id="template-form" method="POST" action="{{ route('email-templates.update', $slug) }}">
+            @csrf
+
+            <div class="f-group">
+                <label class="f-label">Template Name</label>
+                <input type="text" name="name" class="f-inp"
+                       value="{{ old('name', $template?->name ?? $slug) }}" required>
+            </div>
+
+            <div class="f-group">
+                <label class="f-label">Subject Line *</label>
+                <input type="text" name="subject" class="f-inp"
+                       value="{{ old('subject', $template?->subject ?? '') }}" required>
+                <div style="font-size:12px;color:var(--text-3);margin-top:3px">Supports placeholders e.g. <code style="background:var(--bg);padding:1px 4px;border-radius:4px">&#123;&#123;app_name&#125;&#125;</code></div>
+            </div>
+
+            <div class="form-2col">
+                <div class="f-group">
+                    <label class="f-label">From Name</label>
+                    <input type="text" name="from_name" class="f-inp"
+                           value="{{ old('from_name', $template?->from_name ?? '') }}"
+                           placeholder="Leave blank to use default">
+                </div>
+                <div class="f-group">
+                    <label class="f-label">From Email</label>
+                    <input type="email" name="from_email" class="f-inp"
+                           value="{{ old('from_email', $template?->from_email ?? '') }}"
+                           placeholder="Leave blank to use default">
+                </div>
+            </div>
+
+            <div class="f-group">
+                <label class="f-label">Email Body (HTML) *</label>
+                <div style="border:1px solid var(--border);border-radius:9px;overflow:hidden">
+                    <div style="background:var(--bg);border-bottom:1px solid var(--border);padding:8px 10px;display:flex;gap:6px;flex-wrap:wrap">
+                        @foreach($phButtons as $ph)
+                        <button type="button" onclick="insertPlaceholder('{{ $ph }}')"
+                                class="btn btn-ghost btn-xs" style="font-family:monospace">
+                            {{ $ph }}
+                        </button>
+                        @endforeach
+                    </div>
+                    <textarea id="body-editor" name="body" rows="16"
+                              style="width:100%;padding:14px;border:0;font-family:monospace;font-size:13px;resize:vertical;outline:none;background:#fff"
+                              required>{{ old('body', $template?->body ?? '') }}</textarea>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:8px">
+                <button type="submit" class="btn btn-primary">Save Template</button>
+                <button type="button" onclick="previewTemplate()" class="btn btn-ghost">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Preview
+                </button>
+                <a href="{{ route('email-templates.index') }}" class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <div>
+        <div class="acc-card">
+            <div style="font-size:13px;font-weight:600;margin-bottom:12px">Available Placeholders</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
                 @foreach($phList as [$ph, $desc])
-                <div class="flex items-start gap-2">
-                    <code class="text-xs bg-gray-100 px-2 py-0.5 rounded text-blue-600 flex-shrink-0 cursor-pointer hover:bg-blue-100"
-                          onclick="insertPlaceholder('{{ $ph }}')">{{ $ph }}</code>
-                    <span class="text-xs text-gray-500">{{ $desc }}</span>
+                <div style="display:flex;align-items:flex-start;gap:8px">
+                    <code onclick="insertPlaceholder('{{ $ph }}')" style="font-size:11px;background:var(--bg);padding:2px 6px;border-radius:5px;color:var(--blue);flex-shrink:0;cursor:pointer">{{ $ph }}</code>
+                    <span style="font-size:12px;color:var(--text-2)">{{ $desc }}</span>
                 </div>
                 @endforeach
             </div>
         </div>
-
-        <div class="card">
-            <div class="card-header"><h3>Quick HTML Snippets</h3></div>
-            <div class="card-body space-y-2">
-                <button type="button" onclick="insertSnippet('btn')" class="btn btn-secondary btn-sm w-full">
-                    Insert Button
-                </button>
-                <button type="button" onclick="insertSnippet('divider')" class="btn btn-secondary btn-sm w-full">
-                    Insert Divider
-                </button>
-                <button type="button" onclick="insertSnippet('greeting')" class="btn btn-secondary btn-sm w-full">
-                    Insert Greeting
-                </button>
+        <div class="acc-card">
+            <div style="font-size:13px;font-weight:600;margin-bottom:10px">Quick Snippets</div>
+            <div style="display:flex;flex-direction:column;gap:7px">
+                <button type="button" onclick="insertSnippet('btn')" class="btn btn-ghost btn-sm" style="justify-content:flex-start">Insert Button</button>
+                <button type="button" onclick="insertSnippet('divider')" class="btn btn-ghost btn-sm" style="justify-content:flex-start">Insert Divider</button>
+                <button type="button" onclick="insertSnippet('greeting')" class="btn btn-ghost btn-sm" style="justify-content:flex-start">Insert Greeting</button>
             </div>
         </div>
     </div>
 </div>
 
-{{-- Preview modal --}}
-<div id="preview-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 class="font-semibold">Email Preview</h3>
-            <button onclick="closeModal('preview-modal')" class="text-gray-400 hover:text-gray-600">
-                <span class="material-icons">close</span>
-            </button>
-        </div>
-        <div class="flex-1 overflow-y-auto">
-            <iframe id="preview-iframe" style="width:100%;border:0;min-height:500px"></iframe>
-        </div>
+{{-- Preview Modal --}}
+<div id="preview-modal" class="modal-overlay">
+    <div class="modal-box" style="width:660px;max-height:88vh">
+        <button class="modal-close" onclick="document.getElementById('preview-modal').classList.remove('open')">×</button>
+        <div class="modal-title">Email Preview</div>
+        <iframe id="preview-iframe" style="width:100%;border:0;min-height:440px;border-radius:8px;margin-top:12px"></iframe>
     </div>
 </div>
 
@@ -164,14 +148,14 @@ function insertPlaceholder(ph) {
 
 @verbatim
 const snippets = {
-    btn:      `<p><a href="{{login_url}}" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">Click Here</a></p>`,
+    btn:      `<p><a href="{{login_url}}" style="display:inline-block;background:#f06b21;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600">Click Here</a></p>`,
     divider:  `<hr style="border:0;border-top:1px solid #e2e8f0;margin:24px 0">`,
     greeting: `<p>Hi {{name}},</p>\n<p>Hope you're doing well!</p>`,
 };
+@endverbatim
 
 function insertSnippet(key) {
-    const snippet = snippets[key];
-    if (snippet) insertPlaceholder(snippet);
+    if (snippets[key]) insertPlaceholder(snippets[key]);
 }
 
 function previewTemplate() {
@@ -179,27 +163,20 @@ function previewTemplate() {
         .replace(/\{\{name\}\}/g,    'John Doe')
         .replace(/\{\{email\}\}/g,   'john@example.com')
         .replace(/\{\{login_url\}\}/g,   '#')
-        .replace(/\{\{billing_url\}\}/g, '#');
-@endverbatim
-    // app name comes from server
-    const previewBody = body.replace(/\{\{app_name\}\}/g, appName);
-
-    const html = `<!DOCTYPE html><html><head><meta charset=UTF-8><style>body{font-family:Inter,Arial,sans-serif;background:#f8fafc;margin:0;padding:20px}.wrapper{max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)}.header{background:#2563eb;padding:24px 32px}.header h1{color:#fff;margin:0;font-size:20px}.body{padding:32px;color:#1e293b;font-size:15px;line-height:1.6}</style></head><body><div class="wrapper"><div class="header"><h1>${appName}</h1></div><div class="body">${previewBody}</div></div></body></html>`;
-
-    const iframe = document.getElementById('preview-iframe');
-    iframe.srcdoc = html;
-    openModal('preview-modal');
+        .replace(/\{\{billing_url\}\}/g, '#')
+        .replace(/\{\{app_name\}\}/g, appName);
+    const html = `<!DOCTYPE html><html><head><meta charset=UTF-8><style>body{font-family:DM Sans,Arial,sans-serif;background:#f0f4f8;margin:0;padding:20px}.w{max-width:600px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08)}.hd{background:#f06b21;padding:22px 32px}.hd h1{color:#fff;margin:0;font-size:18px}.bd{padding:28px 32px;color:#1a202c;font-size:15px;line-height:1.6}</style></head><body><div class="w"><div class="hd"><h1>${appName}</h1></div><div class="bd">${body}</div></div></body></html>`;
+    document.getElementById('preview-iframe').srcdoc = html;
+    document.getElementById('preview-modal').classList.add('open');
 }
 
-// Handle AJAX form submission
 document.getElementById('template-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     const btn = this.querySelector('[type=submit]');
     btn.disabled = true;
-    const fd   = new FormData(this);
-    const res  = await fetch(this.action, {
+    const res = await fetch(this.action, {
         method: 'POST',
-        body: fd,
+        body: new FormData(this),
         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
     }).then(r => r.json());
     showToast(res.message, res.status === 'success' ? 'success' : 'error');

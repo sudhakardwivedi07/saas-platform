@@ -3,32 +3,33 @@
 @section('page-title', 'Edit Email Template')
 
 @section('content')
-<div class="max-w-4xl">
-    <div class="card">
-        <div class="card-header">
-            <h3>{{ ucwords(str_replace('_',' ',$template->slug)) }}</h3>
-            <a href="{{ route('superadmin.email-templates.index') }}" class="btn btn-secondary text-xs">
-                <span class="material-icons text-sm">arrow_back</span> Back
-            </a>
-        </div>
-        <div class="card-body">
-            <form id="tplForm">
-                @csrf
-                <div class="form-group">
-                    <label class="form-label">Subject *</label>
-                    <input name="subject" value="{{ $template->subject }}" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Body *</label>
-                    <p class="text-xs text-slate-400 mb-1">Use placeholders like <code>@{{name}}</code>, <code>@{{app_name}}</code>, <code>@{{email}}</code></p>
-                    <textarea name="body" rows="16" class="form-control font-mono text-sm" required>{{ $template->body }}</textarea>
-                </div>
-                <div class="flex justify-end">
-                    <button type="submit" class="btn btn-primary">Save Template</button>
-                </div>
-            </form>
-        </div>
+<div class="ph">
+    <div>
+        <h1>{{ ucwords(str_replace('_',' ',$template->slug)) }}</h1>
+        <p>Edit global email template</p>
     </div>
+    <div class="ph-actions">
+        <a href="{{ route('superadmin.email-templates.index') }}" class="btn btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+<div class="acc-card">
+    <div class="acc-title">Template Editor</div>
+    <form id="tplForm">
+        @csrf
+        <div class="f-group">
+            <label class="f-label">Subject *</label>
+            <input name="subject" value="{{ $template->subject }}" class="f-inp" required>
+        </div>
+        <div class="f-group">
+            <label class="f-label">Body *</label>
+            <div style="font-size:11.5px;color:var(--text-3);margin-bottom:6px">Use placeholders like <code style="background:var(--bg);padding:1px 5px;border-radius:4px">@{{name}}</code>, <code style="background:var(--bg);padding:1px 5px;border-radius:4px">@{{app_name}}</code></div>
+            <textarea name="body" rows="16" class="f-textarea" style="font-family:monospace;font-size:13px" required>{{ $template->body }}</textarea>
+        </div>
+        <div style="display:flex;justify-content:flex-end">
+            <button type="submit" class="btn btn-primary">Save Template</button>
+        </div>
+    </form>
 </div>
 @endsection
 

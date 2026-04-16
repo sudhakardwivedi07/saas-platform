@@ -3,64 +3,63 @@
 @section('page-title', 'Add User')
 
 @section('content')
-<div class="max-w-2xl">
-    <div class="card">
-        <div class="card-header">
-            <h3>New User</h3>
-            <a href="{{ route('superadmin.users.index') }}" class="btn btn-secondary text-xs">
-                <span class="material-icons text-sm">arrow_back</span> Back
-            </a>
-        </div>
-        <div class="card-body">
-            <form id="createUserForm">
-                @csrf
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="form-group">
-                        <label class="form-label">Full Name *</label>
-                        <input name="name" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Email *</label>
-                        <input name="email" type="email" class="form-control" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Password *</label>
-                        <input name="password" type="password" class="form-control" required minlength="8">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Status</label>
-                        <select name="status" class="form-control">
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Company</label>
-                        <select name="company_id" class="form-control">
-                            <option value="">— SuperAdmin (no company) —</option>
-                            @foreach($companies as $c)
-                                <option value="{{ $c->id }}">{{ $c->company_name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Role *</label>
-                        <select name="role" class="form-control" required>
-                            @foreach($roles as $role)
-                                <option value="{{ $role->name }}">{{ $role->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="flex justify-end gap-3 mt-4">
-                    <a href="{{ route('superadmin.users.index') }}" class="btn btn-secondary">Cancel</a>
-                    <button type="submit" class="btn btn-primary">
-                        <span class="material-icons text-sm">person_add</span> Create User
-                    </button>
-                </div>
-            </form>
-        </div>
+<div class="ph">
+    <div>
+        <h1>Add User</h1>
+        <p>Create a new platform user</p>
     </div>
+    <div class="ph-actions">
+        <a href="{{ route('superadmin.users.index') }}" class="btn btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+<div class="acc-card" style="max-width:640px">
+    <div class="acc-title">New User</div>
+    <form id="createUserForm">
+        @csrf
+        <div class="form-2col">
+            <div class="f-group">
+                <label class="f-label">Full Name *</label>
+                <input name="name" class="f-inp" required>
+            </div>
+            <div class="f-group">
+                <label class="f-label">Email *</label>
+                <input name="email" type="email" class="f-inp" required>
+            </div>
+            <div class="f-group">
+                <label class="f-label">Password *</label>
+                <input name="password" type="password" class="f-inp" required minlength="8">
+            </div>
+            <div class="f-group">
+                <label class="f-label">Status</label>
+                <select name="status" class="f-sel">
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <div class="f-group">
+                <label class="f-label">Company</label>
+                <select name="company_id" class="f-sel">
+                    <option value="">— SuperAdmin (no company) —</option>
+                    @foreach($companies as $c)
+                        <option value="{{ $c->id }}">{{ $c->company_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="f-group">
+                <label class="f-label">Role *</label>
+                <select name="role" class="f-sel" required>
+                    @foreach($roles as $role)
+                        <option value="{{ $role->name }}">{{ $role->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+            <a href="{{ route('superadmin.users.index') }}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary">Create User</button>
+        </div>
+    </form>
 </div>
 @endsection
 

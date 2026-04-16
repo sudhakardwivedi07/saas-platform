@@ -3,44 +3,45 @@
 @section('page-title', 'Create Role')
 
 @section('content')
-<div class="max-w-3xl">
-    <div class="card">
-        <div class="card-header">
-            <h3>New Role</h3>
-            <a href="{{ route('superadmin.roles.index') }}" class="btn btn-secondary text-xs">
-                <span class="material-icons text-sm">arrow_back</span> Back
-            </a>
-        </div>
-        <div class="card-body">
-            <form id="createRoleForm">
-                @csrf
-                <div class="form-group mb-5">
-                    <label class="form-label">Role Name *</label>
-                    <input name="name" class="form-control max-w-sm" placeholder="e.g. manager, accountant" required>
-                </div>
-
-                <p class="text-sm font-semibold text-slate-700 mb-3">Assign Permissions</p>
-                @foreach($permissions as $module => $perms)
-                <div class="mb-4">
-                    <p class="text-xs font-semibold text-slate-500 uppercase mb-2">{{ ucfirst(str_replace('_',' ',$module)) }}</p>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
-                        @foreach($perms as $perm)
-                        <label class="flex items-center gap-2 p-2 rounded border border-slate-200 cursor-pointer hover:bg-slate-50 text-sm">
-                            <input type="checkbox" name="permissions[]" value="{{ $perm->name }}" class="rounded">
-                            {{ $perm->name }}
-                        </label>
-                        @endforeach
-                    </div>
-                </div>
-                @endforeach
-
-                <div class="flex justify-end gap-3 mt-6">
-                    <a href="{{ route('superadmin.roles.index') }}" class="btn btn-secondary">Cancel</a>
-                    <button type="submit" class="btn btn-primary">Create Role</button>
-                </div>
-            </form>
-        </div>
+<div class="ph">
+    <div>
+        <h1>New Role</h1>
+        <p>Define a new access control role</p>
     </div>
+    <div class="ph-actions">
+        <a href="{{ route('superadmin.roles.index') }}" class="btn btn-ghost btn-sm">← Back</a>
+    </div>
+</div>
+
+<div class="acc-card" style="max-width:720px">
+    <div class="acc-title">Role Details</div>
+    <form id="createRoleForm">
+        @csrf
+        <div class="f-group" style="max-width:300px;margin-bottom:22px">
+            <label class="f-label">Role Name *</label>
+            <input name="name" class="f-inp" placeholder="e.g. manager, accountant" required>
+        </div>
+
+        <div style="font-size:13px;font-weight:600;margin-bottom:12px">Assign Permissions</div>
+        @foreach($permissions as $module => $perms)
+        <div style="margin-bottom:18px">
+            <div style="font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:8px">{{ ucfirst(str_replace('_',' ',$module)) }}</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+                @foreach($perms as $perm)
+                <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;font-size:12.5px;transition:border .14s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='var(--border)'">
+                    <input type="checkbox" name="permissions[]" value="{{ $perm->name }}" style="accent-color:var(--blue)">
+                    {{ $perm->name }}
+                </label>
+                @endforeach
+            </div>
+        </div>
+        @endforeach
+
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;padding-top:16px;border-top:1px solid var(--border)">
+            <a href="{{ route('superadmin.roles.index') }}" class="btn btn-ghost">Cancel</a>
+            <button type="submit" class="btn btn-primary">Create Role</button>
+        </div>
+    </form>
 </div>
 @endsection
 

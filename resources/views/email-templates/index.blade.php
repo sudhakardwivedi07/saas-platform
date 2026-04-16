@@ -3,61 +3,71 @@
 @section('page-title','Email Templates')
 
 @section('content')
-
-<div class="flex items-center justify-between mb-5">
-    <p class="text-sm text-gray-500">
-        Customize the emails your customers receive. Each template supports <code>@{{placeholders}}</code> that are replaced dynamically.
-    </p>
-    <a href="{{ route('email-templates.create') }}" class="btn btn-primary flex-shrink-0 ml-4">
-        <span class="material-icons text-lg">add</span> New Template
-    </a>
+<div class="ph">
+    <div class="ph-left">
+        <h1>Email Templates</h1>
+        <p>Customize the emails your customers receive. Supports <code style="background:var(--bg);padding:1px 5px;border-radius:4px">&#123;&#123;placeholders&#125;&#125;</code> replaced dynamically.</p>
+    </div>
+    <div class="ph-actions">
+        <a href="{{ route('email-templates.create') }}" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Template
+        </a>
+    </div>
 </div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-    @php
-    $templateLabels = [
-        'user_welcome'          => ['icon' => 'waving_hand',    'label' => 'Welcome Email',             'color' => 'text-blue-500'],
-        'password_reset'        => ['icon' => 'lock_reset',     'label' => 'Password Reset',             'color' => 'text-orange-500'],
-        'payment_success'       => ['icon' => 'check_circle',   'label' => 'Payment Successful',         'color' => 'text-green-500'],
-        'payment_failed'        => ['icon' => 'error',          'label' => 'Payment Failed',             'color' => 'text-red-500'],
-        'subscription_canceled' => ['icon' => 'cancel',         'label' => 'Subscription Canceled',      'color' => 'text-gray-500'],
-        'two_factor_code'       => ['icon' => 'shield',         'label' => 'Two-Factor Code',            'color' => 'text-indigo-500'],
-        'document_shared'       => ['icon' => 'folder_shared',  'label' => 'Document Shared',            'color' => 'text-purple-500'],
-        'trial_ending'          => ['icon' => 'hourglass_empty','label' => 'Trial Ending Reminder',      'color' => 'text-amber-500'],
-    ];
-    @endphp
+@php
+$templateLabels = [
+    'user_welcome'          => ['label' => 'Welcome Email',         'color' => 'var(--blue)',   'icon' => 'wave'],
+    'password_reset'        => ['label' => 'Password Reset',        'color' => 'var(--orange)', 'icon' => 'lock'],
+    'payment_success'       => ['label' => 'Payment Successful',    'color' => 'var(--green)',  'icon' => 'check'],
+    'payment_failed'        => ['label' => 'Payment Failed',        'color' => 'var(--red)',    'icon' => 'alert'],
+    'subscription_canceled' => ['label' => 'Subscription Canceled', 'color' => 'var(--text-3)','icon' => 'cancel'],
+    'two_factor_code'       => ['label' => 'Two-Factor Code',       'color' => 'var(--purple)', 'icon' => 'shield'],
+    'document_shared'       => ['label' => 'Document Shared',       'color' => 'var(--purple)', 'icon' => 'file'],
+    'trial_ending'          => ['label' => 'Trial Ending Reminder', 'color' => 'var(--amber)',  'icon' => 'clock'],
+];
+@endphp
 
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
     @foreach($templates as $slug => $group)
     @php
-        $info = $templateLabels[$slug] ?? ['icon' => 'email', 'label' => Str::title(str_replace('_',' ',$slug)), 'color' => 'text-gray-500'];
+        $info = $templateLabels[$slug] ?? ['label' => Str::title(str_replace('_',' ',$slug)), 'color' => 'var(--text-3)', 'icon' => 'mail'];
         $hasCustom = $group->firstWhere('company_id', '!=', null) !== null;
     @endphp
-    <div class="card hover:shadow-lg transition">
-        <div class="card-body flex items-start gap-4">
-            <span class="material-icons text-3xl {{ $info['color'] }} flex-shrink-0 mt-1">{{ $info['icon'] }}</span>
-            <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2 mb-1">
-                    <h3 class="font-semibold text-gray-800">{{ $info['label'] }}</h3>
+    <div class="card" style="margin-bottom:0;transition:box-shadow .18s" onmouseover="this.style.boxShadow='var(--sh-md)'" onmouseout="this.style.boxShadow='var(--sh-sm)'">
+        <div style="display:flex;align-items:flex-start;gap:12px">
+            <div style="width:40px;height:40px;border-radius:10px;background:{{ $info['color'] }}18;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg viewBox="0 0 24 24" fill="none" stroke="{{ $info['color'] }}" stroke-width="1.8" width="18" height="18">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                </svg>
+            </div>
+            <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">
+                    <span style="font-size:13.5px;font-weight:600">{{ $info['label'] }}</span>
                     @if($hasCustom)
-                    <span class="badge badge-blue text-xs">Customized</span>
+                    <span class="badge b-blue" style="font-size:10.5px">Customized</span>
                     @else
-                    <span class="badge badge-gray text-xs">Default</span>
+                    <span class="badge b-gray" style="font-size:10.5px">Default</span>
                     @endif
                 </div>
-                <p class="text-xs text-gray-400 font-mono mb-3">{{ $slug }}</p>
-                <div class="flex gap-2 flex-wrap">
-                    <a href="{{ route('email-templates.edit', $slug) }}" class="btn btn-secondary btn-sm">
-                        <span class="material-icons text-sm">edit</span> Edit
+                <div style="font-size:11.5px;color:var(--text-3);font-family:monospace;margin-bottom:10px">{{ $slug }}</div>
+                <div style="display:flex;gap:7px;flex-wrap:wrap">
+                    <a href="{{ route('email-templates.edit', $slug) }}" class="btn btn-ghost btn-sm">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        Edit
                     </a>
                     <button onclick="sendTest('{{ $slug }}')" class="btn btn-ghost btn-sm">
-                        <span class="material-icons text-sm">send</span> Test
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Test
                     </button>
                     @if($hasCustom)
                     <form method="POST" action="{{ route('email-templates.destroy', $slug) }}"
                           onsubmit="return confirm('Remove custom version and revert to global default?')">
                         @csrf @method('DELETE')
-                        <button class="btn btn-ghost btn-sm text-red-400 hover:text-red-600">
-                            <span class="material-icons text-sm">restore</span>
+                        <button class="btn btn-ghost btn-sm" style="color:var(--red)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
+                            Revert
                         </button>
                     </form>
                     @endif
@@ -69,18 +79,20 @@
 </div>
 
 {{-- Test Email Modal --}}
-<div id="test-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6">
-        <h3 class="font-semibold text-gray-800 mb-4">Send Test Email</h3>
+<div id="test-modal" class="modal-overlay">
+    <div class="modal-box" style="width:400px">
+        <button class="modal-close" onclick="document.getElementById('test-modal').classList.remove('open')">×</button>
+        <div class="modal-title">Send Test Email</div>
+        <div class="modal-sub">Preview how this template looks in an inbox</div>
         <input type="hidden" id="test-slug">
-        <div class="form-group mb-4">
-            <label class="form-label">Send to</label>
-            <input type="email" id="test-email" class="form-control" placeholder="you@example.com"
+        <div class="mf-field">
+            <label class="mf-label">Send to</label>
+            <input type="email" id="test-email" class="mf-inp" placeholder="you@example.com"
                    value="{{ auth()->user()->email }}">
         </div>
-        <div class="flex gap-3">
-            <button onclick="submitTest()" class="btn btn-primary flex-1">Send Test</button>
-            <button onclick="closeModal('test-modal')" class="btn btn-secondary">Cancel</button>
+        <div class="mf-foot">
+            <button onclick="document.getElementById('test-modal').classList.remove('open')" class="btn btn-ghost">Cancel</button>
+            <button onclick="submitTest()" class="btn btn-primary">Send Test</button>
         </div>
     </div>
 </div>
@@ -91,7 +103,7 @@
 <script>
 function sendTest(slug) {
     document.getElementById('test-slug').value = slug;
-    openModal('test-modal');
+    document.getElementById('test-modal').classList.add('open');
 }
 async function submitTest() {
     const slug  = document.getElementById('test-slug').value;
@@ -102,8 +114,8 @@ async function submitTest() {
         headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json','Content-Type':'application/json'},
         body:JSON.stringify({to_email:email})
     }).then(r=>r.json());
-    handleReply(json);
-    if (json.status==='success') closeModal('test-modal');
+    showToast(json.message, json.status === 'success' ? 'success' : 'error');
+    if (json.status==='success') document.getElementById('test-modal').classList.remove('open');
 }
 </script>
 @endpush

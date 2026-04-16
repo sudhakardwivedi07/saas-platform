@@ -1,17 +1,31 @@
 @extends('layouts.app')
-@section('title','QuickBooks')
-@section('page-title','QuickBooks Integration')
+@section('title', 'QuickBooks')
+@section('page-title', 'QuickBooks Integration')
+
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_info{font-size:12.5px;color:var(--text-3);padding-top:14px}
+div.dataTables_wrapper div.dataTables_paginate{padding-top:10px}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button{border-radius:7px!important;font-size:13px;border:1.5px solid var(--border)!important;background:#fff!important;color:var(--text-1)!important;padding:5px 11px!important;margin:0 2px}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.current,
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.current:hover{background:var(--orange)!important;color:#fff!important;border-color:var(--orange)!important}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button:hover:not(.current){background:var(--bg)!important;border-color:var(--text-3)!important}
+table.dataTable thead th{cursor:pointer}
+</style>
+@endpush
 
 @section('content')
+
 <div class="ph">
     <div class="ph-left">
         <h1>QuickBooks</h1>
-        <p>Connect your QuickBooks accounts to sync customers and invoices</p>
+        <p>Manage QuickBooks connections for your client companies</p>
     </div>
     <div class="ph-actions">
         @can('connect_quickbooks')
         <a href="{{ route('quickbooks.connect') }}" class="btn btn-primary">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Connect QuickBooks
         </a>
         @endcan
@@ -19,130 +33,195 @@
 </div>
 
 @if(session('success'))
-<div class="ca-alert ca-alert-success">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-    {{ session('success') }}
+<div class="info-banner" style="margin-bottom:16px;background:rgba(16,185,129,.07);border-color:var(--green)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    <div class="info-banner-txt">{{ session('success') }}</div>
 </div>
 @endif
 @if(session('error'))
-<div class="ca-alert ca-alert-error">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    {{ session('error') }}
+<div class="info-banner" style="margin-bottom:16px;background:rgba(239,68,68,.06);border-color:var(--red)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div class="info-banner-txt">{{ session('error') }}</div>
 </div>
 @endif
 
-@forelse($connections as $conn)
-<div class="card">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
-        <div style="display:flex;align-items:flex-start;gap:14px">
-            <div style="width:44px;height:44px;border-radius:11px;background:#2ca01c;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                <svg viewBox="0 0 40 40" style="width:26px;fill:#fff"><path d="M20 5C11.73 5 5 11.73 5 20s6.73 15 15 15 15-6.73 15-15S28.27 5 20 5zm-2 22v-3h-3v-4h3v-3l5 5-5 5zm4-10v3h3v4h-3v3l-5-5 5-5z"/></svg>
-            </div>
-            <div>
-                <div style="font-size:14px;font-weight:600;margin-bottom:2px">{{ $conn->qb_company_name ?? 'QuickBooks Account' }}</div>
-                <div style="font-size:12px;color:var(--text-2)">Realm ID: <code style="font-size:11px;background:var(--bg);padding:1px 5px;border-radius:4px">{{ $conn->realm_id }}</code></div>
-                <div style="font-size:12px;color:var(--text-3);margin-top:2px">Connected by {{ $conn->connectedBy?->name }} · {{ $conn->created_at->format('M d, Y') }}</div>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
-                    <span class="badge {{ $conn->is_active ? 'b-green' : 'b-red' }}">
-                        <span class="badge-dot" style="background:{{ $conn->is_active ? 'var(--green)' : 'var(--red)' }}"></span>
-                        {{ $conn->is_active ? 'Active' : 'Disconnected' }}
-                    </span>
-                    @if($conn->isAccessTokenExpired())
-                    <span class="badge b-amber">Token Expired</span>
-                    @endif
-                    <span style="font-size:12px;color:var(--text-3)">
-                        {{ $conn->last_synced_at ? 'Last sync: '.$conn->last_synced_at->diffForHumans() : 'Never synced' }}
-                    </span>
-                </div>
-            </div>
-        </div>
+<div class="info-banner" style="margin-bottom:16px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div class="info-banner-txt">Connect your client companies' QuickBooks accounts to sync customers and invoices automatically.</div>
+</div>
 
-        @can('sync_quickbooks')
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button onclick="syncQB({{ $conn->id }}, 'customers')" class="btn btn-ghost btn-sm">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                Sync Customers
-            </button>
-            <button onclick="syncQB({{ $conn->id }}, 'invoices')" class="btn btn-ghost btn-sm">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                Sync Invoices
-            </button>
-            <button onclick="disconnectQB({{ $conn->id }})" class="btn btn-danger btn-sm">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
-                Disconnect
-            </button>
+<div class="tc">
+    <div class="tc-head">
+        <div class="tc-filters">
+            <div class="srch-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" class="srch-inp" id="qb-search" placeholder="Search connections…" autocomplete="off">
+            </div>
+            <select class="sel" id="qb-status-filter" autocomplete="off">
+                <option value="">All Status</option>
+                <option value="connected">Connected</option>
+                <option value="disconnected">Disconnected</option>
+                <option value="token expired">Token Expired</option>
+            </select>
         </div>
-        @endcan
+        <span class="badge b-gray" id="qb-count-badge">0 connections</span>
     </div>
-
-    @if($conn->syncLogs->count() > 0)
-    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
-        <div style="font-size:12.5px;font-weight:600;margin-bottom:10px">Recent Sync Activity</div>
-        <div class="tc" style="margin-bottom:0">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Type</th><th>Status</th><th>Records</th><th>Duration</th><th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($conn->syncLogs->take(5) as $log)
-                    <tr>
-                        <td style="font-weight:500;text-transform:capitalize">{{ $log->sync_type }}</td>
-                        <td>
-                            <span class="badge {{ $log->status === 'success' ? 'b-green' : ($log->status === 'running' ? 'b-amber' : 'b-red') }}">
-                                {{ ucfirst($log->status) }}
-                            </span>
-                        </td>
-                        <td>{{ number_format($log->records_synced) }}</td>
-                        <td style="color:var(--text-3)">
-                            @if($log->started_at && $log->completed_at)
-                                {{ $log->started_at->diffInSeconds($log->completed_at) }}s
-                            @else —
+    <div style="overflow-x:auto">
+        <table id="qb-table" style="width:100%;border-collapse:collapse">
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Connected By</th>
+                    <th>QB Status</th>
+                    <th>Connected On</th>
+                    <th>Last Sync</th>
+                    <th style="width:180px">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php $connections = $connections ?? collect(); @endphp
+                @forelse($connections as $conn)
+                @php
+                    $qbStatus = $conn->is_active
+                        ? ($conn->isAccessTokenExpired() ? 'token expired' : 'connected')
+                        : 'disconnected';
+                    $statusClass = match($qbStatus) {
+                        'connected'     => 'b-green',
+                        'token expired' => 'b-amber',
+                        default         => 'b-red',
+                    };
+                    $statusDot = match($qbStatus) {
+                        'connected'     => 'var(--green)',
+                        'token expired' => 'var(--amber)',
+                        default         => 'var(--red)',
+                    };
+                    $companyName = $conn->company?->company_name ?? $conn->qb_company_name ?? 'Unknown';
+                @endphp
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:9px">
+                            <div style="width:32px;height:32px;border-radius:8px;background:#2ca01c;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                                <svg viewBox="0 0 40 40" style="width:18px;fill:#fff"><path d="M20 5C11.73 5 5 11.73 5 20s6.73 15 15 15 15-6.73 15-15S28.27 5 20 5zm-2 22v-3h-3v-4h3v-3l5 5-5 5zm4-10v3h3v4h-3v3l-5-5 5-5z"/></svg>
+                            </div>
+                            <div>
+                                <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $companyName }}</div>
+                                @if($conn->realm_id)
+                                <div style="font-size:11.5px;color:var(--text-3)">Realm: {{ $conn->realm_id }}</div>
+                                @endif
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-size:13px;font-weight:500;color:var(--text-1)">{{ $conn->connectedBy?->name ?? 'Unknown' }}</div>
+                        <div style="font-size:11.5px;color:var(--text-3)">{{ $conn->connectedBy?->email ?? '' }}</div>
+                    </td>
+                    <td data-search="{{ $qbStatus }}">
+                        <span class="badge {{ $statusClass }}">
+                            <span class="badge-dot" style="background:{{ $statusDot }}"></span>
+                            {{ ucwords($qbStatus) }}
+                        </span>
+                    </td>
+                    <td style="font-size:12.5px;color:var(--text-2)">
+                        {{ $conn->created_at?->format('M j, Y') ?? '—' }}
+                    </td>
+                    <td style="font-size:12.5px;color:var(--text-2)">
+                        {{ $conn->last_synced_at ? $conn->last_synced_at->diffForHumans() : 'Never' }}
+                    </td>
+                    <td>
+                        @can('sync_quickbooks')
+                        <div style="display:flex;gap:5px;flex-wrap:wrap">
+                            @if($conn->is_active && !$conn->isAccessTokenExpired())
+                            <button onclick="syncQB({{ $conn->id }}, 'customers')" class="btn btn-ghost btn-xs" title="Sync Customers">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                                Customers
+                            </button>
+                            <button onclick="syncQB({{ $conn->id }}, 'invoices')" class="btn btn-ghost btn-xs" title="Sync Invoices">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                Invoices
+                            </button>
                             @endif
-                        </td>
-                        <td style="color:var(--text-3)">{{ $log->created_at?->format('M d, H:i') }}</td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+                            <button onclick="disconnectQB({{ $conn->id }})" class="btn btn-xs" style="background:rgba(239,68,68,.07);color:var(--red);border:1px solid rgba(239,68,68,.2)" title="Disconnect">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><line x1="2" y1="2" x2="22" y2="22"/><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/></svg>
+                                Disconnect
+                            </button>
+                        </div>
+                        @endcan
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="6" style="text-align:center;padding:56px 20px">
+                        <div style="width:52px;height:52px;border-radius:13px;background:#f0fdf4;margin:0 auto 14px;display:flex;align-items:center;justify-content:center">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" width="24" height="24"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                        </div>
+                        <div style="font-size:14px;font-weight:500;color:var(--text-2)">No QuickBooks connections yet</div>
+                        <div style="font-size:12.5px;color:var(--text-3);margin-top:4px">Connect your client companies' QuickBooks accounts to start syncing data.</div>
+                        @can('connect_quickbooks')
+                        <a href="{{ route('quickbooks.connect') }}" class="btn btn-primary btn-sm" style="margin-top:16px;display:inline-flex">Connect QuickBooks</a>
+                        @endcan
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
-    @endif
 </div>
-@empty
-<div class="card" style="text-align:center;padding:60px 24px">
-    <div style="width:56px;height:56px;border-radius:14px;background:#f0fdf4;margin:0 auto 14px;display:flex;align-items:center;justify-content:center">
-        <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" width="24" height="24"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-    </div>
-    <div style="font-size:15px;font-weight:600;margin-bottom:6px">No QuickBooks Accounts Connected</div>
-    <div style="font-size:13px;color:var(--text-3);margin-bottom:20px">Connect your QuickBooks account to start syncing data automatically.</div>
-    @can('connect_quickbooks')
-    <a href="{{ route('quickbooks.connect') }}" class="btn btn-primary">Connect QuickBooks</a>
-    @endcan
-</div>
-@endforelse
 
 @endsection
 
 @push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script>
+$(document).ready(function() {
+    document.getElementById('qb-search').value       = '';
+    document.getElementById('qb-status-filter').value = '';
+
+    var table = $('#qb-table').DataTable({
+        paging: true, pageLength: 15, lengthChange: false,
+        searching: true, ordering: true, info: true, dom: 'tip',
+        order: [[3, 'desc']],
+        columnDefs: [{ orderable: false, targets: [5] }],
+        language: {
+            info: 'Showing _START_–_END_ of _TOTAL_ connections',
+            infoEmpty: 'No connections', paginate: { previous: '‹', next: '›' },
+            emptyTable: 'No QuickBooks connections yet',
+        },
+        drawCallback: function() {
+            var info = this.api().page.info();
+            document.getElementById('qb-count-badge').textContent = info.recordsDisplay + ' connection' + (info.recordsDisplay !== 1 ? 's' : '');
+        }
+    });
+
+    document.getElementById('qb-search').addEventListener('keyup', function() { table.search(this.value).draw(); });
+    document.getElementById('qb-status-filter').addEventListener('change', function() {
+        table.column(2).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+    });
+});
+
 async function syncQB(id, type) {
     const json = await fetch(`/quickbooks/${id}/sync`, {
-        method:'POST',
-        headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json','Content-Type':'application/json'},
-        body:JSON.stringify({sync_type:type})
-    }).then(r=>r.json());
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ sync_type: type })
+    }).then(r => r.json());
     showToast(json.message, json.status === 'success' ? 'success' : 'error');
     if (json.status === 'success') setTimeout(() => location.reload(), 1500);
 }
 
 async function disconnectQB(id) {
-    if (!confirm('Disconnect this QuickBooks account?')) return;
+    if (!confirm('Disconnect this QuickBooks account? Synced data will remain but no new syncs will occur.')) return;
     const json = await fetch(`/quickbooks/${id}/disconnect`, {
-        method:'POST',
-        headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json'}
-    }).then(r=>r.json());
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
+            'Accept': 'application/json'
+        }
+    }).then(r => r.json());
     showToast(json.message, json.status === 'success' ? 'success' : 'error');
     if (json.status === 'success') setTimeout(() => location.reload(), 800);
 }

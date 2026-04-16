@@ -13,6 +13,7 @@ use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuickBooksController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SmtpSettingController;
 use App\Http\Controllers\SmsSettingController;
@@ -123,6 +124,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/sms',          [SmsSettingController::class, 'update'])->name('sms.update');
         Route::get('/payment-gateway',  [TenantPaymentGatewayController::class, 'index'])->name('payment-gateway');
         Route::post('/payment-gateway', [TenantPaymentGatewayController::class, 'update'])->name('payment-gateway.update');
+
+        // Roles & Permissions
+        Route::post('/roles',       [RoleController::class, 'store'])->name('roles.store');
+        Route::post('/roles/{id}',  [RoleController::class, 'update'])->name('roles.update');
+        Route::delete('/roles/{id}',[RoleController::class, 'destroy'])->name('roles.destroy');
     });
 
     // Clients

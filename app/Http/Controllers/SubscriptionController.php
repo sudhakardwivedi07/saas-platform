@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helper\Reply;
+use App\Models\Company;
 use App\Models\SuperAdmin\Package;
 use App\Services\StripeService;
 use Illuminate\Http\Request;
@@ -18,10 +19,24 @@ class SubscriptionController extends AccountBaseController
 
     public function index()
     {
-        $company            = company();
+        $company   = company();
+        $companyId = $company->id;
+
         $this->subscription = $company->subscription;
-        $this->payments     = $company->payments()->orderByDesc('created_at')->paginate(10);
         $this->packages     = Package::active()->orderBy('sort')->get();
+
+        // Sub-companies with their plan and QB data
+        $this->subCompanies = Company::withoutGlobalScopes()
+            ->where('created_by', $companyId)
+            ->with(['clientPackage', 'package', 'quickbooksConnections', 'users' => fn($q) => $q->orderBy('id')->limit(1)])
+            ->get();
+
+        // Usage summary (wire to real insight model when available)
+        $this->totalInsightsUsed      = 0;
+        $this->totalInsightsRemaining = $this->subscription?->package?->max_documents ?? 0;
+        $this->companiesAtRisk        = $this->subCompanies
+            ->filter(fn($c) => $c->status === 'inactive' || $c->quickbooksConnections->where('is_active', true)->isEmpty())
+            ->count();
 
         return view('billing.index', $this->data);
     }

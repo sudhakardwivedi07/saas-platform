@@ -16,19 +16,20 @@ class ClientController extends AccountBaseController
 
     public function index()
     {
-        $companyId = auth()->user()->company_id;
+        $companyId = company()?->id ?? auth()->user()->company_id;
 
-        // Clients = users that belong to companies managed by this company
-        $this->clients = User::whereHas('companies', function ($q) use ($companyId) {
-            $q->where('created_by', $companyId);
-        })->with(['companies' => function ($q) use ($companyId) {
-            $q->where('created_by', $companyId);
-        }])->orderByDesc('created_at')->get();
-
-        // Companies created by this company
+        // Companies created by this client admin
         $this->companies = Company::withoutGlobalScopes()
             ->where('created_by', $companyId)
-            ->with(['clientPackage', 'package'])
+            ->with(['clientPackage', 'package', 'quickbooksConnections'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $subCompanyIds = $this->companies->pluck('id');
+
+        // Clients = users whose company_id is one of those sub-companies
+        $this->clients = User::whereIn('company_id', $subCompanyIds)
+            ->with(['company.quickbooksConnections'])
             ->orderByDesc('created_at')
             ->get();
 

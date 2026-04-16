@@ -1,6 +1,19 @@
 @extends('layouts.app')
 @section('page-title', 'Settings')
 
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_info{font-size:12.5px;color:var(--text-3);padding-top:14px}
+div.dataTables_wrapper div.dataTables_paginate{padding-top:10px}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button{border-radius:7px!important;font-size:13px;border:1.5px solid var(--border)!important;background:#fff!important;color:var(--text-1)!important;padding:5px 11px!important;margin:0 2px}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.current,
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.current:hover{background:var(--orange)!important;color:#fff!important;border-color:var(--orange)!important}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button:hover:not(.current){background:var(--bg)!important;border-color:var(--text-3)!important}
+table.dataTable thead th{cursor:pointer}
+</style>
+@endpush
+
 @section('content')
 
 {{-- Page Header --}}
@@ -29,6 +42,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         Plan Management
     </button>
+    <button class="tab-btn" data-tab="tab-roles">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        Roles &amp; Permissions
+    </button>
 </div>
 
 {{-- Tab 1: Payment --}}
@@ -46,17 +63,33 @@
 
         <form method="POST" action="{{ route('settings.payment-gateway.update') }}">
             @csrf
+            <div class="form-2col">
+                <div class="f-group">
+                    <label class="f-label">Mode</label>
+                    <select name="mode" class="f-sel">
+                        <option value="live" {{ ($paymentGateway->mode ?? 'live') === 'live' ? 'selected' : '' }}>Live</option>
+                        <option value="test" {{ ($paymentGateway->mode ?? '') === 'test' ? 'selected' : '' }}>Test / Sandbox</option>
+                    </select>
+                </div>
+                <div class="f-group">
+                    <label class="f-label">Gateway</label>
+                    <select name="gateway" class="f-sel">
+                        <option value="stripe">Stripe</option>
+                    </select>
+                </div>
+            </div>
             <div class="f-group">
                 <label class="f-label">Live Publishable Key</label>
-                <input type="text" name="stripe_key" class="f-inp" placeholder="pk_live_…" value="{{ $paymentGateway->stripe_key ?? '' }}">
+                <input type="text" name="live_key" class="f-inp" placeholder="pk_live_…" value="{{ $paymentGateway->live_key ?? '' }}">
             </div>
             <div class="f-group">
-                <label class="f-label">Secret Key</label>
-                <input type="password" name="stripe_secret" class="f-inp" placeholder="sk_live_…" value="{{ $paymentGateway->stripe_secret ?? '' }}" autocomplete="new-password">
+                <label class="f-label">Live Secret Key</label>
+                <input type="password" name="live_secret" class="f-inp" placeholder="sk_live_…" value="" autocomplete="new-password">
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Leave blank to keep current value.</div>
             </div>
             <div class="f-group">
-                <label class="f-label">Webhook Secret</label>
-                <input type="text" name="stripe_webhook_secret" class="f-inp" placeholder="whsec_…" value="{{ $paymentGateway->stripe_webhook_secret ?? '' }}">
+                <label class="f-label">Live Webhook Secret</label>
+                <input type="text" name="live_webhook_secret" class="f-inp" placeholder="whsec_…" value="{{ $paymentGateway->live_webhook_secret ?? '' }}">
             </div>
             <div class="f-group">
                 <label class="f-label">Webhook URL</label>
@@ -177,82 +210,485 @@
 
 {{-- Tab 4: Plan Management --}}
 <div class="tab-panel" id="tab-plans">
-    <div class="ph" style="margin-bottom:16px">
-        <div class="ph-left">
-            <h1 style="font-size:16px">My Plans</h1>
-            <p>Manage the plans you offer to your sub-companies.</p>
+    <div class="tc">
+        <div class="tc-head">
+            <div class="tc-filters">
+                <div class="srch-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" class="srch-inp" id="plan-search" placeholder="Search plans…" autocomplete="off">
+                </div>
+                <select class="sel" id="plan-status-filter" autocomplete="off">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <span class="badge b-gray" id="plan-count-badge">0 plans</span>
+                <a href="{{ route('plans.create') }}" class="btn btn-primary btn-sm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    New Plan
+                </a>
+            </div>
         </div>
-        <div class="ph-actions">
-            <a href="{{ route('plans.create') }}" class="btn btn-primary">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                New Plan
-            </a>
+        <div style="overflow-x:auto">
+            <table id="plans-table" style="width:100%;border-collapse:collapse">
+                <thead>
+                    <tr>
+                        <th>Plan Name</th>
+                        <th>Monthly Price</th>
+                        <th>Annual Price</th>
+                        <th>Max Users</th>
+                        <th>Storage</th>
+                        <th>Status</th>
+                        <th style="width:100px">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php $clientPackages = $clientPackages ?? collect(); @endphp
+                    @forelse($clientPackages as $plan)
+                    @php
+                        $planStatus = ($plan->is_active ?? true) ? 'active' : 'inactive';
+                    @endphp
+                    <tr>
+                        <td>
+                            <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $plan->name }}</div>
+                            @if($plan->description)
+                            <div style="font-size:11.5px;color:var(--text-3);margin-top:1px">{{ Str::limit($plan->description, 60) }}</div>
+                            @endif
+                            @if($plan->is_recommended ?? false)
+                            <span class="badge b-orange" style="font-size:10px;margin-top:3px">Most Popular</span>
+                            @endif
+                        </td>
+                        <td style="font-weight:600;color:var(--text-1)">
+                            ${{ number_format($plan->monthly_price ?? 0, 2) }}<span style="font-size:11.5px;font-weight:400;color:var(--text-3)">/mo</span>
+                        </td>
+                        <td style="font-size:12.5px;color:var(--text-2)">
+                            @if($plan->annual_price)
+                            ${{ number_format($plan->annual_price, 2) }}<span style="font-size:11px;color:var(--text-3)">/yr</span>
+                            @else
+                            <span style="color:var(--text-3)">—</span>
+                            @endif
+                        </td>
+                        <td style="font-size:12.5px;color:var(--text-2)">
+                            {{ $plan->max_users ? $plan->max_users . ' users' : '∞' }}
+                        </td>
+                        <td style="font-size:12.5px;color:var(--text-2)">
+                            {{ $plan->max_storage_gb ? $plan->max_storage_gb . ' GB' : '∞' }}
+                        </td>
+                        <td data-search="{{ $planStatus }}">
+                            @if($planStatus === 'active')
+                                <span class="badge b-green"><span class="badge-dot" style="background:var(--green)"></span>Active</span>
+                            @else
+                                <span class="badge b-gray"><span class="badge-dot" style="background:var(--text-3)"></span>Inactive</span>
+                            @endif
+                        </td>
+                        <td>
+                            <div style="display:flex;gap:5px">
+                                <a href="{{ route('plans.edit', $plan) }}" class="btn btn-ghost btn-xs">Edit</a>
+                                <form method="POST" action="{{ route('plans.destroy', $plan) }}" onsubmit="return confirm('Delete plan &quot;{{ addslashes($plan->name) }}&quot;? This cannot be undone.')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-xs" style="background:rgba(239,68,68,.07);color:var(--red);border:1px solid rgba(239,68,68,.2)">Delete</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="7" style="text-align:center;padding:56px 20px">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.4" style="margin:0 auto 12px;display:block"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            <div style="font-size:14px;font-weight:500;color:var(--text-2)">No plans created yet</div>
+                            <div style="font-size:12.5px;color:var(--text-3);margin-top:4px">Create your first plan to offer it to your sub-companies.</div>
+                            <a href="{{ route('plans.create') }}" class="btn btn-primary btn-sm" style="margin-top:16px;display:inline-flex">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Create First Plan
+                            </a>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{{-- Tab 5: Roles & Permissions --}}
+<div class="tab-panel" id="tab-roles">
+
+    {{-- Roles DataTable --}}
+    <div class="tc">
+        <div class="tc-head">
+            <div class="tc-filters">
+                <div class="srch-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" class="srch-inp" id="role-search" placeholder="Search roles…" autocomplete="off">
+                </div>
+                <select class="sel" id="role-type-filter" autocomplete="off">
+                    <option value="">All Types</option>
+                    <option value="system">System</option>
+                    <option value="custom">Custom</option>
+                </select>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px">
+                <span class="badge b-gray" id="role-count-badge">{{ $roles->count() }} roles</span>
+                <button class="btn btn-primary btn-sm" onclick="openCreateRoleModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    New Role
+                </button>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto">
+            <table id="roles-table" style="width:100%;border-collapse:collapse">
+                <thead>
+                    <tr>
+                        <th>Role Name</th>
+                        <th>Type</th>
+                        <th>Users</th>
+                        <th>Permissions</th>
+                        <th style="width:100px">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php $systemRoles = ['client_admin', 'super_admin']; @endphp
+                    @forelse($roles as $role)
+                    @php
+                        $isSystem  = in_array($role->name, $systemRoles);
+                        $typeLabel = $isSystem ? 'System' : 'Custom';
+                        $typeClass = $isSystem ? 'b-blue' : 'b-gray';
+                        $permCount = $role->permissions->count();
+                    @endphp
+                    <tr>
+                        <td>
+                            <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ ucwords(str_replace('_', ' ', $role->name)) }}</div>
+                            <div style="font-size:11px;color:var(--text-3);margin-top:1px">{{ $role->name }}</div>
+                        </td>
+                        <td data-search="{{ strtolower($typeLabel) }}">
+                            <span class="badge {{ $typeClass }}" style="font-size:11.5px">{{ $typeLabel }}</span>
+                        </td>
+                        <td style="font-size:13px;color:var(--text-2)">{{ $role->users_count ?? 0 }}</td>
+                        <td>
+                            @if($permCount > 0)
+                                <span class="badge b-green" style="font-size:11.5px">{{ $permCount }} permissions</span>
+                            @else
+                                <span style="color:var(--text-3);font-size:13px">None</span>
+                            @endif
+                        </td>
+                        <td>
+                            <div style="display:flex;gap:5px">
+                                @if(!$isSystem)
+                                <button class="btn btn-ghost btn-xs"
+                                    onclick="openEditRoleModal({{ $role->id }}, '{{ addslashes($role->name) }}', {{ json_encode($role->permissions->pluck('name')) }})">
+                                    Edit
+                                </button>
+                                <button class="btn btn-xs" style="background:rgba(239,68,68,.07);color:var(--red);border:1px solid rgba(239,68,68,.2)"
+                                    onclick="deleteRole({{ $role->id }}, '{{ addslashes($role->name) }}')">
+                                    Delete
+                                </button>
+                                @else
+                                <span style="font-size:11.5px;color:var(--text-3)">Protected</span>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="5" style="text-align:center;padding:56px 20px;color:var(--text-3)">No roles found.</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 
-    @if($clientPackages->isNotEmpty())
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
-        @foreach($clientPackages as $plan)
-        <div class="card" style="margin-bottom:0">
-            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
-                <div class="card-title" style="margin-bottom:0">{{ $plan->name }}</div>
-                @if(($plan->status ?? 'active') === 'active')
-                    <span class="badge b-green" style="font-size:11px">Active</span>
-                @else
-                    <span class="badge b-gray" style="font-size:11px">Inactive</span>
-                @endif
-            </div>
-            <div style="font-size:22px;font-weight:700;color:var(--text-1);margin-bottom:4px">
-                ${{ number_format($plan->monthly_price ?? 0, 0) }}<span style="font-size:13px;font-weight:400;color:var(--text-3)">/mo</span>
-            </div>
-            @if($plan->description)
-            <div style="font-size:12.5px;color:var(--text-2);margin-bottom:12px;line-height:1.45">{{ Str::limit($plan->description, 80) }}</div>
-            @endif
-            <div style="margin-bottom:14px">
-                @if($plan->max_users)
-                <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);margin-bottom:4px">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                    Up to {{ $plan->max_users }} users
+    {{-- Permission Reference Card --}}
+    <div class="acc-card" style="margin-top:20px">
+        <div class="acc-section-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            All Permissions by Module
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:14px">
+            @foreach($allPermissions as $module => $perms)
+            <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:12px 14px">
+                <div style="font-size:11.5px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">{{ $module }}</div>
+                @foreach($perms as $perm)
+                <div style="font-size:12px;color:var(--text-2);padding:3px 0;display:flex;align-items:center;gap:6px">
+                    <span style="width:5px;height:5px;border-radius:50%;background:var(--blue);flex-shrink:0;display:inline-block"></span>
+                    {{ $perm->name }}
                 </div>
-                @endif
-                @if($plan->max_storage_gb)
-                <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);margin-bottom:4px">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                    {{ $plan->max_storage_gb }} GB storage
-                </div>
-                @endif
-                @if(!empty($plan->features))
-                    @foreach(array_slice(is_array($plan->features) ? $plan->features : [], 0, 3) as $feat)
-                    <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-2);margin-bottom:4px">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                        {{ Str::title(str_replace('_', ' ', $feat)) }}
+                @endforeach
+            </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+
+{{-- Create Role Modal --}}
+<div class="modal-overlay" id="create-role-modal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box" style="width:560px">
+        <button class="modal-close" onclick="document.getElementById('create-role-modal').classList.remove('open')">&times;</button>
+        <div class="modal-title">Create New Role</div>
+        <div class="modal-sub">Define a role name and assign permissions.</div>
+        <form id="create-role-form" onsubmit="submitCreateRole(event)">
+            @csrf
+            <div class="mf-field">
+                <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
+                <input type="text" name="name" id="cr-name" class="mf-inp" placeholder="e.g. accountant" required autocomplete="off">
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase with underscores (e.g. senior_manager)</div>
+            </div>
+            <div class="mf-field">
+                <label class="mf-label">Permissions</label>
+                <div style="display:grid;gap:10px;margin-top:6px;max-height:340px;overflow-y:auto;padding-right:4px">
+                    @foreach($allPermissions as $module => $perms)
+                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:11px 13px">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                            <input type="checkbox" class="mod-toggle" data-module="cr-mod-{{ Str::slug($module) }}"
+                                id="cr-modall-{{ Str::slug($module) }}"
+                                onchange="toggleModule(this)" style="accent-color:var(--orange);cursor:pointer;width:14px;height:14px">
+                            <label for="cr-modall-{{ Str::slug($module) }}" style="font-size:11.5px;font-weight:700;color:var(--text-1);cursor:pointer;text-transform:uppercase;letter-spacing:.5px">{{ $module }}</label>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px" class="cr-mod-{{ Str::slug($module) }}">
+                            @foreach($perms as $perm)
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-2)">
+                                <input type="checkbox" name="permissions[]" value="{{ $perm->name }}"
+                                    class="perm-cb perm-cr-mod-{{ Str::slug($module) }}"
+                                    style="accent-color:var(--orange);cursor:pointer;width:13px;height:13px"
+                                    onchange="syncModuleToggle('cr-mod-{{ Str::slug($module) }}','cr-modall-{{ Str::slug($module) }}')">
+                                {{ $perm->name }}
+                            </label>
+                            @endforeach
+                        </div>
                     </div>
                     @endforeach
-                @endif
+                </div>
             </div>
-            <div style="display:flex;gap:7px;border-top:1px solid var(--border);padding-top:12px">
-                <a href="{{ route('plans.edit', $plan) }}" class="btn btn-ghost btn-xs" style="flex:1;justify-content:center">Edit</a>
-                <form method="POST" action="{{ route('plans.destroy', $plan) }}" style="flex:1" onsubmit="return confirm('Delete this plan?')">
-                    @csrf @method('DELETE')
-                    <button type="submit" class="btn btn-xs" style="width:100%;background:var(--red-light);color:var(--red);border:1px solid #fca5a5">Delete</button>
-                </form>
+            <div class="mf-foot">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('create-role-modal').classList.remove('open')">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="cr-submit">Create Role</button>
             </div>
-        </div>
-        @endforeach
+        </form>
     </div>
-    @else
-    <div class="tc">
-        <div style="text-align:center;padding:56px 20px">
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.3" style="margin:0 auto 14px;display:block"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-            <div style="font-size:14px;font-weight:500;color:var(--text-2)">No plans created yet</div>
-            <div style="font-size:12.5px;color:var(--text-3);margin-top:5px">Create your first plan to offer it to your sub-companies.</div>
-            <a href="{{ route('plans.create') }}" class="btn btn-primary btn-sm" style="margin-top:16px;display:inline-flex">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Create First Plan
-            </a>
-        </div>
+</div>
+
+{{-- Edit Role Modal --}}
+<div class="modal-overlay" id="edit-role-modal" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box" style="width:560px">
+        <button class="modal-close" onclick="document.getElementById('edit-role-modal').classList.remove('open')">&times;</button>
+        <div class="modal-title">Edit Role</div>
+        <div class="modal-sub">Update role name and permissions.</div>
+        <form id="edit-role-form" onsubmit="submitEditRole(event)">
+            @csrf
+            <input type="hidden" id="er-role-id">
+            <div class="mf-field">
+                <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
+                <input type="text" name="name" id="er-name" class="mf-inp" required autocomplete="off">
+            </div>
+            <div class="mf-field">
+                <label class="mf-label">Permissions</label>
+                <div style="display:grid;gap:10px;margin-top:6px;max-height:340px;overflow-y:auto;padding-right:4px">
+                    @foreach($allPermissions as $module => $perms)
+                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:11px 13px">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                            <input type="checkbox" class="mod-toggle" data-module="er-mod-{{ Str::slug($module) }}"
+                                id="er-modall-{{ Str::slug($module) }}"
+                                onchange="toggleModule(this)" style="accent-color:var(--orange);cursor:pointer;width:14px;height:14px">
+                            <label for="er-modall-{{ Str::slug($module) }}" style="font-size:11.5px;font-weight:700;color:var(--text-1);cursor:pointer;text-transform:uppercase;letter-spacing:.5px">{{ $module }}</label>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px" class="er-mod-{{ Str::slug($module) }}">
+                            @foreach($perms as $perm)
+                            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-2)">
+                                <input type="checkbox" name="permissions[]" value="{{ $perm->name }}"
+                                    class="perm-cb perm-er-mod-{{ Str::slug($module) }}"
+                                    style="accent-color:var(--orange);cursor:pointer;width:13px;height:13px"
+                                    onchange="syncModuleToggle('er-mod-{{ Str::slug($module) }}','er-modall-{{ Str::slug($module) }}')">
+                                {{ $perm->name }}
+                            </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+            <div class="mf-foot">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('edit-role-modal').classList.remove('open')">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="er-submit">Save Changes</button>
+            </div>
+        </form>
     </div>
-    @endif
 </div>
 
 @endsection
+
+@push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Only init DataTable if the plans tab has rows
+    if ($('#plans-table tbody tr td').length && !$('#plans-table tbody tr td[colspan]').length) {
+        document.getElementById('plan-search').value        = '';
+        document.getElementById('plan-status-filter').value = '';
+
+        var planTable = $('#plans-table').DataTable({
+            paging: true, pageLength: 15, lengthChange: false,
+            searching: true, ordering: true, info: true, dom: 'tip',
+            order: [[0, 'asc']],
+            columnDefs: [{ orderable: false, targets: [6] }],
+            language: {
+                info: 'Showing _START_–_END_ of _TOTAL_ plans',
+                infoEmpty: 'No plans', paginate: { previous: '‹', next: '›' },
+                emptyTable: 'No plans yet',
+            },
+            drawCallback: function() {
+                var info = this.api().page.info();
+                document.getElementById('plan-count-badge').textContent = info.recordsDisplay + ' plan' + (info.recordsDisplay !== 1 ? 's' : '');
+            }
+        });
+
+        document.getElementById('plan-search').addEventListener('keyup', function() { planTable.search(this.value).draw(); });
+        document.getElementById('plan-status-filter').addEventListener('change', function() {
+            planTable.column(5).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+        });
+    } else {
+        // Update count badge for empty state
+        var badge = document.getElementById('plan-count-badge');
+        if (badge) badge.textContent = '0 plans';
+    }
+
+    // Roles DataTable
+    document.getElementById('role-search').value       = '';
+    document.getElementById('role-type-filter').value  = '';
+
+    var roleTable = $('#roles-table').DataTable({
+        paging: true, pageLength: 15, lengthChange: false,
+        searching: true, ordering: true, info: true, dom: 'tip',
+        order: [[0, 'asc']],
+        columnDefs: [{ orderable: false, targets: [4] }],
+        language: {
+            info: 'Showing _START_–_END_ of _TOTAL_ roles',
+            infoEmpty: 'No roles found', paginate: { previous: '‹', next: '›' },
+            emptyTable: 'No roles yet',
+        },
+        drawCallback: function() {
+            var info = this.api().page.info();
+            document.getElementById('role-count-badge').textContent = info.recordsDisplay + ' role' + (info.recordsDisplay !== 1 ? 's' : '');
+        }
+    });
+
+    document.getElementById('role-search').addEventListener('keyup', function() { roleTable.search(this.value).draw(); });
+    document.getElementById('role-type-filter').addEventListener('change', function() {
+        roleTable.column(1).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+    });
+});
+
+// ── Permission toggles ─────────────────────────────────────────────────────────
+function toggleModule(checkbox) {
+    var prefix = checkbox.dataset.module;
+    document.querySelectorAll('.perm-' + prefix).forEach(function(cb) { cb.checked = checkbox.checked; });
+}
+
+function syncModuleToggle(modClass, toggleId) {
+    var cbs = document.querySelectorAll('.perm-' + modClass);
+    var allChecked = Array.from(cbs).every(function(cb) { return cb.checked; });
+    var toggle = document.getElementById(toggleId);
+    if (toggle) toggle.checked = allChecked;
+}
+
+// ── Create Role ────────────────────────────────────────────────────────────────
+function openCreateRoleModal() {
+    document.getElementById('create-role-form').reset();
+    document.querySelectorAll('#create-role-modal .mod-toggle').forEach(function(cb) { cb.checked = false; });
+    document.getElementById('create-role-modal').classList.add('open');
+}
+
+function submitCreateRole(e) {
+    e.preventDefault();
+    var form = document.getElementById('create-role-form');
+    var btn  = document.getElementById('cr-submit');
+    var data = new FormData(form);
+    btn.disabled = true;
+
+    fetch('{{ route("settings.roles.store") }}', { method: 'POST', headers: {'X-Requested-With':'XMLHttpRequest'}, body: data })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            btn.disabled = false;
+            if (res.status === 'success') {
+                document.getElementById('create-role-modal').classList.remove('open');
+                showToast(res.message || 'Role created.', 'success');
+                setTimeout(function() { location.reload(); }, 900);
+            } else {
+                showToast(res.message || 'Something went wrong.', 'error');
+            }
+        })
+        .catch(function() { btn.disabled = false; showToast('Request failed.', 'error'); });
+}
+
+// ── Edit Role ──────────────────────────────────────────────────────────────────
+function openEditRoleModal(id, name, permissions) {
+    document.getElementById('er-role-id').value = id;
+    document.getElementById('er-name').value     = name;
+
+    // Reset all checkboxes
+    document.querySelectorAll('#edit-role-modal input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
+
+    // Check existing permissions
+    permissions.forEach(function(perm) {
+        var cb = document.querySelector('#edit-role-modal input[value="' + perm + '"]');
+        if (cb) cb.checked = true;
+    });
+
+    // Sync module toggles
+    document.querySelectorAll('#edit-role-modal .mod-toggle').forEach(function(toggle) {
+        var prefix = toggle.dataset.module;
+        var cbs = document.querySelectorAll('#edit-role-modal .perm-' + prefix);
+        toggle.checked = cbs.length > 0 && Array.from(cbs).every(function(c) { return c.checked; });
+    });
+
+    document.getElementById('edit-role-modal').classList.add('open');
+}
+
+function submitEditRole(e) {
+    e.preventDefault();
+    var roleId = document.getElementById('er-role-id').value;
+    var form   = document.getElementById('edit-role-form');
+    var btn    = document.getElementById('er-submit');
+    var data   = new FormData(form);
+    btn.disabled = true;
+
+    fetch('{{ url("settings/roles") }}/' + roleId, { method: 'POST', headers: {'X-Requested-With':'XMLHttpRequest'}, body: data })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            btn.disabled = false;
+            if (res.status === 'success') {
+                document.getElementById('edit-role-modal').classList.remove('open');
+                showToast(res.message || 'Role updated.', 'success');
+                setTimeout(function() { location.reload(); }, 900);
+            } else {
+                showToast(res.message || 'Something went wrong.', 'error');
+            }
+        })
+        .catch(function() { btn.disabled = false; showToast('Request failed.', 'error'); });
+}
+
+// ── Delete Role ────────────────────────────────────────────────────────────────
+function deleteRole(id, name) {
+    if (!confirm('Delete role "' + name + '"? This cannot be undone.')) return;
+
+    var csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '{{ csrf_token() }}';
+    fetch('{{ url("settings/roles") }}/' + id, {
+        method: 'DELETE',
+        headers: {'X-Requested-With':'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken, 'Content-Type':'application/json'},
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+        if (res.status === 'success') {
+            showToast(res.message || 'Role deleted.', 'success');
+            setTimeout(function() { location.reload(); }, 900);
+        } else {
+            showToast(res.message || 'Cannot delete role.', 'error');
+        }
+    })
+    .catch(function() { showToast('Request failed.', 'error'); });
+}
+</script>
+@endpush

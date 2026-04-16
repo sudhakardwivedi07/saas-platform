@@ -1,114 +1,250 @@
 @extends('layouts.app')
-
 @section('title', 'My Companies')
 @section('page-title', 'My Companies')
 
-@section('content')
-<div class="space-y-5">
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<style>
+div.dataTables_wrapper div.dataTables_info{font-size:12.5px;color:var(--text-3);padding-top:14px}
+div.dataTables_wrapper div.dataTables_paginate{padding-top:10px}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button{border-radius:7px!important;font-size:13px;border:1.5px solid var(--border)!important;background:#fff!important;color:var(--text-1)!important;padding:5px 11px!important;margin:0 2px}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.current,
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.current:hover{background:var(--orange)!important;color:#fff!important;border-color:var(--orange)!important}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button:hover:not(.current){background:var(--bg)!important;border-color:var(--text-3)!important}
+table.dataTable thead th{cursor:pointer}
+</style>
+@endpush
 
-    {{-- Header --}}
-    <div class="flex items-center justify-between">
-        <div>
-            <h2 class="text-xl font-bold text-gray-800">Companies You Manage</h2>
-            <p class="text-sm text-gray-500 mt-1">Create and manage multiple companies from one account.</p>
-        </div>
+@section('content')
+
+<div class="ph">
+    <div class="ph-left">
+        <h1>My Companies</h1>
+        <p>Create and manage multiple companies from one account</p>
+    </div>
+    <div class="ph-actions">
         @can('add_company')
-        <a href="{{ route('my-companies.create') }}" class="btn btn-primary flex items-center gap-2" style="display:inline-flex">
-            <span class="material-icons text-lg">add_business</span>
+        <a href="{{ route('my-companies.create') }}" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add New Company
         </a>
         @endcan
     </div>
-
-    {{-- Companies Grid --}}
-    @if($companies->isEmpty())
-    <div class="card">
-        <div class="card-body text-center py-16">
-            <span class="material-icons text-6xl text-gray-300">business</span>
-            <h3 class="mt-4 text-lg font-semibold text-gray-600">No companies yet</h3>
-            <p class="text-gray-400 mt-1">You haven't created any additional companies.</p>
-            @can('add_company')
-            <a href="{{ route('my-companies.create') }}" class="btn btn-primary mt-5">
-                <span class="material-icons text-lg mr-1">add_business</span>
-                Create Your First Company
-            </a>
-            @endcan
-        </div>
-    </div>
-    @else
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        @foreach($companies as $co)
-        @php
-            $sub    = $co->subscription;
-            $badge  = match($co->status) {
-                'active'    => ['bg-green-100 text-green-700',  'Active'],
-                'inactive'  => ['bg-yellow-100 text-yellow-700','Pending Payment'],
-                'suspended' => ['bg-red-100 text-red-700',      'Suspended'],
-                default     => ['bg-gray-100 text-gray-600',    ucfirst($co->status)],
-            };
-        @endphp
-        <div class="card hover:shadow-md transition-shadow">
-            <div class="card-body space-y-3">
-                {{-- Company header --}}
-                <div class="flex items-start justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-lg"
-                             style="background: var(--primary)">
-                            {{ strtoupper(substr($co->company_name, 0, 1)) }}
-                        </div>
-                        <div>
-                            <h3 class="font-semibold text-gray-800 leading-tight">{{ $co->company_name }}</h3>
-                            <p class="text-xs text-gray-400">{{ $co->subdomain }}.{{ config('tenancy.root_domain') }}</p>
-                        </div>
-                    </div>
-                    <span class="text-xs font-medium px-2 py-1 rounded-full {{ $badge[0] }}">
-                        {{ $badge[1] }}
-                    </span>
-                </div>
-
-                {{-- Package & Subscription --}}
-                <div class="text-sm text-gray-600 space-y-1 border-t border-gray-100 pt-3">
-                    <div class="flex justify-between">
-                        <span class="text-gray-400">Plan</span>
-                        @php $planName = $co->clientPackage?->name ?? $co->package?->name ?? '—'; @endphp
-                        <span class="font-medium">{{ $planName }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-400">Subscription</span>
-                        <span class="font-medium capitalize">{{ $sub?->status ?? 'None' }}</span>
-                    </div>
-                    @if($co->trial_ends_at && $co->trial_ends_at->isFuture())
-                    <div class="flex justify-between">
-                        <span class="text-gray-400">Trial ends</span>
-                        <span class="font-medium text-amber-600">{{ $co->trial_ends_at->format('M d, Y') }}</span>
-                    </div>
-                    @endif
-                    <div class="flex justify-between">
-                        <span class="text-gray-400">Email</span>
-                        <span class="font-medium">{{ $co->company_email }}</span>
-                    </div>
-                </div>
-
-                {{-- Actions --}}
-                <div class="flex gap-2 pt-2 border-t border-gray-100">
-                    @if($co->status === 'inactive')
-                    <span class="text-xs text-yellow-600 flex items-center gap-1">
-                        <span class="material-icons text-sm">hourglass_empty</span>
-                        Awaiting payment activation
-                    </span>
-                    @else
-                    <a href="{{ $co->login_url }}" target="_blank"
-                       class="btn btn-outline btn-sm flex items-center gap-1 text-xs">
-                        <span class="material-icons text-sm">open_in_new</span>
-                        Open
-                    </a>
-                    @endif
-                </div>
-            </div>
-        </div>
-        @endforeach
-    </div>
-    @endif
-
 </div>
+
+@if(session('success'))
+<div class="info-banner" style="background:rgba(16,185,129,.07);border-color:var(--green);margin-bottom:16px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    <div class="info-banner-txt">{{ session('success') }}</div>
+</div>
+@endif
+@if(session('error'))
+<div class="info-banner" style="background:rgba(239,68,68,.06);border-color:var(--red);margin-bottom:16px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div class="info-banner-txt">{{ session('error') }}</div>
+</div>
+@endif
+
+<div class="tc">
+    <div class="tc-head">
+        <div class="tc-filters">
+            <div class="srch-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" class="srch-inp" id="co-search" placeholder="Search companies…" autocomplete="off">
+            </div>
+            <select class="sel" id="co-status-filter" autocomplete="off">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="suspended">Suspended</option>
+                <option value="pending payment">Pending Payment</option>
+            </select>
+        </div>
+        <span class="badge b-gray" id="co-count-badge">{{ $companies->count() }} companies</span>
+    </div>
+
+    <div style="overflow-x:auto">
+        <table id="co-table" style="width:100%;border-collapse:collapse">
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Plan</th>
+                    <th>Subscription</th>
+                    <th>QB</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th style="width:80px">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($companies as $co)
+                @php
+                    $sub       = $co->subscription;
+                    $planName  = $co->clientPackage?->name ?? $co->package?->name ?? '—';
+                    $rawStatus = $co->status ?? 'inactive';
+                    $displayStatus = match($rawStatus) {
+                        'active'    => 'active',
+                        'suspended' => 'suspended',
+                        'inactive'  => 'pending payment',
+                        default     => strtolower($rawStatus),
+                    };
+                    $stClass = match($rawStatus) {
+                        'active'    => 'b-green',
+                        'suspended' => 'b-red',
+                        default     => 'b-amber',
+                    };
+                    $stDot = match($rawStatus) {
+                        'active'    => 'var(--green)',
+                        'suspended' => 'var(--red)',
+                        default     => 'var(--amber)',
+                    };
+                    $stLabel = match($rawStatus) {
+                        'active'    => 'Active',
+                        'suspended' => 'Suspended',
+                        default     => 'Pending Payment',
+                    };
+                    $initials = strtoupper(substr($co->company_name, 0, 1))
+                              . strtoupper(substr(strstr($co->company_name, ' ') ?: '  ', 1, 1));
+                    $colors = ['#1a6aa8','#f06b21','#10b981','#7c3aed','#e11d48','#0d9488'];
+                    $color  = $colors[$co->id % count($colors)];
+                    $isQB   = $co->quickbooksConnections?->where('is_active', true)->isNotEmpty() ?? false;
+                    $subStatus = $sub ? ucfirst($sub->status) : 'None';
+                @endphp
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <div style="width:36px;height:36px;border-radius:9px;background:{{ $color }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">{{ $initials }}</div>
+                            <div>
+                                <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $co->company_name }}</div>
+                                @if($co->subdomain)
+                                <div style="font-size:11.5px;color:var(--text-3)">{{ $co->subdomain }}.{{ config('tenancy.root_domain', 'yourdomain.com') }}</div>
+                                @endif
+                                @if($co->company_email)
+                                <div style="font-size:11px;color:var(--text-3)">{{ $co->company_email }}</div>
+                                @endif
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        @if($planName !== '—')
+                            <span class="badge b-blue" style="font-size:11.5px">{{ $planName }}</span>
+                        @else
+                            <span style="color:var(--text-3);font-size:13px">—</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($sub)
+                            @php
+                                $subBadge = match($sub->status) {
+                                    'active'   => 'b-green',
+                                    'trialing' => 'b-amber',
+                                    'past_due' => 'b-red',
+                                    default    => 'b-gray',
+                                };
+                            @endphp
+                            <span class="badge {{ $subBadge }}" style="font-size:11.5px">{{ $subStatus }}</span>
+                            @if($co->trial_ends_at && $co->trial_ends_at->isFuture())
+                            <div style="font-size:11px;color:var(--amber);margin-top:2px">Ends {{ $co->trial_ends_at->format('M j, Y') }}</div>
+                            @endif
+                        @else
+                            <span style="color:var(--text-3);font-size:13px">None</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($isQB)
+                            <span class="badge b-green" style="font-size:11.5px">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg>
+                                Connected
+                            </span>
+                        @else
+                            <span style="color:var(--text-3);font-size:13px">—</span>
+                        @endif
+                    </td>
+                    <td data-search="{{ $displayStatus }}">
+                        <span class="badge {{ $stClass }}">
+                            <span class="badge-dot" style="background:{{ $stDot }}"></span>
+                            {{ $stLabel }}
+                        </span>
+                    </td>
+                    <td style="font-size:12.5px;color:var(--text-2)">
+                        {{ $co->created_at?->format('M j, Y') ?? '—' }}
+                    </td>
+                    <td>
+                        <div class="dm-wrap">
+                            <button class="dot-menu" data-menu="dm-co-{{ $co->id }}" title="Actions">•••</button>
+                            <div class="dm-popup" id="dm-co-{{ $co->id }}">
+                                @if($rawStatus === 'active' && $co->login_url)
+                                <a href="{{ $co->login_url }}" target="_blank" class="dm-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                    Open Portal
+                                </a>
+                                @endif
+                                <a href="{{ route('quickbooks.index') }}" class="dm-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                                    QuickBooks
+                                </a>
+                                @if($rawStatus === 'inactive')
+                                <div class="dm-divider"></div>
+                                <a href="{{ route('billing.index') }}" class="dm-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                                    Complete Payment
+                                </a>
+                                @endif
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="7" style="text-align:center;padding:60px 20px">
+                        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.4" style="margin:0 auto 14px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+                        <div style="font-size:14px;font-weight:500;color:var(--text-2)">No companies yet</div>
+                        <div style="font-size:12.5px;color:var(--text-3);margin-top:4px;margin-bottom:16px">Create your first company to get started.</div>
+                        @can('add_company')
+                        <a href="{{ route('my-companies.create') }}" class="btn btn-primary btn-sm" style="display:inline-flex">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Add New Company
+                        </a>
+                        @endcan
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+</div>
+
 @endsection
+
+@push('scripts')
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script>
+$(document).ready(function() {
+    document.getElementById('co-search').value        = '';
+    document.getElementById('co-status-filter').value = '';
+
+    var table = $('#co-table').DataTable({
+        paging: true, pageLength: 15, lengthChange: false,
+        searching: true, ordering: true, info: true, dom: 'tip',
+        order: [[5, 'desc']],
+        columnDefs: [{ orderable: false, targets: [6] }],
+        language: {
+            info: 'Showing _START_–_END_ of _TOTAL_ companies',
+            infoEmpty: 'No companies found',
+            paginate: { previous: '‹', next: '›' },
+            emptyTable: 'No companies yet',
+        },
+        drawCallback: function() {
+            var info = this.api().page.info();
+            document.getElementById('co-count-badge').textContent = info.recordsDisplay + ' compan' + (info.recordsDisplay !== 1 ? 'ies' : 'y');
+        }
+    });
+
+    document.getElementById('co-search').addEventListener('keyup', function() { table.search(this.value).draw(); });
+    document.getElementById('co-status-filter').addEventListener('change', function() {
+        table.column(4).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+    });
+});
+</script>
+@endpush

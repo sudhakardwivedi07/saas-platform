@@ -29,6 +29,11 @@ class QuickBooksConnection extends BaseModel
         'is_active'                => 'boolean',
     ];
 
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'company_id');
+    }
+
     public function connectedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');

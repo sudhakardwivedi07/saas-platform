@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helper\Reply;
 use App\Jobs\SyncQuickBooksJob;
+use App\Models\Company;
 use App\Models\QuickBooksConnection;
 use App\Services\QuickBooksService;
 use Illuminate\Http\Request;
@@ -19,7 +20,15 @@ class QuickBooksController extends AccountBaseController
 
     public function index()
     {
-        $this->connections = QuickBooksConnection::with('connectedBy', 'syncLogs')
+        $companyId = company()?->id ?? auth()->user()->company_id;
+
+        $managedIds = Company::withoutGlobalScopes()
+            ->where('created_by', $companyId)
+            ->pluck('id')
+            ->push($companyId);
+
+        $this->connections = QuickBooksConnection::with('connectedBy', 'company', 'syncLogs')
+            ->whereIn('company_id', $managedIds)
             ->orderByDesc('created_at')
             ->get();
 

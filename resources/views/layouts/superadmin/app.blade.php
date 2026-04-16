@@ -4,155 +4,440 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'SuperAdmin') — {{ config('app.name') }}</title>
+    <title>@yield('title', 'Dashboard') — CFO Insights Admin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
     <style>
-        :root { --primary: #1e293b; --accent: #3b82f6; --font: 'Inter', sans-serif; }
-        body  { font-family: var(--font); }
-        .sa-sidebar { background: var(--primary); }
-        .sa-nav-link { display:flex; align-items:center; gap:.75rem; padding:.6rem 1rem; color:rgba(255,255,255,.7); border-radius:.5rem; transition:all .15s; font-size:.875rem; text-decoration:none; }
-        .sa-nav-link:hover, .sa-nav-link.active { background:rgba(255,255,255,.12); color:#fff; }
-        .sa-nav-link .material-icons { font-size:1.25rem; }
-        .stat-card { background:#fff; border-radius:.75rem; border:1px solid #e2e8f0; padding:1.25rem 1.5rem; }
-        .stat-number { font-size:1.75rem; font-weight:700; color:#1e293b; }
-        .stat-label  { font-size:.8rem; color:#64748b; text-transform:uppercase; letter-spacing:.05em; }
-        .badge { display:inline-flex; align-items:center; padding:.2rem .6rem; border-radius:999px; font-size:.75rem; font-weight:500; }
-        .badge-green  { background:#dcfce7; color:#16a34a; }
-        .badge-red    { background:#fee2e2; color:#dc2626; }
-        .badge-yellow { background:#fef9c3; color:#ca8a04; }
-        .badge-gray   { background:#f1f5f9; color:#64748b; }
-        .data-table { width:100%; border-collapse:collapse; }
-        .data-table th { padding:.75rem 1rem; text-align:left; font-size:.75rem; font-weight:600; text-transform:uppercase; letter-spacing:.05em; color:#64748b; border-bottom:2px solid #e2e8f0; }
-        .data-table td { padding:.875rem 1rem; border-bottom:1px solid #f1f5f9; font-size:.875rem; color:#374151; vertical-align:middle; }
-        .data-table tr:hover td { background:#f8fafc; }
-        .btn { display:inline-flex; align-items:center; gap:.375rem; padding:.5rem 1rem; border-radius:.5rem; font-size:.875rem; font-weight:500; cursor:pointer; border:none; transition:all .15s; text-decoration:none; }
-        .btn-primary { background:var(--accent); color:#fff; }
-        .btn-primary:hover { background:#2563eb; }
-        .btn-danger  { background:#ef4444; color:#fff; }
-        .btn-danger:hover { background:#dc2626; }
-        .btn-secondary { background:#f1f5f9; color:#374151; border:1px solid #e2e8f0; }
-        .btn-secondary:hover { background:#e2e8f0; }
-        .card { background:#fff; border-radius:.75rem; border:1px solid #e2e8f0; }
-        .card-header { padding:1.25rem 1.5rem; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:space-between; }
-        .card-header h3 { font-size:1rem; font-weight:600; color:#1e293b; }
-        .card-body { padding:1.5rem; }
-        .form-group { margin-bottom:1.25rem; }
-        .form-label { display:block; font-size:.875rem; font-weight:500; color:#374151; margin-bottom:.375rem; }
-        .form-control { width:100%; padding:.625rem .875rem; border:1.5px solid #e2e8f0; border-radius:.5rem; font-size:.875rem; color:#1e293b; background:#f8fafc; transition:border-color .2s; }
-        .form-control:focus { outline:none; border-color:var(--accent); background:#fff; box-shadow:0 0 0 3px rgba(59,130,246,.1); }
+/* ── BRAND TOKENS ─────────────────────────────────────── */
+:root {
+  --blue:#0C84BC; --blue2:#0a6fa0; --blue3:#e8f4fb;
+  --orange:#F06B21; --orange2:#d05519; --orange-l:#fff7ed;
+  --green:#10b981; --red:#ef4444; --amber:#f59e0b; --purple:#7c3aed;
+  --text-1:#0f172a; --text-2:#475569; --text-3:#94a3b8;
+  --bg:#f1f5f9; --card:#fff; --border:#e2e8f0;
+  --sidebar-w:252px; --topbar-h:60px;
+  --r:10px; --r-lg:12px;
+  --sh:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  --sh-md:0 4px 16px rgba(0,0,0,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter','Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text-1);font-size:14px}
+input,select,textarea,button{font-family:inherit}
+a{text-decoration:none;color:inherit}
+button{cursor:pointer}
+
+/* ── SIDEBAR ──────────────────────────────────────────── */
+.sa-sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:#0a2540;display:flex;flex-direction:column;z-index:200}
+.sa-logo-area{padding:16px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sa-logo-img{max-width:160px;height:auto;display:block;filter:brightness(0) invert(1)}
+.sa-badge{font-size:9px;font-weight:800;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.14em;margin-top:5px}
+.sa-logo-text{color:#fff;font-size:17px;font-weight:700;line-height:1}
+.sa-nav{padding:12px 10px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
+.sa-nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:rgba(255,255,255,.55);font-size:13px;cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:all .13s;text-decoration:none}
+.sa-nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.sa-nav-item.active{background:rgba(240,107,33,.22);color:#F06B21;font-weight:500}
+.sa-nav-item.active svg{stroke:#F06B21}
+.sa-nav-item svg{width:15px;height:15px;flex-shrink:0;stroke:rgba(255,255,255,.4);stroke-width:1.8}
+.sa-nav-item.active svg{stroke:#F06B21}
+.sa-nav-sep{height:1px;background:rgba(255,255,255,.06);margin:6px 10px}
+.sa-nav-sec{font-size:9px;font-weight:700;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.13em;padding:8px 12px 3px}
+.sa-sidebar-foot{padding:12px 10px;border-top:1px solid rgba(255,255,255,.06)}
+
+/* ── TOPBAR ───────────────────────────────────────────── */
+.sa-topbar{position:fixed;left:var(--sidebar-w);right:0;top:0;height:var(--topbar-h);background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 22px;gap:14px;z-index:100}
+.sa-topbar-bc{font-size:13px;color:var(--text-3);display:flex;align-items:center;gap:7px;flex:1;min-width:0}
+.sa-topbar-bc span{color:var(--text-1);font-weight:500}
+.sa-topbar-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.sa-tb-notif{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative;background:#fff;cursor:pointer}
+.sa-tb-notif:hover{background:var(--bg)}
+.sa-notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid #fff}
+.sa-tb-user{display:flex;align-items:center;gap:9px;padding:5px 12px 5px 5px;border:1.5px solid var(--border);border-radius:999px;background:#fff}
+.sa-tb-av{width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sa-tb-uname{font-size:12.5px;font-weight:600;line-height:1.2}
+.sa-tb-urole{font-size:10.5px;color:#F06B21;font-weight:500}
+.sa-logout-btn{width:36px;height:36px;border-radius:50%;background:#F06B21;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sa-logout-btn:hover{background:#d05519}
+.sa-logout-btn svg{stroke:#fff;width:16px;height:16px}
+
+/* ── MAIN ─────────────────────────────────────────────── */
+.sa-main{margin-left:var(--sidebar-w);margin-top:var(--topbar-h);min-height:calc(100vh - var(--topbar-h));padding:22px;background:var(--bg)}
+
+/* ── IMPERSONATION BANNER ─────────────────────────────── */
+.sa-impersonate-bar{position:fixed;top:0;left:0;right:0;background:#f59e0b;color:#fff;text-align:center;padding:6px;font-size:13px;font-weight:500;z-index:300}
+.sa-impersonate-bar a{color:#fff;text-decoration:underline;margin-left:8px;font-weight:700}
+.has-impersonate-bar .sa-sidebar{top:34px}
+.has-impersonate-bar .sa-topbar{top:34px}
+.has-impersonate-bar .sa-main{margin-top:calc(var(--topbar-h) + 34px)}
+
+/* ── ALERTS ───────────────────────────────────────────── */
+.sa-alert{padding:10px 14px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.sa-alert-success{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.sa-alert-error{background:#fff5f5;border:1px solid #fca5a5;color:#991b1b}
+.sa-alert-info{background:var(--blue3);border:1px solid #bae3f9;color:var(--blue2)}
+.sa-alert-warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+
+/* ── PAGE HEADER ──────────────────────────────────────── */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px}
+.ph h1{font-size:22px;font-weight:700;letter-spacing:-.3px;margin-bottom:3px}
+.ph p{font-size:13px;color:var(--text-3)}
+.ph-actions{display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+
+/* ── BUTTONS ──────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;border:none;transition:all .14s;white-space:nowrap;cursor:pointer;text-decoration:none}
+.btn-primary{background:#F06B21;color:#fff}.btn-primary:hover{background:#d05519}
+.btn-blue{background:#0C84BC;color:#fff}.btn-blue:hover{background:#0a6fa0}
+.btn-ghost{background:#fff;color:var(--text-2);border:1.5px solid var(--border)}.btn-ghost:hover{border-color:var(--text-3);color:var(--text-1)}
+.btn-ghost-red{background:#fff;color:var(--red);border:1.5px solid #fca5a5}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-xs{padding:4px 9px;font-size:11.5px}
+.btn svg{width:14px;height:14px}
+
+/* ── KPI ──────────────────────────────────────────────── */
+.kpi-grid{display:grid;gap:13px;margin-bottom:14px}
+.kpi-3{grid-template-columns:repeat(3,1fr)}
+.kpi-4{grid-template-columns:repeat(4,1fr)}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;box-shadow:var(--sh);position:relative;overflow:hidden}
+.kpi-accent{position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:var(--r-lg) 0 0 var(--r-lg)}
+.kpi-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:11px}
+.kpi-lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)}
+.kpi-ico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.i-blue{background:var(--blue3)}.i-blue svg{stroke:var(--blue)}
+.i-green{background:#f0fdf4}.i-green svg{stroke:var(--green)}
+.i-orange{background:var(--orange-l)}.i-orange svg{stroke:var(--orange)}
+.i-purple{background:#f5f3ff}.i-purple svg{stroke:var(--purple)}
+.i-red{background:#fff5f5}.i-red svg{stroke:var(--red)}
+.kpi-val{font-size:28px;font-weight:700;line-height:1;margin-bottom:4px;letter-spacing:-.5px}
+.kpi-ctx{font-size:12px;color:var(--text-3)}
+.kpi-trend{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:600;padding:2px 6px;border-radius:999px;margin-top:3px}
+.trend-up{background:#f0fdf4;color:var(--green)}.trend-dn{background:#fff5f5;color:var(--red)}
+
+/* ── CARDS ────────────────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 22px;box-shadow:var(--sh);margin-bottom:14px}
+.card-title{font-size:14px;font-weight:600;margin-bottom:3px}
+.card-sub{font-size:12px;color:var(--text-3);margin-bottom:14px}
+.acc-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;box-shadow:var(--sh);margin-bottom:14px}
+.acc-title{font-size:14px;font-weight:600;margin-bottom:16px}
+
+/* ── TABLES ───────────────────────────────────────────── */
+.tc{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--sh);overflow:hidden;margin-bottom:14px}
+.tc-head{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+table{width:100%;border-collapse:collapse}
+th{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap}
+td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#fafcff}
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.srch-wrap{display:flex;align-items:center;gap:7px;background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:6px 11px;min-width:200px}
+.srch-wrap svg{width:13px;height:13px;flex-shrink:0;stroke:var(--text-3)}
+.srch-inp{border:none;outline:none;font-size:13px;width:100%;background:transparent}
+.sel{border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;font-size:13px;background:#fff;outline:none;color:var(--text-1);cursor:pointer}
+
+/* ── BADGES ───────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.b-green{background:#f0fdf4;color:#166534}.b-red{background:#fff5f5;color:#991b1b}
+.b-blue{background:var(--blue3);color:var(--blue2)}.b-orange{background:var(--orange-l);color:#c2410c}
+.b-amber{background:#fffbeb;color:#92400e}.b-gray{background:#f1f5f9;color:#475569}
+.b-purple{background:#f5f3ff;color:#6d28d9}
+.bdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* ── TABS ─────────────────────────────────────────────── */
+.tab-bar{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:18px;overflow-x:auto}
+.tab-btn{display:flex;align-items:center;gap:6px;padding:10px 16px;font-size:13px;font-weight:500;color:var(--text-2);border:none;background:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .13s;margin-bottom:-1px}
+.tab-btn:hover{color:var(--text-1)}
+.tab-btn.active{color:#F06B21;border-bottom-color:#F06B21}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* ── MODALS ───────────────────────────────────────────── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,37,64,.5);z-index:500;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:16px;padding:28px 28px 22px;max-width:96vw;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:92vh;overflow-y:auto;position:relative;width:100%}
+.modal-title{font-size:17px;font-weight:700;margin-bottom:4px}
+.modal-sub{font-size:13px;color:var(--text-3);margin-bottom:18px}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--bg);border:none;border-radius:8px;width:30px;height:30px;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--text-2);cursor:pointer;line-height:1}
+.mf-field{margin-bottom:13px}
+.mf-label{font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:5px;display:block}
+.mf-inp{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;transition:border .14s;background:#fff}
+.mf-inp:focus{border-color:var(--blue)}
+.mf-foot{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+
+/* ── FORMS ────────────────────────────────────────────── */
+.f-group{margin-bottom:14px}
+.f-label{font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:5px;display:block}
+.f-inp{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;transition:border .14s;background:#fff;color:var(--text-1)}
+.f-inp:focus{border-color:var(--blue)}
+.f-sel{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;background:#fff;cursor:pointer;color:var(--text-1)}
+.f-sel:focus{border-color:var(--blue)}
+.f-textarea{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;resize:vertical;min-height:90px;background:#fff;color:var(--text-1)}
+.f-textarea:focus{border-color:var(--blue)}
+
+/* ── DOT MENU ─────────────────────────────────────────── */
+.dot-menu{background:none;border:none;font-size:18px;color:var(--text-3);padding:3px 7px;border-radius:6px;line-height:1;cursor:pointer}
+.dot-menu:hover{background:var(--bg);color:var(--text-1)}
+.dm-wrap{position:relative;display:inline-block}
+.dm-popup{display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.12);z-index:999;min-width:190px;padding:5px}
+.dm-popup.open{display:block}
+.dm-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;font-size:13px;cursor:pointer;color:var(--text-1);text-decoration:none}
+.dm-item:hover{background:var(--bg)}
+.dm-item svg{width:14px;height:14px;flex-shrink:0;stroke:var(--text-3);stroke-width:2}
+.dm-div{height:1px;background:var(--border);margin:4px 8px}
+.dm-hi{color:var(--blue);font-weight:600}.dm-hi svg{stroke:var(--blue)}
+.dm-danger{color:var(--red)}.dm-danger svg{stroke:var(--red)}
+
+/* ── FIRM AVATAR ──────────────────────────────────────── */
+.firm-av{width:36px;height:36px;border-radius:9px;background:var(--blue);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── ACTIVITY ─────────────────────────────────────────── */
+.act-row{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+.act-row:last-child{border-bottom:none}
+.act-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.act-txt{font-size:13px;flex:1;line-height:1.4}
+.act-time{font-size:11.5px;color:var(--text-3);flex-shrink:0}
+
+/* ── INFO BANNER ──────────────────────────────────────── */
+.info-banner{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;background:var(--blue3);border:1px solid #bae3f9;border-radius:9px;margin-bottom:14px}
+.info-banner svg{stroke:var(--blue);width:15px;height:15px;flex-shrink:0;margin-top:1px}
+.info-banner-txt{font-size:12.5px;color:var(--blue2);line-height:1.5}
+
+/* ── TOAST ────────────────────────────────────────────── */
+.toast{position:fixed;bottom:22px;right:22px;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:8px;box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:2000;white-space:nowrap;transform:translateY(80px);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.toast.show{transform:translateY(0)}
+.toast-success{background:#0a2540;color:#fff}
+.toast-error{background:#ef4444;color:#fff}
+
+/* ── FIRM DETAIL HEADER ───────────────────────────────── */
+.firm-detail-header{background:linear-gradient(135deg,#0a2540 0%,var(--blue) 100%);border-radius:var(--r-lg);padding:24px 28px;margin-bottom:16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.firm-detail-av{width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.15);color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid rgba(255,255,255,.2)}
+.stat-chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 16px;text-align:center}
+.stat-chip-val{font-size:20px;font-weight:700;color:#fff}
+.stat-chip-lbl{font-size:11px;color:rgba(255,255,255,.65);margin-top:2px}
+
+/* ── CHARTS ───────────────────────────────────────────── */
+.charts-row{display:grid;gap:14px;margin-bottom:14px}
+.charts-2col{grid-template-columns:1.6fr 1fr}
     </style>
     @stack('styles')
 </head>
-<body class="bg-slate-100">
-<div class="flex h-screen overflow-hidden">
+<body>
 
-    {{-- Sidebar --}}
-    <aside class="sa-sidebar w-60 flex-shrink-0 flex flex-col text-white">
-        <div class="px-5 py-5 border-b border-white/10">
-            <p class="text-xs text-white/40 uppercase tracking-widest mb-1">SuperAdmin</p>
-            <p class="font-bold text-lg">{{ config('app.name') }}</p>
+{{-- Impersonation Banner --}}
+@if(session('impersonating_company'))
+<div class="sa-impersonate-bar">
+    ⚠️ Viewing as <strong>{{ session('impersonating_company_name', 'Tenant') }}</strong>.
+    <a href="{{ route('superadmin.stop_impersonation') }}">Stop &amp; Return ↩</a>
+</div>
+<script>document.documentElement.classList.add('has-impersonate-bar')</script>
+@endif
+
+{{-- Sidebar --}}
+<aside class="sa-sidebar">
+    <div class="sa-logo-area">
+        <span class="sa-logo-text">{{ config('app.name', 'CFO Insights') }}</span>
+        <span class="sa-badge">SuperAdmin Console</span>
+    </div>
+
+    <nav class="sa-nav">
+        <a href="{{ route('superadmin.dashboard') }}"
+           class="sa-nav-item {{ request()->routeIs('superadmin.dashboard') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Dashboard
+        </a>
+
+        <div class="sa-nav-sep"></div>
+        <div class="sa-nav-sec">Management</div>
+
+        <a href="{{ route('superadmin.companies.index') }}"
+           class="sa-nav-item {{ request()->routeIs('superadmin.companies.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Firms
+        </a>
+        <a href="{{ route('superadmin.users.index') }}"
+           class="sa-nav-item {{ request()->routeIs('superadmin.users.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            Users
+        </a>
+        <a href="{{ route('superadmin.roles.index') }}"
+           class="sa-nav-item {{ request()->routeIs('superadmin.roles.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Roles &amp; Permissions
+        </a>
+
+        <div class="sa-nav-sep"></div>
+        <div class="sa-nav-sec">Billing</div>
+
+        <a href="{{ route('superadmin.packages.index') }}"
+           class="sa-nav-item {{ request()->routeIs('superadmin.packages.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Plan Management
+        </a>
+        <a href="{{ route('superadmin.finance') }}"
+           class="sa-nav-item {{ request()->routeIs('superadmin.finance*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+            Finance
+        </a>
+        <a href="{{ route('superadmin.payment_settings') }}"
+           class="sa-nav-item {{ request()->routeIs('superadmin.payment_settings*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+            Payment Gateway
+        </a>
+
+        <div class="sa-nav-sep"></div>
+        <div class="sa-nav-sec">Content</div>
+
+        <a href="{{ route('superadmin.email-templates.index') }}"
+           class="sa-nav-item {{ request()->routeIs('superadmin.email-templates.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Email Templates
+        </a>
+
+        <div class="sa-nav-sep"></div>
+        <div class="sa-nav-sec">System</div>
+
+        <a href="{{ route('superadmin.settings') }}"
+           class="sa-nav-item {{ request()->routeIs('superadmin.settings*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+            Global Settings
+        </a>
+        <a href="{{ route('superadmin.support') }}"
+           class="sa-nav-item {{ request()->routeIs('superadmin.support*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            Support
+        </a>
+        <a href="{{ route('superadmin.account') }}"
+           class="sa-nav-item {{ request()->routeIs('superadmin.account*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            My Account
+        </a>
+        <a href="{{ route('superadmin.activity') }}"
+           class="sa-nav-item {{ request()->routeIs('superadmin.activity*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Activity Log
+        </a>
+    </nav>
+
+    <div class="sa-sidebar-foot">
+        <form method="POST" action="{{ route('logout') }}" style="width:100%">
+            @csrf
+            <button type="submit" class="sa-nav-item" style="width:100%">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Logout
+            </button>
+        </form>
+    </div>
+</aside>
+
+{{-- Topbar --}}
+<div class="sa-topbar">
+    <div class="sa-topbar-bc">
+        CFO Insights Admin
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        <span>@yield('page-title', 'Dashboard')</span>
+    </div>
+    <div class="sa-topbar-right">
+        <div class="sa-tb-notif">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+            <div class="sa-notif-dot"></div>
         </div>
-
-        <nav class="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-            <a href="{{ route('superadmin.dashboard') }}" class="sa-nav-link {{ request()->routeIs('superadmin.dashboard') ? 'active' : '' }}">
-                <span class="material-icons">dashboard</span> Dashboard
-            </a>
-
-            <p class="px-3 pt-3 pb-1 text-xs text-white/30 uppercase tracking-widest">Management</p>
-
-            <a href="{{ route('superadmin.companies.index') }}" class="sa-nav-link {{ request()->routeIs('superadmin.companies.*') ? 'active' : '' }}">
-                <span class="material-icons">business</span> Companies
-            </a>
-            <a href="{{ route('superadmin.users.index') }}" class="sa-nav-link {{ request()->routeIs('superadmin.users.*') ? 'active' : '' }}">
-                <span class="material-icons">people</span> Users
-            </a>
-            <a href="{{ route('superadmin.roles.index') }}" class="sa-nav-link {{ request()->routeIs('superadmin.roles.*') ? 'active' : '' }}">
-                <span class="material-icons">admin_panel_settings</span> Roles & Permissions
-            </a>
-
-            <p class="px-3 pt-3 pb-1 text-xs text-white/30 uppercase tracking-widest">Billing</p>
-
-            <a href="{{ route('superadmin.packages.index') }}" class="sa-nav-link {{ request()->routeIs('superadmin.packages.*') ? 'active' : '' }}">
-                <span class="material-icons">inventory_2</span> Packages
-            </a>
-            <a href="{{ route('superadmin.payment_settings') }}" class="sa-nav-link {{ request()->routeIs('superadmin.payment_settings*') ? 'active' : '' }}">
-                <span class="material-icons">payment</span> Payment Gateway
-            </a>
-
-            <p class="px-3 pt-3 pb-1 text-xs text-white/30 uppercase tracking-widest">Content</p>
-
-            <a href="{{ route('superadmin.email-templates.index') }}" class="sa-nav-link {{ request()->routeIs('superadmin.email-templates.*') ? 'active' : '' }}">
-                <span class="material-icons">email</span> Email Templates
-            </a>
-
-            <p class="px-3 pt-3 pb-1 text-xs text-white/30 uppercase tracking-widest">System</p>
-
-            <a href="{{ route('superadmin.settings') }}" class="sa-nav-link {{ request()->routeIs('superadmin.settings*') ? 'active' : '' }}">
-                <span class="material-icons">settings</span> Global Settings
-            </a>
-        </nav>
-
-        <div class="px-4 py-4 border-t border-white/10">
-            <p class="text-xs text-white/50 truncate">{{ auth()->user()?->email }}</p>
-            <form method="POST" action="{{ route('logout') }}" class="mt-2">
-                @csrf
-                <button class="sa-nav-link w-full text-left">
-                    <span class="material-icons">logout</span> Logout
-                </button>
-            </form>
-        </div>
-    </aside>
-
-    {{-- Main --}}
-    <main class="flex-1 flex flex-col overflow-hidden">
-        <header class="bg-white border-b border-slate-200 px-6 py-3.5 flex items-center justify-between flex-shrink-0">
-            <h1 class="text-base font-semibold text-slate-800">@yield('page-title', 'Dashboard')</h1>
-            <div class="flex items-center gap-2 text-sm text-slate-500">
-                <span class="material-icons text-base">person</span>
-                {{ auth()->user()?->name }}
+        <div class="sa-tb-user">
+            <div class="sa-tb-av">{{ strtoupper(substr(auth()->user()?->name ?? 'SA', 0, 2)) }}</div>
+            <div>
+                <div class="sa-tb-uname">{{ auth()->user()?->name }}</div>
+                <div class="sa-tb-urole">Super Admin</div>
             </div>
-        </header>
-
-        {{-- Alerts --}}
-        <div class="px-6 pt-4 space-y-2">
-            @foreach(['success','error','info'] as $t)
-                @if(session($t))
-                <div class="px-4 py-3 rounded-lg text-sm flex items-center gap-2
-                    {{ $t==='success' ? 'bg-green-50 border border-green-200 text-green-800' :
-                       ($t==='error'  ? 'bg-red-50 border border-red-200 text-red-800'       :
-                                        'bg-blue-50 border border-blue-200 text-blue-800') }}">
-                    <span class="material-icons text-base">{{ $t==='success' ? 'check_circle' : ($t==='error' ? 'error' : 'info') }}</span>
-                    {{ session($t) }}
-                </div>
-                @endif
-            @endforeach
         </div>
-
-        <div class="flex-1 overflow-y-auto p-6">
-            @yield('content')
-        </div>
-    </main>
+        <form method="POST" action="{{ route('logout') }}" style="margin:0">
+            @csrf
+            <button type="submit" class="sa-logout-btn" title="Logout">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18.36 6.64a9 9 0 11-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+            </button>
+        </form>
+    </div>
 </div>
 
-<script src="{{ asset('js/app.js') }}"></script>
-@stack('scripts')
+{{-- Main --}}
+<main class="sa-main">
+    {{-- Flash Messages --}}
+    @foreach(['success','error','info','warning'] as $t)
+        @if(session($t))
+        <div class="sa-alert sa-alert-{{ $t }}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                @if($t === 'success')
+                    <polyline points="20 6 9 17 4 12"/>
+                @elseif($t === 'error')
+                    <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                @else
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                @endif
+            </svg>
+            {{ session($t) }}
+        </div>
+        @endif
+    @endforeach
+
+    @yield('content')
+</main>
+
+{{-- Toast container --}}
+<div id="toast" class="toast toast-success"></div>
+
 <script>
 const csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+// Toast
 function showToast(msg, type='success') {
-    const colors = {success:'bg-green-600', error:'bg-red-600', info:'bg-blue-600'};
-    const t = document.createElement('div');
-    t.className = `fixed bottom-4 right-4 z-50 text-white px-4 py-3 rounded-lg shadow-lg text-sm font-medium flex items-center gap-2 ${colors[type]||colors.success}`;
-    t.innerHTML = `<span class="material-icons text-lg">${type==='success'?'check_circle':'error'}</span>${msg}`;
-    document.body.appendChild(t);
-    setTimeout(()=>t.remove(), 4000);
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast toast-' + type + ' show';
+    setTimeout(() => t.classList.remove('show'), 3500);
 }
+
+// Dot menus
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-menu]');
+    if (btn) {
+        e.stopPropagation();
+        const id = btn.dataset.menu;
+        document.querySelectorAll('.dm-popup.open').forEach(p => {
+            if (p.id !== id) p.classList.remove('open');
+        });
+        document.getElementById(id)?.classList.toggle('open');
+        return;
+    }
+    document.querySelectorAll('.dm-popup.open').forEach(p => p.classList.remove('open'));
+});
+
+// Tabs
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const bar = btn.closest('.tab-bar');
+            const container = bar?.parentElement;
+            bar?.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            container?.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            container?.querySelector('#' + btn.dataset.tab)?.classList.add('active');
+        });
+    });
+
+    // Auto-dismiss flash alerts
+    setTimeout(() => {
+        document.querySelectorAll('.sa-alert').forEach(el => {
+            el.style.transition = 'opacity .4s';
+            el.style.opacity = '0';
+            setTimeout(() => el.remove(), 400);
+        });
+    }, 4500);
+});
+
 async function apiCall(url, method='POST', body={}) {
-    const r = await fetch(url, {method, headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrf,'Accept':'application/json'}, body:JSON.stringify(body)});
+    const r = await fetch(url, {
+        method,
+        headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrf,'Accept':'application/json'},
+        body: method !== 'GET' ? JSON.stringify(body) : undefined
+    });
     return r.json();
 }
 </script>
+@stack('scripts')
 </body>
 </html>

@@ -1,117 +1,182 @@
 @extends('layouts.superadmin.app')
-@section('title', 'Companies')
-@section('page-title', 'Companies')
+@section('title', 'Firms')
+@section('page-title', 'Firms')
 
 @section('content')
 
-{{-- Search / Filters --}}
-<form method="GET" action="{{ route('superadmin.companies.index') }}" class="flex flex-wrap gap-3 mb-5">
-    <div class="relative flex-1 min-w-56">
-        <span class="material-icons absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-        <input name="search" value="{{ request('search') }}" placeholder="Search companies…"
-               class="form-control pl-10 py-2.5">
+{{-- Page Header --}}
+<div class="ph">
+    <div>
+        <h1 style="font-size:1.35rem;font-weight:700;color:#0f172a;margin:0 0 2px;">Firms</h1>
+        <p style="font-size:.85rem;color:#64748b;margin:0;">All registered companies on the platform</p>
     </div>
-    <select name="status" class="form-control w-44 py-2.5">
-        <option value="">All Statuses</option>
-        <option value="active"    {{ request('status')==='active'    ? 'selected' : '' }}>Active</option>
-        <option value="inactive"  {{ request('status')==='inactive'  ? 'selected' : '' }}>Inactive</option>
-        <option value="suspended" {{ request('status')==='suspended' ? 'selected' : '' }}>Suspended</option>
-    </select>
-    <button type="submit" class="btn btn-primary">Filter</button>
-    @if(request()->hasAny(['search','status']))
-        <a href="{{ route('superadmin.companies.index') }}" class="btn btn-secondary">Clear</a>
-    @endif
-</form>
+    <a href="{{ route('superadmin.companies.create') }}" class="btn btn-primary">+ Add Firm</a>
+</div>
 
-<div class="card">
-    <div class="card-header">
-        <h3>All Companies <span class="text-slate-400 font-normal">({{ $companies->total() }})</span></h3>
+{{-- Table Card --}}
+<div class="card" style="margin-top:1.25rem;">
+
+    {{-- Toolbar --}}
+    <div class="tc-head">
+        <form method="GET" action="{{ route('superadmin.companies.index') }}" class="toolbar" style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;flex:1;">
+            <div class="srch-wrap">
+                <svg class="srch-ico" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input class="srch-inp" type="text" name="search" value="{{ request('search') }}" placeholder="Search firms…">
+            </div>
+            <select class="sel" name="status">
+                <option value="">All Statuses</option>
+                <option value="active"    {{ request('status')==='active'    ? 'selected' : '' }}>Active</option>
+                <option value="suspended" {{ request('status')==='suspended' ? 'selected' : '' }}>Suspended</option>
+                <option value="trial"     {{ request('status')==='trial'     ? 'selected' : '' }}>Trial</option>
+                <option value="inactive"  {{ request('status')==='inactive'  ? 'selected' : '' }}>Inactive</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+            @if(request()->hasAny(['search','status']))
+                <a href="{{ route('superadmin.companies.index') }}" class="btn btn-ghost btn-sm">Clear</a>
+            @endif
+        </form>
+        <button class="btn btn-ghost btn-sm" type="button">Export</button>
     </div>
-    <div class="overflow-x-auto">
-        <table class="data-table">
+
+    {{-- Table --}}
+    <div style="overflow-x:auto;">
+        <table class="tc">
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>Company</th>
-                    <th>Subdomain</th>
-                    <th>Package</th>
-                    <th>Subscription</th>
+                    <th>Firm</th>
+                    <th>Plan</th>
+                    <th>MRR</th>
+                    <th>Users</th>
+                    <th>Health</th>
                     <th>Status</th>
-                    <th>Created</th>
-                    <th>Actions</th>
+                    <th>Joined</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($companies as $company)
+                @php
+                    $statusBadge = match($company->status) {
+                        'active'    => 'b-green',
+                        'suspended' => 'b-red',
+                        'trial'     => 'b-amber',
+                        default     => 'b-gray',
+                    };
+                    $healthDot = match($company->status) {
+                        'active'    => 'b-green',
+                        'suspended' => 'b-red',
+                        'trial'     => 'b-amber',
+                        default     => 'b-gray',
+                    };
+                    $initials = strtoupper(substr($company->company_name, 0, 2));
+                @endphp
                 <tr>
-                    <td class="text-slate-400">{{ $company->id }}</td>
+                    {{-- Firm --}}
                     <td>
-                        <p class="font-semibold text-slate-800">{{ $company->company_name }}</p>
-                        <p class="text-xs text-slate-400">{{ $company->company_email }}</p>
+                        <div style="display:flex;align-items:center;gap:.75rem;">
+                            <div class="firm-av">{{ $initials }}</div>
+                            <div>
+                                <div style="font-weight:600;color:#0f172a;font-size:.9rem;">{{ $company->company_name }}</div>
+                                <div style="font-size:.775rem;color:#94a3b8;">{{ $company->company_email }}</div>
+                            </div>
+                        </div>
                     </td>
-                    <td>
-                        <a href="{{ tenant_url($company->subdomain) }}" target="_blank"
-                           class="text-blue-600 hover:underline font-mono text-xs">
-                            {{ $company->subdomain }}.{{ config('tenancy.root_domain') }}
-                        </a>
+                    {{-- Plan --}}
+                    <td style="color:#475569;font-size:.875rem;">
+                        {{ $company->package?->name ?? '—' }}
                     </td>
-                    <td>
-                        @if($company->package?->name)
-                            {{ $company->package->name }}
-                        @else
-                            <span class="text-slate-300">—</span>
-                        @endif
+                    {{-- MRR --}}
+                    <td style="color:#475569;font-size:.875rem;">$0</td>
+                    {{-- Users --}}
+                    <td style="color:#475569;font-size:.875rem;">
+                        {{ $company->users()->count() }}
                     </td>
+                    {{-- Health dot --}}
                     <td>
-                        @if($company->subscription)
-                            <span class="badge {{ $company->subscription->status === 'active' ? 'badge-green' :
-                                ($company->subscription->status === 'trialing' ? 'badge-yellow' : 'badge-red') }}">
-                                {{ ucfirst($company->subscription->status) }}
-                            </span>
-                        @else
-                            <span class="badge badge-gray">None</span>
-                        @endif
+                        <span class="bdot {{ $healthDot }}"></span>
                     </td>
+                    {{-- Status badge --}}
                     <td>
-                        <span class="badge {{ $company->status === 'active' ? 'badge-green' :
-                            ($company->status === 'suspended' ? 'badge-red' : 'badge-yellow') }}">
-                            {{ ucfirst($company->status) }}
-                        </span>
+                        <span class="badge {{ $statusBadge }}">{{ ucfirst($company->status) }}</span>
                     </td>
-                    <td class="text-slate-400 text-xs">{{ $company->created_at->format('M d, Y') }}</td>
+                    {{-- Joined --}}
+                    <td style="color:#94a3b8;font-size:.8rem;">
+                        {{ $company->created_at->format('M d, Y') }}
+                    </td>
+                    {{-- Actions dot menu --}}
                     <td>
-                        <div class="flex items-center gap-1.5">
-                            <a href="{{ route('superadmin.companies.show', $company) }}"
-                               class="btn btn-secondary text-xs py-1 px-2">
-                                <span class="material-icons text-sm">visibility</span>
-                            </a>
-                            <a href="{{ route('superadmin.companies.edit', $company) }}"
-                               class="btn btn-secondary text-xs py-1 px-2">
-                                <span class="material-icons text-sm">edit</span>
-                            </a>
-                            <form method="POST" action="{{ route('superadmin.companies.impersonate', $company) }}">
-                                @csrf
-                                <button class="btn btn-primary text-xs py-1 px-2" title="Login as admin">
-                                    <span class="material-icons text-sm">login</span>
-                                </button>
-                            </form>
+                        <div class="dm-wrap">
+                            <button class="dot-menu" type="button" onclick="toggleMenu(event, 'menu-{{ $company->id }}')">
+                                <span></span><span></span><span></span>
+                            </button>
+                            <div class="dm-popup" id="menu-{{ $company->id }}">
+                                <a class="dm-item dm-hi" href="{{ route('superadmin.companies.show', $company) }}">
+                                    View Firm
+                                </a>
+                                <a class="dm-item" href="{{ route('superadmin.companies.edit', $company) }}">
+                                    Edit
+                                </a>
+                                <div class="dm-div"></div>
+                                <form method="POST" action="{{ route('superadmin.companies.impersonate', $company) }}">
+                                    @csrf
+                                    <button class="dm-item" type="submit">Login As</button>
+                                </form>
+                                @if($company->status === 'suspended')
+                                <form method="POST" action="{{ route('superadmin.companies.activate', $company) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button class="dm-item" type="submit">Activate</button>
+                                </form>
+                                @else
+                                <form method="POST" action="{{ route('superadmin.companies.suspend', $company) }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button class="dm-item" type="submit">Suspend</button>
+                                </form>
+                                @endif
+                                <div class="dm-div"></div>
+                                <form method="POST" action="{{ route('superadmin.companies.destroy', $company) }}"
+                                      onsubmit="return confirm('Delete {{ addslashes($company->company_name) }}? This cannot be undone.')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="dm-item dm-danger" type="submit">Delete</button>
+                                </form>
+                            </div>
                         </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" class="text-center py-12 text-slate-400">
-                        <span class="material-icons text-4xl block mb-2">business_center</span>
-                        No companies found.
+                    <td colspan="8" style="text-align:center;padding:3rem 1rem;color:#94a3b8;">
+                        <div style="font-size:2rem;margin-bottom:.5rem;">🏢</div>
+                        No firms found.
                     </td>
                 </tr>
                 @endforelse
             </tbody>
         </table>
     </div>
-    <div class="px-5 py-4 border-t border-slate-100">
+
+    {{-- Pagination --}}
+    @if($companies->hasPages())
+    <div style="padding:.85rem 1.25rem;border-top:1px solid var(--border);">
         {{ $companies->withQueryString()->links('components.pagination') }}
     </div>
+    @endif
+
 </div>
+
+<script>
+function toggleMenu(e, id) {
+    e.stopPropagation();
+    document.querySelectorAll('.dm-popup').forEach(p => {
+        if (p.id !== id) p.classList.remove('open');
+    });
+    document.getElementById(id).classList.toggle('open');
+}
+document.addEventListener('click', () => {
+    document.querySelectorAll('.dm-popup').forEach(p => p.classList.remove('open'));
+});
+</script>
 
 @endsection

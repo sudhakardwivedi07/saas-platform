@@ -1,18 +1,25 @@
 <?php
 
+use App\Http\Controllers\AccountController;
+use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\ClientCompanyController;
+use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ClientPackageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EmailTemplateController;
+use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QuickBooksController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SmtpSettingController;
 use App\Http\Controllers\SmsSettingController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\SupportController;
 use App\Http\Controllers\TenantPaymentGatewayController;
+use App\Http\Controllers\TenantUserController;
 use Illuminate\Support\Facades\Route;
 
 // ── Public (guest) ─────────────────────────────────────────────────────────────
@@ -105,8 +112,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/cancel',        [SubscriptionController::class, 'cancel'])->name('cancel');
     });
 
-    // Settings
+    // Settings — unified tabbed page + individual sub-routes
     Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/',              [SettingsController::class, 'index'])->name('index');
         Route::get('/branding',      [BrandingController::class, 'index'])->name('branding');
         Route::post('/branding',     [BrandingController::class, 'update'])->name('branding.update');
         Route::get('/email',         [SmtpSettingController::class, 'index'])->name('email');
@@ -116,4 +124,36 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/payment-gateway',  [TenantPaymentGatewayController::class, 'index'])->name('payment-gateway');
         Route::post('/payment-gateway', [TenantPaymentGatewayController::class, 'update'])->name('payment-gateway.update');
     });
+
+    // Clients
+    Route::prefix('clients')->name('clients.')->group(function () {
+        Route::get('/',        [ClientController::class, 'index'])->name('index');
+        Route::get('/{id}',    [ClientController::class, 'show'])->name('show');
+        Route::post('/',       [ClientController::class, 'store'])->name('store');
+        Route::post('/{id}',   [ClientController::class, 'update'])->name('update');
+        Route::delete('/{id}', [ClientController::class, 'destroy'])->name('destroy');
+        // Insights sub-pages
+        Route::get('/{id}/insights',        [ClientController::class, 'insights'])->name('insights');
+        Route::get('/{clientId}/insights/{insightId}', [ClientController::class, 'insightDetail'])->name('insight.detail');
+    });
+
+    // Finance
+    Route::get('finance', [FinanceController::class, 'index'])->name('finance.index');
+
+    // Support
+    Route::get('support',  [SupportController::class, 'index'])->name('support.index');
+    Route::post('support', [SupportController::class, 'store'])->name('support.store');
+
+    // Users (tenant-scoped)
+    Route::get('users',  [TenantUserController::class, 'index'])->name('users.index');
+    Route::post('users', [TenantUserController::class, 'store'])->name('users.store');
+    Route::delete('users/{id}', [TenantUserController::class, 'destroy'])->name('users.destroy');
+
+    // My Account
+    Route::get('my-account',          [AccountController::class, 'index'])->name('account.index');
+    Route::post('my-account/profile',  [AccountController::class, 'updateProfile'])->name('account.profile');
+    Route::post('my-account/password', [AccountController::class, 'updatePassword'])->name('account.password');
+
+    // Activity Log
+    Route::get('activity', [ActivityController::class, 'index'])->name('activity.index');
 });

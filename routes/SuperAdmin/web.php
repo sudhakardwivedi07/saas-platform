@@ -1,13 +1,17 @@
 <?php
 
+use App\Http\Controllers\SuperAdmin\AccountController;
+use App\Http\Controllers\SuperAdmin\ActivityController;
 use App\Http\Controllers\SuperAdmin\CompanyController;
 use App\Http\Controllers\SuperAdmin\DashboardController;
 use App\Http\Controllers\SuperAdmin\EmailTemplateController;
+use App\Http\Controllers\SuperAdmin\FinanceController;
 use App\Http\Controllers\SuperAdmin\GlobalSettingController;
 use App\Http\Controllers\SuperAdmin\PackageController;
 use App\Http\Controllers\SuperAdmin\PaymentGatewayController;
 use App\Http\Controllers\SuperAdmin\RoleController;
 use App\Http\Controllers\SuperAdmin\StripeWebhookController;
+use App\Http\Controllers\SuperAdmin\SupportController;
 use App\Http\Controllers\SuperAdmin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,6 +51,19 @@ Route::middleware(['auth', 'super-admin'])
         // Global Settings
         Route::get('settings',  [GlobalSettingController::class, 'index'])->name('settings');
         Route::post('settings', [GlobalSettingController::class, 'update'])->name('settings.update');
+
+        // Finance
+        Route::get('finance', [FinanceController::class, 'index'])->name('finance');
+
+        // Support
+        Route::get('support', [SupportController::class, 'index'])->name('support');
+
+        // My Account
+        Route::get('my-account',  [AccountController::class, 'index'])->name('account');
+        Route::post('my-account', [AccountController::class, 'update'])->name('account.update');
+
+        // Activity Log
+        Route::get('activity', [ActivityController::class, 'index'])->name('activity');
     });
 
 // ── Stop Impersonation (auth only — accessible while impersonating) ───────────

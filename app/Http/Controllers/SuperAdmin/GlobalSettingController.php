@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Helper\Reply;
 use App\Http\Controllers\AccountBaseController;
 use App\Models\GlobalSetting;
+use App\Models\SuperAdmin\GlobalPaymentGatewayCredentials;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -19,7 +20,8 @@ class GlobalSettingController extends AccountBaseController
 
     public function index()
     {
-        $this->setting = GlobalSetting::first();
+        $this->setting     = GlobalSetting::first();
+        $this->credentials = GlobalPaymentGatewayCredentials::first();
         return view('super-admin.settings.index', $this->data);
     }
 

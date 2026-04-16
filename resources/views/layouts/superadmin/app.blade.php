@@ -244,27 +244,12 @@ tbody tr:hover td{background:#fafcff}
         </a>
 
         <div class="sa-nav-sep"></div>
-        <div class="sa-nav-sec">Management</div>
 
         <a href="{{ route('superadmin.companies.index') }}"
            class="sa-nav-item {{ request()->routeIs('superadmin.companies.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             Firms
         </a>
-        <a href="{{ route('superadmin.users.index') }}"
-           class="sa-nav-item {{ request()->routeIs('superadmin.users.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-            Users
-        </a>
-        <a href="{{ route('superadmin.roles.index') }}"
-           class="sa-nav-item {{ request()->routeIs('superadmin.roles.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            Roles &amp; Permissions
-        </a>
-
-        <div class="sa-nav-sep"></div>
-        <div class="sa-nav-sec">Billing</div>
-
         <a href="{{ route('superadmin.packages.index') }}"
            class="sa-nav-item {{ request()->routeIs('superadmin.packages.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
@@ -275,28 +260,18 @@ tbody tr:hover td{background:#fafcff}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
             Finance
         </a>
-        <a href="{{ route('superadmin.payment_settings') }}"
-           class="sa-nav-item {{ request()->routeIs('superadmin.payment_settings*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
-            Payment Gateway
-        </a>
-
-        <div class="sa-nav-sep"></div>
-        <div class="sa-nav-sec">Content</div>
-
-        <a href="{{ route('superadmin.email-templates.index') }}"
-           class="sa-nav-item {{ request()->routeIs('superadmin.email-templates.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            Email Templates
-        </a>
-
-        <div class="sa-nav-sep"></div>
-        <div class="sa-nav-sec">System</div>
-
         <a href="{{ route('superadmin.settings') }}"
            class="sa-nav-item {{ request()->routeIs('superadmin.settings*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-            Global Settings
+            Settings
+        </a>
+
+        <div class="sa-nav-sep"></div>
+
+        <a href="{{ route('superadmin.users.index') }}"
+           class="sa-nav-item {{ request()->routeIs('superadmin.users.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            Users
         </a>
         <a href="{{ route('superadmin.support') }}"
            class="sa-nav-item {{ request()->routeIs('superadmin.support*') ? 'active' : '' }}">
@@ -308,22 +283,9 @@ tbody tr:hover td{background:#fafcff}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             My Account
         </a>
-        <a href="{{ route('superadmin.activity') }}"
-           class="sa-nav-item {{ request()->routeIs('superadmin.activity*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            Activity Log
-        </a>
     </nav>
 
-    <div class="sa-sidebar-foot">
-        <form method="POST" action="{{ route('logout') }}" style="width:100%">
-            @csrf
-            <button type="submit" class="sa-nav-item" style="width:100%">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Logout
-            </button>
-        </form>
-    </div>
+    <div class="sa-sidebar-foot"></div>
 </aside>
 
 {{-- Topbar --}}

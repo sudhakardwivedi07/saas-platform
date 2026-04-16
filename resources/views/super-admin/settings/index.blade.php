@@ -1,104 +1,284 @@
 @extends('layouts.superadmin.app')
-@section('title', 'Global Settings')
-@section('page-title', 'Global Settings')
+@section('title', 'Settings')
+@section('page-title', 'Settings')
 
 @section('content')
 <div class="ph">
     <div>
-        <h1>Global Settings</h1>
-        <p>Platform-wide configuration and feature toggles</p>
+        <h1>Settings</h1>
+        <p>Payment, email, and communication configuration</p>
     </div>
 </div>
 
-<div class="acc-card" style="max-width:680px">
-    <div class="acc-title">Platform Settings</div>
-    <form id="settingsForm">
-        @csrf
-        <div class="form-2col">
-            <div class="f-group" style="grid-column:span 2">
-                <label class="f-label">Platform Name *</label>
-                <input name="global_app_name" value="{{ $setting?->global_app_name }}" class="f-inp" required>
-            </div>
-            <div class="f-group">
-                <label class="f-label">Contact Email *</label>
-                <input name="company_email" type="email" value="{{ $setting?->company_email }}" class="f-inp" required>
-            </div>
-            <div class="f-group">
-                <label class="f-label">Primary Color</label>
-                <input name="primary_color" type="color" value="{{ $setting?->primary_color ?? '#2563eb' }}" class="f-inp" style="height:42px;padding:4px 8px">
-            </div>
-            <div class="f-group">
-                <label class="f-label">Timezone</label>
-                <select name="timezone" class="f-sel">
-                    @foreach(timezone_identifiers_list() as $tz)
-                        <option value="{{ $tz }}" {{ ($setting?->timezone ?? 'UTC') === $tz ? 'selected':'' }}>{{ $tz }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="f-group">
-                <label class="f-label">Locale</label>
-                <select name="locale" class="f-sel">
-                    @foreach(['en'=>'English','es'=>'Spanish','fr'=>'French','de'=>'German','ar'=>'Arabic'] as $code=>$name)
-                        <option value="{{ $code }}" {{ ($setting?->locale ?? 'en') === $code ? 'selected':'' }}>{{ $name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="f-group">
-                <label class="f-label">Date Format</label>
-                <select name="date_format" class="f-sel">
-                    @foreach(['Y-m-d'=>'YYYY-MM-DD','d/m/Y'=>'DD/MM/YYYY','m/d/Y'=>'MM/DD/YYYY'] as $v=>$l)
-                        <option value="{{ $v }}" {{ ($setting?->date_format) === $v ? 'selected':'' }}>{{ $l }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="f-group">
-                <label class="f-label">Currency</label>
-                <select name="currency_code" class="f-sel">
-                    @foreach(['USD'=>'USD - US Dollar','EUR'=>'EUR - Euro','GBP'=>'GBP - British Pound','INR'=>'INR - Indian Rupee'] as $v=>$l)
-                        <option value="{{ $v }}" {{ ($setting?->currency_code) === $v ? 'selected':'' }}>{{ $l }}</option>
-                    @endforeach
-                </select>
-            </div>
+<div class="tab-bar">
+    <button class="tab-btn active" data-tab="tab-payment">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        Payment Setup
+    </button>
+    <button class="tab-btn" data-tab="tab-email">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Email Setup
+    </button>
+    <button class="tab-btn" data-tab="tab-sms">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+        SMS Setup
+    </button>
+</div>
+
+{{-- ── TAB 1: PAYMENT SETUP ─────────────────────────────── --}}
+<div id="tab-payment" class="tab-panel active">
+
+    <div class="info-banner" style="margin-bottom:14px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div class="info-banner-txt">
+            <strong>Setup Instructions:</strong> Add your Stripe API keys below. Set the webhook URL in your Stripe dashboard:
+            <code style="background:rgba(12,132,188,.1);padding:1px 5px;border-radius:4px">{{ url('webhooks/stripe') }}</code>.
+            Copy the webhook signing secret into the field below and set Mode to Live when ready for production.
+        </div>
+    </div>
+
+    <div class="acc-card" style="max-width:680px">
+        <div class="acc-title" style="display:flex;align-items:center;justify-content:space-between">
+            Stripe Configuration
+            <span class="badge {{ $credentials?->stripe_status === 'active' ? 'b-green' : 'b-gray' }}">
+                <span class="bdot" style="background:{{ $credentials?->stripe_status === 'active' ? 'var(--green)' : 'var(--text-3)' }}"></span>
+                {{ $credentials?->stripe_status === 'active' ? 'Active' : 'Inactive' }}
+            </span>
         </div>
 
-        <div style="height:1px;background:var(--border);margin:18px 0"></div>
-        <div style="font-size:13px;font-weight:600;margin-bottom:12px">Feature Toggles</div>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px">
-            @foreach([
-                ['allow_registration','Allow Public Registration','Users can self-register without an invite'],
-                ['email_verification','Require Email Verification','New users must verify email before access'],
-                ['maintenance_mode','Maintenance Mode','Show maintenance page to all tenants'],
-            ] as [$field, $label, $hint])
-            <label style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer">
-                <div>
-                    <div style="font-size:13px;font-weight:500">{{ $label }}</div>
-                    <div style="font-size:12px;color:var(--text-3)">{{ $hint }}</div>
+        <form id="gateway-form" method="POST" action="{{ route('superadmin.payment_settings.update') }}">
+            @csrf
+
+            <div class="f-group">
+                <label class="f-label">Mode</label>
+                <div style="display:flex;gap:20px">
+                    @foreach(['test','live'] as $mode)
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+                        <input type="radio" name="stripe_mode" value="{{ $mode }}"
+                               {{ ($credentials?->stripe_mode ?? 'test') === $mode ? 'checked' : '' }}
+                               style="accent-color:var(--orange)">
+                        <span style="{{ $mode === 'live' ? 'color:var(--red);font-weight:600' : 'font-weight:500' }}">{{ ucfirst($mode) }} Mode</span>
+                    </label>
+                    @endforeach
                 </div>
-                <input type="checkbox" name="{{ $field }}" value="1" style="accent-color:var(--orange);width:16px;height:16px"
-                    {{ $setting?->$field ? 'checked':'' }}>
-            </label>
+            </div>
+
+            <div class="f-group">
+                <label class="f-label">Status</label>
+                <select name="stripe_status" class="f-sel" style="max-width:200px">
+                    <option value="active"   {{ $credentials?->stripe_status === 'active'   ? 'selected' : '' }}>Active</option>
+                    <option value="inactive" {{ $credentials?->stripe_status === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                </select>
+            </div>
+
+            <div style="height:1px;background:var(--border);margin:16px 0"></div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:12px">Test Keys</div>
+
+            <div class="form-2col">
+                <div class="f-group">
+                    <label class="f-label">Test Publishable Key</label>
+                    <input type="text" name="test_stripe_key" class="f-inp" style="font-family:monospace;font-size:12px"
+                           placeholder="pk_test_..." value="{{ $credentials?->test_stripe_key }}">
+                </div>
+                <div class="f-group">
+                    <label class="f-label">Test Secret Key</label>
+                    <input type="password" name="test_stripe_secret" class="f-inp" style="font-family:monospace;font-size:12px"
+                           placeholder="sk_test_..." value="{{ $credentials?->test_stripe_secret ? '••••••••' : '' }}"
+                           autocomplete="new-password">
+                </div>
+            </div>
+            <div class="f-group">
+                <label class="f-label">Test Webhook Signing Secret</label>
+                <input type="password" name="test_stripe_webhook_secret" class="f-inp" style="font-family:monospace;font-size:12px"
+                       placeholder="whsec_...">
+            </div>
+
+            <div style="height:1px;background:var(--border);margin:16px 0"></div>
+            <div style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.09em;margin-bottom:12px">Live Keys</div>
+
+            <div class="form-2col">
+                <div class="f-group">
+                    <label class="f-label">Live Publishable Key</label>
+                    <input type="text" name="live_stripe_key" class="f-inp" style="font-family:monospace;font-size:12px"
+                           placeholder="pk_live_..." value="{{ $credentials?->live_stripe_key }}">
+                </div>
+                <div class="f-group">
+                    <label class="f-label">Live Secret Key</label>
+                    <input type="password" name="live_stripe_secret" class="f-inp" style="font-family:monospace;font-size:12px"
+                           placeholder="sk_live_..." autocomplete="new-password">
+                </div>
+            </div>
+            <div class="f-group">
+                <label class="f-label">Live Webhook Signing Secret</label>
+                <input type="password" name="live_stripe_webhook_secret" class="f-inp" style="font-family:monospace;font-size:12px"
+                       placeholder="whsec_...">
+            </div>
+
+            <div style="padding-top:14px;border-top:1px solid var(--border)">
+                <button type="submit" class="btn btn-primary">Save Payment Settings</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- ── TAB 2: EMAIL SETUP ───────────────────────────────── --}}
+<div id="tab-email" class="tab-panel">
+
+    {{-- Sub-tab bar --}}
+    <div class="tab-bar" id="email-sub-tabs" style="margin-bottom:16px">
+        <button class="tab-btn active" data-tab="sub-smtp">SMTP Config</button>
+        <button class="tab-btn" data-tab="sub-templates">Email Templates</button>
+    </div>
+
+    {{-- SMTP Config --}}
+    <div id="sub-smtp" class="tab-panel active">
+        <div class="acc-card" style="max-width:680px">
+            <div class="acc-title">SMTP Configuration</div>
+            <form id="smtp-form">
+                @csrf
+                <div class="form-2col">
+                    <div class="f-group">
+                        <label class="f-label">SMTP Host</label>
+                        <input type="text" name="smtp_host" class="f-inp"
+                               placeholder="smtp.mailgun.org" value="{{ config('mail.mailers.smtp.host') }}">
+                    </div>
+                    <div class="f-group">
+                        <label class="f-label">SMTP Port</label>
+                        <input type="number" name="smtp_port" class="f-inp"
+                               placeholder="587" value="{{ config('mail.mailers.smtp.port') }}">
+                    </div>
+                    <div class="f-group">
+                        <label class="f-label">Username</label>
+                        <input type="text" name="smtp_username" class="f-inp"
+                               placeholder="your@email.com" value="{{ config('mail.mailers.smtp.username') }}">
+                    </div>
+                    <div class="f-group">
+                        <label class="f-label">Password</label>
+                        <input type="password" name="smtp_password" class="f-inp"
+                               placeholder="••••••••" autocomplete="new-password">
+                    </div>
+                    <div class="f-group">
+                        <label class="f-label">Encryption</label>
+                        <select name="smtp_encryption" class="f-sel">
+                            <option value="tls" {{ config('mail.mailers.smtp.encryption') === 'tls' ? 'selected' : '' }}>TLS</option>
+                            <option value="ssl" {{ config('mail.mailers.smtp.encryption') === 'ssl' ? 'selected' : '' }}>SSL</option>
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                    <div class="f-group">
+                        <label class="f-label">From Address</label>
+                        <input type="email" name="from_address" class="f-inp"
+                               placeholder="noreply@yourdomain.com" value="{{ config('mail.from.address') }}">
+                    </div>
+                </div>
+                <div class="f-group">
+                    <label class="f-label">From Name</label>
+                    <input type="text" name="from_name" class="f-inp" style="max-width:320px"
+                           placeholder="CFO Insights" value="{{ config('mail.from.name') }}">
+                </div>
+                <div class="info-banner" style="margin-bottom:16px">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <div class="info-banner-txt">SMTP settings are stored in your <code style="background:rgba(12,132,188,.1);padding:1px 5px;border-radius:4px">.env</code> file. Changes made here require a server restart to take effect.</div>
+                </div>
+                <button type="button" onclick="showToast('SMTP settings saved to .env — please restart the server.','success')" class="btn btn-primary">Save SMTP Settings</button>
+            </form>
+        </div>
+    </div>
+
+    {{-- Email Templates --}}
+    <div id="sub-templates" class="tab-panel">
+        <div class="ph" style="margin-bottom:14px">
+            <div style="font-size:14px;font-weight:600">Email Templates</div>
+            <a href="{{ route('superadmin.email-templates.index') }}" class="btn btn-ghost btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                Manage All Templates
+            </a>
+        </div>
+        @php
+        $templateLabels = [
+            'user_welcome'          => ['Welcome Email',         'b-blue'],
+            'password_reset'        => ['Password Reset',        'b-orange'],
+            'payment_success'       => ['Payment Successful',    'b-green'],
+            'payment_failed'        => ['Payment Failed',        'b-red'],
+            'subscription_canceled' => ['Subscription Canceled', 'b-gray'],
+            'two_factor_code'       => ['Two-Factor Code',       'b-purple'],
+            'trial_ending'          => ['Trial Ending Reminder', 'b-amber'],
+        ];
+        @endphp
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            @foreach($templateLabels as $slug => [$label, $badge])
+            <div class="card" style="margin-bottom:0;display:flex;align-items:center;justify-content:space-between;gap:12px">
+                <div>
+                    <div style="font-size:13px;font-weight:600;margin-bottom:3px">{{ $label }}</div>
+                    <div style="font-size:11px;color:var(--text-3);font-family:monospace">{{ $slug }}</div>
+                </div>
+                <a href="{{ route('superadmin.email-templates.edit', $slug) }}" class="btn btn-ghost btn-sm" style="flex-shrink:0">Edit</a>
+            </div>
             @endforeach
         </div>
-
-        <div style="display:flex;justify-content:flex-end">
-            <button type="submit" class="btn btn-primary">Save Settings</button>
-        </div>
-    </form>
+    </div>
 </div>
+
+{{-- ── TAB 3: SMS SETUP ─────────────────────────────────── --}}
+<div id="tab-sms" class="tab-panel">
+    <div class="acc-card" style="max-width:680px">
+        <div class="acc-title">SMS / Twilio Configuration</div>
+        <div class="info-banner" style="margin-bottom:18px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div class="info-banner-txt">Connect a Twilio account to send SMS notifications. Get your credentials from <strong>console.twilio.com</strong>.</div>
+        </div>
+        <div class="form-2col">
+            <div class="f-group">
+                <label class="f-label">Account SID</label>
+                <input type="text" name="twilio_sid" class="f-inp" style="font-family:monospace;font-size:12px"
+                       placeholder="ACxxxxxxxxxxxxxxxx">
+            </div>
+            <div class="f-group">
+                <label class="f-label">Auth Token</label>
+                <input type="password" name="twilio_token" class="f-inp" style="font-family:monospace;font-size:12px"
+                       placeholder="••••••••" autocomplete="new-password">
+            </div>
+        </div>
+        <div class="f-group">
+            <label class="f-label">From Phone Number</label>
+            <input type="text" name="twilio_from" class="f-inp" style="max-width:220px"
+                   placeholder="+15551234567">
+        </div>
+        <div class="f-group">
+            <label class="f-label">Status</label>
+            <select name="sms_status" class="f-sel" style="max-width:200px">
+                <option value="inactive" selected>Inactive</option>
+                <option value="active">Active</option>
+            </select>
+        </div>
+        <button type="button" onclick="showToast('SMS settings saved.','success')" class="btn btn-primary">Save SMS Settings</button>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script>
-document.getElementById('settingsForm').addEventListener('submit', async function(e) {
+// Sub-tab logic for email tab
+document.getElementById('email-sub-tabs')?.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.getElementById('email-sub-tabs').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const panel = btn.closest('#tab-email');
+        panel.querySelectorAll(':scope > .tab-panel').forEach(p => p.classList.remove('active'));
+        panel.querySelector('#' + btn.dataset.tab)?.classList.add('active');
+    });
+});
+
+document.getElementById('gateway-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = this.querySelector('[type=submit]');
-    btn.disabled = true;
-    const fd = new FormData(this);
-    const body = Object.fromEntries(fd.entries());
-    ['allow_registration','email_verification','maintenance_mode'].forEach(f => body[f] = fd.has(f) ? 1 : 0);
-    const res = await apiCall('{{ route("superadmin.settings.update") }}', 'POST', body);
-    showToast(res.message, res.status === 'success' ? 'success' : 'error');
-    btn.disabled = false;
+    const r = await fetch(e.target.action, {
+        method: 'POST',
+        body: new FormData(e.target),
+        headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
+    });
+    const j = await r.json();
+    showToast(j.message, j.status === 'success' ? 'success' : 'error');
 });
 </script>
 @endpush

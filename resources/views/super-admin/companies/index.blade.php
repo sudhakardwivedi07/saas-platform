@@ -121,19 +121,15 @@
                                     @csrf
                                     <button class="dm-item" type="submit">Login As</button>
                                 </form>
-                                @if($company->status === 'suspended')
-                                <form method="POST" action="{{ route('superadmin.companies.activate', $company) }}">
+                                <form method="POST" action="{{ route('superadmin.companies.update', $company) }}">
                                     @csrf
                                     @method('PATCH')
-                                    <button class="dm-item" type="submit">Activate</button>
+                                    <input type="hidden" name="company_name" value="{{ $company->company_name }}">
+                                    <input type="hidden" name="status" value="{{ $company->status === 'suspended' ? 'active' : 'suspended' }}">
+                                    <button class="dm-item" type="submit">
+                                        {{ $company->status === 'suspended' ? 'Activate' : 'Suspend' }}
+                                    </button>
                                 </form>
-                                @else
-                                <form method="POST" action="{{ route('superadmin.companies.suspend', $company) }}">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button class="dm-item" type="submit">Suspend</button>
-                                </form>
-                                @endif
                                 <div class="dm-div"></div>
                                 <form method="POST" action="{{ route('superadmin.companies.destroy', $company) }}"
                                       onsubmit="return confirm('Delete {{ addslashes($company->company_name) }}? This cannot be undone.')">

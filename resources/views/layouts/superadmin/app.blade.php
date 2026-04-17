@@ -376,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const container = bar?.parentElement;
             bar?.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            container?.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            container?.querySelectorAll(':scope > .tab-panel').forEach(p => p.classList.remove('active'));
             container?.querySelector('#' + btn.dataset.tab)?.classList.add('active');
         });
     });

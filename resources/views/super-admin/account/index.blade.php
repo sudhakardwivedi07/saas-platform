@@ -222,6 +222,8 @@
                     </div>
                 </div>
 
+                <input type="hidden" name="locale" value="{{ $setting?->locale ?? 'en' }}">
+
                 <div style="height:1px;background:var(--border);margin:18px 0"></div>
                 <div style="font-size:13px;font-weight:600;margin-bottom:12px">Feature Toggles</div>
 

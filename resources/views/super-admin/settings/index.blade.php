@@ -187,34 +187,47 @@
 
     {{-- Email Templates --}}
     <div id="sub-templates" class="tab-panel">
-        <div class="ph" style="margin-bottom:14px">
-            <div style="font-size:14px;font-weight:600">Email Templates</div>
-            <a href="{{ route('superadmin.email-templates.index') }}" class="btn btn-ghost btn-sm">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                Manage All Templates
-            </a>
-        </div>
-        @php
-        $templateLabels = [
-            'user_welcome'          => ['Welcome Email',         'b-blue'],
-            'password_reset'        => ['Password Reset',        'b-orange'],
-            'payment_success'       => ['Payment Successful',    'b-green'],
-            'payment_failed'        => ['Payment Failed',        'b-red'],
-            'subscription_canceled' => ['Subscription Canceled', 'b-gray'],
-            'two_factor_code'       => ['Two-Factor Code',       'b-purple'],
-            'trial_ending'          => ['Trial Ending Reminder', 'b-amber'],
-        ];
-        @endphp
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            @foreach($templateLabels as $slug => [$label, $badge])
-            <div class="card" style="margin-bottom:0;display:flex;align-items:center;justify-content:space-between;gap:12px">
-                <div>
-                    <div style="font-size:13px;font-weight:600;margin-bottom:3px">{{ $label }}</div>
-                    <div style="font-size:11px;color:var(--text-3);font-family:monospace">{{ $slug }}</div>
-                </div>
-                <a href="{{ route('superadmin.email-templates.edit', $slug) }}" class="btn btn-ghost btn-sm" style="flex-shrink:0">Edit</a>
+        <div class="tc">
+            <div class="tc-head">
+                <div style="font-size:14px;font-weight:600">Email Templates</div>
+                <a href="{{ route('superadmin.email-templates.create') }}" class="btn btn-primary btn-sm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    Add Email Template
+                </a>
             </div>
-            @endforeach
+            <table>
+                <thead>
+                    <tr>
+                        <th>TEMPLATE NAME</th>
+                        <th>SUBJECT</th>
+                        <th>TRIGGER</th>
+                        <th>STATUS</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($templates as $tpl)
+                    <tr>
+                        <td style="font-weight:600">{{ $tpl->name }}</td>
+                        <td style="color:var(--text-2);max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $tpl->subject }}</td>
+                        <td style="color:var(--text-2)">{{ $tpl->trigger_event ?? '—' }}</td>
+                        <td>
+                            <span class="badge {{ $tpl->is_active ? 'b-green' : 'b-gray' }}">
+                                <span class="bdot" style="background:{{ $tpl->is_active ? 'var(--green)' : 'var(--text-3)' }}"></span>
+                                {{ $tpl->is_active ? 'Active' : 'Inactive' }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ route('superadmin.email-templates.edit', $tpl->slug) }}" class="btn btn-ghost btn-sm">Edit</a>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="5" style="text-align:center;color:var(--text-3);padding:40px">No templates found.</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

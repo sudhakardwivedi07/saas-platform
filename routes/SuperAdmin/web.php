@@ -24,8 +24,9 @@ Route::middleware(['auth', 'super-admin'])
         Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         // Companies (Tenants)
-        Route::get('companies/create', [CompanyController::class, 'create'])->name('companies.create');
-        Route::post('companies',       [CompanyController::class, 'store'])->name('companies.store');
+        Route::get('companies/create',  [CompanyController::class, 'create'])->name('companies.create');
+        Route::post('companies',        [CompanyController::class, 'store'])->name('companies.store');
+        Route::post('companies/bulk',   [CompanyController::class, 'bulkStore'])->name('companies.bulk-store');
         Route::resource('companies', CompanyController::class)->except(['create', 'store']);
         Route::post('companies/{id}/impersonate', [CompanyController::class, 'impersonate'])->name('companies.impersonate');
 
@@ -42,8 +43,11 @@ Route::middleware(['auth', 'super-admin'])
 
         // Email Templates
         Route::get('email-templates',             [EmailTemplateController::class, 'index'])->name('email-templates.index');
+        Route::get('email-templates/create',      [EmailTemplateController::class, 'create'])->name('email-templates.create');
+        Route::post('email-templates',            [EmailTemplateController::class, 'store'])->name('email-templates.store');
         Route::get('email-templates/{slug}/edit', [EmailTemplateController::class, 'edit'])->name('email-templates.edit');
         Route::post('email-templates/{slug}',     [EmailTemplateController::class, 'update'])->name('email-templates.update');
+        Route::delete('email-templates/{slug}',   [EmailTemplateController::class, 'destroy'])->name('email-templates.destroy');
 
         // Payment gateway credentials
         Route::get('payment-settings',  [PaymentGatewayController::class, 'index'])->name('payment_settings');
@@ -55,6 +59,8 @@ Route::middleware(['auth', 'super-admin'])
 
         // Finance
         Route::get('finance', [FinanceController::class, 'index'])->name('finance');
+        Route::get('finance/data', [FinanceController::class, 'data'])->name('finance.data');
+        Route::get('finance/export', [FinanceController::class, 'export'])->name('finance.export');
 
         // Support
         Route::get('support', [SupportController::class, 'index'])->name('support');

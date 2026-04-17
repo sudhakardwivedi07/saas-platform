@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Helper\Reply;
 use App\Http\Controllers\AccountBaseController;
+use App\Models\EmailTemplate;
 use App\Models\GlobalSetting;
 use App\Models\SuperAdmin\GlobalPaymentGatewayCredentials;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class GlobalSettingController extends AccountBaseController
     {
         $this->setting     = GlobalSetting::first();
         $this->credentials = GlobalPaymentGatewayCredentials::first();
+        $this->templates   = EmailTemplate::whereNull('company_id')->orderBy('name')->get();
         return view('super-admin.settings.index', $this->data);
     }
 

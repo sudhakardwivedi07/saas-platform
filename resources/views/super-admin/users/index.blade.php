@@ -6,7 +6,7 @@
 <div class="ph">
     <div>
         <h1>Users</h1>
-        <p>Manage all platform users</p>
+        <p>Manage CFO Insights internal team members</p>
     </div>
     <div class="ph-actions">
         <a href="{{ route('superadmin.users.create') }}" class="btn btn-primary">
@@ -21,62 +21,93 @@
         <form method="GET" action="{{ route('superadmin.users.index') }}" class="toolbar">
             <div class="srch-wrap">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                <input name="search" value="{{ request('search') }}" placeholder="Search name or email…" class="srch-inp">
+                <input name="search" value="{{ request('search') }}" placeholder="Search users..." class="srch-inp">
             </div>
-            <select name="company_id" class="sel">
-                <option value="">All Companies</option>
-                @foreach($companies as $c)
-                    <option value="{{ $c->id }}" {{ request('company_id') == $c->id ? 'selected' : '' }}>{{ $c->company_name }}</option>
+            <select name="role" class="sel" onchange="this.form.submit()">
+                <option value="">All Roles</option>
+                @foreach($roles as $r)
+                    <option value="{{ $r->name }}" {{ request('role') === $r->name ? 'selected' : '' }}>{{ $r->name }}</option>
                 @endforeach
             </select>
-            <select name="status" class="sel">
-                <option value="">All Statuses</option>
+            <select name="status" class="sel" onchange="this.form.submit()">
+                <option value="">All Status</option>
                 <option value="active"   {{ request('status')==='active'   ? 'selected':'' }}>Active</option>
                 <option value="inactive" {{ request('status')==='inactive' ? 'selected':'' }}>Inactive</option>
             </select>
-            <button type="submit" class="btn btn-ghost btn-sm">Filter</button>
         </form>
         <span class="badge b-gray">{{ $users->total() }} users</span>
     </div>
     <table>
         <thead>
             <tr>
-                <th>#</th>
-                <th>User</th>
-                <th>Company</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Last Login</th>
+                <th>USER</th>
+                <th>EMAIL</th>
+                <th>ROLE</th>
+                <th>PERMISSIONS</th>
+                <th>LAST LOGIN</th>
+                <th>STATUS</th>
                 <th></th>
             </tr>
         </thead>
         <tbody>
+            @php
+            $avatarColors = ['#4f46e5','#f97316','#a855f7','#22c55e','#ef4444','#3b82f6','#ec4899'];
+            $roleColorMap = [
+                'super_admin'  => ['bg'=>'#eff6ff','text'=>'#2563eb'],
+                'super admin'  => ['bg'=>'#eff6ff','text'=>'#2563eb'],
+                'operations'   => ['bg'=>'#fff7ed','text'=>'#ea580c'],
+                'support'      => ['bg'=>'#f5f3ff','text'=>'#7c3aed'],
+                'finance'      => ['bg'=>'#f0fdf4','text'=>'#16a34a'],
+                'admin'        => ['bg'=>'#fef3c7','text'=>'#d97706'],
+            ];
+            @endphp
             @forelse($users as $user)
+            @php
+            $avatarBg = $avatarColors[$user->id % count($avatarColors)];
+            $initials = collect(explode(' ', $user->name))->map(fn($w) => strtoupper(substr($w,0,1)))->take(2)->join('');
+            $firstRole = $user->roles->first();
+
+            if ($user->is_superadmin) {
+                $permsDisplay = 'Full access';
+            } else {
+                $modules = $user->roles->flatMap(fn($r) => $r->permissions)->pluck('module')->filter()->unique()->values();
+                $permsDisplay = $modules->isNotEmpty() ? $modules->take(4)->join(', ') : '—';
+            }
+            @endphp
             <tr>
-                <td style="color:var(--text-3)">{{ $user->id }}</td>
                 <td>
-                    <div style="font-weight:600">{{ $user->name }}</div>
-                    <div style="font-size:11.5px;color:var(--text-3)">{{ $user->email }}</div>
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <div style="width:36px;height:36px;border-radius:8px;background:{{ $avatarBg }};display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;flex-shrink:0">
+                            {{ $initials }}
+                        </div>
+                        <div>
+                            <div style="font-weight:600;font-size:13.5px">{{ $user->name }}</div>
+                            @if($firstRole)
+                            <div style="font-size:11.5px;color:var(--text-3)">{{ $firstRole->name }}</div>
+                            @endif
+                        </div>
+                    </div>
                 </td>
-                <td>
-                    @if($user->is_superadmin)
-                        <span class="badge b-orange">SuperAdmin</span>
-                    @else
-                        {{ $user->company?->company_name ?? '—' }}
-                    @endif
-                </td>
+                <td style="color:var(--text-2);font-size:13px">{{ $user->email }}</td>
                 <td>
                     @foreach($user->roles as $role)
-                        <span class="badge b-gray">{{ $role->name }}</span>
+                    @php
+                        $rk = strtolower($role->name);
+                        $rc = $roleColorMap[$rk] ?? ['bg'=>'#f3f4f6','text'=>'#374151'];
+                    @endphp
+                    <span class="badge" style="background:{{ $rc['bg'] }};color:{{ $rc['text'] }};font-weight:600">
+                        {{ $role->name }}
+                    </span>
                     @endforeach
                 </td>
+                <td style="color:var(--text-2);font-size:12.5px">{{ $permsDisplay }}</td>
+                <td style="color:var(--text-3);font-size:12px">{{ $user->last_login?->diffForHumans() ?? 'Never' }}</td>
                 <td>
                     <span class="badge {{ $user->status === 'active' ? 'b-green' : 'b-red' }}">
                         <span class="bdot" style="background:{{ $user->status === 'active' ? 'var(--green)' : 'var(--red)' }}"></span>
                         {{ ucfirst($user->status) }}
                     </span>
                 </td>
-                <td style="color:var(--text-3);font-size:12px">{{ $user->last_login?->diffForHumans() ?? 'Never' }}</td>
                 <td>
                     <div class="dm-wrap" data-menu="user-{{ $user->id }}">
                         <button class="dot-menu" onclick="toggleMenu('user-{{ $user->id }}')">···</button>
@@ -86,21 +117,11 @@
                                 Edit User
                             </a>
                             @unless($user->is_superadmin)
-                            <form method="POST" action="{{ route('superadmin.users.toggle-status', $user->id) }}">
-                                @csrf
-                                <button type="submit" class="dm-item" style="width:100%;text-align:left;background:none;border:none;font-family:inherit">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                                    {{ $user->status === 'active' ? 'Deactivate' : 'Activate' }}
-                                </button>
-                            </form>
-                            <div class="dm-div"></div>
-                            <form method="POST" action="{{ route('superadmin.users.destroy', $user) }}" onsubmit="return confirm('Delete this user?')">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="dm-item dm-danger" style="width:100%;text-align:left;background:none;border:none;font-family:inherit">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
-                                    Delete
-                                </button>
-                            </form>
+                            <button type="button" class="dm-item dm-danger" style="width:100%;text-align:left;background:none;border:none;font-family:inherit"
+                                onclick="toggleUserStatus({{ $user->id }}, '{{ route('superadmin.users.toggle-status', $user->id) }}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                                {{ $user->status === 'active' ? 'Disable User' : 'Enable User' }}
+                            </button>
                             @endunless
                         </div>
                     </div>
@@ -108,7 +129,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="7" style="text-align:center;color:var(--text-3);padding:40px">No users found.</td>
+                <td colspan="7" style="text-align:center;color:var(--text-3);padding:40px">No internal users found.</td>
             </tr>
             @endforelse
         </tbody>
@@ -120,3 +141,17 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+async function toggleUserStatus(id, url) {
+    const res = await apiCall(url, 'POST', { _token: '{{ csrf_token() }}' });
+    if (res.status === 'success') {
+        showToast(res.message);
+        setTimeout(() => location.reload(), 800);
+    } else {
+        showToast(res.message || 'Error', 'error');
+    }
+}
+</script>
+@endpush

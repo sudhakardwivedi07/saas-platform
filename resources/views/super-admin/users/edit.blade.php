@@ -6,7 +6,7 @@
 <div class="ph">
     <div>
         <h1>Edit: {{ $user->name }}</h1>
-        <p>Update user details and permissions</p>
+        <p>Update team member details and role</p>
     </div>
     <div class="ph-actions">
         <a href="{{ route('superadmin.users.index') }}" class="btn btn-ghost btn-sm">← Back</a>
@@ -40,17 +40,9 @@
                 </select>
             </div>
             <div class="f-group">
-                <label class="f-label">Company</label>
-                <select name="company_id" class="f-sel">
-                    <option value="">— SuperAdmin —</option>
-                    @foreach($companies as $c)
-                        <option value="{{ $c->id }}" {{ $user->company_id == $c->id ? 'selected':'' }}>{{ $c->company_name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="f-group">
                 <label class="f-label">Role *</label>
                 <select name="role" class="f-sel" required>
+                    <option value="">— Select Role —</option>
                     @foreach($roles as $role)
                         <option value="{{ $role->name }}" {{ $user->hasRole($role->name) ? 'selected':'' }}>{{ $role->name }}</option>
                     @endforeach

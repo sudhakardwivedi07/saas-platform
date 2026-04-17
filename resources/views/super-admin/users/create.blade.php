@@ -6,7 +6,7 @@
 <div class="ph">
     <div>
         <h1>Add User</h1>
-        <p>Create a new platform user</p>
+        <p>Add a new internal team member</p>
     </div>
     <div class="ph-actions">
         <a href="{{ route('superadmin.users.index') }}" class="btn btn-ghost btn-sm">← Back</a>
@@ -14,7 +14,7 @@
 </div>
 
 <div class="acc-card" style="max-width:640px">
-    <div class="acc-title">New User</div>
+    <div class="acc-title">New Team Member</div>
     <form id="createUserForm">
         @csrf
         <div class="form-2col">
@@ -38,17 +38,9 @@
                 </select>
             </div>
             <div class="f-group">
-                <label class="f-label">Company</label>
-                <select name="company_id" class="f-sel">
-                    <option value="">— SuperAdmin (no company) —</option>
-                    @foreach($companies as $c)
-                        <option value="{{ $c->id }}">{{ $c->company_name }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <div class="f-group">
                 <label class="f-label">Role *</label>
                 <select name="role" class="f-sel" required>
+                    <option value="">— Select Role —</option>
                     @foreach($roles as $role)
                         <option value="{{ $role->name }}">{{ $role->name }}</option>
                     @endforeach

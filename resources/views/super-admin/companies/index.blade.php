@@ -33,6 +33,10 @@ div.dataTables_wrapper div.dataTables_paginate .paginate_button.disabled:hover {
 }
 table.dataTable thead th { cursor: pointer; }
 table.dataTable thead th:after { font-size: 10px; }
+.dt-scroll { overflow-x: auto; }
+.dt-footer { padding: 10px 18px 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+.dt-footer .dataTables_info { padding-top: 0 !important; }
+.dt-footer .dataTables_paginate { padding-top: 0 !important; }
 .dt-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .firm-color-0  { background: #0C84BC }
 .firm-color-1  { background: #10b981 }
@@ -86,7 +90,7 @@ table.dataTable thead th:after { font-size: 10px; }
         </div>
     </div>
 
-    <div style="overflow-x:auto;padding:0 0 4px">
+    <div>
         <table id="firms-table" style="width:100%;border-collapse:collapse">
             <thead>
                 <tr>
@@ -96,9 +100,9 @@ table.dataTable thead th:after { font-size: 10px; }
                     <th style="padding:10px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap;text-align:left">Plan Price</th>
                     <th style="padding:10px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap;text-align:left">Total Clients</th>
                     <th style="padding:10px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap;text-align:left">Status</th>
-                    <th style="padding:10px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap;text-align:left">Health</th>
                     <th style="padding:10px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap;text-align:left">Last Active</th>
                     <th style="padding:10px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap;text-align:left">Onboarded By</th>
+                    <th style="padding:10px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap;text-align:left">Onboarded On</th>
                     <th style="padding:10px 14px;font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);border-bottom:1px solid var(--border);background:#fafbfc;white-space:nowrap;text-align:left"></th>
                 </tr>
             </thead>
@@ -115,14 +119,6 @@ table.dataTable thead th:after { font-size: 10px; }
                         'trial'     => ['Trial',     'b-amber',  '#f59e0b'],
                         'suspended' => ['Suspended', 'b-red',    '#ef4444'],
                         default     => ['Inactive',  'b-gray',   '#94a3b8'],
-                    };
-
-                    // Health
-                    $health = match($co->status) {
-                        'active'    => ['✓ Healthy',  '#10b981', '#f0fdf4'],
-                        'trial'     => ['⚠ Trial',    '#f59e0b', '#fffbeb'],
-                        'suspended' => ['✕ Suspended','#ef4444', '#fff5f5'],
-                        default     => ['— Inactive', '#94a3b8', '#f1f5f9'],
                     };
 
                     // Last active
@@ -196,13 +192,6 @@ table.dataTable thead th:after { font-size: 10px; }
                         </span>
                     </td>
 
-                    {{-- Health --}}
-                    <td style="padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle">
-                        <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:{{ $health[2] }};color:{{ $health[1] }}">
-                            {{ $health[0] }}
-                        </span>
-                    </td>
-
                     {{-- Last Active --}}
                     <td style="padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12.5px;color:{{ $lastActiveColor }}">
                         {{ $lastActiveText }}
@@ -211,6 +200,11 @@ table.dataTable thead th:after { font-size: 10px; }
                     {{-- Onboarded By --}}
                     <td style="padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12.5px;color:var(--text-2)">
                         {{ $co->onboardedBy?->name ?? '—' }}
+                    </td>
+
+                    {{-- Onboarded On --}}
+                    <td style="padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12.5px;color:var(--text-2)">
+                        {{ $co->created_at ? $co->created_at->format('M d, Y') : '—' }}
                     </td>
 
                     {{-- Actions --}}
@@ -306,6 +300,7 @@ table.dataTable thead th:after { font-size: 10px; }
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script>
+@if($companies->count() > 0)
 $(document).ready(function() {
     const table = $('#firms-table').DataTable({
         paging:   true,
@@ -314,7 +309,7 @@ $(document).ready(function() {
         searching: true,
         ordering: true,
         info:     true,
-        dom: 'tip',   // just table, info, pagination — no default search box
+        dom: '<"dt-scroll"t><"dt-footer"ip>',
         language: {
             info:      'Showing _START_–_END_ of _TOTAL_ firms',
             infoEmpty: 'No firms found',
@@ -323,7 +318,7 @@ $(document).ready(function() {
             zeroRecords: 'No firms match your filters',
         },
         columnDefs: [
-            { orderable: false, targets: [1, 6, 7, 9] },  // Name&Contact, Health, LastActive, Actions
+            { orderable: false, targets: [1, 6, 7, 8, 9] },  // Name&Contact, LastActive, OnboardedBy, OnboardedOn, Actions
         ],
         drawCallback: function() {
             // Re-count visible rows after DataTables paging
@@ -347,6 +342,43 @@ $(document).ready(function() {
         table.column(2).search(this.value).draw();
     });
 });
+@endif
+
+// Fix action-menu clipping inside overflow container — use fixed positioning
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('[data-menu]');
+    if (!btn || !btn.closest('#firms-table_wrapper')) return;
+
+    e.stopImmediatePropagation();
+
+    const id = btn.dataset.menu;
+    const popup = document.getElementById(id);
+    if (!popup) return;
+
+    const isOpen = popup.classList.contains('open');
+
+    document.querySelectorAll('.dm-popup.open').forEach(p => {
+        p.classList.remove('open');
+        p.style.cssText = '';
+    });
+
+    if (!isOpen) {
+        const rect = btn.getBoundingClientRect();
+        popup.style.position = 'fixed';
+        popup.style.top  = (rect.bottom + 4) + 'px';
+        popup.style.right = (window.innerWidth - rect.right) + 'px';
+        popup.style.left = 'auto';
+        popup.classList.add('open');
+    }
+}, true); // capture phase — fires before the global layout handler
+
+// Close fixed popup on scroll
+window.addEventListener('scroll', function() {
+    document.querySelectorAll('.dm-popup.open').forEach(p => {
+        p.classList.remove('open');
+        p.style.cssText = '';
+    });
+}, true);
 
 function openChangePlan(id, name, currentPlanId) {
     document.getElementById('change-plan-form').action = `/superadmin/companies/${id}`;

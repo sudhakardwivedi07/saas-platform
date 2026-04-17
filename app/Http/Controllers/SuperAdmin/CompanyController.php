@@ -101,7 +101,7 @@ class CompanyController extends AccountBaseController
     public function show(int $id)
     {
         $this->company = Company::withoutGlobalScopes()
-            ->with(['package', 'subscription', 'users', 'payments', 'branding'])
+            ->with(['package', 'subscription', 'users', 'payments', 'branding', 'onboardedBy'])
             ->findOrFail($id);
 
         $this->userCount      = $this->company->users->count();

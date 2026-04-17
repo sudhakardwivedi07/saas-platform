@@ -38,6 +38,7 @@ Route::middleware(['auth', 'super-admin'])
 
         // Packages
         Route::resource('packages', PackageController::class);
+        Route::post('packages/{id}/toggle', [PackageController::class, 'toggleStatus'])->name('packages.toggle');
 
         // Email Templates
         Route::get('email-templates',             [EmailTemplateController::class, 'index'])->name('email-templates.index');

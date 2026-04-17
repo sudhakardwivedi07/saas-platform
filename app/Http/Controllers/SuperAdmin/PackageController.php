@@ -31,12 +31,14 @@ class PackageController extends AccountBaseController
     public function store(Request $request)
     {
         $request->validate([
-            'name'           => 'required|string|max:255|unique:packages',
-            'monthly_price'  => 'required|numeric|min:0',
-            'annual_price'   => 'required|numeric|min:0',
-            'max_users'      => 'nullable|integer|min:1',
-            'max_storage_gb' => 'nullable|integer|min:1',
-            'trial_days'     => 'required|integer|min:0',
+            'name'                   => 'required|string|max:255|unique:packages',
+            'monthly_price'          => 'required|numeric|min:0',
+            'annual_price'           => 'nullable|numeric|min:0',
+            'billing_cycle'          => 'nullable|in:monthly,annual,both',
+            'max_users'              => 'nullable|integer|min:1',
+            'max_storage_gb'         => 'nullable|integer|min:1',
+            'max_insights_per_month' => 'nullable|integer|min:1',
+            'trial_days'             => 'nullable|integer|min:0',
         ]);
 
         // Normalise features: accept array or comma-separated string
@@ -46,9 +48,9 @@ class PackageController extends AccountBaseController
 
         $package = Package::create([
             ...$request->only(
-                'name', 'description', 'monthly_price', 'annual_price',
+                'name', 'description', 'monthly_price', 'annual_price', 'billing_cycle',
                 'stripe_monthly_price_id', 'stripe_annual_price_id',
-                'max_users', 'max_storage_gb', 'trial_days', 'sort'
+                'max_users', 'max_storage_gb', 'max_insights_per_month', 'trial_days', 'sort'
             ),
             'features'         => array_values(array_filter(array_map('trim', $features))),
             'is_active'        => $request->boolean('is_active', true),
@@ -77,9 +79,13 @@ class PackageController extends AccountBaseController
         $package = Package::findOrFail($id);
 
         $request->validate([
-            'name'          => "required|string|max:255|unique:packages,name,{$id}",
-            'monthly_price' => 'required|numeric|min:0',
-            'annual_price'  => 'required|numeric|min:0',
+            'name'                   => "required|string|max:255|unique:packages,name,{$id}",
+            'monthly_price'          => 'required|numeric|min:0',
+            'annual_price'           => 'nullable|numeric|min:0',
+            'billing_cycle'          => 'nullable|in:monthly,annual,both',
+            'max_users'              => 'nullable|integer|min:1',
+            'max_storage_gb'         => 'nullable|integer|min:1',
+            'max_insights_per_month' => 'nullable|integer|min:1',
         ]);
 
         $features = $request->has('features')
@@ -88,9 +94,9 @@ class PackageController extends AccountBaseController
 
         $package->update(array_merge(
             $request->only(
-                'name', 'description', 'monthly_price', 'annual_price',
+                'name', 'description', 'monthly_price', 'annual_price', 'billing_cycle',
                 'stripe_monthly_price_id', 'stripe_annual_price_id',
-                'max_users', 'max_storage_gb', 'trial_days', 'sort'
+                'max_users', 'max_storage_gb', 'max_insights_per_month', 'trial_days', 'sort'
             ),
             [
                 'features'         => array_values(array_filter(array_map('trim', $features))),
@@ -102,6 +108,13 @@ class PackageController extends AccountBaseController
         ));
 
         return Reply::success('Package updated.');
+    }
+
+    public function toggleStatus(int $id)
+    {
+        $package = Package::findOrFail($id);
+        $package->update(['is_active' => !$package->is_active]);
+        return Reply::success('Package status updated.');
     }
 
     public function destroy(int $id)

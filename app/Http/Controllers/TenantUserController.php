@@ -16,6 +16,8 @@ class TenantUserController extends AccountBaseController
 
     public function index()
     {
+        abort_403(!auth()->user()->can('view_users'));
+
         $companyId = auth()->user()->company_id;
 
         $this->users = User::where('company_id', $companyId)

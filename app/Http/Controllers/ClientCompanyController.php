@@ -89,8 +89,10 @@ class ClientCompanyController extends AccountBaseController
             'admin_name'      => 'required|string|max:255',
             'admin_email'     => 'required|email|max:255|unique:users,email',
             'admin_password'  => 'required|string|min:8|confirmed',
-            // package_id here refers to a client_package id
             'package_id'      => 'nullable|exists:client_packages,id',
+            'industry_type'   => 'nullable|string|max:100',
+            'entity_type'     => 'nullable|string|max:100',
+            'state'           => 'nullable|string|max:100',
         ]);
 
         $setting  = global_setting();
@@ -123,8 +125,11 @@ class ClientCompanyController extends AccountBaseController
             'company_email'     => $request->company_email,
             'subdomain'         => Str::slug($request->subdomain),
             'status'            => $requiresPayment ? 'inactive' : 'active',
-            'package_id'        => null,                  // not a SuperAdmin plan
-            'client_package_id' => $package?->id,         // client-defined plan
+            'package_id'        => null,
+            'client_package_id' => $package?->id,
+            'industry_type'     => $request->industry_type,
+            'entity_type'       => $request->entity_type,
+            'state'             => $request->state,
             'trial_ends_at'     => (!$requiresPayment && $package?->is_trial_allowed)
                 ? now()->addDays($package->trial_days)
                 : null,
@@ -262,6 +267,30 @@ class ClientCompanyController extends AccountBaseController
             ->with('error', 'Payment was cancelled. The company was not created.');
     }
 
+    // ── Assign Plan ──────────────────────────────────────────────────────────
+
+    public function assignPlan(Request $request, int $id)
+    {
+        $companyId = company()?->id ?? auth()->user()->company_id;
+
+        $company = Company::withoutGlobalScopes()
+            ->where('id', $id)
+            ->where('created_by', $companyId)
+            ->firstOrFail();
+
+        $request->validate([
+            'client_package_id' => 'nullable|exists:client_packages,id',
+        ]);
+
+        $company->client_package_id = $request->client_package_id ?: null;
+        $company->save();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Plan assigned to ' . $company->company_name . '.',
+        ]);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private function activateCompany(
@@ -297,6 +326,57 @@ class ClientCompanyController extends AccountBaseController
                 'current_period_end'   => $company->fresh()->trial_ends_at ?? now()->addDays(14),
             ]);
         }
+    }
+
+    // ── Quick-add company from modal (clients page) ──────────────────────────
+
+    public function quickStore(Request $request)
+    {
+        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+
+        $companyId = company()?->id ?? auth()->user()->company_id;
+
+        $data = $request->validate([
+            'company_name'  => 'required|string|max:255',
+            'industry_type' => 'nullable|string|max:100',
+            'entity_type'   => 'nullable|string|max:100',
+            'state'         => 'nullable|string|max:100',
+            'client_id'     => 'nullable|exists:users,id',
+        ]);
+
+        $subdomain = \Illuminate\Support\Str::slug($data['company_name']) . '-' . rand(100, 999);
+
+        // Resolve client email for company_email
+        $clientEmail = null;
+        if (!empty($data['client_id'])) {
+            $clientUser  = User::withoutGlobalScopes()->find($data['client_id']);
+            $clientEmail = $clientUser?->email;
+        }
+
+        $company = Company::create([
+            'created_by'    => $companyId,
+            'company_name'  => $data['company_name'],
+            'app_name'      => $data['company_name'],
+            'company_email' => $clientEmail ?? auth()->user()->email,
+            'subdomain'     => $subdomain,
+            'status'        => 'active',
+            'industry_type' => $data['industry_type'] ?? null,
+            'entity_type'   => $data['entity_type'] ?? null,
+            'state'         => $data['state'] ?? null,
+        ]);
+
+        CompanyBranding::create(['company_id' => $company->id]);
+
+        // Link the selected client user to this new company
+        if (!empty($data['client_id']) && isset($clientUser)) {
+            $clientUser->company_id = $company->id;
+            $clientUser->save();
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => "Company '{$company->company_name}' added successfully.",
+        ]);
     }
 
     private function stripeIsConfigured(): bool

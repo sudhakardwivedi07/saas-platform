@@ -16,6 +16,8 @@ class FinanceController extends AccountBaseController
 
     public function index()
     {
+        abort_403(!auth()->user()->hasRole('client_admin'));
+
         $companyId = company()?->id ?? auth()->user()->company_id;
 
         $this->mrr = Payment::where('company_id', $companyId)

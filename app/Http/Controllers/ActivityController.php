@@ -13,6 +13,8 @@ class ActivityController extends AccountBaseController
 
     public function index()
     {
+        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+
         return view('activity.index', $this->data);
     }
 }

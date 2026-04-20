@@ -27,6 +27,11 @@ class DashboardController extends AccountBaseController
             return redirect()->route('superadmin.dashboard');
         }
 
+        // Simple dashboard for basic users — no access to management stats
+        if (!auth()->user()->hasAnyRole(['client_admin', 'manager'])) {
+            return view('dashboard.user', $this->data);
+        }
+
         $companyId = $company->id;
 
         // Resolve date range from period filter

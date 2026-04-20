@@ -19,6 +19,8 @@ class SubscriptionController extends AccountBaseController
 
     public function index()
     {
+        abort_403(!auth()->user()->can('view_billing'));
+
         $company   = company();
         $companyId = $company->id;
 

@@ -16,7 +16,7 @@
     </div>
 </div>
 
-<form id="company-form" method="POST" action="{{ route('superadmin.companies.update', $company) }}">
+<form id="company-form" method="POST" action="{{ route('superadmin.companies.update', $company) }}" novalidate>
     @csrf @method('PUT')
 
     <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">
@@ -42,6 +42,7 @@
                         <input type="text" name="company_name" id="company_name" class="f-inp"
                                value="{{ old('company_name', $company->company_name) }}" required
                                oninput="updatePreview()">
+                        <div class="field-error-msg" id="err-company_name"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Brand / App Name</label>
@@ -50,9 +51,10 @@
                                placeholder="Leave blank to use company name">
                     </div>
                     <div class="f-group">
-                        <label class="f-label">Company Email</label>
-                        <input type="email" name="company_email" class="f-inp"
+                        <label class="f-label">Company Email <span style="color:var(--red)">*</span></label>
+                        <input type="email" name="company_email" id="company_email" class="f-inp"
                                value="{{ old('company_email', $company->company_email) }}">
+                        <div class="field-error-msg" id="err-company_email"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Phone</label>
@@ -61,7 +63,7 @@
                                placeholder="+1 (555) 000-0000">
                     </div>
                     <div class="f-group">
-                        <label class="f-label">Subdomain</label>
+                        <label class="f-label">Subdomain <span style="color:var(--red)">*</span></label>
                         <div style="display:flex;align-items:stretch;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg)">
                             <input value="{{ $company->subdomain }}" class="f-inp"
                                    disabled style="border:none;border-radius:0;flex:1;outline:none;background:var(--bg);color:var(--text-3)">
@@ -73,11 +75,13 @@
                     </div>
                     <div class="f-group">
                         <label class="f-label">Status <span style="color:var(--red)">*</span></label>
-                        <select name="status" class="f-sel" onchange="updateStatusPreview(this.value)">
+                        <select name="status" id="status" class="f-sel" onchange="updateStatusPreview(this.value)">
+                            <option value="">-- Select Status --</option>
                             @foreach(['active','trial','inactive','suspended'] as $s)
                             <option value="{{ $s }}" {{ $company->status === $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
                             @endforeach
                         </select>
+                        <div class="field-error-msg" id="err-status"></div>
                     </div>
                 </div>
             </div>
@@ -200,6 +204,18 @@
 .pkg-option.selected { border-color:var(--orange); background:#fff9f6; }
 .pkg-option input[type=radio] { accent-color:var(--orange); flex-shrink:0; margin-top:2px; }
 .pkg-option-body { flex:1; }
+.field-error-msg {
+    font-size:11.5px;
+    color:#dc2626;
+    margin-top:4px;
+    display:none;
+}
+.f-inp.is-invalid {
+    border-color:#dc2626 !important;
+}
+.f-sel.is-invalid {
+    border-color:#dc2626 !important;
+}
 </style>
 @endpush
 
@@ -226,8 +242,51 @@ function updateStatusPreview(val) {
     el.textContent = label; el.className = 'badge ' + cls;
 }
 
+function validateEditForm() {
+    let valid = true;
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    function showErr(errId, inputId, msg) {
+        const errEl = document.getElementById(errId);
+        if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+        const inp = document.getElementById(inputId);
+        if (inp) inp.classList.add('is-invalid');
+        valid = false;
+    }
+
+    document.querySelectorAll('.field-error-msg').forEach(el => { el.style.display = 'none'; el.textContent = ''; });
+    document.querySelectorAll('.f-inp.is-invalid, .f-sel.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+    const companyName = (document.getElementById('company_name').value || '').trim();
+    if (!companyName) showErr('err-company_name', 'company_name', 'Company name is required.');
+
+    const companyEmail = (document.getElementById('company_email').value || '').trim();
+    if (!companyEmail) showErr('err-company_email', 'company_email', 'Company email is required.');
+    else if (!emailRe.test(companyEmail)) showErr('err-company_email', 'company_email', 'Please enter a valid email address.');
+
+    const status = (document.getElementById('status').value || '').trim();
+    if (!status) showErr('err-status', 'status', 'Please select a status.');
+
+    return valid;
+}
+
+['company_name', 'company_email'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', function() {
+        this.classList.remove('is-invalid');
+        const errEl = document.getElementById('err-' + id);
+        if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+    });
+});
+document.getElementById('status').addEventListener('change', function() {
+    this.classList.remove('is-invalid');
+    const errEl = document.getElementById('err-status');
+    if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+});
+
 document.getElementById('company-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!validateEditForm()) return;
     const btn = e.target.querySelector('[type=submit]');
     btn.disabled = true;
     const r = await fetch(e.target.action, {

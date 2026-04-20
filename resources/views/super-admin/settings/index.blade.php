@@ -37,7 +37,7 @@
         </div>
     </div>
 
-    <div class="acc-card" style="max-width:680px">
+    <div class="acc-card">
         <div class="acc-title" style="display:flex;align-items:center;justify-content:space-between">
             Stripe Configuration
             <span class="badge {{ $credentials?->stripe_status === 'active' ? 'b-green' : 'b-gray' }}">
@@ -132,25 +132,28 @@
 
     {{-- SMTP Config --}}
     <div id="sub-smtp" class="tab-panel active">
-        <div class="acc-card" style="max-width:680px">
+        <div class="acc-card">
             <div class="acc-title">SMTP Configuration</div>
             <form id="smtp-form">
                 @csrf
                 <div class="form-2col">
                     <div class="f-group">
-                        <label class="f-label">SMTP Host</label>
-                        <input type="text" name="smtp_host" class="f-inp"
+                        <label class="f-label">SMTP Host <span style="color:red;">*</span></label>
+                        <input type="text" name="smtp_host" id="smtp-host" class="f-inp"
                                placeholder="smtp.mailgun.org" value="{{ config('mail.mailers.smtp.host') }}">
+                        <div id="error-smtp_host" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
                     </div>
                     <div class="f-group">
-                        <label class="f-label">SMTP Port</label>
-                        <input type="number" name="smtp_port" class="f-inp"
+                        <label class="f-label">SMTP Port <span style="color:red;">*</span></label>
+                        <input type="number" name="smtp_port" id="smtp-port" class="f-inp"
                                placeholder="587" value="{{ config('mail.mailers.smtp.port') }}">
+                        <div id="error-smtp_port" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
                     </div>
                     <div class="f-group">
-                        <label class="f-label">Username</label>
-                        <input type="text" name="smtp_username" class="f-inp"
+                        <label class="f-label">Username <span style="color:red;">*</span></label>
+                        <input type="text" name="smtp_username" id="smtp-username" class="f-inp"
                                placeholder="your@email.com" value="{{ config('mail.mailers.smtp.username') }}">
+                        <div id="error-smtp_username" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Password</label>
@@ -166,21 +169,23 @@
                         </select>
                     </div>
                     <div class="f-group">
-                        <label class="f-label">From Address</label>
-                        <input type="email" name="from_address" class="f-inp"
+                        <label class="f-label">From Address <span style="color:red;">*</span></label>
+                        <input type="email" name="from_address" id="smtp-from_address" class="f-inp"
                                placeholder="noreply@yourdomain.com" value="{{ config('mail.from.address') }}">
+                        <div id="error-from_address" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
                     </div>
                 </div>
                 <div class="f-group">
-                    <label class="f-label">From Name</label>
-                    <input type="text" name="from_name" class="f-inp" style="max-width:320px"
+                    <label class="f-label">From Name <span style="color:red;">*</span></label>
+                    <input type="text" name="from_name" id="smtp-from_name" class="f-inp" style="max-width:320px"
                            placeholder="CFO Insights" value="{{ config('mail.from.name') }}">
+                    <div id="error-from_name" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
                 </div>
                 <div class="info-banner" style="margin-bottom:16px">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     <div class="info-banner-txt">SMTP settings are stored in your <code style="background:rgba(12,132,188,.1);padding:1px 5px;border-radius:4px">.env</code> file. Changes made here require a server restart to take effect.</div>
                 </div>
-                <button type="button" onclick="showToast('SMTP settings saved to .env — please restart the server.','success')" class="btn btn-primary">Save SMTP Settings</button>
+                <button type="button" onclick="saveSmtpSettings()" class="btn btn-primary">Save SMTP Settings</button>
             </form>
         </div>
     </div>
@@ -234,7 +239,7 @@
 
 {{-- ── TAB 3: SMS SETUP ─────────────────────────────────── --}}
 <div id="tab-sms" class="tab-panel">
-    <div class="acc-card" style="max-width:680px">
+    <div class="acc-card">
         <div class="acc-title">SMS / Twilio Configuration</div>
         <div class="info-banner" style="margin-bottom:18px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -242,9 +247,10 @@
         </div>
         <div class="form-2col">
             <div class="f-group">
-                <label class="f-label">Account SID</label>
-                <input type="text" name="twilio_sid" class="f-inp" style="font-family:monospace;font-size:12px"
+                <label class="f-label">Account SID <span style="color:red;">*</span></label>
+                <input type="text" name="twilio_sid" id="sms-account_sid" class="f-inp" style="font-family:monospace;font-size:12px"
                        placeholder="ACxxxxxxxxxxxxxxxx">
+                <div id="error-twilio_sid" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
             </div>
             <div class="f-group">
                 <label class="f-label">Auth Token</label>
@@ -253,9 +259,10 @@
             </div>
         </div>
         <div class="f-group">
-            <label class="f-label">From Phone Number</label>
-            <input type="text" name="twilio_from" class="f-inp" style="max-width:220px"
+            <label class="f-label">From Phone Number <span style="color:red;">*</span></label>
+            <input type="text" name="twilio_from" id="sms-from_number" class="f-inp" style="max-width:220px"
                    placeholder="+15551234567">
+            <div id="error-twilio_from" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
         </div>
         <div class="f-group">
             <label class="f-label">Status</label>
@@ -264,7 +271,7 @@
                 <option value="active">Active</option>
             </select>
         </div>
-        <button type="button" onclick="showToast('SMS settings saved.','success')" class="btn btn-primary">Save SMS Settings</button>
+        <button type="button" onclick="saveSmsSettings()" class="btn btn-primary">Save SMS Settings</button>
     </div>
 </div>
 
@@ -282,6 +289,80 @@ document.getElementById('email-sub-tabs')?.querySelectorAll('.tab-btn').forEach(
         panel.querySelector('#' + btn.dataset.tab)?.classList.add('active');
     });
 });
+
+function saveSmtpSettings() {
+    var valid = true;
+    var errors = ['smtp_host','smtp_port','smtp_username','from_address','from_name'];
+    errors.forEach(function(id) {
+        var el = document.getElementById('error-' + id);
+        if (el) el.textContent = '';
+    });
+
+    var host = document.getElementById('smtp-host');
+    if (!host || !host.value.trim()) {
+        document.getElementById('error-smtp_host').textContent = 'SMTP Host is required.';
+        valid = false;
+    }
+
+    var port = document.getElementById('smtp-port');
+    if (!port || !port.value.toString().trim()) {
+        document.getElementById('error-smtp_port').textContent = 'SMTP Port is required.';
+        valid = false;
+    }
+
+    var username = document.getElementById('smtp-username');
+    if (!username || !username.value.trim()) {
+        document.getElementById('error-smtp_username').textContent = 'Username is required.';
+        valid = false;
+    }
+
+    var fromAddress = document.getElementById('smtp-from_address');
+    if (!fromAddress || !fromAddress.value.trim()) {
+        document.getElementById('error-from_address').textContent = 'From Address is required.';
+        valid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fromAddress.value.trim())) {
+        document.getElementById('error-from_address').textContent = 'Please enter a valid email address.';
+        valid = false;
+    }
+
+    var fromName = document.getElementById('smtp-from_name');
+    if (!fromName || !fromName.value.trim()) {
+        document.getElementById('error-from_name').textContent = 'From Name is required.';
+        valid = false;
+    }
+
+    if (valid) {
+        showToast('SMTP settings saved to .env — please restart the server.', 'success');
+    }
+}
+
+function saveSmsSettings() {
+    var valid = true;
+
+    ['twilio_sid', 'twilio_from'].forEach(function(id) {
+        var el = document.getElementById('error-' + id);
+        if (el) el.textContent = '';
+    });
+
+    var accountSid = document.getElementById('sms-account_sid');
+    if (!accountSid || !accountSid.value.trim()) {
+        document.getElementById('error-twilio_sid').textContent = 'Account SID is required.';
+        valid = false;
+    }
+
+    var fromNumber = document.getElementById('sms-from_number');
+    if (!fromNumber || !fromNumber.value.trim()) {
+        document.getElementById('error-twilio_from').textContent = 'From Phone Number is required.';
+        valid = false;
+    } else if (!/^\+?[0-9\s\-()]{6,20}$/.test(fromNumber.value.trim())) {
+        document.getElementById('error-twilio_from').textContent = 'Please enter a valid phone number (e.g. +15551234567).';
+        valid = false;
+    }
+
+    if (valid) {
+        showToast('SMS settings saved.', 'success');
+    }
+}
 
 document.getElementById('gateway-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();

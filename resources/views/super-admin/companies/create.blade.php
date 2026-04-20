@@ -34,7 +34,7 @@
      TAB 1 — INDIVIDUAL FIRM
 ══════════════════════════════════════════════════════════════════════ --}}
 <div id="tab-individual">
-<form id="createForm">
+<form id="createForm" novalidate>
     @csrf
     <div style="display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start">
 
@@ -58,6 +58,7 @@
                         <label class="f-label">Company Name <span style="color:var(--red)">*</span></label>
                         <input name="company_name" id="company_name" class="f-inp" placeholder="Acme Corp" required
                                oninput="autoFillSubdomain(this.value)">
+                        <div class="field-error-msg" id="err-company_name"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Brand / App Name</label>
@@ -65,7 +66,8 @@
                     </div>
                     <div class="f-group">
                         <label class="f-label">Company Email <span style="color:var(--red)">*</span></label>
-                        <input name="company_email" type="email" class="f-inp" placeholder="billing@acme.com" required>
+                        <input name="company_email" id="company_email" type="email" class="f-inp" placeholder="billing@acme.com" required>
+                        <div class="field-error-msg" id="err-company_email"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Phone</label>
@@ -82,16 +84,19 @@
                                 .{{ config('tenancy.root_domain','yourdomain.com') }}
                             </span>
                         </div>
+                        <div class="field-error-msg" id="err-subdomain"></div>
                         <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Letters, numbers and hyphens only. Cannot be changed later.</div>
                     </div>
                     <div class="f-group">
-                        <label class="f-label">Status</label>
-                        <select name="status" class="f-sel">
+                        <label class="f-label">Status <span style="color:var(--red)">*</span></label>
+                        <select name="status" id="status" class="f-sel">
+                            <option value="">-- Select Status --</option>
                             <option value="active">Active</option>
                             <option value="trial">Trial</option>
                             <option value="inactive">Inactive</option>
                             <option value="suspended">Suspended</option>
                         </select>
+                        <div class="field-error-msg" id="err-status"></div>
                     </div>
                 </div>
             </div>
@@ -148,11 +153,13 @@
                 <div class="form-2col">
                     <div class="f-group">
                         <label class="f-label">Full Name <span style="color:var(--red)">*</span></label>
-                        <input name="admin_name" class="f-inp" placeholder="John Smith" required>
+                        <input name="admin_name" id="admin_name" class="f-inp" placeholder="John Smith" required>
+                        <div class="field-error-msg" id="err-admin_name"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Email Address <span style="color:var(--red)">*</span></label>
-                        <input name="admin_email" type="email" class="f-inp" placeholder="john@acme.com" required>
+                        <input name="admin_email" id="admin_email" type="email" class="f-inp" placeholder="john@acme.com" required>
+                        <div class="field-error-msg" id="err-admin_email"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Password <span style="color:var(--red)">*</span></label>
@@ -163,12 +170,14 @@
                                 <svg id="pw-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                             </button>
                         </div>
+                        <div class="field-error-msg" id="err-admin_password"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Confirm Password <span style="color:var(--red)">*</span></label>
                         <input name="admin_password_confirmation" id="admin_pw_confirm" type="password" class="f-inp"
                                placeholder="Re-enter password" required minlength="8">
                         <div id="pw-match-msg" style="font-size:11.5px;margin-top:4px;display:none"></div>
+                        <div class="field-error-msg" id="err-admin_password_confirmation"></div>
                     </div>
                 </div>
             </div>
@@ -459,6 +468,18 @@
 #drop-zone.drag-over {
     border-color:var(--orange);background:#fff9f6;
 }
+.field-error-msg {
+    font-size:11.5px;
+    color:#dc2626;
+    margin-top:4px;
+    display:none;
+}
+.f-inp.is-invalid {
+    border-color:#dc2626 !important;
+}
+.f-sel.is-invalid {
+    border-color:#dc2626 !important;
+}
 </style>
 @endpush
 
@@ -538,8 +559,75 @@ document.getElementById('admin_pw_confirm').addEventListener('input', function()
     }
 });
 
+function validateCreateForm() {
+    let valid = true;
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    function showErr(errId, inputId, msg) {
+        const errEl = document.getElementById(errId);
+        if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+        const inp = document.getElementById(inputId);
+        if (inp) inp.classList.add('is-invalid');
+        valid = false;
+    }
+
+    // Clear previous errors
+    document.querySelectorAll('.field-error-msg').forEach(el => { el.style.display = 'none'; el.textContent = ''; });
+    document.querySelectorAll('.f-inp.is-invalid, .f-sel.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+
+    const companyName = (document.getElementById('company_name').value || '').trim();
+    if (!companyName) showErr('err-company_name', 'company_name', 'Company name is required.');
+
+    const companyEmail = (document.getElementById('company_email').value || '').trim();
+    if (!companyEmail) showErr('err-company_email', 'company_email', 'Company email is required.');
+    else if (!emailRe.test(companyEmail)) showErr('err-company_email', 'company_email', 'Please enter a valid email address.');
+
+    const subdomain = (document.getElementById('subdomain').value || '').trim();
+    if (!subdomain) showErr('err-subdomain', 'subdomain', 'Subdomain is required.');
+    else if (!/^[a-z0-9][a-z0-9-]*$/.test(subdomain)) showErr('err-subdomain', 'subdomain', 'Subdomain must contain only lowercase letters, numbers, and hyphens.');
+
+    const status = (document.getElementById('status').value || '').trim();
+    if (!status) showErr('err-status', 'status', 'Please select a status.');
+
+    const adminName = (document.getElementById('admin_name').value || '').trim();
+    if (!adminName) showErr('err-admin_name', 'admin_name', 'Admin full name is required.');
+
+    const adminEmail = (document.getElementById('admin_email').value || '').trim();
+    if (!adminEmail) showErr('err-admin_email', 'admin_email', 'Admin email address is required.');
+    else if (!emailRe.test(adminEmail)) showErr('err-admin_email', 'admin_email', 'Please enter a valid email address.');
+
+    const pw  = (document.getElementById('admin_password').value || '');
+    if (!pw) showErr('err-admin_password', 'admin_password', 'Password is required.');
+    else if (pw.length < 8) showErr('err-admin_password', 'admin_password', 'Password must be at least 8 characters.');
+
+    const pwc = (document.getElementById('admin_pw_confirm').value || '');
+    if (!pwc) showErr('err-admin_password_confirmation', 'admin_pw_confirm', 'Please confirm your password.');
+    else if (pw && pwc !== pw) showErr('err-admin_password_confirmation', 'admin_pw_confirm', 'Passwords do not match.');
+
+    return valid;
+}
+
+// Clear error on input
+['company_name','company_email','subdomain','admin_name','admin_email','admin_password','admin_pw_confirm'].forEach(function(id) {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', function() {
+        this.classList.remove('is-invalid');
+        const errMap = { admin_pw_confirm: 'err-admin_password_confirmation' };
+        const errId = errMap[id] || ('err-' + id);
+        const errEl = document.getElementById(errId);
+        if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+    });
+});
+document.getElementById('status').addEventListener('change', function() {
+    this.classList.remove('is-invalid');
+    const errEl = document.getElementById('err-status');
+    if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+});
+
 document.getElementById('createForm').addEventListener('submit', async function(e) {
     e.preventDefault();
+
+    if (!validateCreateForm()) return;
 
     const pw  = document.getElementById('admin_password').value;
     const pwc = document.getElementById('admin_pw_confirm').value;

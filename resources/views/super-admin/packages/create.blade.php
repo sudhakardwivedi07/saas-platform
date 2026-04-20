@@ -16,7 +16,7 @@
     </a>
 </div>
 
-<div style="max-width:680px; background:#fff; border-radius:14px; box-shadow:0 2px 16px rgba(0,0,0,.09); padding:32px;">
+<div style="background:#fff; border-radius:14px; box-shadow:0 2px 16px rgba(0,0,0,.09); padding:32px;">
 
     {{-- Card header --}}
     <div style="margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid #f0f0f0;">
@@ -36,25 +36,26 @@
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px;">
             <div>
                 <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
-                    Plan Name
+                    Plan Name <span style="color:#ef4444;">*</span>
                 </label>
-                <input type="text" name="name"
+                <input type="text" name="name" id="field-name"
                        placeholder="e.g. Enterprise"
                        value="{{ old('name', $package->name ?? '') }}"
-                       required
                        style="width:100%; padding:10px 13px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; color:#111827; outline:none; box-sizing:border-box; transition:border-color .15s;"
                        onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'">
+                <div id="err-name" style="display:none; color:#ef4444; font-size:12px; margin-top:4px;"></div>
             </div>
             <div>
                 <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
-                    Price / month ($)
+                    Price / month ($) <span style="color:#ef4444;">*</span>
                 </label>
-                <input type="number" step="0.01" name="monthly_price"
+                <input type="number" step="0.01" name="monthly_price" id="field-monthly_price"
                        placeholder="79"
                        value="{{ old('monthly_price', $package->monthly_price ?? '0') }}"
-                       required min="0"
+                       min="0"
                        style="width:100%; padding:10px 13px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; color:#111827; outline:none; box-sizing:border-box; transition:border-color .15s;"
                        onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'">
+                <div id="err-monthly_price" style="display:none; color:#ef4444; font-size:12px; margin-top:4px;"></div>
             </div>
         </div>
 
@@ -62,25 +63,27 @@
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px;">
             <div>
                 <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
-                    Max Clients
+                    Max Clients <span style="color:#ef4444;">*</span>
                 </label>
-                <input type="number" name="max_users"
+                <input type="number" name="max_users" id="field-max_users"
                        placeholder="100"
                        value="{{ old('max_users', $package->max_users ?? '') }}"
                        min="1"
                        style="width:100%; padding:10px 13px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; color:#111827; outline:none; box-sizing:border-box; transition:border-color .15s;"
                        onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'">
+                <div id="err-max_users" style="display:none; color:#ef4444; font-size:12px; margin-top:4px;"></div>
             </div>
             <div>
                 <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
-                    Insights / Month
+                    Insights / Month <span style="color:#ef4444;">*</span>
                 </label>
-                <input type="number" name="max_insights_per_month"
+                <input type="number" name="max_insights_per_month" id="field-max_insights_per_month"
                        placeholder="500"
                        value="{{ old('max_insights_per_month', $package->max_insights_per_month ?? '') }}"
                        min="1"
                        style="width:100%; padding:10px 13px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; color:#111827; outline:none; box-sizing:border-box; transition:border-color .15s;"
                        onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'">
+                <div id="err-max_insights_per_month" style="display:none; color:#ef4444; font-size:12px; margin-top:4px;"></div>
             </div>
         </div>
 
@@ -88,7 +91,7 @@
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:18px;">
             <div>
                 <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
-                    Billing Cycle
+                    Billing Cycle <span style="color:#ef4444;">*</span>
                 </label>
                 <div style="position:relative;">
                     <select name="billing_cycle"
@@ -123,22 +126,26 @@
 
         {{-- Description (full width) --}}
         <div style="margin-bottom:18px;">
-            <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">Description</label>
-            <textarea name="description" rows="2"
+            <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
+                Description <span style="color:#ef4444;">*</span>
+            </label>
+            <textarea name="description" id="field-description" rows="2"
                       placeholder="e.g. Perfect for small teams getting started."
                       style="width:100%; padding:10px 13px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; color:#111827; outline:none; box-sizing:border-box; resize:vertical; font-family:inherit; transition:border-color .15s;"
                       onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'">{{ old('description', $package->description ?? '') }}</textarea>
+            <div id="err-description" style="display:none; color:#ef4444; font-size:12px; margin-top:4px;"></div>
         </div>
 
         {{-- Features textarea --}}
         <div style="margin-bottom:22px;">
             <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
-                Features <span style="font-weight:400; color:#9ca3af;">(one per line)</span>
+                Features <span style="font-weight:400; color:#9ca3af;">(one per line)</span> <span style="color:#ef4444;">*</span>
             </label>
-            <textarea name="features_lines" rows="5"
+            <textarea name="features_lines" id="field-features_lines" rows="5"
                       placeholder="QB integration&#10;Custom branding&#10;Priority support"
                       style="width:100%; padding:10px 13px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; color:#111827; outline:none; box-sizing:border-box; resize:vertical; font-family:inherit; transition:border-color .15s; line-height:1.6;"
                       onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'">{{ old('features_lines', isset($package) ? implode("\n", $package->features ?? []) : '') }}</textarea>
+            <div id="err-features_lines" style="display:none; color:#ef4444; font-size:12px; margin-top:4px;"></div>
         </div>
 
         {{-- Options --}}
@@ -174,8 +181,87 @@
 
 @push('scripts')
 <script>
+function pkgShowError(fieldId, message) {
+    var el = document.getElementById('err-' + fieldId);
+    var input = document.getElementById('field-' + fieldId);
+    if (el) { el.textContent = message; el.style.display = 'block'; }
+    if (input) input.style.borderColor = '#ef4444';
+}
+
+function pkgClearError(fieldId) {
+    var el = document.getElementById('err-' + fieldId);
+    var input = document.getElementById('field-' + fieldId);
+    if (el) { el.textContent = ''; el.style.display = 'none'; }
+    if (input) input.style.borderColor = '#e5e7eb';
+}
+
+function pkgClearAllErrors() {
+    ['name','monthly_price','max_users','max_insights_per_month','description','features_lines'].forEach(pkgClearError);
+}
+
+function pkgValidate() {
+    pkgClearAllErrors();
+    var valid = true;
+
+    var name = document.getElementById('field-name').value.trim();
+    if (!name) {
+        pkgShowError('name', 'Plan name is required.');
+        valid = false;
+    }
+
+    var price = document.getElementById('field-monthly_price').value.trim();
+    if (price === '') {
+        pkgShowError('monthly_price', 'Price is required.');
+        valid = false;
+    } else if (isNaN(price) || Number(price) < 0) {
+        pkgShowError('monthly_price', 'Price must be a valid number (0 or greater).');
+        valid = false;
+    }
+
+    var maxUsers = document.getElementById('field-max_users').value.trim();
+    if (maxUsers === '') {
+        pkgShowError('max_users', 'Max clients is required.');
+        valid = false;
+    } else if (!Number.isInteger(Number(maxUsers)) || Number(maxUsers) < 1) {
+        pkgShowError('max_users', 'Max clients must be a whole number of at least 1.');
+        valid = false;
+    }
+
+    var insights = document.getElementById('field-max_insights_per_month').value.trim();
+    if (insights === '') {
+        pkgShowError('max_insights_per_month', 'Insights per month is required.');
+        valid = false;
+    } else if (!Number.isInteger(Number(insights)) || Number(insights) < 1) {
+        pkgShowError('max_insights_per_month', 'Insights per month must be a whole number of at least 1.');
+        valid = false;
+    }
+
+    var desc = document.getElementById('field-description').value.trim();
+    if (!desc) {
+        pkgShowError('description', 'Description is required.');
+        valid = false;
+    }
+
+    var features = document.getElementById('field-features_lines').value.trim();
+    if (!features) {
+        pkgShowError('features_lines', 'Please enter at least one feature.');
+        valid = false;
+    }
+
+    return valid;
+}
+
+// Clear individual field error on input
+['name','monthly_price','max_users','max_insights_per_month','description','features_lines'].forEach(function(id) {
+    var el = document.getElementById('field-' + id);
+    if (el) el.addEventListener('input', function() { pkgClearError(id); });
+});
+
 document.getElementById('pkg-form').addEventListener('submit', async (e) => {
     e.preventDefault();
+
+    if (!pkgValidate()) return;
+
     const form = e.target;
     const data = new FormData(form);
 
@@ -205,6 +291,5 @@ document.getElementById('pkg-form').addEventListener('submit', async (e) => {
         btn.textContent = 'Save Plan';
     }
 });
-
 </script>
 @endpush

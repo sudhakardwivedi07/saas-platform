@@ -13,22 +13,25 @@
     </div>
 </div>
 
-<div class="acc-card" style="max-width:640px">
+<div class="acc-card">
     <div class="acc-title">New Team Member</div>
     <form id="createUserForm">
         @csrf
         <div class="form-2col">
             <div class="f-group">
-                <label class="f-label">Full Name *</label>
-                <input name="name" class="f-inp" required>
+                <label class="f-label">Full Name <span style="color:red">*</span></label>
+                <input name="name" class="f-inp">
+                <div class="f-error-msg" style="color:red;font-size:0.82em;margin-top:4px"></div>
             </div>
             <div class="f-group">
-                <label class="f-label">Email *</label>
-                <input name="email" type="email" class="f-inp" required>
+                <label class="f-label">Email <span style="color:red">*</span></label>
+                <input name="email" type="email" class="f-inp">
+                <div class="f-error-msg" style="color:red;font-size:0.82em;margin-top:4px"></div>
             </div>
             <div class="f-group">
-                <label class="f-label">Password *</label>
-                <input name="password" type="password" class="f-inp" required minlength="8">
+                <label class="f-label">Password <span style="color:red">*</span></label>
+                <input name="password" type="password" class="f-inp" minlength="8">
+                <div class="f-error-msg" style="color:red;font-size:0.82em;margin-top:4px"></div>
             </div>
             <div class="f-group">
                 <label class="f-label">Status</label>
@@ -38,13 +41,14 @@
                 </select>
             </div>
             <div class="f-group">
-                <label class="f-label">Role *</label>
-                <select name="role" class="f-sel" required>
+                <label class="f-label">Role <span style="color:red">*</span></label>
+                <select name="role" class="f-sel">
                     <option value="">— Select Role —</option>
                     @foreach($roles as $role)
                         <option value="{{ $role->name }}">{{ $role->name }}</option>
                     @endforeach
                 </select>
+                <div class="f-error-msg" style="color:red;font-size:0.82em;margin-top:4px"></div>
             </div>
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
@@ -57,8 +61,60 @@
 
 @push('scripts')
 <script>
+function clearFieldError(field) {
+    const grp = field.closest('.f-group');
+    if (!grp) return;
+    const err = grp.querySelector('.f-error-msg');
+    if (err) err.textContent = '';
+    field.style.borderColor = '';
+}
+
+function showFieldError(field, msg) {
+    const grp = field.closest('.f-group');
+    if (!grp) return;
+    const err = grp.querySelector('.f-error-msg');
+    if (err) err.textContent = msg;
+    field.style.borderColor = 'red';
+}
+
 document.getElementById('createUserForm').addEventListener('submit', async function(e) {
     e.preventDefault();
+
+    // Clear previous errors
+    this.querySelectorAll('.f-error-msg').forEach(el => el.textContent = '');
+    this.querySelectorAll('.f-inp, .f-sel').forEach(el => el.style.borderColor = '');
+
+    const name     = this.querySelector('[name=name]');
+    const email    = this.querySelector('[name=email]');
+    const password = this.querySelector('[name=password]');
+    const role     = this.querySelector('[name=role]');
+    let valid = true;
+
+    if (!name.value.trim()) {
+        showFieldError(name, 'Full name is required.');
+        valid = false;
+    }
+    if (!email.value.trim()) {
+        showFieldError(email, 'Email address is required.');
+        valid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) {
+        showFieldError(email, 'Please enter a valid email address.');
+        valid = false;
+    }
+    if (!password.value) {
+        showFieldError(password, 'Password is required.');
+        valid = false;
+    } else if (password.value.length < 8) {
+        showFieldError(password, 'Password must be at least 8 characters.');
+        valid = false;
+    }
+    if (!role.value) {
+        showFieldError(role, 'Please select a role.');
+        valid = false;
+    }
+
+    if (!valid) return;
+
     const btn = this.querySelector('[type=submit]');
     btn.disabled = true;
     const body = Object.fromEntries(new FormData(this).entries());
@@ -69,6 +125,15 @@ document.getElementById('createUserForm').addEventListener('submit', async funct
     } else {
         showToast(res.message || 'Error', 'error');
         btn.disabled = false;
+    }
+});
+
+// Clear error on user interaction
+['name', 'email', 'password', 'role'].forEach(function(n) {
+    const f = document.querySelector('[name=' + n + ']');
+    if (f) {
+        f.addEventListener('input',  function() { clearFieldError(this); });
+        f.addEventListener('change', function() { clearFieldError(this); });
     }
 });
 </script>

@@ -13,14 +13,15 @@
     </div>
 </div>
 
-<div class="acc-card" style="max-width:760px">
+<div class="acc-card">
     <div class="acc-title">Template Details</div>
     <form id="tplForm">
         @csrf
 
         <div class="f-group">
-            <label class="f-label">Template Name *</label>
-            <input name="name" value="{{ $template->name }}" class="f-inp" required>
+            <label class="f-label">Template Name <span style="color:red">*</span></label>
+            <input name="name" value="{{ $template->name }}" class="f-inp">
+            <div class="f-error" id="err-name"></div>
         </div>
 
         <div class="f-group">
@@ -29,8 +30,9 @@
         </div>
 
         <div class="f-group">
-            <label class="f-label">Subject *</label>
-            <input name="subject" value="{{ $template->subject }}" class="f-inp" required>
+            <label class="f-label">Subject <span style="color:red">*</span></label>
+            <input name="subject" value="{{ $template->subject }}" class="f-inp">
+            <div class="f-error" id="err-subject"></div>
         </div>
 
         <div style="height:1px;background:var(--border);margin:16px 0"></div>
@@ -50,13 +52,14 @@
         <div style="height:1px;background:var(--border);margin:16px 0"></div>
 
         <div class="f-group">
-            <label class="f-label">Body *</label>
+            <label class="f-label">Body <span style="color:red">*</span></label>
             <div style="font-size:11.5px;color:var(--text-3);margin-bottom:6px">
                 Use placeholders like
                 <code style="background:var(--bg);padding:1px 5px;border-radius:4px">@{{name}}</code>,
                 <code style="background:var(--bg);padding:1px 5px;border-radius:4px">@{{app_name}}</code>
             </div>
-            <textarea name="body" rows="18" class="f-textarea" style="font-family:monospace;font-size:13px" required>{{ $template->body }}</textarea>
+            <textarea name="body" rows="18" class="f-textarea" style="font-family:monospace;font-size:13px">{{ $template->body }}</textarea>
+            <div class="f-error" id="err-body"></div>
         </div>
 
         <div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px">
@@ -75,17 +78,59 @@
 @endsection
 
 @push('scripts')
+<style>
+.f-error { color: red; font-size: 12px; margin-top: 4px; min-height: 16px; }
+.f-inp.is-invalid, .f-textarea.is-invalid { border-color: red !important; }
+</style>
 <script>
-document.getElementById('tplForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const btn = this.querySelector('[type=submit]');
-    btn.disabled = true;
+(function () {
+    var form = document.getElementById('tplForm');
 
-    const body = Object.fromEntries(new FormData(this).entries());
-    const res  = await apiCall('{{ route("superadmin.email-templates.update", $template->slug) }}', 'POST', body);
+    function showError(fieldName, message) {
+        var el = document.getElementById('err-' + fieldName);
+        var input = form.querySelector('[name="' + fieldName + '"]');
+        if (el) el.textContent = message;
+        if (input) input.classList.add('is-invalid');
+    }
 
-    showToast(res.message, res.status === 'success' ? 'success' : 'error');
-    btn.disabled = false;
-});
+    function clearError(fieldName) {
+        var el = document.getElementById('err-' + fieldName);
+        var input = form.querySelector('[name="' + fieldName + '"]');
+        if (el) el.textContent = '';
+        if (input) input.classList.remove('is-invalid');
+    }
+
+    function validateForm() {
+        var valid = true;
+        var nameVal = form.querySelector('[name="name"]').value.trim();
+        var subjectVal = form.querySelector('[name="subject"]').value.trim();
+        var bodyVal = form.querySelector('[name="body"]').value.trim();
+
+        if (!nameVal) { showError('name', 'Template Name is required.'); valid = false; } else { clearError('name'); }
+        if (!subjectVal) { showError('subject', 'Subject is required.'); valid = false; } else { clearError('subject'); }
+        if (!bodyVal) { showError('body', 'Body is required.'); valid = false; } else { clearError('body'); }
+
+        return valid;
+    }
+
+    ['name', 'subject', 'body'].forEach(function (field) {
+        var el = form.querySelector('[name="' + field + '"]');
+        if (el) el.addEventListener('input', function () { clearError(field); });
+    });
+
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        if (!validateForm()) return;
+
+        var btn = this.querySelector('[type=submit]');
+        btn.disabled = true;
+
+        var body = Object.fromEntries(new FormData(this).entries());
+        var res  = await apiCall('{{ route("superadmin.email-templates.update", $template->slug) }}', 'POST', body);
+
+        showToast(res.message, res.status === 'success' ? 'success' : 'error');
+        btn.disabled = false;
+    });
+}());
 </script>
 @endpush

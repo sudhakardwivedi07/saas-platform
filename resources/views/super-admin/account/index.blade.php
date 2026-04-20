@@ -43,14 +43,14 @@
             <form method="POST" action="{{ route('superadmin.account.update') }}" id="profile-form">
                 @csrf
                 <div class="f-group">
-                    <label class="f-label">Organisation Name</label>
+                    <label class="f-label">Organisation Name <span class="req-star">*</span></label>
                     <input type="text" name="name" class="f-inp"
-                           value="{{ old('name', auth()->user()->name) }}" required>
+                           value="{{ old('name', auth()->user()->name) }}">
                 </div>
                 <div class="f-group">
-                    <label class="f-label">Admin Email</label>
+                    <label class="f-label">Admin Email <span class="req-star">*</span></label>
                     <input type="email" name="email" class="f-inp"
-                           value="{{ old('email', auth()->user()->email) }}" required>
+                           value="{{ old('email', auth()->user()->email) }}">
                 </div>
                 <div class="form-2col">
                     <div class="f-group">
@@ -76,15 +76,15 @@
                 <input type="hidden" name="email" value="{{ auth()->user()->email }}">
 
                 <div class="f-group">
-                    <label class="f-label">Current Password</label>
+                    <label class="f-label">Current Password <span class="req-star">*</span></label>
                     <input type="password" name="current_password" class="f-inp" placeholder="••••••••">
                 </div>
                 <div class="f-group">
-                    <label class="f-label">New Password</label>
-                    <input type="password" name="password" class="f-inp" placeholder="Min. 8 characters" minlength="8">
+                    <label class="f-label">New Password <span class="req-star">*</span></label>
+                    <input type="password" name="password" class="f-inp" placeholder="Min. 8 characters">
                 </div>
                 <div class="f-group">
-                    <label class="f-label">Confirm New Password</label>
+                    <label class="f-label">Confirm New Password <span class="req-star">*</span></label>
                     <input type="password" name="password_confirmation" class="f-inp" placeholder="••••••••">
                 </div>
 
@@ -132,10 +132,10 @@
 
                 <div class="form-2col">
                     <div class="f-group">
-                        <label class="f-label">Platform Name</label>
+                        <label class="f-label">Platform Name <span class="req-star">*</span></label>
                         <input type="text" name="global_app_name" id="prev-name" class="f-inp"
                                value="{{ $setting?->global_app_name ?? config('app.name') }}"
-                               oninput="updatePreview()" required>
+                               oninput="updatePreview()">
                     </div>
                     <div class="f-group">
                         <label class="f-label">Tagline</label>
@@ -192,7 +192,7 @@
 
                 <div class="form-2col">
                     <div class="f-group">
-                        <label class="f-label">Contact Email</label>
+                        <label class="f-label">Contact Email <span class="req-star">*</span></label>
                         <input type="email" name="company_email" class="f-inp"
                                value="{{ $setting?->company_email }}" placeholder="support@yourapp.com">
                     </div>
@@ -312,7 +312,75 @@
 @push('scripts')
 <style>
 :root { --preview-primary: {{ $setting?->primary_color ?? '#f06b21' }}; }
+.req-star { color: #e53e3e; margin-left: 2px; }
+.f-error  { color: #e53e3e; font-size: 12px; margin-top: 4px; display: block; }
+.f-inp.inp-error { border-color: #e53e3e !important; }
 </style>
+<script>
+// ── Validation helpers ───────────────────────────────────────
+function _showErr(input, msg) {
+    input.classList.add('inp-error');
+    let err = input.parentElement.querySelector('.f-error');
+    if (!err) { err = document.createElement('span'); err.className = 'f-error'; input.parentElement.appendChild(err); }
+    err.textContent = msg;
+}
+function _clearErr(input) {
+    input.classList.remove('inp-error');
+    const err = input.parentElement.querySelector('.f-error');
+    if (err) err.textContent = '';
+}
+
+// ── Profile form validation ─────────────────────────────────
+function validateProfileForm() {
+    const name  = document.querySelector('#profile-form [name="name"]');
+    const email = document.querySelector('#profile-form [name="email"]');
+    [name, email].forEach(_clearErr);
+    let ok = true;
+    if (!name.value.trim()) { _showErr(name, 'Organisation name is required.'); ok = false; }
+    if (!email.value.trim()) { _showErr(email, 'Admin email is required.'); ok = false; }
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { _showErr(email, 'Please enter a valid email address.'); ok = false; }
+    return ok;
+}
+
+// ── Password form validation ────────────────────────────────
+function validatePasswordForm() {
+    const cur  = document.querySelector('#password-form [name="current_password"]');
+    const pwd  = document.querySelector('#password-form [name="password"]');
+    const conf = document.querySelector('#password-form [name="password_confirmation"]');
+    [cur, pwd, conf].forEach(_clearErr);
+    let ok = true;
+    if (!cur.value.trim())  { _showErr(cur,  'Current password is required.'); ok = false; }
+    if (!pwd.value.trim())  { _showErr(pwd,  'New password is required.'); ok = false; }
+    else if (pwd.value.length < 8) { _showErr(pwd, 'Password must be at least 8 characters.'); ok = false; }
+    if (!conf.value.trim()) { _showErr(conf, 'Please confirm your new password.'); ok = false; }
+    else if (pwd.value && pwd.value !== conf.value) { _showErr(conf, 'Passwords do not match.'); ok = false; }
+    return ok;
+}
+
+// ── Global settings validation ──────────────────────────────
+function validateGlobalForm() {
+    const pname = document.querySelector('#global-settings-form [name="global_app_name"]');
+    const email = document.querySelector('#global-settings-form [name="company_email"]');
+    [pname, email].forEach(_clearErr);
+    let ok = true;
+    if (!pname.value.trim()) { _showErr(pname, 'Platform name is required.'); ok = false; }
+    if (!email.value.trim()) { _showErr(email, 'Contact email is required.'); ok = false; }
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { _showErr(email, 'Please enter a valid email address.'); ok = false; }
+    return ok;
+}
+
+// ── Bind profile & password submit ─────────────────────────
+document.getElementById('profile-form')?.addEventListener('submit', function(e) {
+    if (!validateProfileForm()) e.preventDefault();
+});
+document.getElementById('password-form')?.addEventListener('submit', function(e) {
+    if (!validatePasswordForm()) e.preventDefault();
+});
+// Clear error on input
+document.querySelectorAll('#profile-form .f-inp, #password-form .f-inp, #global-settings-form .f-inp').forEach(inp => {
+    inp.addEventListener('input', () => _clearErr(inp));
+});
+</script>
 <script>
 function updatePreview() {
     const name    = document.getElementById('prev-name')?.value || 'CFO Insights';
@@ -342,6 +410,7 @@ function previewLogo(input) {
 
 document.getElementById('global-settings-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
+    if (!validateGlobalForm()) return;
     const btn = this.querySelector('[type=submit]');
     btn.disabled = true;
     const fd = new FormData(this);

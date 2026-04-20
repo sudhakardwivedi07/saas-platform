@@ -5,7 +5,7 @@
 @push('styles')
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
 <style>
-/* ── DataTables overrides ─────────────────────────── */
+/* ── DataTables ────────────────────────────────────── */
 .dt-tscroll{overflow-x:auto}
 .dt-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 4px 0;font-size:12.5px;color:var(--text-3);flex-wrap:wrap;gap:8px}
 div.dataTables_info{font-size:12.5px;color:var(--text-3)}
@@ -14,37 +14,46 @@ div.dataTables_paginate .paginate_button.current{background:var(--orange);color:
 div.dataTables_paginate .paginate_button:hover:not(.current){background:var(--bg);border-color:var(--border)}
 div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;cursor:default}
 
-/* ── Ticket ID link style ─────────────────────────── */
+/* ── Tabs ──────────────────────────────────────────── */
+.sup-tabs{display:flex;gap:0;border-bottom:1px solid var(--border);padding:0 20px;background:#fff}
+.sup-tab{padding:13px 20px;font-size:13.5px;font-weight:500;color:var(--text-3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:8px;user-select:none;border-top:none;border-left:none;border-right:none;background:none}
+.sup-tab:hover{color:var(--text-1)}
+.sup-tab.active{color:var(--orange);border-bottom-color:var(--orange);font-weight:600}
+.sup-tab .tab-count{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:1px 8px;font-size:11.5px;font-weight:600;color:var(--text-3)}
+.sup-tab.active .tab-count{background:#fff3ec;border-color:#fcd9b7;color:var(--orange)}
+
+/* ── Ticket ID ─────────────────────────────────────── */
 .tk-id{font-weight:700;color:var(--orange);font-size:13px;font-family:monospace;cursor:pointer}
 .tk-id:hover{text-decoration:underline}
 
-/* ── Priority text colors ─────────────────────────── */
-.pri-high  {color:var(--red);font-weight:600;font-size:13px}
+/* ── Priority ──────────────────────────────────────── */
+.pri-high  {color:#dc2626;font-weight:600;font-size:13px}
 .pri-medium{color:#d97706;font-weight:600;font-size:13px}
-.pri-low   {color:var(--text-2);font-weight:500;font-size:13px}
+.pri-low   {color:var(--text-3);font-weight:500;font-size:13px}
 
-/* ── Status badges ────────────────────────────────── */
-.st-open      {background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe}
+/* ── Status badges ─────────────────────────────────── */
+.st-open       {background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe}
 .st-in_progress{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
-.st-resolved  {background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
-.st-closed    {background:#f9fafb;color:#6b7280;border:1px solid #e5e7eb}
+.st-resolved   {background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+.st-closed     {background:#f9fafb;color:#6b7280;border:1px solid #e5e7eb}
 .st-badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
 
-/* ── Filters bar ──────────────────────────────────── */
+/* ── Filter bar ────────────────────────────────────── */
 .filter-bar{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.filter-bar .srch-wrap{flex:1;min-width:200px}
 .filter-sel{padding:6px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;color:var(--text-1);background:#fff;outline:none;cursor:pointer}
 .filter-sel:focus{border-color:var(--orange)}
 
-/* ── Table ────────────────────────────────────────── */
-#tickets-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
-#tickets-table td{padding:12px 14px;border-bottom:1px solid var(--bg);vertical-align:middle;font-size:13px}
-#tickets-table tbody tr:last-child td{border-bottom:none}
-#tickets-table tbody tr:hover td{background:var(--bg)}
+/* ── Table ─────────────────────────────────────────── */
+.sup-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+.sup-table td{padding:12px 14px;border-bottom:1px solid var(--bg);vertical-align:middle;font-size:13px}
+.sup-table tbody tr:last-child td{border-bottom:none}
+.sup-table tbody tr:hover td{background:var(--bg)}
 .raised-date{font-size:12.5px;color:var(--text-1)}
 .raised-time{font-size:11.5px;color:var(--text-3);margin-top:1px}
+.firm-name{font-size:13px;font-weight:600;color:var(--text-1)}
+.firm-user{font-size:11.5px;color:var(--text-3);margin-top:1px}
 
-/* ── Three-dot menu ───────────────────────────────── */
+/* ── Three-dot menu ────────────────────────────────── */
 .dm-btn{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;color:var(--text-3);font-size:18px;line-height:1}
 .dm-btn:hover{background:var(--bg);color:var(--text-1)}
 .dm-popup{position:absolute;right:8px;top:100%;z-index:200;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);padding:6px;min-width:160px;display:none}
@@ -53,7 +62,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 .dm-item:hover{background:var(--bg)}
 .dm-item svg{flex-shrink:0}
 
-/* ── View Ticket Modal ────────────────────────────── */
+/* ── View Ticket Modal ─────────────────────────────── */
 .vt-header{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
 .vt-icon{width:44px;height:44px;border-radius:10px;background:#eff6ff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .vt-meta-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 18px;display:flex;gap:32px;flex-wrap:wrap;margin-bottom:16px}
@@ -69,7 +78,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 .att-dl{padding:5px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:500;color:var(--text-2);background:#fff;cursor:pointer;text-decoration:none}
 .att-dl:hover{background:var(--bg)}
 
-/* ── Update Status Modal ──────────────────────────── */
+/* ── Update Status Modal ───────────────────────────── */
 .us-cur{width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:7px;font-size:13px;color:var(--text-3);cursor:not-allowed}
 </style>
 @endpush
@@ -80,122 +89,208 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 <div class="ph">
     <div class="ph-left">
         <h1>Support</h1>
-        <p>Submit and track support requests for your account.</p>
+        <p>Manage client support tickets and contact the CFO Insights team</p>
     </div>
     <div class="ph-actions">
         <button class="btn btn-primary" id="btnNewTicket">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            New Ticket
+            Raise a Ticket
         </button>
     </div>
 </div>
 
-{{-- Info Banner --}}
-<div class="info-banner" style="margin-bottom:1.25rem">
-    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--blue)"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-    <span class="info-banner-txt">
-        Need urgent help? Email us at
-        <a href="mailto:support@example.com" style="color:var(--blue);font-weight:600;text-decoration:none">support@example.com</a>
-        or call <strong>1-800-000-0000</strong> (Mon–Fri, 9am–6pm EST). Average response time is under 4 hours.
-    </span>
-</div>
-
-{{-- Tickets Table --}}
+{{-- Tabs Card --}}
 <div class="card" style="padding:0;overflow:hidden">
 
-    {{-- Filters --}}
-    <div class="filter-bar">
-        <div class="srch-wrap" style="flex:1;min-width:180px">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" class="srch-inp" id="ticket-search" placeholder="Search tickets…" autocomplete="off">
-        </div>
-        <select class="filter-sel" id="status-filter">
-            <option value="">All Status</option>
-            <option value="Open">Open</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Resolved">Resolved</option>
-            <option value="Closed">Closed</option>
-        </select>
-        <select class="filter-sel" id="priority-filter">
-            <option value="">All Priority</option>
-            <option value="High">High</option>
-            <option value="Medium">Medium</option>
-            <option value="Low">Low</option>
-        </select>
+    {{-- Tab Bar --}}
+    <div class="sup-tabs">
+        <button class="sup-tab active" data-tab="client">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            Client Tickets
+            <span class="tab-count" id="count-client">{{ count($clientTickets ?? []) }}</span>
+        </button>
+        <button class="sup-tab" data-tab="my">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            My Tickets
+            <span class="tab-count" id="count-my">{{ count($myTickets ?? []) }}</span>
+        </button>
     </div>
 
-    <div class="dt-tscroll">
-        <table id="tickets-table" style="width:100%;border-collapse:collapse">
-            <thead>
+    {{-- ── CLIENT TICKETS PANE ─────────────────────────────────────────── --}}
+    <div id="pane-client" class="tab-pane">
+
+        <div class="filter-bar">
+            <div class="srch-wrap" style="flex:1;min-width:180px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" class="srch-inp" id="ct-search" placeholder="Search tickets…" autocomplete="off">
+            </div>
+            <select class="filter-sel" id="ct-status-filter">
+                <option value="">All Status</option>
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
+            </select>
+            <select class="filter-sel" id="ct-priority-filter">
+                <option value="">All Priority</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+        </div>
+
+        <div class="dt-tscroll">
+            <table id="client-tickets-table" class="sup-table" style="width:100%;border-collapse:collapse">
+                <thead>
+                    <tr>
+                        <th style="width:110px">Ticket ID</th>
+                        <th style="width:160px">Firm / Client</th>
+                        <th>Subject</th>
+                        <th style="width:100px">Priority</th>
+                        <th style="width:130px">Status</th>
+                        <th style="width:130px">Raised On</th>
+                        <th style="width:48px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach($clientTickets ?? [] as $ticket)
+                @php
+                    $tkId    = 'TK-' . str_pad($ticket->id, 4, '0', STR_PAD_LEFT);
+                    $pri     = strtolower($ticket->priority ?? 'low');
+                    $st      = strtolower($ticket->status ?? 'open');
+                    $stLabel = match($st) { 'in_progress'=>'In Progress','resolved'=>'Resolved','closed'=>'Closed',default=>'Open' };
+                @endphp
                 <tr>
-                    <th style="width:110px">Ticket ID</th>
-                    <th>Subject</th>
-                    <th style="width:100px">Priority</th>
-                    <th style="width:130px">Status</th>
-                    <th style="width:130px">Raised On</th>
-                    <th style="width:48px"></th>
-                </tr>
-            </thead>
-            <tbody>
-            @foreach($tickets ?? [] as $ticket)
-            @php
-                $tkId    = 'TK-' . str_pad($ticket->id, 4, '0', STR_PAD_LEFT);
-                $pri     = strtolower($ticket->priority ?? 'low');
-                $st      = strtolower($ticket->status ?? 'open');
-                $stLabel = match($st) {
-                    'in_progress' => 'In Progress',
-                    'resolved'    => 'Resolved',
-                    'closed'      => 'Closed',
-                    default       => 'Open',
-                };
-            @endphp
-            <tr>
-                <td>
-                    <span class="tk-id" data-id="{{ $ticket->id }}"
-                          data-show="{{ route('support.show', $ticket->id) }}"
-                          data-update="{{ route('support.update', $ticket->id) }}"
-                          data-notes="{{ route('support.notes', $ticket->id) }}">
-                        {{ $tkId }}
-                    </span>
-                </td>
-                <td style="color:var(--text-1);font-weight:500;max-width:320px">{{ $ticket->subject }}</td>
-                <td><span class="pri-{{ $pri }}">{{ ucfirst($pri) }}</span></td>
-                <td>
-                    <span class="st-badge st-{{ $st }}">{{ $stLabel }}</span>
-                </td>
-                <td>
-                    <div class="raised-date">{{ $ticket->created_at->format('M j, Y') }}</div>
-                    <div class="raised-time">{{ $ticket->created_at->format('g:i A') }}</div>
-                </td>
-                <td style="position:relative">
-                    <button class="dm-btn" data-menu="dm-{{ $ticket->id }}">···</button>
-                    <div class="dm-popup" id="dm-{{ $ticket->id }}">
-                        <button class="dm-item tk-view-btn"
-                            data-id="{{ $ticket->id }}"
+                    <td>
+                        <span class="tk-id"
                             data-show="{{ route('support.show', $ticket->id) }}"
                             data-update="{{ route('support.update', $ticket->id) }}"
-                            data-notes="{{ route('support.notes', $ticket->id) }}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                            View Ticket
-                        </button>
-                        <button class="dm-item tk-status-btn"
-                            data-id="{{ $ticket->id }}"
-                            data-tk="{{ $tkId }}"
-                            data-status="{{ $st }}"
-                            data-update="{{ route('support.update', $ticket->id) }}">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                            Update Status
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            @endforeach
-            </tbody>
-        </table>
+                            data-notes="{{ route('support.notes', $ticket->id) }}"
+                            data-can-update="1">
+                            {{ $tkId }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="firm-name">{{ $ticket->company?->company_name ?? '—' }}</div>
+                        <div class="firm-user">{{ $ticket->user?->name ?? '—' }}</div>
+                    </td>
+                    <td style="color:var(--text-1);font-weight:500;max-width:280px">{{ $ticket->subject }}</td>
+                    <td><span class="pri-{{ $pri }}">{{ ucfirst($pri) }}</span></td>
+                    <td><span class="st-badge st-{{ $st }}">{{ $stLabel }}</span></td>
+                    <td>
+                        <div class="raised-date">{{ $ticket->created_at->format('M j, Y') }}</div>
+                        <div class="raised-time">{{ $ticket->created_at->format('g:i A') }}</div>
+                    </td>
+                    <td style="position:relative">
+                        <button class="dm-btn" data-menu="cdm-{{ $ticket->id }}">···</button>
+                        <div class="dm-popup" id="cdm-{{ $ticket->id }}">
+                            <button class="dm-item tk-view-btn"
+                                data-show="{{ route('support.show', $ticket->id) }}"
+                                data-update="{{ route('support.update', $ticket->id) }}"
+                                data-notes="{{ route('support.notes', $ticket->id) }}"
+                                data-can-update="1">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                View Ticket
+                            </button>
+                            <button class="dm-item tk-status-btn"
+                                data-tk="{{ $tkId }}"
+                                data-status="{{ $st }}"
+                                data-update="{{ route('support.update', $ticket->id) }}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                Update Status
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
     </div>
+
+    {{-- ── MY TICKETS PANE ─────────────────────────────────────────────── --}}
+    <div id="pane-my" class="tab-pane" style="display:none">
+
+        <div class="filter-bar">
+            <div class="srch-wrap" style="flex:1;min-width:180px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" class="srch-inp" id="mt-search" placeholder="Search tickets…" autocomplete="off">
+            </div>
+            <select class="filter-sel" id="mt-status-filter">
+                <option value="">All Status</option>
+                <option value="Open">Open</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Resolved">Resolved</option>
+                <option value="Closed">Closed</option>
+            </select>
+            <select class="filter-sel" id="mt-priority-filter">
+                <option value="">All Priority</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+        </div>
+
+        <div class="dt-tscroll">
+            <table id="my-tickets-table" class="sup-table" style="width:100%;border-collapse:collapse">
+                <thead>
+                    <tr>
+                        <th style="width:110px">Ticket ID</th>
+                        <th>Subject</th>
+                        <th style="width:100px">Priority</th>
+                        <th style="width:130px">Status</th>
+                        <th style="width:130px">Raised On</th>
+                        <th style="width:48px">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach($myTickets ?? [] as $ticket)
+                @php
+                    $tkId    = 'TK-' . str_pad($ticket->id, 4, '0', STR_PAD_LEFT);
+                    $pri     = strtolower($ticket->priority ?? 'low');
+                    $st      = strtolower($ticket->status ?? 'open');
+                    $stLabel = match($st) { 'in_progress'=>'In Progress','resolved'=>'Resolved','closed'=>'Closed',default=>'Open' };
+                @endphp
+                <tr>
+                    <td>
+                        <span class="tk-id"
+                            data-show="{{ route('support.show', $ticket->id) }}"
+                            data-update="{{ route('support.update', $ticket->id) }}"
+                            data-notes="{{ route('support.notes', $ticket->id) }}"
+                            data-can-update="0">
+                            {{ $tkId }}
+                        </span>
+                    </td>
+                    <td style="color:var(--text-1);font-weight:500;max-width:340px">{{ $ticket->subject }}</td>
+                    <td><span class="pri-{{ $pri }}">{{ ucfirst($pri) }}</span></td>
+                    <td><span class="st-badge st-{{ $st }}">{{ $stLabel }}</span></td>
+                    <td>
+                        <div class="raised-date">{{ $ticket->created_at->format('M j, Y') }}</div>
+                        <div class="raised-time">{{ $ticket->created_at->format('g:i A') }}</div>
+                    </td>
+                    <td style="position:relative">
+                        <button class="dm-btn" data-menu="mdm-{{ $ticket->id }}">···</button>
+                        <div class="dm-popup" id="mdm-{{ $ticket->id }}">
+                            <button class="dm-item tk-view-btn"
+                                data-show="{{ route('support.show', $ticket->id) }}"
+                                data-update="{{ route('support.update', $ticket->id) }}"
+                                data-notes="{{ route('support.notes', $ticket->id) }}"
+                                data-can-update="0">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                View Ticket
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
 
-{{-- ── View Ticket Modal ─────────────────────────────────────────────── --}}
+{{-- ── View Ticket Modal ──────────────────────────────────────────────────────── --}}
 <div id="viewTicketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
     <div class="modal-box" style="max-width:600px;width:100%;max-height:90vh;overflow-y:auto">
         <button class="modal-close" onclick="document.getElementById('viewTicketModal').style.display='none'">
@@ -225,6 +320,10 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <span class="vt-meta-lbl">Submitted By</span>
                 <span class="vt-meta-val" id="vt-by"></span>
             </div>
+            <div class="vt-meta-col" id="vt-company-col">
+                <span class="vt-meta-lbl">Company</span>
+                <span class="vt-meta-val" id="vt-company"></span>
+            </div>
             <div class="vt-meta-col">
                 <span class="vt-meta-lbl">Status</span>
                 <span class="vt-meta-val" id="vt-status-text"></span>
@@ -248,9 +347,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                     <div class="att-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     </div>
-                    <div>
-                        <div class="att-name" id="vt-att-name"></div>
-                    </div>
+                    <span class="att-name" id="vt-att-name"></span>
                 </div>
                 <a class="att-dl" id="vt-att-link" href="#" target="_blank">Download</a>
             </div>
@@ -264,19 +361,18 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 
         <div class="mf-foot">
             <button class="btn btn-secondary" onclick="document.getElementById('viewTicketModal').style.display='none'">Close</button>
-            <button class="btn btn-secondary" id="vt-update-status-btn">Update Status</button>
+            <button class="btn btn-secondary" id="vt-update-status-btn" style="display:none">Update Status</button>
             <button class="btn btn-primary" id="vt-save-notes-btn">Save Notes</button>
         </div>
     </div>
 </div>
 
-{{-- ── Update Status Modal ───────────────────────────────────────────── --}}
+{{-- ── Update Status Modal ────────────────────────────────────────────────────── --}}
 <div id="updateStatusModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
     <div class="modal-box" style="max-width:440px;width:100%">
         <button class="modal-close" onclick="document.getElementById('updateStatusModal').style.display='none'">
             <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
-
         <div class="modal-title">Update Status</div>
         <div class="modal-sub" id="us-sub">Changing status for TK-0000</div>
 
@@ -284,7 +380,6 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
             <label class="mf-label">Current Status</label>
             <input type="text" class="us-cur" id="us-cur-status" readonly>
         </div>
-
         <div class="mf-field">
             <label class="mf-label">New Status <span style="color:var(--red)">*</span></label>
             <select id="us-new-status" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;color:var(--text-1);background:#fff;outline:none">
@@ -295,13 +390,11 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <option value="closed">Closed</option>
             </select>
         </div>
-
         <div class="mf-field">
             <label class="mf-label">Note <span style="color:var(--text-3);font-weight:400">(optional)</span></label>
             <textarea id="us-note" rows="3" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-1);resize:vertical;outline:none;font-family:inherit"
                 placeholder="Add a note about this status change…"></textarea>
         </div>
-
         <div class="mf-foot">
             <button class="btn btn-secondary" onclick="document.getElementById('updateStatusModal').style.display='none'">Cancel</button>
             <button class="btn btn-primary" id="us-submit-btn">Update Status</button>
@@ -309,7 +402,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
     </div>
 </div>
 
-{{-- ── New Ticket Modal ──────────────────────────────────────────────── --}}
+{{-- ── New Ticket Modal ────────────────────────────────────────────────────────── --}}
 <div id="newTicketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
     <div class="modal-box" style="max-width:540px;width:100%">
         <button class="modal-close" onclick="document.getElementById('newTicketModal').style.display='none'">
@@ -356,7 +449,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
     </div>
 </div>
 
-{{-- PHP data bridge via data-* (no Blade inside script blocks) --}}
+{{-- PHP data bridge (no Blade inside script blocks) --}}
 <div id="support-data" style="display:none"
     data-has-errors="{{ $errors->any() ? '1' : '0' }}"
     data-form-errors="{{ htmlspecialchars(json_encode($errors->all()), ENT_QUOTES, 'UTF-8') }}"
@@ -368,50 +461,84 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 <script>
-// ── State ────────────────────────────────────────────────────────────────────
-var _currentUpdateUrl  = '';
-var _currentNotesUrl   = '';
-var _currentTicketId   = '';
+var _currentUpdateUrl = '';
+var _currentNotesUrl  = '';
+var _currentTicketId  = '';
 
-// ── DataTable ─────────────────────────────────────────────────────────────────
+var ST_LABEL = { open:'Open', in_progress:'In Progress', resolved:'Resolved', closed:'Closed' };
+var ST_CLASS = { open:'st-open', in_progress:'st-in_progress', resolved:'st-resolved', closed:'st-closed' };
+
 $(document).ready(function () {
-    var table = $('#tickets-table').DataTable({
-        paging: true, pageLength: 15, lengthChange: false,
-        searching: true, ordering: true, info: true,
-        order: [[0, 'desc']],
-        dom: 't<"dt-footer"ip>',
-        columnDefs: [{ orderable: false, targets: [5] }],
-        language: {
-            info: 'Showing _START_–_END_ of _TOTAL_ tickets',
-            infoEmpty: 'No tickets found',
-            paginate: { previous: '‹', next: '›' },
-            emptyTable: '<div style="text-align:center;padding:56px 20px">'
-                + '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="display:block;margin:0 auto 12px">'
-                + '<path stroke-linecap="round" stroke-linejoin="round" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>'
-                + '<div style="font-size:14px;font-weight:500;color:#6b7280">No tickets yet</div>'
-                + '<div style="font-size:12.5px;color:#9ca3af;margin-top:4px">Click "+ New Ticket" to get started.</div></div>',
+
+    // ── Client Tickets DataTable ─────────────────────────────────────────────
+    var ctTable = $('#client-tickets-table').DataTable({
+        paging:true, pageLength:15, lengthChange:false,
+        searching:true, ordering:true, info:true,
+        order:[[0,'desc']],
+        dom:'t<"dt-footer"ip>',
+        columnDefs:[{orderable:false,targets:[1,6]}],
+        language:{
+            info:'Showing _START_–_END_ of _TOTAL_ tickets',
+            infoEmpty:'No tickets found',
+            paginate:{previous:'‹',next:'›'},
+            emptyTable:
+                '<div style="text-align:center;padding:60px 24px 48px">'
+                +'<div style="width:72px;height:72px;border-radius:50%;background:#eff6ff;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">'
+                +'<svg width="32" height="32" fill="none" stroke="#3b82f6" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>'
+                +'</div>'
+                +'<div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:12px">No client tickets at the moment</div>'
+                +'<div style="font-size:13.5px;color:#6b7280;line-height:1.75;max-width:480px;margin:0 auto 16px">'
+                +'When your clients encounter issues within their portal — login problems, QuickBooks sync errors, or questions about their insights — those tickets are logged here. You can view, track, and respond to each one directly from this section.'
+                +'</div>'
+                +'<div style="font-size:12px;color:#9ca3af">Client tickets are raised from within the client portal and routed to you automatically.</div>'
+                +'</div>',
         },
-        drawCallback: function () {
-            document.querySelectorAll('.dm-popup').forEach(function (p) { p.classList.remove('open'); });
-        }
+        drawCallback:function(){document.querySelectorAll('.dm-popup').forEach(function(p){p.classList.remove('open');})}
     });
 
-    // External search
-    document.getElementById('ticket-search').addEventListener('keyup', function () {
-        table.search(this.value).draw();
+    document.getElementById('ct-search').addEventListener('keyup',function(){ctTable.search(this.value).draw();});
+    document.getElementById('ct-status-filter').addEventListener('change',function(){
+        ctTable.column(4).search(this.value?'^'+this.value+'$':'',true,false,true).draw();
+    });
+    document.getElementById('ct-priority-filter').addEventListener('change',function(){
+        ctTable.column(3).search(this.value?'^'+this.value+'$':'',true,false,true).draw();
     });
 
-    // Status filter (column 3 hidden text)
-    document.getElementById('status-filter').addEventListener('change', function () {
-        table.column(3).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+    // ── My Tickets DataTable ─────────────────────────────────────────────────
+    var mtTable = $('#my-tickets-table').DataTable({
+        paging:true, pageLength:15, lengthChange:false,
+        searching:true, ordering:true, info:true,
+        order:[[0,'desc']],
+        dom:'t<"dt-footer"ip>',
+        columnDefs:[{orderable:false,targets:[5]}],
+        language:{
+            info:'Showing _START_–_END_ of _TOTAL_ tickets',
+            infoEmpty:'No tickets found',
+            paginate:{previous:'‹',next:'›'},
+            emptyTable:
+                '<div style="text-align:center;padding:60px 24px 48px">'
+                +'<div style="width:72px;height:72px;border-radius:50%;background:#fff3ec;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">'
+                +'<svg width="32" height="32" fill="none" stroke="#f97316" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>'
+                +'</div>'
+                +'<div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:12px">You have not raised any tickets yet</div>'
+                +'<div style="font-size:13.5px;color:#6b7280;line-height:1.75;max-width:480px;margin:0 auto 24px">'
+                +'Need help from the CFO Insights team? Raise a ticket here for any platform issue, billing query, branding assistance, or configuration support. Your plan includes priority support with a <strong>4-hour response SLA</strong> on all weekdays.'
+                +'</div>'
+                +'<button class="open-new-ticket-btn" style="background:#e8521a;color:#fff;border:none;padding:11px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">+ Raise a Ticket to CFO Insights</button>'
+                +'</div>',
+        },
+        drawCallback:function(){document.querySelectorAll('.dm-popup').forEach(function(p){p.classList.remove('open');})}
     });
 
-    // Priority filter (column 2)
-    document.getElementById('priority-filter').addEventListener('change', function () {
-        table.column(2).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+    document.getElementById('mt-search').addEventListener('keyup',function(){mtTable.search(this.value).draw();});
+    document.getElementById('mt-status-filter').addEventListener('change',function(){
+        mtTable.column(3).search(this.value?'^'+this.value+'$':'',true,false,true).draw();
+    });
+    document.getElementById('mt-priority-filter').addEventListener('change',function(){
+        mtTable.column(2).search(this.value?'^'+this.value+'$':'',true,false,true).draw();
     });
 
-    // Init form
+    // ── Init: reopen modal if validation error ───────────────────────────────
     var el = document.getElementById('support-data');
     if (el) {
         var priority = el.dataset.defaultPriority || 'low';
@@ -421,70 +548,90 @@ $(document).ready(function () {
         if (btn) selectPriority(btn);
         if (hasErr) {
             document.getElementById('newTicketModal').style.display = 'flex';
-            errs.forEach(function (msg) { showToast(msg, 'error'); });
+            errs.forEach(function(msg){showToast(msg,'error');});
         }
     }
 });
 
+// ── Tab switching ────────────────────────────────────────────────────────────
+document.querySelectorAll('.sup-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+        document.querySelectorAll('.sup-tab').forEach(function(t){t.classList.remove('active');});
+        document.querySelectorAll('.tab-pane').forEach(function(p){p.style.display='none';});
+        this.classList.add('active');
+        document.getElementById('pane-' + this.dataset.tab).style.display = 'block';
+        document.querySelectorAll('.dm-popup').forEach(function(p){p.classList.remove('open');});
+    });
+});
+
 // ── Priority toggle ──────────────────────────────────────────────────────────
 function selectPriority(btn) {
-    document.querySelectorAll('.priority-toggle').forEach(function (b) {
-        b.style.borderColor = 'var(--border)'; b.style.background = '#fff';
-        b.style.color = 'var(--text-2)'; b.style.fontWeight = '400';
+    document.querySelectorAll('.priority-toggle').forEach(function(b){
+        b.style.borderColor='var(--border)';b.style.background='#fff';
+        b.style.color='var(--text-2)';b.style.fontWeight='400';
     });
-    btn.style.borderColor = 'var(--blue)';
-    btn.style.background  = 'rgba(26,106,168,.07)';
-    btn.style.color       = 'var(--blue)';
-    btn.style.fontWeight  = '600';
+    btn.style.borderColor='var(--blue)';
+    btn.style.background='rgba(26,106,168,.07)';
+    btn.style.color='var(--blue)';
+    btn.style.fontWeight='600';
     document.getElementById('priorityInput').value = btn.dataset.value;
 }
 
-// ── Three-dot menu clicks ────────────────────────────────────────────────────
-document.addEventListener('click', function (e) {
+// ── Global click handler ─────────────────────────────────────────────────────
+document.addEventListener('click', function(e) {
+    // Three-dot toggle
     var dmBtn = e.target.closest('.dm-btn');
     if (dmBtn) {
         e.stopPropagation();
         var id = dmBtn.dataset.menu;
-        document.querySelectorAll('.dm-popup.open').forEach(function (p) {
-            if (p.id !== id) p.classList.remove('open');
-        });
+        document.querySelectorAll('.dm-popup.open').forEach(function(p){if(p.id!==id)p.classList.remove('open');});
         document.getElementById(id).classList.toggle('open');
         return;
     }
-    // View ticket from TK-ID link or View Ticket menu item
+    // View ticket (TK-ID link or View Ticket menu item)
     var viewBtn = e.target.closest('.tk-id, .tk-view-btn');
     if (viewBtn) {
-        document.querySelectorAll('.dm-popup.open').forEach(function (p) { p.classList.remove('open'); });
-        openViewTicket(viewBtn.dataset.show, viewBtn.dataset.update, viewBtn.dataset.notes);
+        document.querySelectorAll('.dm-popup.open').forEach(function(p){p.classList.remove('open');});
+        var canUpdate = viewBtn.dataset.canUpdate === '1';
+        openViewTicket(viewBtn.dataset.show, viewBtn.dataset.update, viewBtn.dataset.notes, canUpdate);
         return;
     }
-    // Update Status from menu
+    // Update Status menu item
     var stBtn = e.target.closest('.tk-status-btn');
     if (stBtn) {
-        document.querySelectorAll('.dm-popup.open').forEach(function (p) { p.classList.remove('open'); });
+        document.querySelectorAll('.dm-popup.open').forEach(function(p){p.classList.remove('open');});
         openUpdateStatus(stBtn.dataset.update, stBtn.dataset.tk, stBtn.dataset.status);
         return;
     }
-    // Close menus on outside click
-    document.querySelectorAll('.dm-popup.open').forEach(function (p) { p.classList.remove('open'); });
+    // Empty-state "Raise a Ticket" button
+    if (e.target.closest('.open-new-ticket-btn')) {
+        document.getElementById('newTicketModal').style.display = 'flex';
+        return;
+    }
+    // Priority toggle
+    var priBtn = e.target.closest('.priority-toggle');
+    if (priBtn) { selectPriority(priBtn); return; }
+    // Close menus
+    document.querySelectorAll('.dm-popup.open').forEach(function(p){p.classList.remove('open');});
 });
 
-document.getElementById('btnNewTicket').addEventListener('click', function () {
+document.getElementById('btnNewTicket').addEventListener('click', function() {
+    // Switch to My Tickets tab first
+    document.querySelectorAll('.sup-tab').forEach(function(t){t.classList.remove('active');});
+    document.querySelectorAll('.tab-pane').forEach(function(p){p.style.display='none';});
+    document.querySelector('[data-tab="my"]').classList.add('active');
+    document.getElementById('pane-my').style.display = 'block';
     document.getElementById('newTicketModal').style.display = 'flex';
 });
 
 // ── View Ticket ──────────────────────────────────────────────────────────────
-var PRI_CLASS = { high: 'pri-high', medium: 'pri-medium', low: 'pri-low' };
-var ST_CLASS  = { open: 'st-open', in_progress: 'st-in_progress', resolved: 'st-resolved', closed: 'st-closed' };
-var ST_LABEL  = { open: 'Open', in_progress: 'In Progress', resolved: 'Resolved', closed: 'Closed' };
-
-function openViewTicket(showUrl, updateUrl, notesUrl) {
+function openViewTicket(showUrl, updateUrl, notesUrl, canUpdate) {
     _currentUpdateUrl = updateUrl;
     _currentNotesUrl  = notesUrl;
 
-    fetch(showUrl, { headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf } })
-        .then(function (r) { return r.json(); })
-        .then(function (t) {
+    fetch(showUrl, {headers:{Accept:'application/json','X-CSRF-TOKEN':csrf}})
+        .then(function(r){return r.json();})
+        .then(function(t) {
             _currentTicketId = t.ticket_id;
 
             document.getElementById('vt-id').textContent      = t.ticket_id;
@@ -496,9 +643,18 @@ function openViewTicket(showUrl, updateUrl, notesUrl) {
             document.getElementById('vt-message').textContent = t.message;
             document.getElementById('vt-notes').value         = t.notes || '';
 
+            // Company column (hide if own ticket)
+            var compCol = document.getElementById('vt-company-col');
+            if (t.company_name) {
+                document.getElementById('vt-company').textContent = t.company_name;
+                compCol.style.display = '';
+            } else {
+                compCol.style.display = 'none';
+            }
+
             // Priority badge
             var priEl = document.getElementById('vt-pri-badge');
-            priEl.className   = 'badge ' + (t.priority === 'high' ? 'b-red' : t.priority === 'medium' ? 'b-amber' : 'b-gray');
+            priEl.className   = 'badge ' + (t.priority==='high'?'b-red':t.priority==='medium'?'b-amber':'b-gray');
             priEl.textContent = t.priority.charAt(0).toUpperCase() + t.priority.slice(1);
 
             // Status badge
@@ -516,65 +672,66 @@ function openViewTicket(showUrl, updateUrl, notesUrl) {
                 attSec.style.display = 'none';
             }
 
-            // Wire Update Status button in modal to open the update status modal
-            document.getElementById('vt-update-status-btn').onclick = function () {
+            // Show/hide Update Status button in modal
+            var usBtn = document.getElementById('vt-update-status-btn');
+            usBtn.style.display = canUpdate ? '' : 'none';
+            usBtn.onclick = function() {
                 openUpdateStatus(t.update_url, t.ticket_id, t.status);
             };
 
             document.getElementById('viewTicketModal').style.display = 'flex';
         })
-        .catch(function () { showToast('Failed to load ticket.', 'error'); });
+        .catch(function(){showToast('Failed to load ticket.','error');});
 }
 
 // ── Save Notes ───────────────────────────────────────────────────────────────
-document.getElementById('vt-save-notes-btn').addEventListener('click', function () {
+document.getElementById('vt-save-notes-btn').addEventListener('click', function() {
     if (!_currentNotesUrl) return;
     var notes = document.getElementById('vt-notes').value;
     fetch(_currentNotesUrl, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
-        body: JSON.stringify({ notes: notes })
+        method:'PATCH',
+        headers:{'Content-Type':'application/json',Accept:'application/json','X-CSRF-TOKEN':csrf},
+        body:JSON.stringify({notes:notes})
     })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-        if (data.success) { showToast('Notes saved.', 'success'); }
-        else { showToast('Failed to save notes.', 'error'); }
+    .then(function(r){return r.json();})
+    .then(function(data){
+        if (data.success) showToast('Notes saved.','success');
+        else showToast('Failed to save notes.','error');
     })
-    .catch(function () { showToast('Failed to save notes.', 'error'); });
+    .catch(function(){showToast('Failed to save notes.','error');});
 });
 
-// ── Update Status Modal ───────────────────────────────────────────────────────
+// ── Update Status ─────────────────────────────────────────────────────────────
 function openUpdateStatus(updateUrl, tkId, currentStatus) {
     _currentUpdateUrl = updateUrl;
-    document.getElementById('us-sub').textContent         = 'Changing status for ' + tkId;
-    document.getElementById('us-cur-status').value        = ST_LABEL[currentStatus] || currentStatus;
-    document.getElementById('us-new-status').value        = '';
-    document.getElementById('us-note').value              = '';
-    // Close view modal if open
-    document.getElementById('viewTicketModal').style.display = 'none';
+    document.getElementById('us-sub').textContent      = 'Changing status for ' + tkId;
+    document.getElementById('us-cur-status').value     = ST_LABEL[currentStatus] || currentStatus;
+    document.getElementById('us-new-status').value     = '';
+    document.getElementById('us-note').value           = '';
+    document.getElementById('viewTicketModal').style.display   = 'none';
     document.getElementById('updateStatusModal').style.display = 'flex';
 }
 
-document.getElementById('us-submit-btn').addEventListener('click', function () {
+document.getElementById('us-submit-btn').addEventListener('click', function() {
     var newStatus = document.getElementById('us-new-status').value;
-    if (!newStatus) { showToast('Please select a new status.', 'error'); return; }
+    if (!newStatus) { showToast('Please select a new status.','error'); return; }
 
     fetch(_currentUpdateUrl, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
-        body: JSON.stringify({ status: newStatus, note: document.getElementById('us-note').value })
+        method:'PATCH',
+        headers:{'Content-Type':'application/json',Accept:'application/json','X-CSRF-TOKEN':csrf},
+        body:JSON.stringify({status:newStatus,note:document.getElementById('us-note').value})
     })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
+    .then(function(r){return r.json();})
+    .then(function(data){
         if (data.success) {
-            showToast(data.ticket_id + ' status updated.', 'success');
+            showToast(data.ticket_id + ' status updated.','success');
             document.getElementById('updateStatusModal').style.display = 'none';
-            setTimeout(function () { location.reload(); }, 1200);
+            setTimeout(function(){location.reload();},1200);
         } else {
-            showToast('Update failed.', 'error');
+            showToast('Update failed.','error');
         }
     })
-    .catch(function () { showToast('Update failed.', 'error'); });
+    .catch(function(){showToast('Update failed.','error');});
 });
 </script>
 @endpush

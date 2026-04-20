@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
 use App\Models\SupportTicket;
 use Illuminate\Http\Request;
 
@@ -16,10 +17,20 @@ class SupportController extends AccountBaseController
 
     public function index()
     {
+        $userId    = auth()->id();
         $companyId = company()?->id ?? auth()->user()->company_id;
 
-        $this->tickets = SupportTicket::where('company_id', $companyId)
-            ->with('user')
+        $subCompanyIds = Company::where('created_by', $companyId)->pluck('id')->toArray();
+
+        // Tickets submitted by this client_admin user
+        $this->myTickets = SupportTicket::where('user_id', $userId)
+            ->with('user', 'company')
+            ->orderByDesc('created_at')
+            ->get();
+
+        // Tickets from client companies managed by this firm
+        $this->clientTickets = SupportTicket::whereIn('company_id', $subCompanyIds)
+            ->with('user', 'company')
             ->orderByDesc('created_at')
             ->get();
 
@@ -57,8 +68,7 @@ class SupportController extends AccountBaseController
 
     public function show(SupportTicket $ticket)
     {
-        $companyId = company()?->id ?? auth()->user()->company_id;
-        abort_if($ticket->company_id !== $companyId, 403);
+        $this->authorizeTicket($ticket);
 
         $attachmentName = null;
         $attachmentUrl  = null;
@@ -68,26 +78,26 @@ class SupportController extends AccountBaseController
         }
 
         return response()->json([
-            'id'             => $ticket->id,
-            'ticket_id'      => 'TK-' . str_pad($ticket->id, 4, '0', STR_PAD_LEFT),
-            'subject'        => $ticket->subject,
-            'priority'       => $ticket->priority,
-            'status'         => $ticket->status,
-            'message'        => $ticket->message,
-            'notes'          => $ticket->notes ?? '',
-            'attachment_name'=> $attachmentName,
-            'attachment_url' => $attachmentUrl,
-            'created_at'     => $ticket->created_at->format('M j, Y g:i A'),
-            'submitted_by'   => $ticket->user?->name ?? 'Unknown',
-            'update_url'     => route('support.update', $ticket->id),
-            'notes_url'      => route('support.notes', $ticket->id),
+            'id'              => $ticket->id,
+            'ticket_id'       => 'TK-' . str_pad($ticket->id, 4, '0', STR_PAD_LEFT),
+            'subject'         => $ticket->subject,
+            'priority'        => $ticket->priority,
+            'status'          => $ticket->status,
+            'message'         => $ticket->message,
+            'notes'           => $ticket->notes ?? '',
+            'attachment_name' => $attachmentName,
+            'attachment_url'  => $attachmentUrl,
+            'created_at'      => $ticket->created_at->format('M j, Y g:i A'),
+            'submitted_by'    => $ticket->user?->name ?? 'Unknown',
+            'company_name'    => $ticket->company?->company_name ?? '',
+            'update_url'      => route('support.update', $ticket->id),
+            'notes_url'       => route('support.notes', $ticket->id),
         ]);
     }
 
     public function update(Request $request, SupportTicket $ticket)
     {
-        $companyId = company()?->id ?? auth()->user()->company_id;
-        abort_if($ticket->company_id !== $companyId, 403);
+        $this->authorizeTicket($ticket);
 
         $request->validate([
             'status' => 'required|in:open,in_progress,resolved,closed',
@@ -112,13 +122,24 @@ class SupportController extends AccountBaseController
 
     public function updateNotes(Request $request, SupportTicket $ticket)
     {
-        $companyId = company()?->id ?? auth()->user()->company_id;
-        abort_if($ticket->company_id !== $companyId, 403);
+        $this->authorizeTicket($ticket);
 
         $request->validate(['notes' => 'nullable|string']);
 
         $ticket->update(['notes' => $request->notes]);
 
         return response()->json(['success' => true]);
+    }
+
+    private function authorizeTicket(SupportTicket $ticket): void
+    {
+        $companyId     = company()?->id ?? auth()->user()->company_id;
+        $subCompanyIds = Company::where('created_by', $companyId)->pluck('id')->toArray();
+
+        $allowed = $ticket->company_id === $companyId
+            || $ticket->user_id === auth()->id()
+            || in_array($ticket->company_id, $subCompanyIds);
+
+        abort_if(!$allowed, 403);
     }
 }

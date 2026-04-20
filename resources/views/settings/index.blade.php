@@ -1,19 +1,6 @@
 @extends('layouts.app')
 @section('page-title', 'Settings')
 
-@push('styles')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
-<style>
-div.dataTables_wrapper div.dataTables_info{font-size:12.5px;color:var(--text-3);padding-top:14px}
-div.dataTables_wrapper div.dataTables_paginate{padding-top:10px}
-div.dataTables_wrapper div.dataTables_paginate .paginate_button{border-radius:7px!important;font-size:13px;border:1.5px solid var(--border)!important;background:#fff!important;color:var(--text-1)!important;padding:5px 11px!important;margin:0 2px}
-div.dataTables_wrapper div.dataTables_paginate .paginate_button.current,
-div.dataTables_wrapper div.dataTables_paginate .paginate_button.current:hover{background:var(--orange)!important;color:#fff!important;border-color:var(--orange)!important}
-div.dataTables_wrapper div.dataTables_paginate .paginate_button:hover:not(.current){background:var(--bg)!important;border-color:var(--text-3)!important}
-table.dataTable thead th{cursor:pointer}
-</style>
-@endpush
-
 @section('content')
 
 {{-- Page Header --}}
@@ -338,8 +325,7 @@ table.dataTable thead th{cursor:pointer}
             </div>
         </div>
 
-        <div style="overflow-x:auto">
-            <table id="roles-table" style="width:100%;border-collapse:collapse">
+        <table id="roles-table" style="width:100%;border-collapse:collapse">
                 <thead>
                     <tr>
                         <th>Role Name</th>
@@ -351,7 +337,7 @@ table.dataTable thead th{cursor:pointer}
                 </thead>
                 <tbody>
                     @php $systemRoles = ['client_admin', 'super_admin']; @endphp
-                    @forelse($roles as $role)
+                    @foreach($roles as $role)
                     @php
                         $isSystem  = in_array($role->name, $systemRoles);
                         $typeLabel = $isSystem ? 'System' : 'Custom';
@@ -391,14 +377,9 @@ table.dataTable thead th{cursor:pointer}
                             </div>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="5" style="text-align:center;padding:56px 20px;color:var(--text-3)">No roles found.</td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
-        </div>
     </div>
 
     {{-- Permission Reference Card --}}
@@ -561,13 +542,13 @@ $(document).ready(function() {
 
     var roleTable = $('#roles-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
-        searching: true, ordering: true, info: true, dom: 'tip',
+        searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         order: [[0, 'asc']],
         columnDefs: [{ orderable: false, targets: [4] }],
         language: {
             info: 'Showing _START_–_END_ of _TOTAL_ roles',
             infoEmpty: 'No roles found', paginate: { previous: '‹', next: '›' },
-            emptyTable: 'No roles yet',
+            emptyTable: '<div style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No roles found.</div>',
         },
         drawCallback: function() {
             var info = this.api().page.info();

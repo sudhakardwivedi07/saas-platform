@@ -2,19 +2,6 @@
 @section('title', 'Clients')
 @section('page-title', 'Clients')
 
-@push('styles')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
-<style>
-div.dataTables_wrapper div.dataTables_info{font-size:12.5px;color:var(--text-3);padding-top:14px}
-div.dataTables_wrapper div.dataTables_paginate{padding-top:10px}
-div.dataTables_wrapper div.dataTables_paginate .paginate_button{border-radius:7px!important;font-size:13px;border:1.5px solid var(--border)!important;background:#fff!important;color:var(--text-1)!important;padding:5px 11px!important;margin:0 2px}
-div.dataTables_wrapper div.dataTables_paginate .paginate_button.current,
-div.dataTables_wrapper div.dataTables_paginate .paginate_button.current:hover{background:var(--orange)!important;color:#fff!important;border-color:var(--orange)!important}
-div.dataTables_wrapper div.dataTables_paginate .paginate_button:hover:not(.current){background:var(--bg)!important;border-color:var(--text-3)!important}
-table.dataTable thead th{cursor:pointer}
-</style>
-@endpush
-
 @section('content')
 
 <div class="ph">
@@ -60,8 +47,7 @@ table.dataTable thead th{cursor:pointer}
             </div>
             <span class="badge b-gray" id="client-count-badge">{{ $clients->count() }} clients</span>
         </div>
-        <div style="overflow-x:auto">
-            <table id="clients-table" style="width:100%;border-collapse:collapse">
+        <table id="clients-table" style="width:100%;border-collapse:collapse">
                 <thead>
                     <tr>
                         <th>Client</th>
@@ -73,7 +59,7 @@ table.dataTable thead th{cursor:pointer}
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($clients as $client)
+                    @foreach($clients as $client)
                     @php
                         $initials = strtoupper(substr($client->name, 0, 1)) . strtoupper(substr(strstr($client->name, ' ') ?: ' ', 1, 1));
                         $status = $client->status ?? 'active';
@@ -134,18 +120,9 @@ table.dataTable thead th{cursor:pointer}
                             </div>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="6" style="text-align:center;padding:56px 20px">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.4" style="margin:0 auto 12px;display:block"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                            <div style="font-size:14px;font-weight:500;color:var(--text-2)">No clients yet</div>
-                            <div style="font-size:12.5px;color:var(--text-3);margin-top:4px">Add your first client to get started.</div>
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
-        </div>
     </div>
 </div>
 
@@ -175,8 +152,7 @@ table.dataTable thead th{cursor:pointer}
                 Add Company
             </a>
         </div>
-        <div style="overflow-x:auto">
-            <table id="companies-table" style="width:100%;border-collapse:collapse">
+        <table id="companies-table" style="width:100%;border-collapse:collapse">
                 <thead>
                     <tr>
                         <th>Company</th>
@@ -189,7 +165,7 @@ table.dataTable thead th{cursor:pointer}
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($companies as $company)
+                    @foreach($companies as $company)
                     @php
                         $initials = strtoupper(substr($company->company_name, 0, 1)) . strtoupper(substr(strstr($company->company_name, ' ') ?: '  ', 1, 1));
                         $compStatus = $company->status ?? 'active';
@@ -249,18 +225,9 @@ table.dataTable thead th{cursor:pointer}
                             </div>
                         </td>
                     </tr>
-                    @empty
-                    <tr>
-                        <td colspan="7" style="text-align:center;padding:56px 20px">
-                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
-                            <div style="font-size:14px;font-weight:500;color:var(--text-2)">No companies yet</div>
-                            <div style="font-size:12.5px;color:var(--text-3);margin-top:4px">Companies will appear here once added.</div>
-                        </td>
-                    </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
-        </div>
     </div>
 </div>
 
@@ -332,13 +299,13 @@ $(document).ready(function() {
 
     var clientTable = $('#clients-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
-        searching: true, ordering: true, info: true, dom: 'tip',
+        searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         columnDefs: [{ orderable: false, targets: [5] }],
         language: {
             info: 'Showing _START_–_END_ of _TOTAL_ clients',
             infoEmpty: 'No clients found',
             paginate: { previous: '‹', next: '›' },
-            emptyTable: 'No clients yet',
+            emptyTable: '<div style="text-align:center;padding:48px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">No clients yet</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px">Add your first client to get started.</div></div>',
         },
         drawCallback: function() {
             var info = this.api().page.info();
@@ -355,13 +322,13 @@ $(document).ready(function() {
 
     var coTable = $('#companies-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
-        searching: true, ordering: true, info: true, dom: 'tip',
+        searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         columnDefs: [{ orderable: false, targets: [6] }],
         language: {
             info: 'Showing _START_–_END_ of _TOTAL_ companies',
             infoEmpty: 'No companies found',
             paginate: { previous: '‹', next: '›' },
-            emptyTable: 'No companies yet',
+            emptyTable: '<div style="text-align:center;padding:48px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">No companies yet</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px">Companies will appear here once added.</div></div>',
         }
     });
 
@@ -381,5 +348,13 @@ function confirmDelete(id, name) {
     document.getElementById('delete-form').action = '/clients/' + id;
     document.getElementById('modal-delete-client').classList.add('open');
 }
+
+// Re-open add client modal on validation error
+@if($errors->any())
+document.getElementById('modal-add-client').classList.add('open');
+@foreach($errors->all() as $error)
+showToast('{{ addslashes($error) }}', 'error');
+@endforeach
+@endif
 </script>
 @endpush

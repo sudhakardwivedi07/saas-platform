@@ -15,6 +15,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 
+    {{-- DataTables (used on multiple pages) --}}
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+
     {{-- White-label CSS variables from branding --}}
     <style>
 /* ── BRAND TOKENS ─────────────────────────────────────── */
@@ -296,6 +299,29 @@ tbody tr:hover td{background:#fafcff}
 /* ── USAGE BAR ────────────────────────────────────────── */
 .ubar-wrap{width:80px;height:5px;background:var(--border);border-radius:999px;overflow:hidden;display:inline-block;vertical-align:middle}
 .ubar{height:100%;border-radius:999px;background:var(--blue)}
+
+/* ── DATATABLES ───────────────────────────────────────── */
+table.dataTable{border-collapse:collapse!important;width:100%!important}
+table.dataTable thead th{cursor:pointer;padding:9px 14px!important;font-size:10.5px!important;font-weight:500!important;text-transform:uppercase!important;letter-spacing:.06em!important;color:var(--text-3)!important;background:#fafbfc!important;border-bottom:1px solid var(--border)!important;border-top:none!important;white-space:nowrap}
+table.dataTable tbody td{padding:11px 14px!important;font-size:13px!important;border-bottom:1px solid var(--border)!important;border-top:none!important;vertical-align:middle!important}
+table.dataTable tbody tr:last-child td{border-bottom:none!important}
+table.dataTable tbody tr:hover td{background:#fafcff!important}
+div.dataTables_wrapper{padding:0}
+div.dataTables_wrapper div.dataTables_info{font-size:12.5px;color:var(--text-3);padding:12px 16px 12px 0;float:left;line-height:32px}
+div.dataTables_wrapper div.dataTables_paginate{float:right;padding:10px 0 12px}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button{display:inline-block!important;border-radius:7px!important;font-size:13px!important;border:1.5px solid var(--border)!important;background:#fff!important;color:var(--text-1)!important;padding:5px 11px!important;margin:0 2px!important;line-height:1.4!important;cursor:pointer!important;transition:background .12s,border-color .12s!important;text-decoration:none!important}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.current,
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.current:hover{background:var(--orange)!important;color:#fff!important;border-color:var(--orange)!important}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button:hover:not(.current):not(.disabled){background:var(--bg)!important;border-color:var(--text-3)!important;color:var(--text-1)!important}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.disabled,
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.disabled:hover{opacity:.38!important;cursor:not-allowed!important;background:#fff!important;border-color:var(--border)!important}
+div.dataTables_wrapper::after{content:'';display:table;clear:both}
+/* scroll-only wrapper around the table */
+div.dataTables_wrapper .dt-tscroll{overflow-x:auto}
+/* footer: info left, pagination right */
+div.dataTables_wrapper .dt-footer{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 4px 16px;border-top:1px solid var(--border);background:#fafbfc;border-radius:0 0 var(--r-lg) var(--r-lg)}
+div.dataTables_wrapper .dt-footer div.dataTables_info{float:none!important;padding:8px 0!important;line-height:1}
+div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;padding:8px 0!important}
     </style>
     @stack('styles')
 </head>

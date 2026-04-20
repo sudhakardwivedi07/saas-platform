@@ -115,6 +115,37 @@
 }
 .tp:hover:not(.active) { background: #fff; }
 
+/* ── Custom date range ───────────────────────────────── */
+.custom-range-row {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.custom-range-row.visible { display: flex; }
+.custom-range-row input[type="date"] {
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 13px;
+    color: var(--text-1);
+    background: #fff;
+    outline: none;
+}
+.custom-range-row input[type="date"]:focus {
+    border-color: var(--orange);
+}
+.custom-range-row .btn-apply {
+    padding: 5px 14px;
+    background: var(--orange);
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
 /* ── Bottom row ──────────────────────────────────────── */
 .db-bottom {
     display: grid;
@@ -184,17 +215,17 @@
 @endif
 
 {{-- Page header --}}
-<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+<div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
     <div>
         <h1 style="font-size:20px;font-weight:700;margin-bottom:3px;color:var(--text-1)">Dashboard</h1>
         <p style="font-size:13px;color:var(--text-3)">Overview of your portfolio performance and activity</p>
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <div class="tp-bar">
-            <button class="tp" onclick="setTP(this,'1W')">1W</button>
-            <button class="tp active" onclick="setTP(this,'1M')">1M</button>
-            <button class="tp" onclick="setTP(this,'1Y')">1Y</button>
-            <button class="tp" onclick="setTP(this,'custom')">
+            <button class="tp {{ $period === '1W' ? 'active' : '' }}" onclick="setTP(this,'1W')">1W</button>
+            <button class="tp {{ $period === '1M' ? 'active' : '' }}" onclick="setTP(this,'1M')">1M</button>
+            <button class="tp {{ $period === '1Y' ? 'active' : '' }}" onclick="setTP(this,'1Y')">1Y</button>
+            <button class="tp {{ $period === 'custom' ? 'active' : '' }}" onclick="setTP(this,'custom')">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 Custom Range
             </button>
@@ -210,6 +241,18 @@
     </div>
 </div>
 
+{{-- Custom date range picker (shown only when custom is active) --}}
+<div class="custom-range-row {{ $period === 'custom' ? 'visible' : '' }}" id="customRangeRow" style="margin-bottom:12px">
+    <span style="font-size:12.5px;color:var(--text-2);font-weight:500">From</span>
+    <input type="date" id="startDate" value="{{ $startDateInput }}">
+    <span style="font-size:12.5px;color:var(--text-2);font-weight:500">To</span>
+    <input type="date" id="endDate" value="{{ $endDateInput }}">
+    <button class="btn-apply" onclick="applyCustomRange()">Apply</button>
+    <span style="font-size:12px;color:var(--text-3)">
+        Showing: <strong>{{ $periodLabel }}</strong>
+    </span>
+</div>
+
 {{-- KPI Row 1: 4 cards --}}
 <div class="db-kpi-grid cols-4">
 
@@ -222,7 +265,7 @@
             </div>
         </div>
         <div class="db-kpi-val">{{ $clientCount }}</div>
-        <div class="db-kpi-ctx">Clients with activity this month</div>
+        <div class="db-kpi-ctx">New clients added · {{ $periodLabel }}</div>
     </div>
 
     {{-- Active Clients --}}
@@ -236,7 +279,7 @@
         <div class="db-kpi-val green">
             {{ $activeClientCount }}<span class="sub-val"> / {{ $clientCount }}</span>
         </div>
-        <div class="db-kpi-ctx">Of {{ $clientCount }} clients, who generated insights</div>
+        <div class="db-kpi-ctx">Active of {{ $clientCount }} new clients · {{ $periodLabel }}</div>
     </div>
 
     {{-- Total Companies --}}
@@ -248,7 +291,7 @@
             </div>
         </div>
         <div class="db-kpi-val">{{ $companyCount }}</div>
-        <div class="db-kpi-ctx">Companies in active portfolios this month</div>
+        <div class="db-kpi-ctx">New companies added · {{ $periodLabel }}</div>
     </div>
 
     {{-- Data Connected --}}
@@ -259,10 +302,10 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
             </div>
         </div>
-        <div class="db-kpi-val green">
+        <div class="db-kpi-val {{ $qbConnectedCount > 0 ? 'green' : '' }}">
             {{ $qbConnectedCount }}<span class="sub-val"> / {{ $companyCount }}</span>
         </div>
-        <div class="db-kpi-ctx">Of {{ $companyCount }} companies with QuickBooks</div>
+        <div class="db-kpi-ctx">Of {{ $companyCount }} new companies with QuickBooks · {{ $periodLabel }}</div>
     </div>
 
 </div>
@@ -281,7 +324,7 @@
         <div class="db-kpi-val">
             {{ $activeCompanyCount }}<span class="sub-val"> / {{ $companyCount }}</span>
         </div>
-        <div class="db-kpi-ctx">Generated insights this month</div>
+        <div class="db-kpi-ctx">Active of {{ $companyCount }} new companies · {{ $periodLabel }}</div>
     </div>
 
     {{-- Insights Generated --}}
@@ -293,7 +336,7 @@
             </div>
         </div>
         <div class="db-kpi-val">{{ $insightsGenerated ?? 0 }}</div>
-        <div class="db-kpi-ctx">CFO financial insights generated</div>
+        <div class="db-kpi-ctx">CFO financial insights generated · {{ $periodLabel }}</div>
     </div>
 
     {{-- Insights Available --}}
@@ -323,7 +366,7 @@
             </div>
         </div>
         <div class="db-kpi-val red">{{ $companiesAtRisk ?? 0 }}</div>
-        <div class="db-kpi-ctx">Quota full · Inactive · No QB</div>
+        <div class="db-kpi-ctx">Companies with inactive status</div>
         @if(($companiesAtRisk ?? 0) > 0)
         <a href="{{ route('clients.index') }}" class="db-kpi-arrow">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -345,7 +388,7 @@
             </div>
         </div>
         <div class="db-kpi-val green">${{ number_format($totalRevenue, 0) }}</div>
-        <div class="db-kpi-ctx">Collected from clients · {{ now()->format('F Y') }}</div>
+        <div class="db-kpi-ctx">Collected from clients · {{ $periodLabel }}</div>
     </div>
 
     {{-- Payments Received --}}
@@ -357,7 +400,7 @@
             </div>
         </div>
         <div class="db-kpi-val">{{ $paymentsReceived }}</div>
-        <div class="db-kpi-ctx">Payments received · {{ now()->format('F Y') }}</div>
+        <div class="db-kpi-ctx">Payments received · {{ $periodLabel }}</div>
     </div>
 
     {{-- Active Subscriptions --}}
@@ -371,7 +414,7 @@
         <div class="db-kpi-val" style="color:#7c3aed">
             {{ $activeSubscriptions }}<span class="sub-val"> / {{ $companyCount }}</span>
         </div>
-        <div class="db-kpi-ctx">Paid-plan companies active this month</div>
+        <div class="db-kpi-ctx">Active or trial of {{ $companyCount }} new companies · {{ $periodLabel }}</div>
     </div>
 
 </div>
@@ -384,7 +427,7 @@
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
             <div>
                 <div class="db-card-title">Usage Overview</div>
-                <div class="db-card-sub">Insights generated · {{ now()->format('F Y') }}</div>
+                <div class="db-card-sub">Companies &amp; payments · last 6 months</div>
             </div>
         </div>
         <canvas id="usageChart" height="160"></canvas>
@@ -403,11 +446,20 @@
         @php
             $actItems = collect();
             foreach($recentDocs->take(4) as $doc) {
-                $actItems->push(['color' => 'var(--blue)', 'text' => $doc->name . ' uploaded', 'time' => $doc->created_at->diffForHumans()]);
+                $actItems->push([
+                    'color' => 'var(--blue)',
+                    'text'  => ($doc->name ?? 'Document') . ' uploaded',
+                    'time'  => $doc->created_at->diffForHumans(),
+                ]);
             }
             foreach($qbConnections->take(2) as $conn) {
-                $actItems->push(['color' => 'var(--green)', 'text' => ($conn->company?->company_name ?? $conn->qb_company_name ?? 'Account') . ' connected QuickBooks', 'time' => $conn->created_at?->diffForHumans() ?? '']);
+                $actItems->push([
+                    'color' => 'var(--green)',
+                    'text'  => ($conn->company?->company_name ?? $conn->qb_company_name ?? 'Account') . ' connected QuickBooks',
+                    'time'  => $conn->created_at?->diffForHumans() ?? '',
+                ]);
             }
+            $actItems = $actItems->sortByDesc('time')->values();
         @endphp
 
         @forelse($actItems as $item)
@@ -431,37 +483,57 @@
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
+const CURRENT_PERIOD = '{{ $period }}';
+
 function setTP(el, period) {
-    document.querySelectorAll('.tp').forEach(b => b.classList.remove('active'));
-    el.classList.add('active');
+    if (period === 'custom') {
+        document.querySelectorAll('.tp').forEach(b => b.classList.remove('active'));
+        el.classList.add('active');
+        document.getElementById('customRangeRow').classList.add('visible');
+        return;
+    }
+    window.location.href = '{{ url()->current() }}?period=' + period;
 }
 
+function applyCustomRange() {
+    const start = document.getElementById('startDate').value;
+    const end   = document.getElementById('endDate').value;
+    if (!start || !end) {
+        alert('Please select both start and end dates.');
+        return;
+    }
+    if (start > end) {
+        alert('Start date must be before end date.');
+        return;
+    }
+    window.location.href = '{{ url()->current() }}?period=custom&start_date=' + start + '&end_date=' + end;
+}
+
+// Show custom range row if currently active
+if (CURRENT_PERIOD === 'custom') {
+    document.getElementById('customRangeRow').classList.add('visible');
+}
+
+// Chart
 const ctx = document.getElementById('usageChart')?.getContext('2d');
 if (ctx) {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const now = new Date();
-    const curMonth = now.getMonth();
-    const labels = [];
-    for (let i = 5; i >= 0; i--) {
-        labels.push(months[(curMonth - i + 12) % 12]);
-    }
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: labels,
+            labels: {!! json_encode($chartLabels) !!},
             datasets: [{
-                label: 'Insights',
-                data: [0, 0, 0, 0, 0, {{ $insightsGenerated ?? 0 }}],
-                backgroundColor: 'rgba(26,106,168,.18)',
-                borderColor: '#1a6aa8',
+                label: 'Companies',
+                data: {!! json_encode($chartCompanies) !!},
+                backgroundColor: 'rgba(240,107,33,.15)',
+                borderColor: '#f06b21',
                 borderWidth: 1.5,
                 borderRadius: 5,
                 borderSkipped: false,
             }, {
-                label: 'Companies',
-                data: [0, 0, 0, 0, 0, {{ $companyCount }}],
-                backgroundColor: 'rgba(240,107,33,.15)',
-                borderColor: '#f06b21',
+                label: 'Payments',
+                data: {!! json_encode($chartPayments) !!},
+                backgroundColor: 'rgba(26,106,168,.18)',
+                borderColor: '#1a6aa8',
                 borderWidth: 1.5,
                 borderRadius: 5,
                 borderSkipped: false,

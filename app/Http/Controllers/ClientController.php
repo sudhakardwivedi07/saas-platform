@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class ClientController extends AccountBaseController
 {
@@ -43,9 +46,44 @@ class ClientController extends AccountBaseController
         return view('clients.show', $this->data);
     }
 
-    public function store()
+    public function store(Request $request)
     {
-        return back()->with('info', 'Client creation coming soon.');
+        abort_403(!auth()->user()->can('create_users'));
+
+        $request->validate([
+            'name'         => 'required|string|max:255',
+            'email'        => 'required|email|max:255|unique:users,email',
+            'phone'        => 'nullable|string|max:30',
+            'password'     => ['required', 'string', Password::min(8)],
+            'company_name' => 'nullable|string|max:255',
+        ]);
+
+        $parentCompanyId = company()->id;
+
+        // Create or reuse sub-company
+        $companyName = $request->filled('company_name')
+            ? $request->company_name
+            : $request->name . "'s Company";
+
+        $subCompany = Company::create([
+            'created_by'    => $parentCompanyId,
+            'company_name'  => $companyName,
+            'company_email' => $request->email,
+            'status'        => 'active',
+        ]);
+
+        $user = User::create([
+            'company_id' => $subCompany->id,
+            'name'       => $request->name,
+            'email'      => $request->email,
+            'mobile'     => $request->phone,
+            'password'   => Hash::make($request->password),
+        ]);
+
+        $user->assignRole('user');
+
+        return redirect()->route('clients.index')
+            ->with('success', 'Client "' . $user->name . '" added successfully.');
     }
 
     public function update($id)

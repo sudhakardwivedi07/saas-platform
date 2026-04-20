@@ -1,194 +1,211 @@
 @extends('layouts.app')
-
 @section('title', 'Create Plan')
 @section('page-title', 'Create Plan')
 
 @section('content')
-<div class="max-w-2xl mx-auto space-y-4">
 
-    <a href="{{ route('plans.index') }}" class="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
-        <span class="material-icons text-base">arrow_back</span> Back to Plans
-    </a>
+<a href="{{ route('plans.index') }}" class="back-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+    Back to Plans
+</a>
 
-    @if($errors->any())
-    <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
-        <ul class="list-disc list-inside space-y-1">
-            @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
-        </ul>
-    </div>
-    @endif
+<form method="POST" action="{{ route('plans.store') }}">
+    @csrf
 
-    <form method="POST" action="{{ route('plans.store') }}">
-        @csrf
-        <div class="card">
-            <div class="card-body space-y-5">
+    <div class="acc-card">
 
-                <h3 class="font-semibold text-gray-800 text-lg">Plan Details</h3>
-
-                {{-- Name --}}
-                <div class="form-group">
-                    <label class="form-label">Plan Name <span class="text-red-500">*</span></label>
-                    <input type="text" name="name" class="form-control" value="{{ old('name') }}"
-                           placeholder="e.g. Starter, Business, Enterprise" required>
-                    @error('name')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                </div>
-
-                {{-- Description --}}
-                <div class="form-group">
-                    <label class="form-label">Description</label>
-                    <textarea name="description" class="form-control" rows="2"
-                              placeholder="Brief description shown to users">{{ old('description') }}</textarea>
-                </div>
-
-                {{-- Pricing --}}
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="form-group">
-                        <label class="form-label">Monthly Price ($) <span class="text-red-500">*</span></label>
-                        <input type="number" name="monthly_price" step="0.01" min="0"
-                               class="form-control" value="{{ old('monthly_price', 0) }}" required>
-                        @error('monthly_price')<p class="text-red-500 text-xs mt-1">{{ $message }}</p>@enderror
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Annual Price ($) <span class="text-xs text-gray-400">(optional)</span></label>
-                        <input type="number" name="annual_price" step="0.01" min="0"
-                               class="form-control" value="{{ old('annual_price') }}" placeholder="Leave blank to disable">
-                    </div>
-                </div>
-
-                {{-- Limits --}}
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="form-group">
-                        <label class="form-label">Max Users <span class="text-xs text-gray-400">(blank = unlimited)</span></label>
-                        <input type="number" name="max_users" min="1"
-                               class="form-control" value="{{ old('max_users') }}" placeholder="e.g. 10">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Max Storage (GB) <span class="text-xs text-gray-400">(blank = unlimited)</span></label>
-                        <input type="number" name="max_storage_gb" min="1"
-                               class="form-control" value="{{ old('max_storage_gb') }}" placeholder="e.g. 50">
-                    </div>
-                </div>
-
-                <hr class="border-gray-100">
-
-                {{-- Toggles --}}
-                <div class="grid grid-cols-2 gap-x-6 gap-y-4">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="hidden" name="is_free" value="0">
-                        <input type="checkbox" name="is_free" value="1" class="w-4 h-4 rounded accent-blue-600"
-                               {{ old('is_free') ? 'checked' : '' }} id="chk_free"
-                               onchange="toggleFree(this)">
-                        <div>
-                            <p class="font-medium text-gray-700 text-sm">Free Plan</p>
-                            <p class="text-xs text-gray-400">Set price to $0 and mark as free</p>
-                        </div>
-                    </label>
-
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="hidden" name="is_recommended" value="0">
-                        <input type="checkbox" name="is_recommended" value="1" class="w-4 h-4 rounded accent-blue-600"
-                               {{ old('is_recommended') ? 'checked' : '' }}>
-                        <div>
-                            <p class="font-medium text-gray-700 text-sm">Recommended</p>
-                            <p class="text-xs text-gray-400">Highlight this plan to users</p>
-                        </div>
-                    </label>
-
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="hidden" name="is_trial_allowed" value="0">
-                        <input type="checkbox" name="is_trial_allowed" value="1" class="w-4 h-4 rounded accent-blue-600"
-                               {{ old('is_trial_allowed') ? 'checked' : '' }} id="chk_trial"
-                               onchange="document.getElementById('trial_days_group').style.display=this.checked?'block':'none'">
-                        <div>
-                            <p class="font-medium text-gray-700 text-sm">Free Trial</p>
-                            <p class="text-xs text-gray-400">Allow trial before payment</p>
-                        </div>
-                    </label>
-
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="hidden" name="is_active" value="0">
-                        <input type="checkbox" name="is_active" value="1" class="w-4 h-4 rounded accent-blue-600"
-                               {{ old('is_active', true) ? 'checked' : '' }}>
-                        <div>
-                            <p class="font-medium text-gray-700 text-sm">Active</p>
-                            <p class="text-xs text-gray-400">Visible when adding companies</p>
-                        </div>
-                    </label>
-                </div>
-
-                {{-- Trial days --}}
-                <div id="trial_days_group" class="{{ old('is_trial_allowed') ? '' : 'hidden' }}">
-                    <div class="form-group">
-                        <label class="form-label">Trial Period (days)</label>
-                        <input type="number" name="trial_days" min="1" max="365"
-                               class="form-control max-w-xs" value="{{ old('trial_days', 14) }}">
-                    </div>
-                </div>
-
-                <hr class="border-gray-100">
-
-                {{-- Features --}}
-                <div class="form-group">
-                    <label class="form-label">Features <span class="text-xs text-gray-400">(one per line)</span></label>
-                    <textarea name="features" class="form-control font-mono text-sm" rows="5"
-                              placeholder="Up to 10 users&#10;50GB storage&#10;Priority support&#10;Custom branding">{{ old('features') }}</textarea>
-                    <p class="text-xs text-gray-400 mt-1">Enter each feature on its own line. Shown as a bullet list.</p>
-                </div>
-
-                <hr class="border-gray-100">
-
-                {{-- Stripe --}}
-                <div>
-                    <h4 class="font-medium text-gray-700 mb-3 flex items-center gap-2">
-                        <span class="material-icons text-indigo-500">credit_card</span>
-                        Stripe Price IDs
-                        <span class="text-xs text-gray-400 font-normal">(optional — leave blank to use inline pricing)</span>
-                    </h4>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="form-group">
-                            <label class="form-label text-xs">Monthly Price ID</label>
-                            <input type="text" name="stripe_monthly_price_id" class="form-control font-mono text-sm"
-                                   value="{{ old('stripe_monthly_price_id') }}" placeholder="price_xxxxxxxx">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label text-xs">Annual Price ID</label>
-                            <input type="text" name="stripe_annual_price_id" class="form-control font-mono text-sm"
-                                   value="{{ old('stripe_annual_price_id') }}" placeholder="price_xxxxxxxx">
-                        </div>
-                    </div>
-                    <p class="text-xs text-gray-400 mt-2">
-                        If left blank, Stripe checkout will use inline pricing based on the price you set above.
-                    </p>
-                </div>
-
-                {{-- Sort --}}
-                <div class="form-group">
-                    <label class="form-label">Sort Order</label>
-                    <input type="number" name="sort" min="0" class="form-control max-w-xs"
-                           value="{{ old('sort', 0) }}" placeholder="0 = first">
-                    <p class="text-xs text-gray-400 mt-1">Lower number = shown first.</p>
-                </div>
-
-                {{-- Buttons --}}
-                <div class="flex items-center gap-3 pt-2">
-                    <button type="submit" class="btn btn-primary">Create Plan</button>
-                    <a href="{{ route('plans.index') }}" class="btn btn-secondary">Cancel</a>
-                </div>
-
+        {{-- Card header --}}
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px">
+            <div>
+                <div style="font-size:15px;font-weight:600;color:var(--text-1)">New Plan</div>
+                <div style="font-size:12.5px;color:var(--text-3);margin-top:2px">Configure pricing, limits, and features</div>
+            </div>
+            <div style="display:flex;gap:8px">
+                <a href="{{ route('plans.index') }}" class="btn btn-ghost btn-sm">Cancel</a>
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Create Plan
+                </button>
             </div>
         </div>
-    </form>
-</div>
+
+        {{-- Validation errors --}}
+        @if($errors->any())
+        <div class="ca-alert ca-alert-error" style="margin-bottom:18px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <div>
+                @foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach
+            </div>
+        </div>
+        @endif
+
+        {{-- ── Section: Basic Info ───────────────────────────── --}}
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:14px">Basic Info</div>
+
+        <div class="f-group">
+            <label class="f-label">Plan Name <span style="color:var(--red)">*</span></label>
+            <input type="text" name="name" class="f-inp" value="{{ old('name') }}" placeholder="e.g. Starter, Business, Enterprise" required>
+        </div>
+
+        <div class="f-group">
+            <label class="f-label">Description</label>
+            <textarea name="description" class="f-textarea" rows="2" placeholder="Brief description shown to users">{{ old('description') }}</textarea>
+        </div>
+
+        {{-- ── Section: Pricing ─────────────────────────────── --}}
+        <div style="border-top:1px solid var(--border);margin:20px 0 18px"></div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:14px">Pricing</div>
+
+        <div class="form-2col">
+            <div class="f-group">
+                <label class="f-label">Monthly Price ($) <span style="color:var(--red)">*</span></label>
+                <div style="position:relative">
+                    <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--text-3);font-weight:500">$</span>
+                    <input type="number" name="monthly_price" id="monthly_price_input" step="0.01" min="0" class="f-inp" style="padding-left:22px" value="{{ old('monthly_price', 0) }}" required>
+                </div>
+            </div>
+            <div class="f-group">
+                <label class="f-label">Annual Price <span style="font-size:11px;color:var(--text-3);font-weight:400">(optional)</span></label>
+                <div style="position:relative">
+                    <span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--text-3);font-weight:500">$</span>
+                    <input type="number" name="annual_price" step="0.01" min="0" class="f-inp" style="padding-left:22px" value="{{ old('annual_price') }}" placeholder="Leave blank to disable">
+                </div>
+            </div>
+        </div>
+
+        {{-- ── Section: Limits ──────────────────────────────── --}}
+        <div style="border-top:1px solid var(--border);margin:20px 0 18px"></div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:14px">Usage Limits</div>
+
+        <div class="form-2col">
+            <div class="f-group">
+                <label class="f-label">Max Users <span style="font-size:11px;color:var(--text-3);font-weight:400">(blank = unlimited)</span></label>
+                <input type="number" name="max_users" min="1" class="f-inp" value="{{ old('max_users') }}" placeholder="e.g. 10">
+            </div>
+            <div class="f-group">
+                <label class="f-label">Max Storage (GB) <span style="font-size:11px;color:var(--text-3);font-weight:400">(blank = unlimited)</span></label>
+                <input type="number" name="max_storage_gb" min="1" class="f-inp" value="{{ old('max_storage_gb') }}" placeholder="e.g. 50">
+            </div>
+        </div>
+
+        {{-- ── Section: Options ─────────────────────────────── --}}
+        <div style="border-top:1px solid var(--border);margin:20px 0 18px"></div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:14px">Options</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
+
+            {{-- Free Plan --}}
+            <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;background:#fff;transition:border-color .14s" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
+                <input type="hidden" name="is_free" value="0">
+                <input type="checkbox" name="is_free" value="1" id="chk_free" style="width:15px;height:15px;accent-color:var(--orange);flex-shrink:0;cursor:pointer" {{ old('is_free') ? 'checked' : '' }} onchange="toggleFree(this)">
+                <div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-1)">Free Plan</div>
+                    <div style="font-size:11.5px;color:var(--text-3)">Set price to $0 and mark as free</div>
+                </div>
+            </label>
+
+            {{-- Recommended --}}
+            <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;background:#fff;transition:border-color .14s" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
+                <input type="hidden" name="is_recommended" value="0">
+                <input type="checkbox" name="is_recommended" value="1" style="width:15px;height:15px;accent-color:var(--orange);flex-shrink:0;cursor:pointer" {{ old('is_recommended') ? 'checked' : '' }}>
+                <div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-1)">Recommended</div>
+                    <div style="font-size:11.5px;color:var(--text-3)">Highlight this plan to users</div>
+                </div>
+            </label>
+
+            {{-- Free Trial --}}
+            <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;background:#fff;transition:border-color .14s" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
+                <input type="hidden" name="is_trial_allowed" value="0">
+                <input type="checkbox" name="is_trial_allowed" value="1" id="chk_trial" style="width:15px;height:15px;accent-color:var(--orange);flex-shrink:0;cursor:pointer" {{ old('is_trial_allowed') ? 'checked' : '' }} onchange="document.getElementById('trial_days_group').style.display=this.checked?'block':'none'">
+                <div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-1)">Free Trial</div>
+                    <div style="font-size:11.5px;color:var(--text-3)">Allow trial before payment</div>
+                </div>
+            </label>
+
+            {{-- Active --}}
+            <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;background:#fff;transition:border-color .14s" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
+                <input type="hidden" name="is_active" value="0">
+                <input type="checkbox" name="is_active" value="1" style="width:15px;height:15px;accent-color:var(--orange);flex-shrink:0;cursor:pointer" {{ old('is_active', true) ? 'checked' : '' }}>
+                <div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-1)">Active</div>
+                    <div style="font-size:11.5px;color:var(--text-3)">Visible when adding companies</div>
+                </div>
+            </label>
+
+        </div>
+
+        {{-- Trial days (conditional) --}}
+        <div id="trial_days_group" style="{{ old('is_trial_allowed') ? '' : 'display:none' }};margin-top:14px">
+            <div class="f-group">
+                <label class="f-label">Trial Period (days)</label>
+                <input type="number" name="trial_days" min="1" max="365" class="f-inp" style="max-width:160px" value="{{ old('trial_days', 14) }}">
+                <div style="font-size:12px;color:var(--text-3);margin-top:5px">Number of days users can trial before payment is required.</div>
+            </div>
+        </div>
+
+        {{-- ── Section: Features ────────────────────────────── --}}
+        <div style="border-top:1px solid var(--border);margin:20px 0 18px"></div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:14px">Features</div>
+
+        <div class="f-group">
+            <label class="f-label">Feature List <span style="font-size:11px;color:var(--text-3);font-weight:400">(one per line)</span></label>
+            <textarea name="features" class="f-textarea" rows="5" style="font-family:monospace;font-size:13px" placeholder="Up to 10 users&#10;50GB storage&#10;Priority support&#10;Custom branding">{{ old('features') }}</textarea>
+            <div style="font-size:12px;color:var(--text-3);margin-top:5px">Each line will be shown as a bullet point on the pricing page.</div>
+        </div>
+
+        {{-- ── Section: Stripe ──────────────────────────────── --}}
+        <div style="border-top:1px solid var(--border);margin:20px 0 18px"></div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)">Stripe Price IDs</div>
+            <span class="badge b-gray" style="font-size:10.5px">optional</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:14px">Leave blank to use the inline prices set above. Only needed for Stripe-managed plans.</div>
+
+        <div class="form-2col">
+            <div class="f-group">
+                <label class="f-label">Monthly Price ID</label>
+                <input type="text" name="stripe_monthly_price_id" class="f-inp" style="font-family:monospace;font-size:12.5px" value="{{ old('stripe_monthly_price_id') }}" placeholder="price_xxxxxxxx">
+            </div>
+            <div class="f-group">
+                <label class="f-label">Annual Price ID</label>
+                <input type="text" name="stripe_annual_price_id" class="f-inp" style="font-family:monospace;font-size:12.5px" value="{{ old('stripe_annual_price_id') }}" placeholder="price_xxxxxxxx">
+            </div>
+        </div>
+
+        {{-- ── Section: Sort ────────────────────────────────── --}}
+        <div style="border-top:1px solid var(--border);margin:20px 0 18px"></div>
+
+        <div class="f-group">
+            <label class="f-label">Sort Order</label>
+            <input type="number" name="sort" min="0" class="f-inp" style="max-width:160px" value="{{ old('sort', 0) }}">
+            <div style="font-size:12px;color:var(--text-3);margin-top:5px">Lower number = shown first on the pricing page.</div>
+        </div>
+
+        {{-- ── Actions ──────────────────────────────────────── --}}
+        <div style="display:flex;gap:10px;padding-top:8px;border-top:1px solid var(--border);margin-top:20px">
+            <button type="submit" class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Create Plan
+            </button>
+            <a href="{{ route('plans.index') }}" class="btn btn-ghost">Cancel</a>
+        </div>
+
+    </div>
+</form>
+
 @endsection
 
 @push('scripts')
 <script>
 function toggleFree(chk) {
-    const priceInput = document.querySelector('[name=monthly_price]');
-    if (chk.checked) { priceInput.value = '0'; priceInput.setAttribute('readonly', true); }
-    else             { priceInput.removeAttribute('readonly'); }
+    const inp = document.getElementById('monthly_price_input');
+    if (chk.checked) { inp.value = '0'; inp.setAttribute('readonly', true); inp.style.background = 'var(--bg)'; }
+    else             { inp.removeAttribute('readonly'); inp.style.background = ''; }
 }
-// Init trial days visibility
-document.getElementById('chk_trial')?.dispatchEvent(new Event('change'));
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('chk_free')?.checked) toggleFree(document.getElementById('chk_free'));
+});
 </script>
 @endpush

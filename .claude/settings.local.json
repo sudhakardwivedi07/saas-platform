@@ -13,7 +13,8 @@
       "Bash(git-credential-wincred)",
       "Bash(cmdkey /list)",
       "Bash(php -r \"echo 'PHP OK';\")",
-      "Bash(php -r ':*)"
+      "Bash(php -r ':*)",
+      "Bash(xargs grep *)"
     ]
   }
 }

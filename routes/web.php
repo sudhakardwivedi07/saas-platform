@@ -147,8 +147,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('finance', [FinanceController::class, 'index'])->name('finance.index');
 
     // Support
-    Route::get('support',  [SupportController::class, 'index'])->name('support.index');
-    Route::post('support', [SupportController::class, 'store'])->name('support.store');
+    Route::get('support',                [SupportController::class, 'index'])->name('support.index');
+    Route::post('support',               [SupportController::class, 'store'])->name('support.store');
+    Route::get('support/{ticket}',         [SupportController::class, 'show'])->name('support.show');
+    Route::patch('support/{ticket}',       [SupportController::class, 'update'])->name('support.update');
+    Route::patch('support/{ticket}/notes', [SupportController::class, 'updateNotes'])->name('support.notes');
 
     // Users (tenant-scoped)
     Route::get('users',  [TenantUserController::class, 'index'])->name('users.index');

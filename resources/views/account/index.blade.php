@@ -436,5 +436,14 @@ document.getElementById('branding-form').addEventListener('submit', async functi
     btn.disabled  = false;
     btn.innerHTML = origText;
 });
+
+// Auto-switch to Branding tab when URL hash is #branding
+// Must be DOMContentLoaded so it runs AFTER the layout registers tab click handlers
+document.addEventListener('DOMContentLoaded', function () {
+    if (window.location.hash === '#branding') {
+        var btn = document.querySelector('[data-tab="tab-branding"]');
+        if (btn) btn.click();
+    }
+});
 </script>
 @endpush

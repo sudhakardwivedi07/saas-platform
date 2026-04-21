@@ -126,7 +126,7 @@
                             <div style="font-size:12px;color:var(--text-3)">PNG, SVG or JPG · Max 2MB · Recommended 200×50px</div>
                         </div>
                     </div>
-                    <input type="file" id="logo-upload" name="logo" accept="image/*" style="display:none"
+                    <input type="file" id="logo-upload" name="logo" accept="image/*,.svg" style="display:none"
                            onchange="previewLogo(this)">
                 </div>
 

@@ -1,0 +1,16 @@
+name: Deploy Laravel
+
+on:
+  push:
+    branches:
+      - dev
+      - qa
+      - main
+    paths-ignore:
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: OA-Nitin/devops-platform/.github/workflows/reusable-deploy-standard-laravel.yml@main
+    secrets: inherit

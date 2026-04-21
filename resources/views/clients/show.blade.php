@@ -49,7 +49,7 @@
     <div class="cd-stat-chips" style="margin-top:1.25rem;">
 
         <div class="cd-chip">
-            <span class="cd-chip-val">{{ $client->companies->count() }}</span>
+            <span class="cd-chip-val">{{ $client->company ? 1 : 0 }}</span>
             <span class="cd-chip-lbl">Companies</span>
         </div>
 
@@ -94,7 +94,7 @@
     <button class="tab-btn" onclick="switchTab('companies', this)">
         Companies
         <span style="margin-left:5px;background:var(--blue);color:#fff;font-size:0.65rem;font-weight:700;padding:1px 6px;border-radius:99px;">
-            {{ $client->companies->count() }}
+            {{ $client->company ? 1 : 0 }}
         </span>
     </button>
     <button class="tab-btn" onclick="switchTab('activity', this)">Activity</button>
@@ -144,12 +144,12 @@
                 </div>
                 @endforeach
 
-                @if($client->companies->count() > 0)
+                @if($client->company)
                 <div style="position:relative;display:flex;align-items:flex-start;gap:10px;">
                     <div style="width:14px;height:14px;border-radius:50%;background:#7c3aed;flex-shrink:0;margin-top:2px;box-shadow:0 0 0 3px #fff,0 0 0 4px #7c3aed44;"></div>
                     <div>
                         <div style="font-size:0.875rem;font-weight:500;color:var(--text-1);">
-                            {{ $client->companies->count() }} {{ Str::plural('company', $client->companies->count()) }} connected
+                            1 company connected
                         </div>
                         <div style="font-size:0.75rem;color:var(--text-3);margin-top:1px;">Active</div>
                     </div>
@@ -170,7 +170,7 @@
             <div class="card-sub">All companies associated with {{ $client->name }}.</div>
         </div>
 
-        @if($client->companies->isEmpty())
+        @if(!$client->company)
             <div style="text-align:center;padding:2.5rem 1rem;">
                 <div style="width:48px;height:48px;border-radius:50%;background:#f0f4f8;display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem auto;">
                     <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="var(--text-3)" stroke-width="1.5">
@@ -181,40 +181,41 @@
                 <p style="font-size:0.8125rem;color:var(--text-2);margin:0;">This client has no companies connected yet.</p>
             </div>
         @else
+        @php $company = $client->company; $isQB = $company->quickbooksConnections?->where('is_active', true)->isNotEmpty(); @endphp
             <div class="tc">
-                <table>
+                <table style="width:100%;border-collapse:collapse">
                     <thead>
-                        <tr class="tc-head">
+                        <tr>
                             <th>Company Name</th>
                             <th>QB Connected</th>
+                            <th>Status</th>
                             <th>Created</th>
-                            <th style="width:80px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($client->companies as $company)
                         <tr>
                             <td>
-                                <div style="font-weight:600;color:var(--text-1);font-size:0.875rem;">{{ $company->name }}</div>
-                                @if($company->legal_name ?? false)
-                                    <div style="font-size:0.75rem;color:var(--text-2);">{{ $company->legal_name }}</div>
+                                <div style="font-weight:600;color:var(--text-1);font-size:0.875rem;">{{ $company->company_name }}</div>
+                                @if($company->company_email)
+                                    <div style="font-size:0.75rem;color:var(--text-2);">{{ $company->company_email }}</div>
                                 @endif
                             </td>
                             <td>
-                                @if($company->qb_realm_id ?? false)
+                                @if($isQB)
                                     <span class="badge b-green">Connected</span>
                                 @else
                                     <span class="badge b-gray">Not connected</span>
                                 @endif
                             </td>
-                            <td style="font-size:0.8125rem;color:var(--text-2);">
-                                {{ $company->created_at ? \Carbon\Carbon::parse($company->created_at)->format('M j, Y') : '—' }}
-                            </td>
                             <td>
-                                <a href="#" class="btn btn-ghost btn-xs" style="text-decoration:none;">View</a>
+                                <span class="badge {{ ($company->status ?? 'active') === 'active' ? 'b-green' : 'b-gray' }}">
+                                    {{ ucfirst($company->status ?? 'active') }}
+                                </span>
+                            </td>
+                            <td style="font-size:0.8125rem;color:var(--text-2);">
+                                {{ $company->created_at?->format('M j, Y') ?? '—' }}
                             </td>
                         </tr>
-                        @endforeach
                     </tbody>
                 </table>
             </div>

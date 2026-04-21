@@ -2,19 +2,6 @@
 @section('title', 'QuickBooks')
 @section('page-title', 'QuickBooks Integration')
 
-@push('styles')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
-<style>
-div.dataTables_wrapper div.dataTables_info{font-size:12.5px;color:var(--text-3);padding-top:14px}
-div.dataTables_wrapper div.dataTables_paginate{padding-top:10px}
-div.dataTables_wrapper div.dataTables_paginate .paginate_button{border-radius:7px!important;font-size:13px;border:1.5px solid var(--border)!important;background:#fff!important;color:var(--text-1)!important;padding:5px 11px!important;margin:0 2px}
-div.dataTables_wrapper div.dataTables_paginate .paginate_button.current,
-div.dataTables_wrapper div.dataTables_paginate .paginate_button.current:hover{background:var(--orange)!important;color:#fff!important;border-color:var(--orange)!important}
-div.dataTables_wrapper div.dataTables_paginate .paginate_button:hover:not(.current){background:var(--bg)!important;border-color:var(--text-3)!important}
-table.dataTable thead th{cursor:pointer}
-</style>
-@endpush
-
 @section('content')
 
 <div class="ph">
@@ -32,18 +19,6 @@ table.dataTable thead th{cursor:pointer}
     </div>
 </div>
 
-@if(session('success'))
-<div class="info-banner" style="margin-bottom:16px;background:rgba(16,185,129,.07);border-color:var(--green)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-    <div class="info-banner-txt">{{ session('success') }}</div>
-</div>
-@endif
-@if(session('error'))
-<div class="info-banner" style="margin-bottom:16px;background:rgba(239,68,68,.06);border-color:var(--red)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    <div class="info-banner-txt">{{ session('error') }}</div>
-</div>
-@endif
 
 <div class="info-banner" style="margin-bottom:16px">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -66,8 +41,7 @@ table.dataTable thead th{cursor:pointer}
         </div>
         <span class="badge b-gray" id="qb-count-badge">0 connections</span>
     </div>
-    <div style="overflow-x:auto">
-        <table id="qb-table" style="width:100%;border-collapse:collapse">
+    <table id="qb-table" style="width:100%;border-collapse:collapse">
             <thead>
                 <tr>
                     <th>Company</th>
@@ -80,7 +54,7 @@ table.dataTable thead th{cursor:pointer}
             </thead>
             <tbody>
                 @php $connections = $connections ?? collect(); @endphp
-                @forelse($connections as $conn)
+                @foreach($connections as $conn)
                 @php
                     $qbStatus = $conn->is_active
                         ? ($conn->isAccessTokenExpired() ? 'token expired' : 'connected')
@@ -148,23 +122,9 @@ table.dataTable thead th{cursor:pointer}
                         @endcan
                     </td>
                 </tr>
-                @empty
-                <tr>
-                    <td colspan="6" style="text-align:center;padding:56px 20px">
-                        <div style="width:52px;height:52px;border-radius:13px;background:#f0fdf4;margin:0 auto 14px;display:flex;align-items:center;justify-content:center">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" width="24" height="24"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-                        </div>
-                        <div style="font-size:14px;font-weight:500;color:var(--text-2)">No QuickBooks connections yet</div>
-                        <div style="font-size:12.5px;color:var(--text-3);margin-top:4px">Connect your client companies' QuickBooks accounts to start syncing data.</div>
-                        @can('connect_quickbooks')
-                        <a href="{{ route('quickbooks.connect') }}" class="btn btn-primary btn-sm" style="margin-top:16px;display:inline-flex">Connect QuickBooks</a>
-                        @endcan
-                    </td>
-                </tr>
-                @endforelse
+                @endforeach
             </tbody>
         </table>
-    </div>
 </div>
 
 @endsection
@@ -179,13 +139,13 @@ $(document).ready(function() {
 
     var table = $('#qb-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
-        searching: true, ordering: true, info: true, dom: 'tip',
+        searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         order: [[3, 'desc']],
         columnDefs: [{ orderable: false, targets: [5] }],
         language: {
             info: 'Showing _START_–_END_ of _TOTAL_ connections',
             infoEmpty: 'No connections', paginate: { previous: '‹', next: '›' },
-            emptyTable: 'No QuickBooks connections yet',
+            emptyTable: '<div style="text-align:center;padding:48px 20px"><div style="width:52px;height:52px;border-radius:13px;background:#f0fdf4;margin:0 auto 14px;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8" width="24" height="24"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg></div><div style="font-size:14px;font-weight:500;color:#6b7280">No QuickBooks connections yet</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px">Connect your client companies\' QuickBooks accounts to start syncing data.</div></div>',
         },
         drawCallback: function() {
             var info = this.api().page.info();

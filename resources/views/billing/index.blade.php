@@ -3,7 +3,6 @@
 @section('page-title', 'Subscription & Usage')
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
 <style>
 /* ── Current Plan Banner ────────────────────────────── */
 .plan-banner {
@@ -173,15 +172,6 @@
 .mini-bar-wrap { width: 80px; height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden; }
 .mini-bar      { height: 100%; border-radius: 3px; }
 
-/* ── DataTables ─────────────────────────────────────── */
-div.dataTables_wrapper div.dataTables_info{font-size:12.5px;color:var(--text-3);padding-top:14px}
-div.dataTables_wrapper div.dataTables_paginate{padding-top:10px}
-div.dataTables_wrapper div.dataTables_paginate .paginate_button{border-radius:7px!important;font-size:13px;border:1.5px solid var(--border)!important;background:#fff!important;color:var(--text-1)!important;padding:5px 11px!important;margin:0 2px}
-div.dataTables_wrapper div.dataTables_paginate .paginate_button.current,
-div.dataTables_wrapper div.dataTables_paginate .paginate_button.current:hover{background:var(--orange)!important;color:#fff!important;border-color:var(--orange)!important}
-div.dataTables_wrapper div.dataTables_paginate .paginate_button:hover:not(.current){background:var(--bg)!important;border-color:var(--text-3)!important}
-table.dataTable thead th{cursor:pointer}
-
 @media(max-width:960px){
     .plans-grid { grid-template-columns: 1fr; }
     .usage-kpi-grid { grid-template-columns: 1fr; }
@@ -199,12 +189,6 @@ table.dataTable thead th{cursor:pointer}
     </div>
 </div>
 
-@if(session('success'))
-<div class="info-banner" style="background:rgba(16,185,129,.07);border-color:var(--green);margin-bottom:16px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-    <div class="info-banner-txt">{{ session('success') }}</div>
-</div>
-@endif
 
 {{-- ── 1. Current Plan Banner ──────────────────────── --}}
 @php
@@ -410,8 +394,7 @@ table.dataTable thead th{cursor:pointer}
             </select>
         </div>
     </div>
-    <div style="overflow-x:auto">
-        <table id="usage-table" style="width:100%;border-collapse:collapse">
+    <table id="usage-table" style="width:100%;border-collapse:collapse">
             <thead>
                 <tr>
                     <th>Company</th>
@@ -427,7 +410,7 @@ table.dataTable thead th{cursor:pointer}
             </thead>
             <tbody>
                 @php $subCompanies = $subCompanies ?? collect(); @endphp
-                @forelse($subCompanies as $co)
+                @foreach($subCompanies as $co)
                 @php
                     $owner      = $co->users->first();
                     $plan       = $co->clientPackage ?? $co->package;
@@ -503,18 +486,9 @@ table.dataTable thead th{cursor:pointer}
                         </div>
                     </td>
                 </tr>
-                @empty
-                <tr>
-                    <td colspan="9" style="text-align:center;padding:48px 20px">
-                        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
-                        <div style="font-size:14px;font-weight:500;color:var(--text-2)">No companies yet</div>
-                        <div style="font-size:12.5px;color:var(--text-3);margin-top:4px">Add companies to track their usage here.</div>
-                    </td>
-                </tr>
-                @endforelse
+                @endforeach
             </tbody>
         </table>
-    </div>
 </div>
 
 @endsection
@@ -529,13 +503,13 @@ $(document).ready(function() {
 
     var table = $('#usage-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
-        searching: true, ordering: true, info: true, dom: 'tip',
+        searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         columnDefs: [{ orderable: false, targets: [3, 8] }],
         language: {
             info: 'Showing _START_–_END_ of _TOTAL_ companies',
             infoEmpty: 'No companies',
             paginate: { previous: '‹', next: '›' },
-            emptyTable: 'No companies yet',
+            emptyTable: '<div style="text-align:center;padding:48px 20px"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">No companies yet</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px">Add companies to track their usage here.</div></div>',
         }
     });
 

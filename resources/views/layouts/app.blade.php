@@ -15,6 +15,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 
+    {{-- DataTables (used on multiple pages) --}}
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+
     {{-- White-label CSS variables from branding --}}
     <style>
 /* ── BRAND TOKENS ─────────────────────────────────────── */
@@ -212,7 +215,7 @@ tbody tr:hover td{background:#fafcff}
 .dot-menu{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;cursor:pointer;color:var(--text-3);border:none;background:none;font-size:16px;transition:background .14s}
 .dot-menu:hover{background:var(--bg);color:var(--text-2)}
 .dm-wrap{position:relative;display:inline-block}
-.dm-popup{display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:9999;min-width:190px;overflow:hidden}
+.dm-popup{display:none;position:fixed;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);z-index:9999;min-width:190px;overflow:hidden}
 .dm-popup.open{display:block}
 .dm-item{display:flex;align-items:center;gap:9px;padding:9px 14px;font-size:13px;color:var(--text-1);cursor:pointer;transition:background .12s;white-space:nowrap;text-decoration:none}
 .dm-item:hover{background:var(--bg)}
@@ -296,6 +299,29 @@ tbody tr:hover td{background:#fafcff}
 /* ── USAGE BAR ────────────────────────────────────────── */
 .ubar-wrap{width:80px;height:5px;background:var(--border);border-radius:999px;overflow:hidden;display:inline-block;vertical-align:middle}
 .ubar{height:100%;border-radius:999px;background:var(--blue)}
+
+/* ── DATATABLES ───────────────────────────────────────── */
+table.dataTable{border-collapse:collapse!important;width:100%!important}
+table.dataTable thead th{cursor:pointer;padding:9px 14px!important;font-size:10.5px!important;font-weight:500!important;text-transform:uppercase!important;letter-spacing:.06em!important;color:var(--text-3)!important;background:#fafbfc!important;border-bottom:1px solid var(--border)!important;border-top:none!important;white-space:nowrap}
+table.dataTable tbody td{padding:11px 14px!important;font-size:13px!important;border-bottom:1px solid var(--border)!important;border-top:none!important;vertical-align:middle!important}
+table.dataTable tbody tr:last-child td{border-bottom:none!important}
+table.dataTable tbody tr:hover td{background:#fafcff!important}
+div.dataTables_wrapper{padding:0}
+div.dataTables_wrapper div.dataTables_info{font-size:12.5px;color:var(--text-3);padding:12px 16px 12px 0;float:left;line-height:32px}
+div.dataTables_wrapper div.dataTables_paginate{float:right;padding:10px 0 12px}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button{display:inline-block!important;border-radius:7px!important;font-size:13px!important;border:1.5px solid var(--border)!important;background:#fff!important;color:var(--text-1)!important;padding:5px 11px!important;margin:0 2px!important;line-height:1.4!important;cursor:pointer!important;transition:background .12s,border-color .12s!important;text-decoration:none!important}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.current,
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.current:hover{background:var(--orange)!important;color:#fff!important;border-color:var(--orange)!important}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button:hover:not(.current):not(.disabled){background:var(--bg)!important;border-color:var(--text-3)!important;color:var(--text-1)!important}
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.disabled,
+div.dataTables_wrapper div.dataTables_paginate .paginate_button.disabled:hover{opacity:.38!important;cursor:not-allowed!important;background:#fff!important;border-color:var(--border)!important}
+div.dataTables_wrapper::after{content:'';display:table;clear:both}
+/* scroll-only wrapper around the table */
+div.dataTables_wrapper .dt-tscroll{overflow-x:auto}
+/* footer: info left, pagination right */
+div.dataTables_wrapper .dt-footer{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 4px 16px;border-top:1px solid var(--border);background:#fafbfc;border-radius:0 0 var(--r-lg) var(--r-lg)}
+div.dataTables_wrapper .dt-footer div.dataTables_info{float:none!important;padding:8px 0!important;line-height:1}
+div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;padding:8px 0!important}
     </style>
     @stack('styles')
 </head>
@@ -326,46 +352,79 @@ tbody tr:hover td{background:#fafcff}
     </div>
 
     <nav class="ca-nav">
+        {{-- Dashboard: all roles --}}
         <a href="{{ route('dashboard') }}" class="ca-nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             Dashboard
         </a>
+
+        {{-- Clients: client_admin + manager only --}}
+        @if(auth()->user()->hasAnyRole(['client_admin','manager']))
         <a href="{{ route('clients.index') }}" class="ca-nav-item {{ request()->routeIs('clients.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
             Clients
         </a>
+        @endif
+
+        {{-- Subscription & Usage: client_admin only (billing) --}}
+        @if(auth()->user()->can('view_billing'))
         <a href="{{ route('billing.index') }}" class="ca-nav-item {{ request()->routeIs('billing.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
             Subscription &amp; Usage
         </a>
+        @endif
+
+        {{-- Settings: users with view_settings --}}
+        @if(auth()->user()->can('view_settings'))
         <a href="{{ route('settings.index') }}" class="ca-nav-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
             Settings
         </a>
+        @endif
+
+        {{-- QuickBooks: anyone with view_quickbooks --}}
+        @if(auth()->user()->can('view_quickbooks'))
         <a href="{{ route('quickbooks.index') }}" class="ca-nav-item {{ request()->routeIs('quickbooks.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
             QuickBooks
         </a>
+        @endif
+
+        {{-- Users: anyone with view_users --}}
+        @if(auth()->user()->can('view_users'))
         <a href="{{ route('users.index') }}" class="ca-nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
             Users
         </a>
+        @endif
+
+        {{-- Finance: client_admin only (view_reports) --}}
+        @if(auth()->user()->hasRole('client_admin'))
         <a href="{{ route('finance.index') }}" class="ca-nav-item {{ request()->routeIs('finance.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
             Finance
         </a>
+        @endif
+
+        {{-- Support: all roles --}}
         <a href="{{ route('support.index') }}" class="ca-nav-item {{ request()->routeIs('support.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             Support
         </a>
+
+        {{-- My Account: all roles --}}
         <a href="{{ route('account.index') }}" class="ca-nav-item {{ request()->routeIs('account.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             My Account
         </a>
+
+        {{-- Activity Log: client_admin + manager --}}
+        @if(auth()->user()->hasAnyRole(['client_admin','manager']))
         <a href="{{ route('activity.index') }}" class="ca-nav-item {{ request()->routeIs('activity.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Activity Log
         </a>
+        @endif
     </nav>
 
     <div class="ca-sidebar-foot">
@@ -472,20 +531,40 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Dot menus
+// Dot menus — position:fixed so they escape overflow:auto containers
 document.addEventListener('click', function(e) {
     const btn = e.target.closest('[data-menu]');
     if (btn) {
         e.stopPropagation();
-        const id = btn.dataset.menu;
-        document.querySelectorAll('.dm-popup.open').forEach(p => {
-            if (p.id !== id) p.classList.remove('open');
-        });
-        document.getElementById(id)?.classList.toggle('open');
+        const id  = btn.dataset.menu;
+        const popup = document.getElementById(id);
+        const isOpen = popup?.classList.contains('open');
+
+        // Close all open popups
+        document.querySelectorAll('.dm-popup.open').forEach(p => p.classList.remove('open'));
+
+        if (!isOpen && popup) {
+            // Position fixed relative to button
+            const rect = btn.getBoundingClientRect();
+            popup.style.top  = (rect.bottom + 4) + 'px';
+            // Align right edge of popup to right edge of button
+            popup.style.left = 'auto';
+            popup.style.right = 'auto';
+            const popupWidth = 190;
+            let left = rect.right - popupWidth;
+            if (left < 8) left = 8;
+            popup.style.left = left + 'px';
+            popup.classList.add('open');
+        }
         return;
     }
     document.querySelectorAll('.dm-popup.open').forEach(p => p.classList.remove('open'));
 });
+
+// Reposition open popup on scroll/resize
+['scroll','resize'].forEach(ev => window.addEventListener(ev, function() {
+    document.querySelectorAll('.dm-popup.open').forEach(p => p.classList.remove('open'));
+}, true));
 
 async function apiCall(url, method='POST', body={}) {
     const r = await fetch(url, {

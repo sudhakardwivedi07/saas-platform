@@ -21,6 +21,8 @@ class SettingsController extends AccountBaseController
 
     public function index()
     {
+        abort_403(!auth()->user()->can('view_settings'));
+
         $companyId = auth()->user()->company_id;
 
         $this->smtpSetting    = EmailSmtpSetting::where('company_id', $companyId)->first();

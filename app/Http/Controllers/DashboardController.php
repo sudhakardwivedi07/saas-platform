@@ -7,6 +7,8 @@ use App\Models\Document;
 use App\Models\Payment;
 use App\Models\QuickBooksConnection;
 use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 
 class DashboardController extends AccountBaseController
 {
@@ -17,58 +19,141 @@ class DashboardController extends AccountBaseController
         $this->pageTitle = 'Dashboard';
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $company = company();
 
-        // SuperAdmin has no tenant context — send them to the SuperAdmin panel
         if (!$company) {
             return redirect()->route('superadmin.dashboard');
         }
 
+        // Simple dashboard for basic users — no access to management stats
+        if (!auth()->user()->hasAnyRole(['client_admin', 'manager'])) {
+            return view('dashboard.user', $this->data);
+        }
+
         $companyId = $company->id;
 
-        // Sub-companies created by this client admin
-        $allCompanies = Company::withoutGlobalScopes()
+        // Resolve date range from period filter
+        $period = in_array($request->input('period'), ['1W', '1M', '1Y', 'custom'])
+            ? $request->input('period')
+            : '1M';
+
+        [$startDate, $endDate, $periodLabel] = $this->resolvePeriod($period, $request);
+
+        // All sub-companies (used for activity feed, chart, QB lookup)
+        $allCompanies  = Company::withoutGlobalScopes()
             ->where('created_by', $companyId)
             ->with(['quickbooksConnections'])
             ->get();
-
-        // Clients = users whose company_id is one of those sub-companies
         $subCompanyIds = $allCompanies->pluck('id');
-        $allClients    = User::whereIn('company_id', $subCompanyIds)->get();
-        $this->clientCount       = $allClients->count();
-        $this->activeClientCount = $allClients->where('status', 'active')->count();
-        $this->companyCount       = $allCompanies->count();
-        $this->activeCompanyCount = $allCompanies->where('status', 'active')->count();
-        $this->qbConnectedCount   = $allCompanies->filter(fn($c) => $c->quickbooksConnections->where('is_active', true)->isNotEmpty())->count();
 
-        // Subscriptions
-        $this->activeSubscriptions = $allCompanies->filter(fn($c) => in_array($c->status, ['active', 'trial']))->count();
+        // Period-filtered: companies created within selected date range
+        $periodCompanies = $allCompanies->filter(
+            fn($c) => $c->created_at->between($startDate, $endDate)
+        );
 
-        // Insights / risk (placeholder — wire to real data when available)
+        // Period-filtered: clients (users) created within selected date range
+        $periodClients = User::whereIn('company_id', $subCompanyIds)
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->get();
+
+        $this->clientCount        = $periodClients->count();
+        $this->activeClientCount  = $periodClients->where('status', 'active')->count();
+        $this->companyCount       = $periodCompanies->count();
+        $this->activeCompanyCount = $periodCompanies->where('status', 'active')->count();
+        $this->qbConnectedCount   = $periodCompanies->filter(
+            fn($c) => $c->quickbooksConnections->where('is_active', true)->isNotEmpty()
+        )->count();
+
+        // Active subscriptions = period companies with active or trial status
+        $this->activeSubscriptions = $periodCompanies->filter(
+            fn($c) => in_array($c->status, ['active', 'trial'])
+        )->count();
+
+        // Insights (not yet implemented — no insights table)
         $this->insightsGenerated = 0;
         $this->insightsAvailable = 0;
-        $this->companiesAtRisk   = $allCompanies->filter(fn($c) => $c->status === 'inactive')->count();
 
-        // Finance
-        $this->totalRevenue    = Payment::where('company_id', $companyId)->where('status', 'complete')->sum('amount') / 100;
-        $this->paymentsReceived = Payment::where('company_id', $companyId)->where('status', 'complete')->count();
+        // Companies at risk in period = inactive
+        $this->companiesAtRisk = $periodCompanies->filter(
+            fn($c) => $c->status === 'inactive'
+        )->count();
+
+        // Finance — revenue from sub-companies (clients paying the firm), filtered by period
+        $this->totalRevenue = Payment::whereIn('company_id', $subCompanyIds)
+            ->where('status', 'complete')
+            ->whereBetween('paid_at', [$startDate, $endDate])
+            ->sum('amount') / 100;
+
+        $this->paymentsReceived = Payment::whereIn('company_id', $subCompanyIds)
+            ->where('status', 'complete')
+            ->whereBetween('paid_at', [$startDate, $endDate])
+            ->count();
 
         // Current subscription (the client_admin's own plan)
-        $this->subscription  = $company->subscription;
+        $this->subscription = $company->subscription;
+
+        // Period info passed to view
+        $this->period         = $period;
+        $this->periodLabel    = $periodLabel;
+        $this->startDateInput = $startDate->format('Y-m-d');
+        $this->endDateInput   = $endDate->format('Y-m-d');
+
+        // Chart: cumulative company count per month for last 6 months
+        $chartLabels    = [];
+        $chartCompanies = [];
+        $chartPayments  = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $m = now()->subMonths($i);
+            $chartLabels[]    = $m->format('M');
+            $chartCompanies[] = $allCompanies->filter(
+                fn($c) => $c->created_at->format('Y-m') <= $m->format('Y-m')
+            )->count();
+            $chartPayments[] = Payment::whereIn('company_id', $subCompanyIds)
+                ->where('status', 'complete')
+                ->whereYear('paid_at', $m->year)
+                ->whereMonth('paid_at', $m->month)
+                ->count();
+        }
+        $this->chartLabels    = $chartLabels;
+        $this->chartCompanies = $chartCompanies;
+        $this->chartPayments  = $chartPayments;
 
         // Recent activity
         $this->recentDocs = Document::with('uploader')
-            ->where('company_id', $companyId)
+            ->whereIn('company_id', $subCompanyIds->prepend($companyId))
             ->orderByDesc('created_at')
             ->limit(5)
             ->get();
 
-        $this->qbConnections = QuickBooksConnection::where('company_id', $companyId)
+        $this->qbConnections = QuickBooksConnection::whereIn('company_id', $subCompanyIds)
             ->where('is_active', true)
+            ->orderByDesc('created_at')
+            ->limit(5)
             ->get();
 
         return view('dashboard.index', $this->data);
+    }
+
+    private function resolvePeriod(string $period, Request $request): array
+    {
+        switch ($period) {
+            case '1W':
+                return [now()->subDays(7)->startOfDay(), now()->endOfDay(), 'Last 7 Days'];
+            case '1Y':
+                return [now()->startOfYear(), now()->endOfDay(), now()->format('Y')];
+            case 'custom':
+                $start = $request->filled('start_date')
+                    ? Carbon::parse($request->input('start_date'))->startOfDay()
+                    : now()->startOfMonth();
+                $end = $request->filled('end_date')
+                    ? Carbon::parse($request->input('end_date'))->endOfDay()
+                    : now()->endOfDay();
+                $label = $start->format('M j') . ' – ' . $end->format('M j, Y');
+                return [$start, $end, $label];
+            default: // 1M
+                return [now()->startOfMonth(), now()->endOfMonth(), now()->format('F Y')];
+        }
     }
 }

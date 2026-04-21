@@ -43,7 +43,7 @@ class BrandingController extends AccountBaseController
             if ($request->hasFile($field)) {
                 $path = $request->file($field)->store(
                     'companies/' . company()->id . '/branding',
-                    config('filesystems.default', 'public')
+                    'public'
                 );
                 $branding->{$field} = $path;
             }
@@ -55,6 +55,8 @@ class BrandingController extends AccountBaseController
         ));
         $branding->save();
 
-        return Reply::success('Branding updated successfully.');
+        $logoUrl = $branding->logo ? asset('storage/' . $branding->logo) : null;
+
+        return Reply::successWithData('Branding updated successfully.', ['logo_url' => $logoUrl]);
     }
 }

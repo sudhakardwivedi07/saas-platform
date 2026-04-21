@@ -103,6 +103,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/create',                   [ClientCompanyController::class, 'store'])->name('store');
         Route::get('/payment-success',           [ClientCompanyController::class, 'paymentSuccess'])->name('payment.success');
         Route::get('/payment-cancel/{id}',       [ClientCompanyController::class, 'paymentCancel'])->name('payment.cancel');
+        Route::post('/{id}/assign-plan',         [ClientCompanyController::class, 'assignPlan'])->name('assign-plan');
+        Route::post('/quick-store',              [ClientCompanyController::class, 'quickStore'])->name('quick-store');
     });
 
     // Billing / Subscriptions
@@ -138,6 +140,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/',       [ClientController::class, 'store'])->name('store');
         Route::post('/{id}',   [ClientController::class, 'update'])->name('update');
         Route::delete('/{id}', [ClientController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/toggle-status', [ClientController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/bulk-upload',        [ClientController::class, 'bulkUpload'])->name('bulk-upload');
         // Insights sub-pages
         Route::get('/{id}/insights',        [ClientController::class, 'insights'])->name('insights');
         Route::get('/{clientId}/insights/{insightId}', [ClientController::class, 'insightDetail'])->name('insight.detail');
@@ -147,8 +151,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('finance', [FinanceController::class, 'index'])->name('finance.index');
 
     // Support
-    Route::get('support',  [SupportController::class, 'index'])->name('support.index');
-    Route::post('support', [SupportController::class, 'store'])->name('support.store');
+    Route::get('support',                [SupportController::class, 'index'])->name('support.index');
+    Route::post('support',               [SupportController::class, 'store'])->name('support.store');
+    Route::get('support/{ticket}',         [SupportController::class, 'show'])->name('support.show');
+    Route::patch('support/{ticket}',       [SupportController::class, 'update'])->name('support.update');
+    Route::patch('support/{ticket}/notes', [SupportController::class, 'updateNotes'])->name('support.notes');
 
     // Users (tenant-scoped)
     Route::get('users',  [TenantUserController::class, 'index'])->name('users.index');

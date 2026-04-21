@@ -56,7 +56,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 /* ── Three-dot menu ────────────────────────────────── */
 .dm-btn{background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;color:var(--text-3);font-size:18px;line-height:1}
 .dm-btn:hover{background:var(--bg);color:var(--text-1)}
-.dm-popup{position:absolute;right:8px;top:100%;z-index:200;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);padding:6px;min-width:160px;display:none}
+.dm-popup{position:fixed;z-index:9999;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.1);padding:6px;min-width:160px;display:none}
 .dm-popup.open{display:block}
 .dm-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;font-size:13px;color:var(--text-1);cursor:pointer;white-space:nowrap;background:none;border:none;width:100%;text-align:left}
 .dm-item:hover{background:var(--bg)}
@@ -288,7 +288,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
         </div>
     </div>
 
-</div>
+</div>0
 
 {{-- ── View Ticket Modal ──────────────────────────────────────────────────────── --}}
 <div id="viewTicketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
@@ -578,16 +578,9 @@ function selectPriority(btn) {
 }
 
 // ── Global click handler ─────────────────────────────────────────────────────
+// Note: three-dot toggle (.dm-btn / [data-menu]) is handled by the layout's
+// global handler which uses position:fixed. Do NOT duplicate it here.
 document.addEventListener('click', function(e) {
-    // Three-dot toggle
-    var dmBtn = e.target.closest('.dm-btn');
-    if (dmBtn) {
-        e.stopPropagation();
-        var id = dmBtn.dataset.menu;
-        document.querySelectorAll('.dm-popup.open').forEach(function(p){if(p.id!==id)p.classList.remove('open');});
-        document.getElementById(id).classList.toggle('open');
-        return;
-    }
     // View ticket (TK-ID link or View Ticket menu item)
     var viewBtn = e.target.closest('.tk-id, .tk-view-btn');
     if (viewBtn) {
@@ -611,8 +604,6 @@ document.addEventListener('click', function(e) {
     // Priority toggle
     var priBtn = e.target.closest('.priority-toggle');
     if (priBtn) { selectPriority(priBtn); return; }
-    // Close menus
-    document.querySelectorAll('.dm-popup.open').forEach(function(p){p.classList.remove('open');});
 });
 
 document.getElementById('btnNewTicket').addEventListener('click', function() {

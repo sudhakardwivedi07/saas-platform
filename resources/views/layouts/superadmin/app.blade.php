@@ -4,14 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Dashboard') — CFO Insights Admin</title>
+    <title>@yield('title', 'Dashboard') — {{ $globalSetting?->global_app_name ?? config('app.name') }}</title>
+    @if($globalSetting?->favicon)
+    <link rel="icon" type="image/x-icon" href="{{ asset('storage/'.$globalSetting->favicon) }}">
+    @endif
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
 /* ── BRAND TOKENS ─────────────────────────────────────── */
 :root {
+  --sidebar-bg:{{ $globalSetting?->primary_color ?? '#0a2540' }};
+  --orange:{{ $globalSetting?->accent_color ?? '#F06B21' }}; --orange2:#d05519; --orange-l:#fff7ed;
   --blue:#0C84BC; --blue2:#0a6fa0; --blue3:#e8f4fb;
-  --orange:#F06B21; --orange2:#d05519; --orange-l:#fff7ed;
   --green:#10b981; --red:#ef4444; --amber:#f59e0b; --purple:#7c3aed;
   --text-1:#0f172a; --text-2:#475569; --text-3:#94a3b8;
   --bg:#f1f5f9; --card:#fff; --border:#e2e8f0;
@@ -27,18 +31,18 @@ a{text-decoration:none;color:inherit}
 button{cursor:pointer}
 
 /* ── SIDEBAR ──────────────────────────────────────────── */
-.sa-sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:#0a2540;display:flex;flex-direction:column;z-index:200}
+.sa-sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sidebar-w);background:var(--sidebar-bg);display:flex;flex-direction:column;z-index:200}
 .sa-logo-area{padding:16px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
-.sa-logo-img{max-width:160px;height:auto;display:block;filter:brightness(0) invert(1)}
+.sa-logo-img{max-width:160px;max-height:44px;width:auto;height:auto;display:block;object-fit:contain}
 .sa-badge{font-size:9px;font-weight:800;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.14em;margin-top:5px}
 .sa-logo-text{color:#fff;font-size:17px;font-weight:700;line-height:1}
 .sa-nav{padding:12px 10px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:1px}
 .sa-nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:rgba(255,255,255,.55);font-size:13px;cursor:pointer;border:none;background:none;width:100%;text-align:left;transition:all .13s;text-decoration:none}
 .sa-nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
-.sa-nav-item.active{background:rgba(240,107,33,.22);color:#F06B21;font-weight:500}
-.sa-nav-item.active svg{stroke:#F06B21}
+.sa-nav-item.active{background:color-mix(in srgb,var(--orange) 22%,transparent);color:var(--orange);font-weight:500}
+.sa-nav-item.active svg{stroke:var(--orange)}
 .sa-nav-item svg{width:15px;height:15px;flex-shrink:0;stroke:rgba(255,255,255,.4);stroke-width:1.8}
-.sa-nav-item.active svg{stroke:#F06B21}
+.sa-nav-item.active svg{stroke:var(--orange)}
 .sa-nav-sep{height:1px;background:rgba(255,255,255,.06);margin:6px 10px}
 .sa-nav-sec{font-size:9px;font-weight:700;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.13em;padding:8px 12px 3px}
 .sa-sidebar-foot{padding:12px 10px;border-top:1px solid rgba(255,255,255,.06)}
@@ -54,9 +58,9 @@ button{cursor:pointer}
 .sa-tb-user{display:flex;align-items:center;gap:9px;padding:5px 12px 5px 5px;border:1.5px solid var(--border);border-radius:999px;background:#fff}
 .sa-tb-av{width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .sa-tb-uname{font-size:12.5px;font-weight:600;line-height:1.2}
-.sa-tb-urole{font-size:10.5px;color:#F06B21;font-weight:500}
-.sa-logout-btn{width:36px;height:36px;border-radius:50%;background:#F06B21;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
-.sa-logout-btn:hover{background:#d05519}
+.sa-tb-urole{font-size:10.5px;color:var(--orange);font-weight:500}
+.sa-logout-btn{width:36px;height:36px;border-radius:50%;background:var(--orange);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.sa-logout-btn:hover{filter:brightness(.88)}
 .sa-logout-btn svg{stroke:#fff;width:16px;height:16px}
 
 /* ── MAIN ─────────────────────────────────────────────── */
@@ -84,8 +88,8 @@ button{cursor:pointer}
 
 /* ── BUTTONS ──────────────────────────────────────────── */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:500;border:none;transition:all .14s;white-space:nowrap;cursor:pointer;text-decoration:none}
-.btn-primary{background:#F06B21;color:#fff}.btn-primary:hover{background:#d05519}
-.btn-blue{background:#0C84BC;color:#fff}.btn-blue:hover{background:#0a6fa0}
+.btn-primary{background:var(--orange);color:#fff}.btn-primary:hover{filter:brightness(.88)}
+.btn-blue{background:var(--blue);color:#fff}.btn-blue:hover{filter:brightness(.88)}
 .btn-ghost{background:#fff;color:var(--text-2);border:1.5px solid var(--border)}.btn-ghost:hover{border-color:var(--text-3);color:var(--text-1)}
 .btn-ghost-red{background:#fff;color:var(--red);border:1.5px solid #fca5a5}
 .btn-sm{padding:6px 12px;font-size:12px}
@@ -144,7 +148,7 @@ tbody tr:hover td{background:#fafcff}
 .tab-bar{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:18px;overflow-x:auto}
 .tab-btn{display:flex;align-items:center;gap:6px;padding:10px 16px;font-size:13px;font-weight:500;color:var(--text-2);border:none;background:none;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .13s;margin-bottom:-1px}
 .tab-btn:hover{color:var(--text-1)}
-.tab-btn.active{color:#F06B21;border-bottom-color:#F06B21}
+.tab-btn.active{color:var(--orange);border-bottom-color:var(--orange)}
 .tab-panel{display:none}.tab-panel.active{display:block}
 
 /* ── MODALS ───────────────────────────────────────────── */
@@ -232,7 +236,11 @@ tbody tr:hover td{background:#fafcff}
 {{-- Sidebar --}}
 <aside class="sa-sidebar">
     <div class="sa-logo-area">
-        <span class="sa-logo-text">{{ config('app.name', 'CFO Insights') }}</span>
+        @if($globalSetting?->logo)
+            <img src="{{ asset('storage/'.$globalSetting->logo) }}" alt="{{ $globalSetting->global_app_name }}" class="sa-logo-img">
+        @else
+            <span class="sa-logo-text">{{ $globalSetting?->global_app_name ?? config('app.name', 'CFO Insights') }}</span>
+        @endif
         <span class="sa-badge">SuperAdmin Console</span>
     </div>
 
@@ -291,7 +299,7 @@ tbody tr:hover td{background:#fafcff}
 {{-- Topbar --}}
 <div class="sa-topbar">
     <div class="sa-topbar-bc">
-        CFO Insights Admin
+        {{ $globalSetting?->global_app_name ?? config('app.name', 'CFO Insights') }}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
         <span>@yield('page-title', 'Dashboard')</span>
     </div>
@@ -376,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const container = bar?.parentElement;
             bar?.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            container?.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            container?.querySelectorAll(':scope > .tab-panel').forEach(p => p.classList.remove('active'));
             container?.querySelector('#' + btn.dataset.tab)?.classList.add('active');
         });
     });

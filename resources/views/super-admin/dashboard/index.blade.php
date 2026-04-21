@@ -19,7 +19,7 @@
 {{-- Row 1: Firm KPIs --}}
 <div class="kpi-grid kpi-3" style="margin-bottom:13px">
     <div class="kpi">
-        <div class="kpi-accent" style="background:#0C84BC"></div>
+        <div class="kpi-accent" style="background:var(--orange)"></div>
         <div class="kpi-top">
             <span class="kpi-lbl">Total Firms</span>
             <div class="kpi-ico i-blue">
@@ -31,7 +31,7 @@
     </div>
 
     <div class="kpi">
-        <div class="kpi-accent" style="background:#10b981"></div>
+        <div class="kpi-accent" style="background:var(--orange)"></div>
         <div class="kpi-top">
             <span class="kpi-lbl">Active Firms</span>
             <div class="kpi-ico i-green">
@@ -47,7 +47,7 @@
     </div>
 
     <div class="kpi">
-        <div class="kpi-accent" style="background:#7c3aed"></div>
+        <div class="kpi-accent" style="background:var(--orange)"></div>
         <div class="kpi-top">
             <span class="kpi-lbl">Total End Clients</span>
             <div class="kpi-ico i-purple">
@@ -62,7 +62,7 @@
 {{-- Row 2: Revenue KPIs --}}
 <div class="kpi-grid kpi-3" style="margin-bottom:18px">
     <div class="kpi">
-        <div class="kpi-accent" style="background:#10b981"></div>
+        <div class="kpi-accent" style="background:var(--orange)"></div>
         <div class="kpi-top">
             <span class="kpi-lbl">Revenue This Month</span>
             <div class="kpi-ico i-green">
@@ -74,7 +74,7 @@
     </div>
 
     <div class="kpi">
-        <div class="kpi-accent" style="background:#F06B21"></div>
+        <div class="kpi-accent" style="background:var(--orange)"></div>
         <div class="kpi-top">
             <span class="kpi-lbl">Revenue This Year</span>
             <div class="kpi-ico i-orange">
@@ -86,7 +86,7 @@
     </div>
 
     <div class="kpi">
-        <div class="kpi-accent" style="background:#0C84BC"></div>
+        <div class="kpi-accent" style="background:var(--orange)"></div>
         <div class="kpi-top">
             <span class="kpi-lbl">Avg Revenue / Firm</span>
             <div class="kpi-ico i-blue">
@@ -116,7 +116,7 @@
     <div class="card-title" style="margin-bottom:14px">Recent Activity</div>
     @forelse($recentPayments->take(8) as $p)
     <div class="act-row">
-        <div class="act-dot" style="background:#0C84BC"></div>
+        <div class="act-dot" style="background:var(--orange)"></div>
         <div class="act-txt">
             Payment from <strong>{{ $p->company?->company_name ?? 'Unknown' }}</strong>
             — ${{ number_format($p->amount, 2) }}
@@ -137,6 +137,10 @@ const labels = @json($revenueChart->pluck('month'));
 const data   = @json($revenueChart->pluck('total'));
 const ctx    = document.getElementById('revenueChart')?.getContext('2d');
 if (ctx) {
+    const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#F06B21';
+    const accentBg    = accentColor.startsWith('#') && accentColor.length === 7
+        ? `rgba(${parseInt(accentColor.slice(1,3),16)},${parseInt(accentColor.slice(3,5),16)},${parseInt(accentColor.slice(5,7),16)},0.18)`
+        : accentColor.replace(')', ',0.18)').replace('rgb(', 'rgba(');
     new Chart(ctx, {
         type: 'bar',
         data: {
@@ -144,8 +148,8 @@ if (ctx) {
             datasets: [{
                 label: 'Revenue ($)',
                 data,
-                backgroundColor: 'rgba(12,132,188,.18)',
-                borderColor: '#0C84BC',
+                backgroundColor: accentBg,
+                borderColor: accentColor,
                 borderWidth: 2,
                 borderRadius: 6,
             }]

@@ -30,6 +30,113 @@ class CompanyController extends AccountBaseController
         return view('super-admin.companies.create', $this->data);
     }
 
+    public function bulkStore(Request $request)
+    {
+        $request->validate(['csv_file' => 'required|file|mimes:csv,txt|max:5120']);
+
+        $handle  = fopen($request->file('csv_file')->getRealPath(), 'r');
+        $rawHead = fgetcsv($handle);
+        $header  = array_map(fn($c) => strtolower(trim($c, " \t\n\r\0\x0B\"")), $rawHead);
+
+        $missing = array_diff(['firm_name', 'contact_name', 'email', 'subdomain'], $header);
+        if (!empty($missing)) {
+            fclose($handle);
+            return Reply::error('Missing required CSV columns: ' . implode(', ', $missing));
+        }
+
+        $packages = Package::active()->get()->keyBy(fn($p) => strtolower($p->name));
+        $seenSubs = [];
+        $results  = ['success' => 0, 'errors' => []];
+        $rowNum   = 1;
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $rowNum++;
+            if (count($row) < count($header)) continue;
+
+            $d = array_map(fn($v) => trim($v, " \t\n\r\0\x0B\""), array_combine($header, array_slice($row, 0, count($header))));
+
+            $errors = [];
+            if (empty($d['firm_name']))    $errors[] = 'firm_name is required';
+            if (empty($d['contact_name'])) $errors[] = 'contact_name is required';
+            if (empty($d['email']) || !filter_var($d['email'], FILTER_VALIDATE_EMAIL)) {
+                $errors[] = 'valid email is required';
+            }
+            if (empty($d['subdomain'])) {
+                $errors[] = 'subdomain is required';
+            } else {
+                $slug = Str::slug($d['subdomain']);
+                if (!preg_match('/^[a-z0-9\-]+$/', $slug)) {
+                    $errors[] = 'subdomain must contain only letters, numbers, and hyphens';
+                } elseif (isset($seenSubs[$slug])) {
+                    $errors[] = 'duplicate subdomain in file';
+                } elseif (Company::withoutGlobalScopes()->where('subdomain', $slug)->exists()) {
+                    $errors[] = 'subdomain already taken';
+                }
+            }
+
+            if (!empty($errors)) {
+                $results['errors'][] = ['row' => $rowNum, 'firm' => $d['firm_name'] ?? "Row $rowNum", 'errors' => $errors];
+                continue;
+            }
+
+            $slug    = Str::slug($d['subdomain']);
+            $package = !empty($d['plan']) ? ($packages[strtolower($d['plan'])] ?? null) : null;
+            $seenSubs[$slug] = true;
+
+            try {
+                $company = Company::create([
+                    'company_name'  => $d['firm_name'],
+                    'app_name'      => $d['firm_name'],
+                    'company_email' => $d['email'],
+                    'company_phone' => $d['phone'] ?? null,
+                    'subdomain'     => $slug,
+                    'status'        => 'active',
+                    'package_id'    => $package?->id,
+                    'trial_ends_at' => $package?->is_trial_allowed ? now()->addDays($package->trial_days) : null,
+                ]);
+
+                CompanyBranding::create(['company_id' => $company->id]);
+
+                if ($package) {
+                    Subscription::create([
+                        'company_id'           => $company->id,
+                        'package_id'           => $package->id,
+                        'status'               => 'trialing',
+                        'billing_cycle'        => 'monthly',
+                        'trial_ends_at'        => $company->trial_ends_at,
+                        'current_period_start' => now(),
+                        'current_period_end'   => $company->trial_ends_at ?? now()->addDays(14),
+                    ]);
+                }
+
+                $role = Role::firstOrCreate(['name' => 'client_admin', 'guard_name' => 'web']);
+                $user = User::create([
+                    'company_id'        => $company->id,
+                    'name'              => $d['contact_name'],
+                    'email'             => $d['email'],
+                    'password'          => Hash::make(Str::random(16)),
+                    'status'            => 'active',
+                    'admin_approval'    => true,
+                    'email_verified_at' => now(),
+                ]);
+                $user->assignRole($role);
+
+                $results['success']++;
+            } catch (\Exception $e) {
+                $results['errors'][] = ['row' => $rowNum, 'firm' => $d['firm_name'], 'errors' => [$e->getMessage()]];
+            }
+        }
+
+        fclose($handle);
+
+        $msg = $results['success'] . ' firm(s) created successfully.';
+        if (!empty($results['errors'])) {
+            $msg .= ' ' . count($results['errors']) . ' row(s) had errors.';
+        }
+
+        return Reply::successWithData($msg, ['results' => $results]);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -101,7 +208,7 @@ class CompanyController extends AccountBaseController
     public function show(int $id)
     {
         $this->company = Company::withoutGlobalScopes()
-            ->with(['package', 'subscription', 'users', 'payments', 'branding'])
+            ->with(['package', 'subscription', 'users', 'payments', 'branding', 'onboardedBy'])
             ->findOrFail($id);
 
         $this->userCount      = $this->company->users->count();

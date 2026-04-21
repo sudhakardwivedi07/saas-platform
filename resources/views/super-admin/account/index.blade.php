@@ -43,14 +43,14 @@
             <form method="POST" action="{{ route('superadmin.account.update') }}" id="profile-form">
                 @csrf
                 <div class="f-group">
-                    <label class="f-label">Organisation Name</label>
+                    <label class="f-label">Organisation Name <span class="req-star">*</span></label>
                     <input type="text" name="name" class="f-inp"
-                           value="{{ old('name', auth()->user()->name) }}" required>
+                           value="{{ old('name', auth()->user()->name) }}">
                 </div>
                 <div class="f-group">
-                    <label class="f-label">Admin Email</label>
+                    <label class="f-label">Admin Email <span class="req-star">*</span></label>
                     <input type="email" name="email" class="f-inp"
-                           value="{{ old('email', auth()->user()->email) }}" required>
+                           value="{{ old('email', auth()->user()->email) }}">
                 </div>
                 <div class="form-2col">
                     <div class="f-group">
@@ -76,15 +76,15 @@
                 <input type="hidden" name="email" value="{{ auth()->user()->email }}">
 
                 <div class="f-group">
-                    <label class="f-label">Current Password</label>
+                    <label class="f-label">Current Password <span class="req-star">*</span></label>
                     <input type="password" name="current_password" class="f-inp" placeholder="••••••••">
                 </div>
                 <div class="f-group">
-                    <label class="f-label">New Password</label>
-                    <input type="password" name="password" class="f-inp" placeholder="Min. 8 characters" minlength="8">
+                    <label class="f-label">New Password <span class="req-star">*</span></label>
+                    <input type="password" name="password" class="f-inp" placeholder="Min. 8 characters">
                 </div>
                 <div class="f-group">
-                    <label class="f-label">Confirm New Password</label>
+                    <label class="f-label">Confirm New Password <span class="req-star">*</span></label>
                     <input type="password" name="password_confirmation" class="f-inp" placeholder="••••••••">
                 </div>
 
@@ -132,10 +132,10 @@
 
                 <div class="form-2col">
                     <div class="f-group">
-                        <label class="f-label">Platform Name</label>
+                        <label class="f-label">Platform Name <span class="req-star">*</span></label>
                         <input type="text" name="global_app_name" id="prev-name" class="f-inp"
                                value="{{ $setting?->global_app_name ?? config('app.name') }}"
-                               oninput="updatePreview()" required>
+                               oninput="updatePreview()">
                     </div>
                     <div class="f-group">
                         <label class="f-label">Tagline</label>
@@ -147,29 +147,29 @@
 
                 <div class="form-2col">
                     <div class="f-group">
-                        <label class="f-label">Primary Color</label>
-                        <div style="display:flex;gap:8px;align-items:center">
+                        <label class="f-label">Primary Color (Sidebar)</label>
+                        <div style="display:flex;align-items:center;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:#fff">
                             <input type="color" name="primary_color" id="primary-color"
-                                   value="{{ $setting?->primary_color ?? '#f06b21' }}"
+                                   value="{{ $setting?->primary_color ?? '#0a2540' }}"
                                    oninput="document.getElementById('primary-hex').value=this.value;updatePreview()"
-                                   style="width:42px;height:36px;border:1.5px solid var(--border);border-radius:8px;padding:2px;cursor:pointer">
+                                   style="width:44px;height:42px;border:none;border-right:1.5px solid var(--border);padding:4px 6px;cursor:pointer;background:transparent;flex-shrink:0">
                             <input type="text" id="primary-hex" class="f-inp"
-                                   value="{{ $setting?->primary_color ?? '#f06b21' }}"
+                                   value="{{ $setting?->primary_color ?? '#0a2540' }}"
                                    oninput="document.getElementById('primary-color').value=this.value;updatePreview()"
-                                   style="font-family:monospace;font-size:13px;max-width:110px">
+                                   style="border:none;border-radius:0;font-family:monospace;font-size:13px;flex:1;height:42px">
                         </div>
                     </div>
                     <div class="f-group">
-                        <label class="f-label">Accent Color</label>
-                        <div style="display:flex;gap:8px;align-items:center">
+                        <label class="f-label">Accent Color (CTA / Buttons)</label>
+                        <div style="display:flex;align-items:center;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:#fff">
                             <input type="color" name="accent_color" id="accent-color"
-                                   value="{{ $setting?->accent_color ?? '#0c84bc' }}"
+                                   value="{{ $setting?->accent_color ?? '#F06B21' }}"
                                    oninput="document.getElementById('accent-hex').value=this.value;updatePreview()"
-                                   style="width:42px;height:36px;border:1.5px solid var(--border);border-radius:8px;padding:2px;cursor:pointer">
+                                   style="width:44px;height:42px;border:none;border-right:1.5px solid var(--border);padding:4px 6px;cursor:pointer;background:transparent;flex-shrink:0">
                             <input type="text" id="accent-hex" class="f-inp"
-                                   value="{{ $setting?->accent_color ?? '#0c84bc' }}"
+                                   value="{{ $setting?->accent_color ?? '#F06B21' }}"
                                    oninput="document.getElementById('accent-color').value=this.value;updatePreview()"
-                                   style="font-family:monospace;font-size:13px;max-width:110px">
+                                   style="border:none;border-radius:0;font-family:monospace;font-size:13px;flex:1;height:42px">
                         </div>
                     </div>
                 </div>
@@ -192,7 +192,7 @@
 
                 <div class="form-2col">
                     <div class="f-group">
-                        <label class="f-label">Contact Email</label>
+                        <label class="f-label">Contact Email <span class="req-star">*</span></label>
                         <input type="email" name="company_email" class="f-inp"
                                value="{{ $setting?->company_email }}" placeholder="support@yourapp.com">
                     </div>
@@ -221,6 +221,8 @@
                         </select>
                     </div>
                 </div>
+
+                <input type="hidden" name="locale" value="{{ $setting?->locale ?? 'en' }}">
 
                 <div style="height:1px;background:var(--border);margin:18px 0"></div>
                 <div style="font-size:13px;font-weight:600;margin-bottom:12px">Feature Toggles</div>
@@ -254,14 +256,14 @@
                 {{-- Mini sidebar preview --}}
                 <div style="display:flex;height:340px;overflow:hidden">
                     {{-- Sidebar --}}
-                    <div id="preview-sidebar" style="width:130px;background:#0a2540;display:flex;flex-direction:column;flex-shrink:0">
+                    <div id="preview-sidebar" style="width:130px;background:var(--preview-primary);display:flex;flex-direction:column;flex-shrink:0">
                         <div style="padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.08)">
                             <div id="preview-appname" style="color:#fff;font-size:11px;font-weight:700;line-height:1.2">{{ $setting?->global_app_name ?? config('app.name') }}</div>
                             <div id="preview-tagline" style="font-size:9px;color:rgba(255,255,255,.4);margin-top:3px">{{ $setting?->tagline ?? 'SuperAdmin Console' }}</div>
                         </div>
                         <div style="padding:8px 6px;display:flex;flex-direction:column;gap:1px;flex:1">
                             @foreach(['Dashboard','Firms','Finance','Settings','My Account'] as $item)
-                            <div class="{{ $loop->first ? 'preview-nav-active' : '' }}" style="padding:7px 8px;border-radius:6px;font-size:10px;color:rgba(255,255,255,.{{ $loop->first ? '9' : '5' }});{{ $loop->first ? 'background:rgba(240,107,33,.2)' : '' }}">{{ $item }}</div>
+                            <div class="{{ $loop->first ? 'preview-nav-active' : '' }}" style="padding:7px 8px;border-radius:6px;font-size:10px;color:rgba(255,255,255,.{{ $loop->first ? '9' : '5' }})">{{ $item }}</div>
                             @endforeach
                         </div>
                     </div>
@@ -271,7 +273,7 @@
                         {{-- Topbar --}}
                         <div id="preview-topbar" style="background:#fff;border-radius:7px;padding:7px 10px;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.06)">
                             <div style="font-size:10px;color:#94a3b8">Dashboard</div>
-                            <div id="preview-btn" style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#f06b21">
+                            <div id="preview-btn" style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--preview-accent)">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" width="11" height="11"><path d="M18.36 6.64a9 9 0 11-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
                             </div>
                         </div>
@@ -280,7 +282,7 @@
                             @foreach(['Total Firms','Active Firms','Revenue','Users'] as $lbl)
                             <div style="background:#fff;border-radius:7px;padding:8px 10px;box-shadow:0 1px 2px rgba(0,0,0,.05)">
                                 <div style="font-size:8.5px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em">{{ $lbl }}</div>
-                                <div id="{{ $loop->index === 0 ? 'preview-accent-block' : '' }}" style="font-size:15px;font-weight:700;color:#0f172a;margin-top:3px;border-left:3px solid {{ $loop->index === 2 ? 'var(--preview-primary, #f06b21)' : '#0C84BC' }};padding-left:6px">—</div>
+                                <div style="font-size:15px;font-weight:700;color:#0f172a;margin-top:3px;border-left:3px solid var(--preview-accent);padding-left:6px">—</div>
                             </div>
                             @endforeach
                         </div>
@@ -289,7 +291,7 @@
                             <div style="font-size:8.5px;color:#94a3b8;margin-bottom:6px">Revenue Overview</div>
                             <div style="display:flex;align-items:flex-end;gap:4px;height:38px">
                                 @foreach([40, 65, 50, 80, 70, 90] as $h)
-                                <div style="flex:1;background:var(--preview-primary,#f06b21);opacity:.7;border-radius:3px 3px 0 0;height:{{ $h }}%"></div>
+                                <div style="flex:1;background:var(--preview-accent);opacity:.7;border-radius:3px 3px 0 0;height:{{ $h }}%"></div>
                                 @endforeach
                             </div>
                         </div>
@@ -309,23 +311,100 @@
 
 @push('scripts')
 <style>
-:root { --preview-primary: {{ $setting?->primary_color ?? '#f06b21' }}; }
+:root {
+  --preview-primary: {{ $setting?->primary_color ?? '#0a2540' }};
+  --preview-accent:  {{ $setting?->accent_color  ?? '#F06B21' }};
+}
+.req-star { color: #e53e3e; margin-left: 2px; }
+.f-error  { color: #e53e3e; font-size: 12px; margin-top: 4px; display: block; }
+.f-inp.inp-error { border-color: #e53e3e !important; }
+.preview-nav-active {
+  background: color-mix(in srgb, var(--preview-accent) 22%, transparent) !important;
+  color: var(--preview-accent) !important;
+}
 </style>
 <script>
+// ── Validation helpers ───────────────────────────────────────
+function _showErr(input, msg) {
+    input.classList.add('inp-error');
+    let err = input.parentElement.querySelector('.f-error');
+    if (!err) { err = document.createElement('span'); err.className = 'f-error'; input.parentElement.appendChild(err); }
+    err.textContent = msg;
+}
+function _clearErr(input) {
+    input.classList.remove('inp-error');
+    const err = input.parentElement.querySelector('.f-error');
+    if (err) err.textContent = '';
+}
+
+// ── Profile form validation ─────────────────────────────────
+function validateProfileForm() {
+    const name  = document.querySelector('#profile-form [name="name"]');
+    const email = document.querySelector('#profile-form [name="email"]');
+    [name, email].forEach(_clearErr);
+    let ok = true;
+    if (!name.value.trim()) { _showErr(name, 'Organisation name is required.'); ok = false; }
+    if (!email.value.trim()) { _showErr(email, 'Admin email is required.'); ok = false; }
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { _showErr(email, 'Please enter a valid email address.'); ok = false; }
+    return ok;
+}
+
+// ── Password form validation ────────────────────────────────
+function validatePasswordForm() {
+    const cur  = document.querySelector('#password-form [name="current_password"]');
+    const pwd  = document.querySelector('#password-form [name="password"]');
+    const conf = document.querySelector('#password-form [name="password_confirmation"]');
+    [cur, pwd, conf].forEach(_clearErr);
+    let ok = true;
+    if (!cur.value.trim())  { _showErr(cur,  'Current password is required.'); ok = false; }
+    if (!pwd.value.trim())  { _showErr(pwd,  'New password is required.'); ok = false; }
+    else if (pwd.value.length < 8) { _showErr(pwd, 'Password must be at least 8 characters.'); ok = false; }
+    if (!conf.value.trim()) { _showErr(conf, 'Please confirm your new password.'); ok = false; }
+    else if (pwd.value && pwd.value !== conf.value) { _showErr(conf, 'Passwords do not match.'); ok = false; }
+    return ok;
+}
+
+// ── Global settings validation ──────────────────────────────
+function validateGlobalForm() {
+    const pname = document.querySelector('#global-settings-form [name="global_app_name"]');
+    const email = document.querySelector('#global-settings-form [name="company_email"]');
+    [pname, email].forEach(_clearErr);
+    let ok = true;
+    if (!pname.value.trim()) { _showErr(pname, 'Platform name is required.'); ok = false; }
+    if (!email.value.trim()) { _showErr(email, 'Contact email is required.'); ok = false; }
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) { _showErr(email, 'Please enter a valid email address.'); ok = false; }
+    return ok;
+}
+
+// ── Bind profile & password submit ─────────────────────────
+document.getElementById('profile-form')?.addEventListener('submit', function(e) {
+    if (!validateProfileForm()) e.preventDefault();
+});
+document.getElementById('password-form')?.addEventListener('submit', function(e) {
+    if (!validatePasswordForm()) e.preventDefault();
+});
+// Clear error on input
+document.querySelectorAll('#profile-form .f-inp, #password-form .f-inp, #global-settings-form .f-inp').forEach(inp => {
+    inp.addEventListener('input', () => _clearErr(inp));
+});
+</script>
+<script>
 function updatePreview() {
-    const name    = document.getElementById('prev-name')?.value || 'CFO Insights';
+    const name    = document.getElementById('prev-name')?.value    || 'CFO Insights';
     const tagline = document.getElementById('prev-tagline')?.value || 'SuperAdmin Console';
-    const primary = document.getElementById('primary-color')?.value || '#f06b21';
+    const primary = document.getElementById('primary-color')?.value || '#0a2540';
+    const accent  = document.getElementById('accent-color')?.value  || '#F06B21';
 
     document.getElementById('preview-appname').textContent = name;
     document.getElementById('preview-tagline').textContent = tagline;
-    document.getElementById('preview-btn').style.background = primary;
 
-    // Update chart bars color
-    document.querySelectorAll('[style*="var(--preview-primary"]').forEach(el => {
-        el.style.background = primary;
-    });
+    // Preview panel: primary = sidebar bg, accent = CTAs/buttons
     document.documentElement.style.setProperty('--preview-primary', primary);
+    document.documentElement.style.setProperty('--preview-accent',  accent);
+
+    // Live page: primary drives sidebar bg, accent drives all CTAs/buttons
+    document.documentElement.style.setProperty('--sidebar-bg', primary);
+    document.documentElement.style.setProperty('--orange',     accent);
 }
 
 function previewLogo(input) {
@@ -340,12 +419,19 @@ function previewLogo(input) {
 
 document.getElementById('global-settings-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
+    if (!validateGlobalForm()) return;
     const btn = this.querySelector('[type=submit]');
     btn.disabled = true;
     const fd = new FormData(this);
-    const body = Object.fromEntries(fd.entries());
-    ['allow_registration','email_verification','maintenance_mode'].forEach(f => body[f] = fd.has(f) ? 1 : 0);
-    const res = await apiCall('{{ route("superadmin.settings.update") }}', 'POST', body);
+    ['allow_registration','email_verification','maintenance_mode'].forEach(f => {
+        fd.set(f, fd.has(f) ? '1' : '0');
+    });
+    const r = await fetch('{{ route("superadmin.settings.update") }}', {
+        method: 'POST',
+        headers: {'X-CSRF-TOKEN': csrf, 'Accept': 'application/json'},
+        body: fd,
+    });
+    const res = await r.json();
     showToast(res.message, res.status === 'success' ? 'success' : 'error');
     btn.disabled = false;
 });

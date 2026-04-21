@@ -54,6 +54,7 @@ class AccountBaseController extends Controller
             'tenantCompany' => $company,
             'branding'      => $this->branding,
             'isSuperAdmin'  => is_superadmin(),
+            'globalSetting' => $globalSetting,
         ]);
     }
 }

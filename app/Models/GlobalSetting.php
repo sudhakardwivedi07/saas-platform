@@ -42,6 +42,7 @@ class GlobalSetting extends BaseModel
         'email_verification',
         'maintenance_mode',
         'primary_color',
+        'accent_color',
         'auth_css',
     ];
 

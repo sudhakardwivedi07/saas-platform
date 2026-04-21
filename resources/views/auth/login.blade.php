@@ -7,6 +7,8 @@
 
     @if($branding?->favicon)
         <link rel="icon" href="{{ asset('storage/' . $branding->favicon) }}">
+    @elseif($setting?->favicon)
+        <link rel="icon" href="{{ asset('storage/' . $setting->favicon) }}">
     @endif
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -53,6 +55,8 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
     <div class="login-logo-zone">
         @if($branding?->logo)
             <img src="{{ asset('storage/' . $branding->logo) }}" alt="Logo" class="login-logo-img">
+        @elseif($setting?->logo)
+            <img src="{{ asset('storage/' . $setting->logo) }}" alt="Logo" class="login-logo-img">
         @else
             <div class="login-logo-placeholder">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>

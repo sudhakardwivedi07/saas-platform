@@ -18,10 +18,12 @@ class Package extends BaseModel
         'description',
         'monthly_price',
         'annual_price',
+        'billing_cycle',
         'stripe_monthly_price_id',
         'stripe_annual_price_id',
         'max_users',
         'max_storage_gb',
+        'max_insights_per_month',
         'features',
         'is_active',
         'is_trial_allowed',
@@ -32,13 +34,14 @@ class Package extends BaseModel
     ];
 
     protected $casts = [
-        'features'        => 'array',
-        'is_active'       => 'boolean',
-        'is_trial_allowed' => 'boolean',
-        'is_free'         => 'boolean',
-        'is_recommended'  => 'boolean',
-        'monthly_price'   => 'decimal:2',
-        'annual_price'    => 'decimal:2',
+        'features'               => 'array',
+        'is_active'              => 'boolean',
+        'is_trial_allowed'       => 'boolean',
+        'is_free'                => 'boolean',
+        'is_recommended'         => 'boolean',
+        'monthly_price'          => 'decimal:2',
+        'annual_price'           => 'decimal:2',
+        'max_insights_per_month' => 'integer',
     ];
 
     public function companies(): HasMany

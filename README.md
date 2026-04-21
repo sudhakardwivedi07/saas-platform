@@ -784,4 +784,4 @@ After running `php artisan migrate --seed`:
 | Config | 2 (tenancy, quickbooks) |
 | Console Commands | 2 |
 | Public Assets | 2 (CSS + JS) |
-| **Total** | **88 files** |
+| **Total** | **88 files** ||

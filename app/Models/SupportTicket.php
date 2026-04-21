@@ -9,7 +9,7 @@ class SupportTicket extends BaseModel
     protected $table = 'support_tickets';
 
     protected $fillable = [
-        'company_id', 'user_id', 'subject', 'priority', 'message', 'attachment', 'notes', 'status',
+        'company_id', 'user_id', 'subject', 'priority', 'message', 'attachment', 'notes', 'status', 'assigned_to',
     ];
 
     public function company(): BelongsTo

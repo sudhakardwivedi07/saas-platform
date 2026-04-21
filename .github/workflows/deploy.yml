@@ -2,7 +2,12 @@ name: Deploy Laravel
 
 on:
   push:
-    branches: [dev, qa, main]
+    branches:
+      - dev
+      - qa
+      - main
+    paths-ignore:
+      - ".github/workflows/**"
   workflow_dispatch:
 
 jobs:

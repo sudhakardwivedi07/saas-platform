@@ -231,23 +231,26 @@ class CompanyController extends AccountBaseController
 
         $request->validate([
             'company_name' => 'required|string|max:255',
-            'status'       => 'required|in:active,inactive,suspended',
+            'status'       => 'nullable|in:active,inactive,suspended',
             'package_id'   => 'nullable|exists:packages,id',
         ]);
 
-        $company->update($request->only(
-            'company_name', 'app_name', 'status',
-            'package_id', 'company_email', 'company_phone'
-        ));
+        $data = $request->only('company_name', 'app_name', 'package_id', 'company_email', 'company_phone');
+        if ($request->filled('status')) {
+            $data['status'] = $request->status;
+        }
+        $company->update($data);
 
-        return Reply::success('Company updated successfully.');
+        return redirect()->route('superadmin.companies.index')
+            ->with('success', 'Company updated successfully.');
     }
 
     public function destroy(int $id)
     {
         $company = Company::withoutGlobalScopes()->findOrFail($id);
         $company->update(['status' => 'suspended']);
-        return Reply::success('Company suspended.');
+        return redirect()->route('superadmin.companies.index')
+            ->with('success', 'Company suspended.');
     }
 
     public function impersonate(int $id)

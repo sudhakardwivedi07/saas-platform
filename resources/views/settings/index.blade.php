@@ -671,14 +671,5 @@ function deleteRole(id, name) {
     })
     .catch(function() { showToast('Request failed.', 'error'); });
 }
-
-// Auto-switch tab based on URL hash (#payment, #plans, #email, #sms, #roles)
-// Must be DOMContentLoaded so it runs AFTER the layout registers tab click handlers
-document.addEventListener('DOMContentLoaded', function () {
-    var hash = window.location.hash.replace('#', '');
-    if (!hash) return;
-    var btn = document.querySelector('[data-tab="tab-' + hash + '"]');
-    if (btn) btn.click();
-});
 </script>
 @endpush

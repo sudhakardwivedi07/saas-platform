@@ -102,7 +102,7 @@ class ClientCompanyController extends AccountBaseController
         $package = $request->package_id
             ? ClientPackage::forCompany($companyId)->find($request->package_id)
             : ClientPackage::forCompany($companyId)->active()->orderBy('sort')->first();
-
+ 
         // Determine if Stripe payment is required
         $stripeReady     = $this->stripeIsConfigured();
         $requiresPayment = $package

@@ -1,256 +1,151 @@
 @extends('layouts.app')
-@section('title', 'Finance')
+
 @section('page-title', 'Finance')
-
-@push('styles')
-<style>
-/* ── KPI cards ───────────────────────────────────────── */
-.fin-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
-.fin-kpi{background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px 22px;display:flex;flex-direction:column;gap:8px}
-.fin-kpi-head{display:flex;align-items:center;justify-content:space-between}
-.fin-kpi-lbl{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3)}
-.fin-kpi-ico{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.fin-kpi-val{font-size:26px;font-weight:700;color:var(--text-1);line-height:1.1}
-.fin-kpi-val.dash{font-size:28px;color:#d1d5db;font-weight:400}
-.fin-kpi-ctx{font-size:12px;color:var(--text-3)}
-
-/* ── Info card (fresh user) ──────────────────────────── */
-.fin-info-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:28px 32px;display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-bottom:20px}
-.fin-info-divider{border-left:1px solid var(--border);padding-left:32px}
-.fin-info-title{font-size:15px;font-weight:700;color:var(--text-1);margin-bottom:10px}
-.fin-info-body{font-size:13px;color:var(--text-2);line-height:1.7;margin-bottom:0}
-.fin-info-body a{color:var(--orange);text-decoration:none}
-.fin-info-body a:hover{text-decoration:underline}
-.fin-info-btns{display:flex;align-items:center;gap:10px;margin-top:20px;flex-wrap:wrap}
-
-/* ── Payment history section ─────────────────────────── */
-.fin-hist-card{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.fin-hist-head{padding:20px 24px;border-bottom:1px solid var(--border)}
-.fin-hist-title{font-size:14px;font-weight:700;color:var(--text-1)}
-.fin-empty-state{text-align:center;padding:64px 24px 48px}
-.fin-empty-ico{width:72px;height:72px;border-radius:16px;background:#eff6ff;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
-.fin-empty-title{font-size:16px;font-weight:700;color:var(--text-1);margin-bottom:10px}
-.fin-empty-body{font-size:13.5px;color:#6b7280;line-height:1.7;max-width:440px;margin:0 auto 24px}
-.fin-empty-btns{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap}
-
-/* ── Table ───────────────────────────────────────────── */
-.fin-table{width:100%;border-collapse:collapse}
-.fin-table th{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);padding:11px 20px;border-bottom:1px solid var(--border);white-space:nowrap;text-align:left}
-.fin-table td{padding:13px 20px;border-bottom:1px solid var(--bg);font-size:13px;vertical-align:middle}
-.fin-table tbody tr:last-child td{border-bottom:none}
-.fin-table tbody tr:hover td{background:var(--bg)}
-
-@media(max-width:900px){
-    .fin-kpi-grid{grid-template-columns:repeat(2,1fr)}
-    .fin-info-card{grid-template-columns:1fr}
-    .fin-info-divider{border-left:none;border-top:1px solid var(--border);padding-left:0;padding-top:24px}
-}
-@media(max-width:600px){
-    .fin-kpi-grid{grid-template-columns:1fr}
-}
-</style>
-@endpush
 
 @section('content')
 
 {{-- Page Header --}}
 <div class="ph">
     <div class="ph-left">
-        <h1>Finance</h1>
-        <p>Track client billing, revenue, and subscription activity</p>
+        <h1 style="font-size:1.5rem;font-weight:700;color:var(--text-1);margin:0 0 2px 0;">Finance</h1>
+        <p style="font-size:0.875rem;color:var(--text-2);margin:0;">Overview of your billing, revenue, and payment history.</p>
     </div>
 </div>
 
-@if($isFreshFinance)
+{{-- KPI Cards --}}
+<div class="kpi-grid kpi-4" style="margin-bottom:1.75rem;">
 
-{{-- ── FRESH USER: Info card ───────────────────────────────────────────── --}}
-<div class="fin-info-card">
-    <div>
-        <div class="fin-info-title">What you will see here</div>
-        <p class="fin-info-body">
-            Once clients are on active plans and billing is processing, this section displays your portal's revenue summary, individual client invoices, payment history, and active subscription counts.
-            <a href="#">All data updates automatically.</a>
-        </p>
-        <div class="fin-info-btns">
-            <a href="{{ route('settings.index') . '#payment' }}" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:7px">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                Set Up Payment Gateway
-            </a>
-            <a href="{{ route('settings.index') . '#plans' }}" class="btn btn-secondary">Create Client Plans</a>
+    {{-- MRR --}}
+    <div class="kpi kpi-bl">
+        <div class="kpi-top">
+            <span class="kpi-lbl">Monthly Recurring Revenue</span>
+            <span class="kpi-ico ico-blue">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </span>
         </div>
-    </div>
-    <div class="fin-info-divider">
-        <div class="fin-info-title">To get started</div>
-        <p class="fin-info-body">
-            <a href="{{ route('settings.index') . '#payment' }}">Connect your payment gateway in Settings</a> to enable client billing. Then create your client plans and begin onboarding clients. Financial activity will populate here as soon as the first subscription payment is processed.
-        </p>
-    </div>
-</div>
-
-{{-- ── FRESH USER: Grayed-out KPI cards ───────────────────────────────── --}}
-<div class="fin-kpi-grid">
-
-    <div class="fin-kpi">
-        <div class="fin-kpi-head">
-            <span class="fin-kpi-lbl">Monthly Revenue</span>
-            <div class="fin-kpi-ico" style="background:#dbeafe">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" width="18" height="18"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-            </div>
-        </div>
-        <div class="fin-kpi-val dash">—</div>
-        <div class="fin-kpi-ctx">Activates when billing begins</div>
+        <div class="kpi-val">${{ number_format($mrr, 2) }}</div>
+        <div class="kpi-ctx">Current billing cycle</div>
     </div>
 
-    <div class="fin-kpi">
-        <div class="fin-kpi-head">
-            <span class="fin-kpi-lbl">Active Subscriptions</span>
-            <div class="fin-kpi-ico" style="background:#d1fae5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" width="18" height="18"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            </div>
+    {{-- ARR --}}
+    <div class="kpi kpi-gr">
+        <div class="kpi-top">
+            <span class="kpi-lbl">Annual Recurring Revenue</span>
+            <span class="kpi-ico ico-green">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+            </span>
         </div>
-        <div class="fin-kpi-val dash">—</div>
-        <div class="fin-kpi-ctx">Assign plans to start tracking</div>
+        <div class="kpi-val">${{ number_format($mrr * 12, 2) }}</div>
+        <div class="kpi-ctx">Projected annual value</div>
     </div>
 
-    <div class="fin-kpi">
-        <div class="fin-kpi-head">
-            <span class="fin-kpi-lbl">Outstanding</span>
-            <div class="fin-kpi-ico" style="background:#ffedd5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
+    {{-- Total Revenue --}}
+    <div class="kpi kpi-or">
+        <div class="kpi-top">
+            <span class="kpi-lbl">Total Revenue</span>
+            <span class="kpi-ico ico-orange">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+            </span>
         </div>
-        <div class="fin-kpi-val dash">—</div>
-        <div class="fin-kpi-ctx">No outstanding balances</div>
+        <div class="kpi-val">${{ number_format($totalRevenue, 2) }}</div>
+        <div class="kpi-ctx">All time collected</div>
     </div>
 
-    <div class="fin-kpi">
-        <div class="fin-kpi-head">
-            <span class="fin-kpi-lbl">Total Collected</span>
-            <div class="fin-kpi-ico" style="background:#ffedd5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" width="18" height="18"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            </div>
+    {{-- Outstanding --}}
+    <div class="kpi kpi-rd">
+        <div class="kpi-top">
+            <span class="kpi-lbl">Outstanding</span>
+            <span class="kpi-ico ico-red">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+            </span>
         </div>
-        <div class="fin-kpi-val dash">—</div>
-        <div class="fin-kpi-ctx">Lifetime payments received</div>
+        <div class="kpi-val">$0.00</div>
+        <div class="kpi-ctx">No pending invoices</div>
     </div>
 
 </div>
 
-{{-- ── FRESH USER: Empty payment history ───────────────────────────────── --}}
-<div class="fin-hist-card">
-    <div class="fin-hist-head">
-        <div class="fin-hist-title">Invoice &amp; Payment History</div>
-    </div>
-    <div class="fin-empty-state">
-        <div class="fin-empty-ico">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.6" width="32" height="32"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-        </div>
-        <div class="fin-empty-title">No billing activity has been recorded yet</div>
-        <div class="fin-empty-body">
-            Your invoice history, client payments, and subscription records will appear here once clients are on active plans and payments begin processing. All billing is automated — nothing to configure on an ongoing basis.
-        </div>
-        <div class="fin-empty-btns">
-            <a href="{{ route('settings.index') . '#payment' }}" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:7px">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                Set Up Payment Gateway
-            </a>
-            <a href="{{ route('settings.index') . '#plans' }}" class="btn btn-secondary">Create Client Plans</a>
+{{-- Payment History Table --}}
+<div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+        <div>
+            <div class="card-title">Payment History</div>
+            <div class="card-sub">All transactions processed through your account.</div>
         </div>
     </div>
+
+    @if($recentPayments->isEmpty())
+        <div style="text-align:center;padding:3rem 1rem;">
+            <div style="width:56px;height:56px;border-radius:50%;background:#f0f4f8;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem auto;">
+                <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="var(--text-3)" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+            </div>
+            <p style="font-size:0.9375rem;font-weight:600;color:var(--text-1);margin:0 0 4px 0;">No payments yet</p>
+            <p style="font-size:0.8125rem;color:var(--text-2);margin:0;">Payment records will appear here once transactions are processed.</p>
+        </div>
+    @else
+        <div class="tc">
+            <table>
+                <thead>
+                    <tr class="tc-head">
+                        <th>Company</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                        <th>Method</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($recentPayments as $payment)
+                    <tr>
+                        <td>
+                            <span style="font-weight:500;color:var(--text-1);">
+                                {{ $payment->company_name ?? $payment->description ?? 'N/A' }}
+                            </span>
+                        </td>
+                        <td>
+                            <span style="font-weight:700;color:#16a34a;">
+                                ${{ number_format($payment->amount / 100, 2) }}
+                            </span>
+                        </td>
+                        <td>
+                            @php
+                                $status = $payment->status ?? 'paid';
+                                $badgeClass = match(strtolower($status)) {
+                                    'paid', 'succeeded' => 'b-green',
+                                    'pending'           => 'b-amber',
+                                    'failed', 'overdue' => 'b-red',
+                                    default             => 'b-gray',
+                                };
+                            @endphp
+                            <span class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span>
+                        </td>
+                        <td style="color:var(--text-2);font-size:0.8125rem;">
+                            {{ isset($payment->created_at) ? \Carbon\Carbon::parse($payment->created_at)->format('M j, Y') : '—' }}
+                        </td>
+                        <td>
+                            <span style="display:inline-flex;align-items:center;gap:5px;font-size:0.8125rem;color:var(--text-2);">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                                </svg>
+                                Stripe
+                            </span>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
 </div>
-
-@else
-
-{{-- ── ACTIVE: KPI cards ────────────────────────────────────────────────── --}}
-<div class="fin-kpi-grid">
-
-    <div class="fin-kpi">
-        <div class="fin-kpi-head">
-            <span class="fin-kpi-lbl">Monthly Revenue</span>
-            <div class="fin-kpi-ico" style="background:#dbeafe">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" width="18" height="18"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-            </div>
-        </div>
-        <div class="fin-kpi-val" style="color:var(--green)">${{ number_format($mrr, 2) }}</div>
-        <div class="fin-kpi-ctx">Current billing cycle</div>
-    </div>
-
-    <div class="fin-kpi">
-        <div class="fin-kpi-head">
-            <span class="fin-kpi-lbl">Active Subscriptions</span>
-            <div class="fin-kpi-ico" style="background:#d1fae5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" width="18" height="18"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            </div>
-        </div>
-        <div class="fin-kpi-val" style="color:#10b981">{{ $activeSubscriptions }}</div>
-        <div class="fin-kpi-ctx">Clients on active plans</div>
-    </div>
-
-    <div class="fin-kpi">
-        <div class="fin-kpi-head">
-            <span class="fin-kpi-lbl">Outstanding</span>
-            <div class="fin-kpi-ico" style="background:#ffedd5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            </div>
-        </div>
-        <div class="fin-kpi-val">$0.00</div>
-        <div class="fin-kpi-ctx">No pending invoices</div>
-    </div>
-
-    <div class="fin-kpi">
-        <div class="fin-kpi-head">
-            <span class="fin-kpi-lbl">Total Collected</span>
-            <div class="fin-kpi-ico" style="background:#ffedd5">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" width="18" height="18"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            </div>
-        </div>
-        <div class="fin-kpi-val" style="color:var(--text-1)">${{ number_format($totalRevenue, 2) }}</div>
-        <div class="fin-kpi-ctx">Lifetime payments received</div>
-    </div>
-
-</div>
-
-{{-- ── ACTIVE: Payment History table ───────────────────────────────────── --}}
-<div class="fin-hist-card">
-    <div class="fin-hist-head">
-        <div class="fin-hist-title">Invoice &amp; Payment History</div>
-    </div>
-    <table class="fin-table">
-        <thead>
-            <tr>
-                <th>Company</th>
-                <th>Amount</th>
-                <th>Status</th>
-                <th>Date</th>
-                <th>Method</th>
-            </tr>
-        </thead>
-        <tbody>
-        @foreach($recentPayments as $payment)
-        @php
-            $status = $payment->status ?? 'paid';
-            $badgeClass = match(strtolower($status)) {
-                'paid','succeeded','complete' => 'b-green',
-                'pending'                     => 'b-amber',
-                'failed','overdue'            => 'b-red',
-                default                       => 'b-gray',
-            };
-        @endphp
-        <tr>
-            <td style="font-weight:500;color:var(--text-1)">{{ $payment->company_name ?? $payment->description ?? 'N/A' }}</td>
-            <td style="font-weight:700;color:#16a34a">${{ number_format($payment->amount / 100, 2) }}</td>
-            <td><span class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span></td>
-            <td style="color:var(--text-2);font-size:12.5px">{{ $payment->paid_at ? \Carbon\Carbon::parse($payment->paid_at)->format('M j, Y') : '—' }}</td>
-            <td style="color:var(--text-2);font-size:12.5px;display:flex;align-items:center;gap:5px">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                Stripe
-            </td>
-        </tr>
-        @endforeach
-        </tbody>
-    </table>
-</div>
-
-@endif
 
 @endsection

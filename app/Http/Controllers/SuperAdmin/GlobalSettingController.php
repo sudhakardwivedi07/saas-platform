@@ -9,6 +9,7 @@ use App\Models\GlobalSetting;
 use App\Models\SuperAdmin\GlobalPaymentGatewayCredentials;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 
 class GlobalSettingController extends AccountBaseController
 {
@@ -37,15 +38,35 @@ class GlobalSettingController extends AccountBaseController
             'locale'          => 'required|string|max:10',
             'currency_code'   => 'required|string|max:10',
             'primary_color'   => 'nullable|string|max:20',
+            'accent_color'    => 'nullable|string|max:20',
+            'logo'            => 'nullable|image|max:2048',
+            'favicon'         => 'nullable|image|max:512',
         ]);
 
         $setting = GlobalSetting::firstOrCreate([]);
-        $setting->update($request->only([
+
+        $data = $request->only([
             'global_app_name', 'company_email', 'timezone',
             'date_format', 'time_format', 'locale',
-            'currency_code', 'primary_color',
+            'currency_code', 'primary_color', 'accent_color',
             'allow_registration', 'email_verification', 'maintenance_mode',
-        ]));
+        ]);
+
+        if ($request->hasFile('logo')) {
+            if ($setting->logo) {
+                Storage::disk('public')->delete($setting->logo);
+            }
+            $data['logo'] = $request->file('logo')->store('global', 'public');
+        }
+
+        if ($request->hasFile('favicon')) {
+            if ($setting->favicon) {
+                Storage::disk('public')->delete($setting->favicon);
+            }
+            $data['favicon'] = $request->file('favicon')->store('global', 'public');
+        }
+
+        $setting->update($data);
 
         Cache::forget('global_setting');
 

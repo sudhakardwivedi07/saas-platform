@@ -34,7 +34,7 @@
         <div class="kpi-ctx">All-time collected</div>
     </div>
     <div class="kpi">
-        <div class="kpi-accent" style="background:#0C84BC"></div>
+        <div class="kpi-accent" style="background:var(--orange)"></div>
         <div class="kpi-top">
             <span class="kpi-lbl">Active Subscriptions</span>
             <div class="kpi-ico i-blue"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div>
@@ -43,7 +43,7 @@
         <div class="kpi-ctx">Firms with payments</div>
     </div>
     <div class="kpi">
-        <div class="kpi-accent" style="background:#F06B21"></div>
+        <div class="kpi-accent" style="background:var(--orange)"></div>
         <div class="kpi-top">
             <span class="kpi-lbl">New Subscriptions</span>
             <div class="kpi-ico i-orange"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>

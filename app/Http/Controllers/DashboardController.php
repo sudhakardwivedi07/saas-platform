@@ -133,10 +133,6 @@ class DashboardController extends AccountBaseController
             ->limit(5)
             ->get();
 
-        // Onboarding state (fresh user = no sub-companies yet)
-        $this->isFreshUser  = $allCompanies->isEmpty();
-        $this->brandingDone = $company->branding?->logo !== null;
-
         return view('dashboard.index', $this->data);
     }
 

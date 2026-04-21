@@ -39,7 +39,7 @@ class GlobalSettingController extends AccountBaseController
             'currency_code'   => 'required|string|max:10',
             'primary_color'   => 'nullable|string|max:20',
             'accent_color'    => 'nullable|string|max:20',
-            'logo'            => 'nullable|image|max:2048',
+            'logo'            => 'nullable|mimes:jpeg,jpg,png,gif,svg,webp|max:2048',
             'favicon'         => 'nullable|image|max:512',
         ]);
 

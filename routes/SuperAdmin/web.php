@@ -54,8 +54,10 @@ Route::middleware(['auth', 'super-admin'])
         Route::post('payment-settings', [PaymentGatewayController::class, 'update'])->name('payment_settings.update');
 
         // Global Settings
-        Route::get('settings',  [GlobalSettingController::class, 'index'])->name('settings');
-        Route::post('settings', [GlobalSettingController::class, 'update'])->name('settings.update');
+        Route::get('settings',       [GlobalSettingController::class, 'index'])->name('settings');
+        Route::post('settings',      [GlobalSettingController::class, 'update'])->name('settings.update');
+        Route::post('smtp-settings', [GlobalSettingController::class, 'updateSmtp'])->name('smtp_settings.update');
+        Route::post('sms-settings',  [GlobalSettingController::class, 'updateSms'])->name('sms_settings.update');
 
         // Finance
         Route::get('finance', [FinanceController::class, 'index'])->name('finance');

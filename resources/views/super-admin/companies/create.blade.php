@@ -48,24 +48,24 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" width="16" height="16"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     </div>
                     <div>
-                        <div style="font-size:14px;font-weight:600">Company Details</div>
+                        <div style="font-size:14px;font-weight:600">Firm Details</div>
                         <div style="font-size:12px;color:var(--text-3)">Basic information about the firm</div>
                     </div>
                 </div>
 
                 <div class="form-2col">
                     <div class="f-group">
-                        <label class="f-label">Company Name <span style="color:var(--red)">*</span></label>
+                        <label class="f-label">Firm Name <span style="color:var(--red)">*</span></label>
                         <input name="company_name" id="company_name" class="f-inp" placeholder="Acme Corp" required
                                oninput="autoFillSubdomain(this.value)">
                         <div class="field-error-msg" id="err-company_name"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Brand / App Name</label>
-                        <input name="app_name" class="f-inp" placeholder="Leave blank to use company name">
+                        <input name="app_name" class="f-inp" placeholder="Leave blank to use firm name">
                     </div>
                     <div class="f-group">
-                        <label class="f-label">Company Email <span style="color:var(--red)">*</span></label>
+                        <label class="f-label">Firm Email <span style="color:var(--red)">*</span></label>
                         <input name="company_email" id="company_email" type="email" class="f-inp" placeholder="billing@acme.com" required>
                         <div class="field-error-msg" id="err-company_email"></div>
                     </div>
@@ -201,7 +201,7 @@
                 <div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg);border-radius:10px;margin-bottom:12px">
                     <div id="preview-av" style="width:42px;height:42px;border-radius:10px;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0">??</div>
                     <div>
-                        <div id="preview-name" style="font-size:14px;font-weight:600;color:var(--text-1)">Company Name</div>
+                        <div id="preview-name" style="font-size:14px;font-weight:600;color:var(--text-1)">Firm Name</div>
                         <div id="preview-sub" style="font-size:11.5px;color:var(--text-3)">subdomain.{{ config('tenancy.root_domain','yourdomain.com') }}</div>
                     </div>
                 </div>
@@ -391,7 +391,7 @@
                 <div style="font-size:13px;font-weight:600;margin-bottom:12px">CSV Format Guide</div>
                 <div style="display:flex;flex-direction:column;gap:10px">
                     @foreach([
-                        ['var(--blue)',   'firm_name — Full company name (required)'],
+                        ['var(--blue)',   'firm_name — Full firm name (required)'],
                         ['var(--purple)', 'contact_name — Admin user\'s full name (required)'],
                         ['var(--green)',  'email — Admin user\'s email address (required)'],
                         ['var(--orange)', 'phone — Company phone number (optional)'],
@@ -576,10 +576,10 @@ function validateCreateForm() {
     document.querySelectorAll('.f-inp.is-invalid, .f-sel.is-invalid').forEach(el => el.classList.remove('is-invalid'));
 
     const companyName = (document.getElementById('company_name').value || '').trim();
-    if (!companyName) showErr('err-company_name', 'company_name', 'Company name is required.');
+    if (!companyName) showErr('err-company_name', 'company_name', 'Firm name is required.');
 
     const companyEmail = (document.getElementById('company_email').value || '').trim();
-    if (!companyEmail) showErr('err-company_email', 'company_email', 'Company email is required.');
+    if (!companyEmail) showErr('err-company_email', 'company_email', 'Firm email is required.');
     else if (!emailRe.test(companyEmail)) showErr('err-company_email', 'company_email', 'Please enter a valid email address.');
 
     const subdomain = (document.getElementById('subdomain').value || '').trim();

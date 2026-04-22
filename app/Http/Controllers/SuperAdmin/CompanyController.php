@@ -9,6 +9,7 @@ use App\Models\CompanyBranding;
 use App\Models\SuperAdmin\Package;
 use App\Models\SuperAdmin\Subscription;
 use App\Models\User;
+use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -109,17 +110,22 @@ class CompanyController extends AccountBaseController
                     ]);
                 }
 
-                $role = Role::firstOrCreate(['name' => 'client_admin', 'guard_name' => 'web']);
-                $user = User::create([
+                $role      = Role::firstOrCreate(['name' => 'client_admin', 'guard_name' => 'web']);
+                $plainPass = Str::random(16);
+                $user      = User::create([
                     'company_id'        => $company->id,
                     'name'              => $d['contact_name'],
                     'email'             => $d['email'],
-                    'password'          => Hash::make(Str::random(16)),
+                    'password'          => Hash::make($plainPass),
                     'status'            => 'active',
                     'admin_approval'    => true,
                     'email_verified_at' => now(),
                 ]);
                 $user->assignRole($role);
+
+                app(EmailService::class)->sendToUser($user, 'user_welcome', [
+                    '{{password}}' => $plainPass,
+                ]);
 
                 $results['success']++;
             } catch (\Exception $e) {
@@ -188,6 +194,10 @@ class CompanyController extends AccountBaseController
             'email_verified_at' => now(),
         ]);
         $user->assignRole($role);
+
+        app(EmailService::class)->sendToUser($user, 'user_welcome', [
+            '{{password}}' => $request->admin_password,
+        ]);
 
         return Reply::successWithData('Company created successfully.', ['redirect' => route('superadmin.companies.index')]);
     }

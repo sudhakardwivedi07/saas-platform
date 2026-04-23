@@ -5,10 +5,11 @@ useDefault = true
 
 [allowlist]
 paths = [
-   "vendor/",
+  "vendor/",
   "node_modules/",
   "storage/",
   "bootstrap/cache/",
   "microservices/",
-  ".env.example"
+  ".env.example",
+  "tools/gitleaks/README.md"
 ]

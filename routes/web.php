@@ -66,10 +66,14 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // QuickBooks
+    Route::get('account/quickbooks-integration/callback', [QuickBooksController::class, 'callback'])->name('quickbooks.callback');
     Route::prefix('quickbooks')->name('quickbooks.')->group(function () {
         Route::get('/',                    [QuickBooksController::class, 'index'])->name('index');
         Route::get('/connect',             [QuickBooksController::class, 'connect'])->name('connect');
-        Route::get('/callback',            [QuickBooksController::class, 'callback'])->name('callback');
+        Route::get('/user-connect',         [QuickBooksController::class, 'userConnect'])->name('user-connect');
+        Route::post('/user-disconnect',     [QuickBooksController::class, 'userDisconnect'])->name('user-disconnect');
+        Route::get('/user-test-connection', [QuickBooksController::class, 'userTestConnection'])->name('user-test-connection');
+        Route::post('/user-refresh-token',  [QuickBooksController::class, 'userRefreshToken'])->name('user-refresh-token');
         Route::post('/{id}/sync',          [QuickBooksController::class, 'sync'])->name('sync');
         Route::post('/{id}/disconnect',    [QuickBooksController::class, 'disconnect'])->name('disconnect');
     });
@@ -126,6 +130,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/sms',          [SmsSettingController::class, 'update'])->name('sms.update');
         Route::get('/payment-gateway',  [TenantPaymentGatewayController::class, 'index'])->name('payment-gateway');
         Route::post('/payment-gateway', [TenantPaymentGatewayController::class, 'update'])->name('payment-gateway.update');
+
+        // QuickBooks Settings
+        Route::post('/quickbooks-settings', [SettingsController::class, 'updateQuickbooksSettings'])->name('quickbooks-settings.update');
 
         // Roles & Permissions
         Route::post('/roles',       [RoleController::class, 'store'])->name('roles.store');

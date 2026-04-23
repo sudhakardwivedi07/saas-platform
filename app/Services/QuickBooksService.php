@@ -14,53 +14,69 @@ class QuickBooksService
 {
     private DataService $dataService;
 
-    public function __construct(private ?QuickBooksConnection $connection = null)
-    {
-        $this->dataService = $this->buildDataService($connection);
+    public function __construct(
+        private ?QuickBooksConnection $connection = null,
+        private array $credentials = []
+    ) {
+        $this->dataService = self::buildDataService($connection, $credentials);
     }
 
     // ── OAuth ─────────────────────────────────────────────────────────────────
 
-    public static function getAuthorizationUrl(): string
+    public static function getAuthorizationUrl(array $credentials): string
     {
-        $ds     = self::buildDataService();
+        $ds     = self::buildDataService(null, $credentials);
         $helper = $ds->getOAuth2LoginHelper();
         return $helper->getAuthorizationCodeURL();
     }
 
-    public static function handleCallback(
-        string $code,
-        string $realmId,
-        int    $companyId,
-        int    $userId
-    ): QuickBooksConnection {
-        $ds     = self::buildDataService();
+    public static function handleCallback(string $code, string $realmId, array $credentials): array
+    {
+        $ds     = self::buildDataService(null, $credentials);
         $helper = $ds->getOAuth2LoginHelper();
+
+        Log::info('QuickBooks OAuth: Exchanging authorization code', [
+            'realm_id'    => $realmId,
+            'code_length' => strlen($code),
+        ]);
 
         try {
             $tokenObj = $helper->exchangeAuthorizationCodeForToken($code, $realmId);
         } catch (\Throwable $e) {
-            Log::error("QuickBooks OAuth callback failed: " . $e->getMessage());
+            Log::error('QuickBooks OAuth callback failed: ' . $e->getMessage());
             throw $e;
         }
 
-        // Fetch company info from QB
+        $accessTokenExpiresIn  = $tokenObj->getAccessTokenExpiresAt();
+        $refreshTokenExpiresIn = $tokenObj->getRefreshTokenExpiresAt();
+
+        Log::info('QuickBooks Token Expiration Values', [
+            'access_token_expires_raw'  => $accessTokenExpiresIn,
+            'refresh_token_expires_raw' => $refreshTokenExpiresIn,
+        ]);
+
+        $accessTokenExpiresAt  = self::parseExpiry($accessTokenExpiresIn,  3600);
+        $refreshTokenExpiresAt = self::parseExpiry($refreshTokenExpiresIn, 8_640_000);
+
         $ds->updateOAuth2Token($tokenObj);
         $companyInfo = $ds->getCompanyInfo();
+        $companyName = $companyInfo?->CompanyName ?? null;
+        $country     = $companyInfo?->Country     ?? null;
 
-        return QuickBooksConnection::updateOrCreate(
-            ['company_id' => $companyId, 'realm_id' => $realmId],
-            [
-                'user_id'                   => $userId,
-                'access_token'              => $tokenObj->getAccessToken(),
-                'refresh_token'             => $tokenObj->getRefreshToken(),
-                'access_token_expires_at'   => self::parseExpiry($tokenObj->getAccessTokenExpiresAt(), 3600),
-                'refresh_token_expires_at'  => self::parseExpiry($tokenObj->getRefreshTokenExpiresAt(), 8_640_000),
-                'qb_company_name'           => $companyInfo?->CompanyName ?? null,
-                'country'                   => $companyInfo?->Country ?? null,
-                'is_active'                 => true,
-            ]
-        );
+        Log::info('QuickBooks Token Expiration Dates', [
+            'access_token_expires_at'  => $accessTokenExpiresAt->toDateTimeString(),
+            'refresh_token_expires_at' => $refreshTokenExpiresAt->toDateTimeString(),
+        ]);
+
+        return [
+            'realm_id'                  => $realmId,
+            'access_token'              => $tokenObj->getAccessToken(),
+            'refresh_token'             => $tokenObj->getRefreshToken(),
+            'access_token_expires_at'   => $accessTokenExpiresAt,
+            'refresh_token_expires_at'  => $refreshTokenExpiresAt,
+            'qb_company_name'           => $companyName,
+            'country'                   => $country,
+        ];
     }
 
     // ── Token Refresh ─────────────────────────────────────────────────────────
@@ -111,9 +127,6 @@ class QuickBooksService
 
             $count = count($customers ?? []);
 
-            // TODO: Map QB customers to your local models as needed
-            // foreach ($customers as $qbCustomer) { ... }
-
             $log->update([
                 'status'         => 'success',
                 'records_synced' => $count,
@@ -159,17 +172,33 @@ class QuickBooksService
         }
     }
 
+    // ── Connection Test ───────────────────────────────────────────────────────
+
+    public static function testConnection(QuickBooksConnection $connection, array $credentials): bool
+    {
+        try {
+            $ds          = self::buildDataService($connection, $credentials);
+            $companyInfo = $ds->getCompanyInfo();
+            return $companyInfo !== null;
+        } catch (\Throwable $e) {
+            Log::error('QuickBooks test connection failed: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     // ── Factory ───────────────────────────────────────────────────────────────
 
-    private static function buildDataService(?QuickBooksConnection $conn = null): DataService
+    private static function buildDataService(?QuickBooksConnection $conn = null, array $creds = []): DataService
     {
         $config = [
             'auth_mode'    => 'oauth2',
-            'ClientID'     => config('quickbooks.client_id'),
-            'ClientSecret' => config('quickbooks.client_secret'),
-            'RedirectURI'  => config('quickbooks.redirect_uri'),
+            'ClientID'     => $creds['client_id']     ?? config('quickbooks.client_id'),
+            'ClientSecret' => $creds['client_secret']  ?? config('quickbooks.client_secret'),
+            'RedirectURI'  => $creds['redirect_uri']   ?? config('quickbooks.redirect_uri'),
             'scope'        => 'com.intuit.quickbooks.accounting',
-            'baseUrl'      => config('quickbooks.environment', 'Development'),
+            'baseUrl'      => isset($creds['base_url'])
+                                ? ucfirst(strtolower($creds['base_url']))
+                                : config('quickbooks.environment', 'Development'),
         ];
 
         if ($conn) {

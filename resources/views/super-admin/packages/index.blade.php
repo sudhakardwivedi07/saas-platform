@@ -143,7 +143,7 @@
 <script>
 async function togglePackage(id, btn) {
     btn.disabled = true;
-    const res = await fetch(`/superadmin/packages/${id}/toggle`, {
+    const res = await fetch('{{ route("superadmin.packages.toggle", ":id") }}'.replace(':id', id), {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,

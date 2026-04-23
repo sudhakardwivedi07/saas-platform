@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Account — {{ $setting?->global_app_name ?? config('app.name') }}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+    <link href="{{ asset(config('assets.font_dm_sans')) }}" rel="stylesheet">
     <style>
 :root {
   --primary: {{ $setting?->primary_color ?? '#f06b21' }};

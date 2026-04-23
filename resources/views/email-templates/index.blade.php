@@ -109,7 +109,7 @@ async function submitTest() {
     const slug  = document.getElementById('test-slug').value;
     const email = document.getElementById('test-email').value;
     if (!email) { showToast('Enter an email address', 'error'); return; }
-    const json = await fetch(`/email-templates/${slug}/test`, {
+    const json = await fetch('{{ route("email-templates.test", ":slug") }}'.replace(':slug', slug), {
         method:'POST',
         headers:{'X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content,'Accept':'application/json','Content-Type':'application/json'},
         body:JSON.stringify({to_email:email})

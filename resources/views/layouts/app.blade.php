@@ -12,11 +12,10 @@
     @endif
 
     {{-- Fonts --}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+    <link href="{{ asset(config('assets.font_dm_sans')) }}" rel="stylesheet">
 
     {{-- DataTables (used on multiple pages) --}}
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="{{ asset(config('assets.datatables_css')) }}">
 
     {{-- White-label CSS variables from branding --}}
     <!-- DEBUG_BRANDING: company_id={{ $branding?->company_id ?? 'null' }} primary={{ $branding?->primary_color ?? 'null' }} accent={{ $branding?->accent_color ?? 'null' }} -->
@@ -325,6 +324,13 @@ div.dataTables_wrapper .dt-footer div.dataTables_info{float:none!important;paddi
 div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;padding:8px 0!important}
     </style>
     @stack('styles')
+    <link rel="stylesheet" href="{{ asset(config('assets.sweetalert2_css')) }}">
+    <style>
+    .swal-toast-popup { font-family: inherit !important; font-size: 13.5px !important; border-radius: 10px !important; padding: 10px 16px !important; min-width: 280px; }
+    .swal-toast-popup .swal2-title { font-size: 13.5px !important; font-weight: 500 !important; margin: 0 !important; padding: 0 !important; }
+    .swal-toast-popup .swal2-icon { width: 22px !important; height: 22px !important; margin: 0 8px 0 0 !important; border-width: 2px !important; }
+    .swal-toast-popup .swal2-icon .swal2-icon-content { font-size: 13px !important; }
+    </style>
 </head>
 <body>
 
@@ -585,6 +591,30 @@ async function apiCall(url, method='POST', body={}) {
     });
     return r.json();
 }
+</script>
+<script src="{{ asset(config('assets.sweetalert2_js')) }}"></script>
+<script>
+const SwalToast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3500,
+    timerProgressBar: true,
+    customClass: { popup: 'swal-toast-popup' },
+    didOpen: function(toast) {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+});
+@if(session('toast_success'))
+SwalToast.fire({ icon: 'success', title: @json(session('toast_success')) });
+@endif
+@if(session('toast_warning'))
+SwalToast.fire({ icon: 'warning', title: @json(session('toast_warning')) });
+@endif
+@if(session('toast_error'))
+SwalToast.fire({ icon: 'error', title: @json(session('toast_error')) });
+@endif
 </script>
 @stack('scripts')
 </body>

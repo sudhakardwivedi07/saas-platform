@@ -33,12 +33,30 @@ class SubscriptionController extends AccountBaseController
             ->with(['clientPackage', 'package', 'quickbooksConnections', 'users' => fn($q) => $q->orderBy('id')->limit(1)])
             ->get();
 
-        // Usage summary (wire to real insight model when available)
-        $this->totalInsightsUsed      = 0;
-        $this->totalInsightsRemaining = $this->subscription?->package?->max_documents ?? 0;
-        $this->companiesAtRisk        = $this->subCompanies
-            ->filter(fn($c) => $c->status === 'inactive' || $c->quickbooksConnections->where('is_active', true)->isEmpty())
-            ->count();
+        $subCompanies = $this->subCompanies;
+
+        // Usage totals from companies.insights_used column
+        $this->totalInsightsUsed = $subCompanies->sum('insights_used');
+        $maxInsights             = $this->subscription?->package?->max_documents ?? 0;
+        $this->totalInsightsRemaining = $maxInsights > 0
+            ? max(0, $maxInsights - $this->totalInsightsUsed)
+            : 0;
+
+        // Companies at risk breakdown
+        $quotaFull   = $subCompanies->filter(fn($c) => $c->clientPackage && $c->clientPackage->max_documents > 0 && $c->insights_used >= $c->clientPackage->max_documents)->count();
+        $inactive    = $subCompanies->where('status', 'inactive')->count();
+        $noQB        = $subCompanies->filter(fn($c) => $c->quickbooksConnections->where('is_active', true)->isEmpty())->count();
+        $this->companiesAtRisk      = $subCompanies->filter(fn($c) =>
+            $c->status === 'inactive' ||
+            $c->quickbooksConnections->where('is_active', true)->isEmpty() ||
+            ($c->clientPackage && $c->clientPackage->max_documents > 0 && $c->insights_used >= $c->clientPackage->max_documents)
+        )->count();
+        $this->atRiskContext   = collect([
+            $quotaFull ? $quotaFull . ' quota full' : null,
+            $inactive  ? $inactive . ' inactive' : null,
+            $noQB      ? $noQB . ' no QB' : null,
+        ])->filter()->implode(' · ');
+        $this->uniqueClients   = $subCompanies->map(fn($c) => $c->users->first()?->id)->filter()->unique()->count();
 
         return view('billing.index', $this->data);
     }

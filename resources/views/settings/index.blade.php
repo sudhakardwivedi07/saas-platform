@@ -238,7 +238,7 @@
             </div>
             <div class="f-group">
                 <label class="f-label">QuickBooks Redirect URI <span style="color:var(--red)">*</span></label>
-                <input type="text" name="redirect_uri" class="f-inp" placeholder="https://yourdomain.com/account/quickbooks-integration/callback"
+                <input type="text" name="redirect_uri" class="f-inp" placeholder="your domain "
                     value="{{ $qbSetting->redirect_uri ?? url('account/quickbooks-integration/callback') }}" required autocomplete="off">
                 <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Must match the redirect URI registered in your QuickBooks app.</div>
             </div>
@@ -558,8 +558,8 @@
 @endsection
 
 @push('scripts')
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="{{ asset(config('assets.jquery')) }}"></script>
+<script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
 $(document).ready(function() {
     // Only init DataTable if the plans tab has rows
@@ -693,7 +693,7 @@ function submitEditRole(e) {
     var data   = new FormData(form);
     btn.disabled = true;
 
-    fetch('{{ url("settings/roles") }}/' + roleId, { method: 'POST', headers: {'X-Requested-With':'XMLHttpRequest'}, body: data })
+    fetch('{{ route("settings.roles.update", ":id") }}'.replace(':id', roleId), { method: 'POST', headers: {'X-Requested-With':'XMLHttpRequest'}, body: data })
         .then(function(r) { return r.json(); })
         .then(function(res) {
             btn.disabled = false;
@@ -713,7 +713,7 @@ function deleteRole(id, name) {
     if (!confirm('Delete role "' + name + '"? This cannot be undone.')) return;
 
     var csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '{{ csrf_token() }}';
-    fetch('{{ url("settings/roles") }}/' + id, {
+    fetch('{{ route("settings.roles.destroy", ":id") }}'.replace(':id', id), {
         method: 'DELETE',
         headers: {'X-Requested-With':'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken, 'Content-Type':'application/json'},
     })

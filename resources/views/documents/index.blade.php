@@ -217,7 +217,7 @@ function openVersionModal(docId, docName) {
 
 async function submitVersion() {
     if (!currentDocId) return;
-    const r = await fetch(`/documents/${currentDocId}/version`, {
+    const r = await fetch('{{ route("documents.version", ":id") }}'.replace(':id', currentDocId), {
         method: 'POST',
         body: new FormData(document.getElementById('version-form')),
         headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }

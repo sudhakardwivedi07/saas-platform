@@ -123,7 +123,7 @@
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                     View Client Details
                                 </a>
-                                <a href="{{ route('clients.show', $client) }}#dashboard" class="dm-item">
+                                <a href="{{ route('clients.dashboard', $client) }}" class="dm-item">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                                     View Dashboard
                                 </a>
@@ -282,7 +282,7 @@
                             <button class="dot-menu" data-menu="dm-co-{{ $company->id }}" title="Actions">•••</button>
                             <div class="dm-popup" id="dm-co-{{ $company->id }}">
                                 @if($owner)
-                                <a href="{{ route('clients.show', $owner->id) }}" class="dm-item">
+                                <a href="{{ route('clients.dashboard', $owner->id) }}" class="dm-item">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                                     View Dashboard
                                 </a>
@@ -300,17 +300,6 @@
                     </td>
                 </tr>
                 @empty
-                <tr>
-                    <td colspan="8" style="text-align:center;padding:56px 20px">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
-                        <div style="font-size:14px;font-weight:500;color:var(--text-2)">No companies yet</div>
-                        <div style="font-size:12.5px;color:var(--text-3);margin-top:4px;margin-bottom:14px">Sub-companies will appear here once created.</div>
-                        <a href="{{ route('my-companies.create') }}" class="btn btn-primary btn-sm" style="display:inline-flex">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Add Company
-                        </a>
-                    </td>
-                </tr>
                 @endforelse
             </tbody>
         </table>
@@ -552,8 +541,8 @@
 @endsection
 
 @push('scripts')
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="{{ asset(config('assets.jquery')) }}"></script>
+<script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
 $(document).ready(function() {
     // Reset filters on load (bfcache fix)
@@ -599,7 +588,7 @@ $(document).ready(function() {
             info: 'Showing _START_–_END_ of _TOTAL_ companies',
             infoEmpty: 'No companies found',
             paginate: { previous: '‹', next: '›' },
-            emptyTable: '<div style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No companies yet</div>',
+            emptyTable: '<div style="text-align:center;padding:56px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">No companies yet</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px">Sub-companies will appear here once created.</div></div>',
         }
     });
 
@@ -724,7 +713,7 @@ function submitBulkUpload() {
 function toggleClientStatus(id, name, currentStatus) {
     var action = currentStatus === 'active' ? 'disable' : 'enable';
     if (!confirm('Are you sure you want to ' + action + ' client "' + name + '"?')) return;
-    fetch('/clients/' + id + '/toggle-status', {
+    fetch('{{ route("clients.toggle-status", ":id") }}'.replace(':id', id), {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
     }).then(r => r.json()).then(function(data) {
@@ -746,7 +735,7 @@ function submitAssignClientPlan() {
     var formData  = new FormData();
     formData.append('_token', '{{ csrf_token() }}');
     formData.append('client_package_id', planId);
-    fetch('/my-companies/' + companyId + '/assign-plan', { method: 'POST', body: formData })
+    fetch('{{ route("my-companies.assign-plan", ":id") }}'.replace(':id', companyId), { method: 'POST', body: formData })
         .then(r => r.json())
         .then(function(data) {
             if (data.status === 'success') {
@@ -758,7 +747,7 @@ function submitAssignClientPlan() {
 
 function confirmDelete(id, name) {
     document.getElementById('delete-msg').textContent = 'Delete "' + name + '"? This cannot be undone.';
-    document.getElementById('delete-form').action = '/clients/' + id;
+    document.getElementById('delete-form').action = '{{ route("clients.destroy", ":id") }}'.replace(':id', id);
     document.getElementById('modal-delete-client').classList.add('open');
 }
 
@@ -780,7 +769,7 @@ document.getElementById('assign-plan-form').addEventListener('submit', function(
     var planId    = document.getElementById('assign-plan-select').value;
     var csrf      = document.querySelector('meta[name="csrf-token"]').content;
 
-    fetch('/my-companies/' + companyId + '/assign-plan', {
+    fetch('{{ route("my-companies.assign-plan", ":id") }}'.replace(':id', companyId), {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': csrf, 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ client_package_id: planId || null })

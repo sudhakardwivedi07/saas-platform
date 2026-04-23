@@ -192,6 +192,14 @@ class ClientController extends AccountBaseController
         ]);
     }
 
+    public function dashboard($id)
+    {
+        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+        $this->clientUser  = User::with(['company.quickbooksConnections', 'company.clientPackage'])->findOrFail($id);
+        $this->pageTitle   = $this->clientUser->name . "'s Dashboard";
+        return view('clients.dashboard', $this->data);
+    }
+
     public function insights($id)
     {
         $this->client = User::findOrFail($id);

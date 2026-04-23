@@ -1,0 +1,79 @@
+#!/usr/bin/env sh
+
+# -------------------------------
+# Paths
+# -------------------------------
+ROOT_DIR="$(dirname "$0")/.."
+REPORT_DIR="$ROOT_DIR/.security-reports"
+
+GITLEAKS_BIN="$ROOT_DIR/tools/gitleaks/gitleaks.exe"
+GITLEAKS_CONFIG="$ROOT_DIR/gitleaks.toml"
+
+GITLEAKS_LOG="$REPORT_DIR/gitleaks.log"
+SEMGREP_LOG="$REPORT_DIR/semgrep.log"
+
+SEMGREP_TARGETS="app routes config database resources"
+
+# Ensure report directory exists
+mkdir -p "$REPORT_DIR"
+
+# -------------------------------
+# GITLEAKS – Secrets Detection
+# -------------------------------
+echo "🔐 Running Gitleaks security scan..."
+
+set +e
+"$GITLEAKS_BIN" protect \
+  --staged \
+  --config "$GITLEAKS_CONFIG" \
+  --verbose \
+  > "$GITLEAKS_LOG" 2>&1
+GITLEAKS_EXIT_CODE=$?
+set -e
+
+if [ "$GITLEAKS_EXIT_CODE" -ne 0 ]; then
+  COUNT=$(grep -c "Finding:" "$GITLEAKS_LOG" || true)
+
+  echo "❌ Gitleaks detected $COUNT secret(s)"
+  echo "📄 See details: .security-reports/gitleaks.log"
+  exit 1
+fi
+
+echo "✅ Gitleaks passed (no secrets found)"
+
+# -------------------------------
+# SEMGREP – Hardcoded URL Checks
+# -------------------------------
+echo "🔍 Running Semgrep hardcoded URL checks..."
+ 
+set +e
+ 
+# Get staged files (only PHP/JS/TS/Blade)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^(app|routes|config|database)/.*\.(php|js|ts)$' || true)
+SEMGREP_TARGETS="app routes config database"
+ 
+ 
+if [ -z "$STAGED_FILES" ]; then
+  echo "No relevant staged files."
+  SEMGREP_EXIT_CODE=0
+else
+  semgrep \
+    --config semgrep/rules \
+    $STAGED_FILES \
+    --error \
+    --quiet \
+    > "$SEMGREP_LOG"
+ 
+  SEMGREP_EXIT_CODE=$?
+fi
+ 
+set -e
+ 
+if [ "$SEMGREP_EXIT_CODE" -ne 0 ]; then
+  COUNT=$(grep -c "semgrep.rules.hardcoded-url-detected" "$SEMGREP_LOG")
+  echo "❌ Semgrep detected $COUNT hardcoded URL(s)"
+  echo "📄 See details: .security-reports/semgrep.log"
+  exit 1
+fi
+ 
+echo "✅ Semgrep passed (no hardcoded URLs)"

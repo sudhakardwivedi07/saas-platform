@@ -134,7 +134,7 @@
     <div id="sub-smtp" class="tab-panel active">
         <div class="acc-card">
             <div class="acc-title">SMTP Configuration</div>
-            <form id="smtp-form">
+            <form id="smtp-form" action="{{ route('superadmin.smtp_settings.update') }}">
                 @csrf
                 <div class="form-2col">
                     <div class="f-group">
@@ -241,37 +241,40 @@
 <div id="tab-sms" class="tab-panel">
     <div class="acc-card">
         <div class="acc-title">SMS / Twilio Configuration</div>
-        <div class="info-banner" style="margin-bottom:18px">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <div class="info-banner-txt">Connect a Twilio account to send SMS notifications. Get your credentials from <strong>console.twilio.com</strong>.</div>
-        </div>
-        <div class="form-2col">
-            <div class="f-group">
-                <label class="f-label">Account SID <span style="color:red;">*</span></label>
-                <input type="text" name="twilio_sid" id="sms-account_sid" class="f-inp" style="font-family:monospace;font-size:12px"
-                       placeholder="ACxxxxxxxxxxxxxxxx">
-                <div id="error-twilio_sid" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
+        <form id="sms-form" action="{{ route('superadmin.sms_settings.update') }}">
+            @csrf
+            <div class="info-banner" style="margin-bottom:18px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div class="info-banner-txt">Connect a Twilio account to send SMS notifications. Get your credentials from <strong>console.twilio.com</strong>.</div>
+            </div>
+            <div class="form-2col">
+                <div class="f-group">
+                    <label class="f-label">Account SID <span style="color:red;">*</span></label>
+                    <input type="text" name="twilio_sid" id="sms-account_sid" class="f-inp" style="font-family:monospace;font-size:12px"
+                           placeholder="ACxxxxxxxxxxxxxxxx" value="{{ $smsSetting?->account_sid }}">
+                    <div id="error-twilio_sid" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
+                </div>
+                <div class="f-group">
+                    <label class="f-label">Auth Token</label>
+                    <input type="password" name="twilio_token" class="f-inp" style="font-family:monospace;font-size:12px"
+                           placeholder="••••••••" autocomplete="new-password">
+                </div>
             </div>
             <div class="f-group">
-                <label class="f-label">Auth Token</label>
-                <input type="password" name="twilio_token" class="f-inp" style="font-family:monospace;font-size:12px"
-                       placeholder="••••••••" autocomplete="new-password">
+                <label class="f-label">From Phone Number <span style="color:red;">*</span></label>
+                <input type="text" name="twilio_from" id="sms-from_number" class="f-inp" style="max-width:220px"
+                       placeholder="+15551234567" value="{{ $smsSetting?->from_number }}">
+                <div id="error-twilio_from" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
             </div>
-        </div>
-        <div class="f-group">
-            <label class="f-label">From Phone Number <span style="color:red;">*</span></label>
-            <input type="text" name="twilio_from" id="sms-from_number" class="f-inp" style="max-width:220px"
-                   placeholder="+15551234567">
-            <div id="error-twilio_from" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
-        </div>
-        <div class="f-group">
-            <label class="f-label">Status</label>
-            <select name="sms_status" class="f-sel" style="max-width:200px">
-                <option value="inactive" selected>Inactive</option>
-                <option value="active">Active</option>
-            </select>
-        </div>
-        <button type="button" onclick="saveSmsSettings()" class="btn btn-primary">Save SMS Settings</button>
+            <div class="f-group">
+                <label class="f-label">Status</label>
+                <select name="sms_status" class="f-sel" style="max-width:200px">
+                    <option value="inactive" {{ ($smsSetting?->is_active ?? false) ? '' : 'selected' }}>Inactive</option>
+                    <option value="active"   {{ ($smsSetting?->is_active ?? false) ? 'selected' : '' }}>Active</option>
+                </select>
+            </div>
+            <button type="button" onclick="saveSmsSettings()" class="btn btn-primary">Save SMS Settings</button>
+        </form>
     </div>
 </div>
 
@@ -290,10 +293,9 @@ document.getElementById('email-sub-tabs')?.querySelectorAll('.tab-btn').forEach(
     });
 });
 
-function saveSmtpSettings() {
+async function saveSmtpSettings() {
     var valid = true;
-    var errors = ['smtp_host','smtp_port','smtp_username','from_address','from_name'];
-    errors.forEach(function(id) {
+    ['smtp_host','smtp_port','smtp_username','from_address','from_name'].forEach(function(id) {
         var el = document.getElementById('error-' + id);
         if (el) el.textContent = '';
     });
@@ -331,12 +333,23 @@ function saveSmtpSettings() {
         valid = false;
     }
 
-    if (valid) {
-        showToast('SMTP settings saved to .env — please restart the server.', 'success');
+    if (!valid) return;
+
+    var form = document.getElementById('smtp-form');
+    try {
+        var r = await fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
+        });
+        var j = await r.json();
+        showToast(j.message, j.status === 'success' ? 'success' : 'error');
+    } catch (e) {
+        showToast('Failed to save SMTP settings.', 'error');
     }
 }
 
-function saveSmsSettings() {
+async function saveSmsSettings() {
     var valid = true;
 
     ['twilio_sid', 'twilio_from'].forEach(function(id) {
@@ -359,8 +372,19 @@ function saveSmsSettings() {
         valid = false;
     }
 
-    if (valid) {
-        showToast('SMS settings saved.', 'success');
+    if (!valid) return;
+
+    var form = document.getElementById('sms-form');
+    try {
+        var r = await fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
+        });
+        var j = await r.json();
+        showToast(j.message, j.status === 'success' ? 'success' : 'error');
+    } catch (e) {
+        showToast('Failed to save SMS settings.', 'error');
     }
 }
 

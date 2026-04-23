@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClientPackage;
+use App\Models\SuperAdmin\Package;
+use App\Models\SupportTicket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -16,6 +19,37 @@ class AccountController extends AccountBaseController
 
     public function index()
     {
+        if (!auth()->user()->hasAnyRole(['client_admin', 'manager'])) {
+            $company  = company();
+            $parentId = $company->created_by;
+
+            $plans = $parentId
+                ? ClientPackage::where('company_id', $parentId)
+                    ->where('is_active', true)
+                    ->orderBy('sort')
+                    ->orderBy('monthly_price')
+                    ->get()
+                : collect();
+
+            if ($plans->isEmpty()) {
+                $plans = Package::where('is_active', true)
+                    ->orderBy('sort')
+                    ->orderBy('monthly_price')
+                    ->get();
+            }
+
+            $this->plans        = $plans;
+            $this->currentPlan  = $company->activePlan();
+            $this->subscription = $company->subscription;
+
+            $this->data['myTickets'] = SupportTicket::where('user_id', auth()->id())
+                ->with('user', 'company')
+                ->orderByDesc('created_at')
+                ->get();
+
+            return view('account.user', $this->data);
+        }
+
         return view('account.index', $this->data);
     }
 

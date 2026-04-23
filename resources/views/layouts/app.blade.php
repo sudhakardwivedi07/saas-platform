@@ -19,12 +19,13 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
 
     {{-- White-label CSS variables from branding --}}
+    <!-- DEBUG_BRANDING: company_id={{ $branding?->company_id ?? 'null' }} primary={{ $branding?->primary_color ?? 'null' }} accent={{ $branding?->accent_color ?? 'null' }} -->
     <style>
 /* ── BRAND TOKENS ─────────────────────────────────────── */
 :root {
-  --blue:{{ $branding->primary_color ?? '#1a6aa8' }};
+  --blue:{{ $branding?->primary_color ?? '#1a6aa8' }};
   --blue-light:#e8f2fb; --blue-pale:#f0f7ff;
-  --orange:{{ $branding->accent_color ?? '#f06b21' }};
+  --orange:{{ $branding?->accent_color ?? '#f06b21' }};
   --orange-dark:#d05519; --orange-light:#fef3ec;
   --green:#10b981; --green-light:#ecfdf5;
   --red:#ef4444; --red-light:#fef2f2;
@@ -389,6 +390,14 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         </a>
         @endif
 
+        {{-- Insights: basic user role only --}}
+        @if(!auth()->user()->hasAnyRole(['client_admin','manager']))
+        <a href="#" class="ca-nav-item {{ request()->routeIs('insights.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Insights
+        </a>
+        @endif
+
         {{-- QuickBooks: anyone with view_quickbooks --}}
         @if(auth()->user()->can('view_quickbooks'))
         <a href="{{ route('quickbooks.index') }}" class="ca-nav-item {{ request()->routeIs('quickbooks.*') ? 'active' : '' }}">
@@ -413,11 +422,13 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         </a>
         @endif
 
-        {{-- Support: all roles --}}
+        {{-- Support: admin/manager roles only --}}
+        @if(auth()->user()->hasAnyRole(['client_admin','manager']))
         <a href="{{ route('support.index') }}" class="ca-nav-item {{ request()->routeIs('support.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             Support
         </a>
+        @endif
 
         {{-- My Account: all roles --}}
         <a href="{{ route('account.index') }}" class="ca-nav-item {{ request()->routeIs('account.*') ? 'active' : '' }}">

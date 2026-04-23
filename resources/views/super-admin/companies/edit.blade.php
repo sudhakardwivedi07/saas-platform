@@ -31,14 +31,14 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" width="16" height="16"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                     </div>
                     <div>
-                        <div style="font-size:14px;font-weight:600">Company Details</div>
+                        <div style="font-size:14px;font-weight:600">Firm Details</div>
                         <div style="font-size:12px;color:var(--text-3)">Update firm information</div>
                     </div>
                 </div>
 
                 <div class="form-2col">
                     <div class="f-group">
-                        <label class="f-label">Company Name <span style="color:var(--red)">*</span></label>
+                        <label class="f-label">Firm Name <span style="color:var(--red)">*</span></label>
                         <input type="text" name="company_name" id="company_name" class="f-inp"
                                value="{{ old('company_name', $company->company_name) }}" required
                                oninput="updatePreview()">
@@ -48,10 +48,10 @@
                         <label class="f-label">Brand / App Name</label>
                         <input type="text" name="app_name" class="f-inp"
                                value="{{ old('app_name', $company->app_name) }}"
-                               placeholder="Leave blank to use company name">
+                               placeholder="Leave blank to use firm name">
                     </div>
                     <div class="f-group">
-                        <label class="f-label">Company Email <span style="color:var(--red)">*</span></label>
+                        <label class="f-label">Firm Email <span style="color:var(--red)">*</span></label>
                         <input type="email" name="company_email" id="company_email" class="f-inp"
                                value="{{ old('company_email', $company->company_email) }}">
                         <div class="field-error-msg" id="err-company_email"></div>
@@ -258,10 +258,10 @@ function validateEditForm() {
     document.querySelectorAll('.f-inp.is-invalid, .f-sel.is-invalid').forEach(el => el.classList.remove('is-invalid'));
 
     const companyName = (document.getElementById('company_name').value || '').trim();
-    if (!companyName) showErr('err-company_name', 'company_name', 'Company name is required.');
+    if (!companyName) showErr('err-company_name', 'company_name', 'Firm name is required.');
 
     const companyEmail = (document.getElementById('company_email').value || '').trim();
-    if (!companyEmail) showErr('err-company_email', 'company_email', 'Company email is required.');
+    if (!companyEmail) showErr('err-company_email', 'company_email', 'Firm email is required.');
     else if (!emailRe.test(companyEmail)) showErr('err-company_email', 'company_email', 'Please enter a valid email address.');
 
     const status = (document.getElementById('status').value || '').trim();

@@ -9,6 +9,7 @@ use App\Models\CompanyBranding;
 use App\Models\SuperAdmin\Package;
 use App\Models\SuperAdmin\Subscription;
 use App\Models\User;
+use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -109,17 +110,22 @@ class CompanyController extends AccountBaseController
                     ]);
                 }
 
-                $role = Role::firstOrCreate(['name' => 'client_admin', 'guard_name' => 'web']);
-                $user = User::create([
+                $role      = Role::firstOrCreate(['name' => 'client_admin', 'guard_name' => 'web']);
+                $plainPass = Str::random(16);
+                $user      = User::create([
                     'company_id'        => $company->id,
                     'name'              => $d['contact_name'],
                     'email'             => $d['email'],
-                    'password'          => Hash::make(Str::random(16)),
+                    'password'          => Hash::make($plainPass),
                     'status'            => 'active',
                     'admin_approval'    => true,
                     'email_verified_at' => now(),
                 ]);
                 $user->assignRole($role);
+
+                app(EmailService::class)->sendToUser($user, 'user_welcome', [
+                    '{{password}}' => $plainPass,
+                ]);
 
                 $results['success']++;
             } catch (\Exception $e) {
@@ -140,7 +146,7 @@ class CompanyController extends AccountBaseController
     public function store(Request $request)
     {
         $request->validate([
-            'company_name' => 'required|string|max:255',
+            'company_name' => ['required','string','min:2','max:100','regex:/^[a-zA-Z0-9 .&\-_]+$/'],
             'subdomain'    => 'required|string|max:63|alpha_dash|unique:companies,subdomain',
             'company_email'=> 'required|email|max:255',
             'package_id'   => 'nullable|exists:packages,id',
@@ -148,6 +154,11 @@ class CompanyController extends AccountBaseController
             'admin_name'   => 'required|string|max:255',
             'admin_email'  => 'required|email|max:255',
             'admin_password'=> 'required|string|min:8',
+        ], [
+            'company_name.required' => 'Firm Name is required.',
+            'company_name.min'      => 'Please enter a valid Firm Name.',
+            'company_name.max'      => 'Please enter a valid Firm Name.',
+            'company_name.regex'    => 'Please enter a valid Firm Name.',
         ]);
 
         $package = $request->package_id ? Package::find($request->package_id) : null;
@@ -188,6 +199,10 @@ class CompanyController extends AccountBaseController
             'email_verified_at' => now(),
         ]);
         $user->assignRole($role);
+
+        app(EmailService::class)->sendToUser($user, 'user_welcome', [
+            '{{password}}' => $request->admin_password,
+        ]);
 
         return Reply::successWithData('Company created successfully.', ['redirect' => route('superadmin.companies.index')]);
     }
@@ -230,24 +245,32 @@ class CompanyController extends AccountBaseController
         $company = Company::withoutGlobalScopes()->findOrFail($id);
 
         $request->validate([
-            'company_name' => 'required|string|max:255',
-            'status'       => 'required|in:active,inactive,suspended',
+            'company_name' => ['required','string','min:2','max:100','regex:/^[a-zA-Z0-9 .&\-_]+$/'],
+            'status'       => 'nullable|in:active,inactive,suspended',
             'package_id'   => 'nullable|exists:packages,id',
+        ], [
+            'company_name.required' => 'Firm Name is required.',
+            'company_name.min'      => 'Please enter a valid Firm Name.',
+            'company_name.max'      => 'Please enter a valid Firm Name.',
+            'company_name.regex'    => 'Please enter a valid Firm Name.',
         ]);
 
-        $company->update($request->only(
-            'company_name', 'app_name', 'status',
-            'package_id', 'company_email', 'company_phone'
-        ));
+        $data = $request->only('company_name', 'app_name', 'package_id', 'company_email', 'company_phone');
+        if ($request->filled('status')) {
+            $data['status'] = $request->status;
+        }
+        $company->update($data);
 
-        return Reply::success('Company updated successfully.');
+        return redirect()->route('superadmin.companies.index')
+            ->with('success', 'Company updated successfully.');
     }
 
     public function destroy(int $id)
     {
         $company = Company::withoutGlobalScopes()->findOrFail($id);
         $company->update(['status' => 'suspended']);
-        return Reply::success('Company suspended.');
+        return redirect()->route('superadmin.companies.index')
+            ->with('success', 'Company suspended.');
     }
 
     public function impersonate(int $id)

@@ -36,11 +36,18 @@ class FinanceController extends AccountBaseController
             ->limit(50)
             ->get();
 
+        $this->activeSubscriptions = Company::withoutGlobalScopes()
+            ->where('created_by', $companyId)
+            ->whereHas('subscription', fn($q) => $q->whereIn('status', ['active', 'trialing']))
+            ->count();
+
         $this->subscribedCompanies = Company::withoutGlobalScopes()
             ->where('created_by', $companyId)
             ->with(['subscription.package', 'clientPackage'])
             ->orderBy('company_name')
             ->get();
+
+        $this->isFreshFinance = $this->recentPayments->isEmpty();
 
         return view('finance.index', $this->data);
     }

@@ -181,7 +181,7 @@ tbody tr:hover td{background:#fafcff}
 .dm-wrap{position:relative;display:inline-block}
 .dm-popup{display:none;position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 28px rgba(0,0,0,.12);z-index:999;min-width:190px;padding:5px}
 .dm-popup.open{display:block}
-.dm-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;font-size:13px;cursor:pointer;color:var(--text-1);text-decoration:none}
+.dm-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:7px;font-size:13px;cursor:pointer;color:var(--text-1);text-decoration:none;border:none;background:none;width:100%;text-align:left;box-sizing:border-box}
 .dm-item:hover{background:var(--bg)}
 .dm-item svg{width:14px;height:14px;flex-shrink:0;stroke:var(--text-3);stroke-width:2}
 .dm-div{height:1px;background:var(--border);margin:4px 8px}

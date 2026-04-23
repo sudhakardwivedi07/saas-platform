@@ -1,0 +1,7 @@
+if ! npx --no-install commitlint --edit "$1"; then
+  echo ""
+  echo "----------------------------------------"
+  cat "$(dirname "$0")/../COMMIT_MESSAGE_GUIDE.txt"
+  echo "----------------------------------------"
+  exit 1
+fi

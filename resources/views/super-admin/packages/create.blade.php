@@ -6,7 +6,7 @@
 <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px;">
     <div>
         <h1 style="font-size:22px; font-weight:800; color:#111827; margin:0;">
-            {{ isset($package) ? 'Edit Plan' : 'Add / Edit Plan' }}
+            {{ isset($package) ? 'Edit Plan' : 'Add Plan' }}
         </h1>
         <p style="font-size:13px; color:#6b7280; margin:4px 0 0;">Define a subscription plan for firms</p>
     </div>
@@ -21,7 +21,7 @@
     {{-- Card header --}}
     <div style="margin-bottom:24px; padding-bottom:18px; border-bottom:1px solid #f0f0f0;">
         <h2 style="font-size:18px; font-weight:700; color:#111827; margin:0 0 2px;">
-            {{ isset($package) ? 'Edit Plan' : 'Add / Edit Plan' }}
+            {{ isset($package) ? 'Edit Plan' : 'Add Plan' }}
         </h2>
         <p style="font-size:13px; color:#9ca3af; margin:0;">Define a subscription plan for firms</p>
     </div>

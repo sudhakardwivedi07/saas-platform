@@ -68,7 +68,7 @@ class TenantUserController extends AccountBaseController
                 user: $user,
                 plainPassword: $plainPassword,
                 companyName: $companyName,
-                loginUrl: url('/login'),
+                loginUrl: route('login'),
             ));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('User invitation email failed: ' . $e->getMessage());

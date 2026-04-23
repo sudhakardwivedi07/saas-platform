@@ -3,7 +3,7 @@
 @section('page-title', 'Support')
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="{{ asset(config('assets.datatables_css')) }}">
 <style>
 /* ── DataTables ────────────────────────────────────── */
 .dt-tscroll{overflow-x:auto}
@@ -458,8 +458,8 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 @endsection
 
 @push('scripts')
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="{{ asset(config('assets.jquery')) }}"></script>
+<script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
 var _currentUpdateUrl = '';
 var _currentNotesUrl  = '';

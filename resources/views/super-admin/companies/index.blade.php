@@ -3,7 +3,7 @@
 @section('page-title', 'Firms')
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="{{ asset(config('assets.datatables_bs5_css')) }}">
 <style>
 /* Override DataTables to match our design system */
 div.dataTables_wrapper div.dataTables_length select,
@@ -297,8 +297,8 @@ table.dataTable thead th:after { font-size: 10px; }
 @endsection
 
 @push('scripts')
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="{{ asset(config('assets.jquery')) }}"></script>
+<script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
 @if($companies->count() > 0)
 $(document).ready(function() {

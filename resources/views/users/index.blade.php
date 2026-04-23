@@ -295,8 +295,8 @@
 @endsection
 
 @push('scripts')
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="{{ asset(config('assets.jquery')) }}"></script>
+<script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
 $(document).ready(function() {
     window.usersTable = $('#users-table').DataTable({
@@ -354,7 +354,7 @@ function openEditUser(id, name, email, role) {
     document.getElementById('edit-email').value = email;
     document.getElementById('edit-role').value  = role;
     document.getElementById('edit-pwd').value   = '';
-    document.getElementById('form-edit-user').action = '/users/' + id + '/update';
+    document.getElementById('form-edit-user').action = '{{ route("users.update", ":id") }}'.replace(':id', id);
     document.getElementById('modal-edit-user').classList.add('open');
 }
 
@@ -373,7 +373,7 @@ function toggleUserStatus(id, currentStatus) {
     }).then(function(result) {
         if (!result.isConfirmed) return;
 
-        fetch('/users/' + id + '/toggle', {
+        fetch('{{ route("users.toggle", ":id") }}'.replace(':id', id), {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -449,7 +449,7 @@ function removeUser(id, name) {
     }).then(function(result) {
         if (!result.isConfirmed) return;
         var form = document.getElementById('form-remove-user');
-        form.action = '/users/' + id;
+        form.action = '{{ route("users.destroy", ":id") }}'.replace(':id', id);
         form.submit();
     });
 }

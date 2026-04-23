@@ -166,7 +166,7 @@
 <script>
 async function togglePlan(id, btn) {
     btn.disabled = true;
-    const res = await fetch(`/plans/${id}/toggle`, {
+    const res = await fetch('{{ route("plans.toggle", ":id") }}'.replace(':id', id), {
         method: 'POST',
         headers: {
             'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
@@ -186,7 +186,7 @@ async function togglePlan(id, btn) {
 function deletePlan(id, name) {
     if (!confirm(`Delete plan "${name}"? This cannot be undone.`)) return;
     const form = document.getElementById('delete-plan-form');
-    form.action = `/plans/${id}`;
+    form.action = '{{ route("plans.destroy", ":id") }}'.replace(':id', id);
     form.submit();
 }
 </script>

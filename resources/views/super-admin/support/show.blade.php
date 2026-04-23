@@ -198,7 +198,7 @@
         btn.disabled    = true;
         btn.textContent = 'Saving…';
 
-        fetch('/superadmin/support/' + ticketId + '/notes', {
+        fetch('{{ route("superadmin.support.save-notes", ":id") }}'.replace(':id', ticketId), {
             method:  'PATCH',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
             body:    JSON.stringify({ notes: notes })
@@ -244,7 +244,7 @@
         usSubmit.disabled    = true;
         usSubmit.textContent = 'Updating…';
 
-        fetch('/superadmin/support/' + ticketId + '/status', {
+        fetch('{{ route("superadmin.support.update-status", ":id") }}'.replace(':id', ticketId), {
             method:  'PATCH',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
             body:    JSON.stringify({ status: newSt, note: usNote.value.trim() })

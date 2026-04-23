@@ -541,8 +541,8 @@
 @endsection
 
 @push('scripts')
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="{{ asset(config('assets.jquery')) }}"></script>
+<script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
 $(document).ready(function() {
     // Reset filters on load (bfcache fix)
@@ -713,7 +713,7 @@ function submitBulkUpload() {
 function toggleClientStatus(id, name, currentStatus) {
     var action = currentStatus === 'active' ? 'disable' : 'enable';
     if (!confirm('Are you sure you want to ' + action + ' client "' + name + '"?')) return;
-    fetch('/clients/' + id + '/toggle-status', {
+    fetch('{{ route("clients.toggle-status", ":id") }}'.replace(':id', id), {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
     }).then(r => r.json()).then(function(data) {
@@ -735,7 +735,7 @@ function submitAssignClientPlan() {
     var formData  = new FormData();
     formData.append('_token', '{{ csrf_token() }}');
     formData.append('client_package_id', planId);
-    fetch('/my-companies/' + companyId + '/assign-plan', { method: 'POST', body: formData })
+    fetch('{{ route("my-companies.assign-plan", ":id") }}'.replace(':id', companyId), { method: 'POST', body: formData })
         .then(r => r.json())
         .then(function(data) {
             if (data.status === 'success') {
@@ -747,7 +747,7 @@ function submitAssignClientPlan() {
 
 function confirmDelete(id, name) {
     document.getElementById('delete-msg').textContent = 'Delete "' + name + '"? This cannot be undone.';
-    document.getElementById('delete-form').action = '/clients/' + id;
+    document.getElementById('delete-form').action = '{{ route("clients.destroy", ":id") }}'.replace(':id', id);
     document.getElementById('modal-delete-client').classList.add('open');
 }
 
@@ -769,7 +769,7 @@ document.getElementById('assign-plan-form').addEventListener('submit', function(
     var planId    = document.getElementById('assign-plan-select').value;
     var csrf      = document.querySelector('meta[name="csrf-token"]').content;
 
-    fetch('/my-companies/' + companyId + '/assign-plan', {
+    fetch('{{ route("my-companies.assign-plan", ":id") }}'.replace(':id', companyId), {
         method: 'POST',
         headers: { 'X-CSRF-TOKEN': csrf, 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ client_package_id: planId || null })

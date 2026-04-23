@@ -28,39 +28,54 @@ class QuickBooksService
         return $helper->getAuthorizationCodeURL();
     }
 
-    public static function handleCallback(
-        string $code,
-        string $realmId,
-        int    $companyId,
-        int    $userId
-    ): QuickBooksConnection {
+    public static function handleCallback(string $code, string $realmId): array
+    {
         $ds     = self::buildDataService();
         $helper = $ds->getOAuth2LoginHelper();
+
+        Log::info('QuickBooks OAuth: Exchanging authorization code', [
+            'realm_id'    => $realmId,
+            'code_length' => strlen($code),
+        ]);
 
         try {
             $tokenObj = $helper->exchangeAuthorizationCodeForToken($code, $realmId);
         } catch (\Throwable $e) {
-            Log::error("QuickBooks OAuth callback failed: " . $e->getMessage());
+            Log::error('QuickBooks OAuth callback failed: ' . $e->getMessage());
             throw $e;
         }
+
+        $accessTokenExpiresIn  = $tokenObj->getAccessTokenExpiresAt();
+        $refreshTokenExpiresIn = $tokenObj->getRefreshTokenExpiresAt();
+
+        Log::info('QuickBooks Token Expiration Values', [
+            'access_token_expires_raw'  => $accessTokenExpiresIn,
+            'refresh_token_expires_raw' => $refreshTokenExpiresIn,
+        ]);
+
+        $accessTokenExpiresAt  = self::parseExpiry($accessTokenExpiresIn,  3600);
+        $refreshTokenExpiresAt = self::parseExpiry($refreshTokenExpiresIn, 8_640_000);
 
         // Fetch company info from QB
         $ds->updateOAuth2Token($tokenObj);
         $companyInfo = $ds->getCompanyInfo();
+        $companyName = $companyInfo?->CompanyName ?? null;
+        $country     = $companyInfo?->Country     ?? null;
 
-        return QuickBooksConnection::updateOrCreate(
-            ['company_id' => $companyId, 'realm_id' => $realmId],
-            [
-                'user_id'                   => $userId,
-                'access_token'              => $tokenObj->getAccessToken(),
-                'refresh_token'             => $tokenObj->getRefreshToken(),
-                'access_token_expires_at'   => self::parseExpiry($tokenObj->getAccessTokenExpiresAt(), 3600),
-                'refresh_token_expires_at'  => self::parseExpiry($tokenObj->getRefreshTokenExpiresAt(), 8_640_000),
-                'qb_company_name'           => $companyInfo?->CompanyName ?? null,
-                'country'                   => $companyInfo?->Country ?? null,
-                'is_active'                 => true,
-            ]
-        );
+        Log::info('QuickBooks Token Expiration Dates', [
+            'access_token_expires_at'  => $accessTokenExpiresAt->toDateTimeString(),
+            'refresh_token_expires_at' => $refreshTokenExpiresAt->toDateTimeString(),
+        ]);
+
+        return [
+            'realm_id'                  => $realmId,
+            'access_token'              => $tokenObj->getAccessToken(),
+            'refresh_token'             => $tokenObj->getRefreshToken(),
+            'access_token_expires_at'   => $accessTokenExpiresAt,
+            'refresh_token_expires_at'  => $refreshTokenExpiresAt,
+            'qb_company_name'           => $companyName,
+            'country'                   => $country,
+        ];
     }
 
     // ── Token Refresh ─────────────────────────────────────────────────────────
@@ -156,6 +171,20 @@ class QuickBooksService
             Log::error("QB sync invoices failed: " . $e->getMessage());
             $log->update(['status' => 'failed', 'error_message' => $e->getMessage(), 'completed_at' => now()]);
             throw $e;
+        }
+    }
+
+    // ── Connection Test ───────────────────────────────────────────────────────
+
+    public static function testConnection(QuickBooksConnection $connection): bool
+    {
+        try {
+            $ds          = self::buildDataService($connection);
+            $companyInfo = $ds->getCompanyInfo();
+            return $companyInfo !== null;
+        } catch (\Throwable $e) {
+            Log::error('QuickBooks test connection failed: ' . $e->getMessage());
+            return false;
         }
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helper\Reply;
 use App\Jobs\SyncQuickBooksJob;
 use App\Models\Company;
+use App\Models\CompanyQuickbooksSetting;
 use App\Models\QuickBooksConnection;
 use App\Services\QuickBooksService;
 use Illuminate\Http\Request;
@@ -23,9 +24,10 @@ class QuickBooksController extends AccountBaseController
     {
         // User role: show personal connect / disconnect page
         if (auth()->user()->hasRole('user')) {
-            $this->connection = QuickBooksConnection::where('user_id', auth()->id())
+            $this->connection  = QuickBooksConnection::where('user_id', auth()->id())
                 ->where('is_active', true)
                 ->first();
+            $this->qbConfigured = $this->resolveCredentials(auth()->user()->company_id) !== null;
             return view('quickbooks.user-connection', $this->data);
         }
 
@@ -37,10 +39,11 @@ class QuickBooksController extends AccountBaseController
             ->pluck('id')
             ->push($companyId);
 
-        $this->connections = QuickBooksConnection::with('connectedBy', 'company', 'syncLogs')
+        $this->connections  = QuickBooksConnection::with('connectedBy', 'company', 'syncLogs')
             ->whereIn('company_id', $managedIds)
             ->orderByDesc('created_at')
             ->get();
+        $this->qbConfigured = $this->resolveCredentials($companyId) !== null;
 
         return view('quickbooks.index', $this->data);
     }
@@ -49,11 +52,17 @@ class QuickBooksController extends AccountBaseController
     {
         abort_403(!auth()->user()->can('connect_quickbooks'));
 
-        $companyId = company()?->id ?? auth()->user()->company_id;
-        abort_403(!$companyId);
+        $companyId   = company()?->id ?? auth()->user()->company_id;
+        $credentials = $this->resolveCredentials($companyId);
+
+        if (!$credentials) {
+            return redirect()->route('quickbooks.index')
+                ->with('error', 'QuickBooks credentials are not configured. Please set them up in Settings → QuickBooks.');
+        }
+
         session(['qb_company_id' => $companyId, 'qb_user_id' => auth()->id()]);
 
-        return redirect(QuickBooksService::getAuthorizationUrl());
+        return redirect(QuickBooksService::getAuthorizationUrl($credentials));
     }
 
     public function callback(Request $request)
@@ -78,24 +87,23 @@ class QuickBooksController extends AccountBaseController
         session()->forget(['qb_company_id', 'qb_user_id']);
 
         if (!$userId || !$companyId) {
-            Log::error('QuickBooks OAuth: Missing session data', [
-                'user_id'    => $userId,
-                'company_id' => $companyId,
-            ]);
+            Log::error('QuickBooks OAuth: Missing session data', compact('userId', 'companyId'));
             return redirect()->route('quickbooks.index')
                 ->with('error', 'Authorization session expired. Please try connecting again.');
         }
 
-        Log::info('QuickBooks OAuth: Processing callback', [
-            'user_id'    => $userId,
-            'company_id' => $companyId,
-            'realm_id'   => $realmId,
-        ]);
+        $credentials = $this->resolveCredentials($companyId);
+
+        if (!$credentials) {
+            return redirect()->route('quickbooks.index')
+                ->with('error', 'QuickBooks credentials are not configured for this company.');
+        }
+
+        Log::info('QuickBooks OAuth: Processing callback', compact('userId', 'companyId', 'realmId'));
 
         try {
-            $tokenData = QuickBooksService::handleCallback($code, $realmId);
+            $tokenData = QuickBooksService::handleCallback($code, $realmId, $credentials);
 
-            // Use withoutGlobalScopes to bypass TenantScope and find any existing record
             $connection = QuickBooksConnection::withoutGlobalScopes()
                 ->where('user_id', $userId)
                 ->where('company_id', $companyId)
@@ -114,14 +122,10 @@ class QuickBooksController extends AccountBaseController
                 $message = 'QuickBooks connected successfully!';
             }
 
-            return redirect()->route('quickbooks.index')
-                ->with('success', $message);
+            return redirect()->route('quickbooks.index')->with('success', $message);
 
         } catch (\Throwable $e) {
-            Log::error('QuickBooks Callback Error: ' . $e->getMessage(), [
-                'user_id'    => $userId,
-                'company_id' => $companyId,
-            ]);
+            Log::error('QuickBooks Callback Error: ' . $e->getMessage(), compact('userId', 'companyId'));
             return redirect()->route('quickbooks.index')
                 ->with('error', 'Failed to connect QuickBooks: ' . $e->getMessage());
         }
@@ -151,10 +155,16 @@ class QuickBooksController extends AccountBaseController
 
     public function userConnect()
     {
-        $companyId = auth()->user()->company_id;
-        abort_403(!$companyId);
+        $companyId   = auth()->user()->company_id;
+        $credentials = $this->resolveCredentials($companyId);
+
+        if (!$credentials) {
+            return redirect()->route('quickbooks.index')
+                ->with('error', 'QuickBooks credentials are not configured. Please contact your administrator.');
+        }
+
         session(['qb_company_id' => $companyId, 'qb_user_id' => auth()->id()]);
-        return redirect(QuickBooksService::getAuthorizationUrl());
+        return redirect(QuickBooksService::getAuthorizationUrl($credentials));
     }
 
     public function userDisconnect()
@@ -179,7 +189,13 @@ class QuickBooksController extends AccountBaseController
             return Reply::error('No active QuickBooks connection found.');
         }
 
-        $ok = QuickBooksService::testConnection($connection);
+        $credentials = $this->resolveCredentials($connection->company_id);
+
+        if (!$credentials) {
+            return Reply::error('QuickBooks credentials are not configured for this company.');
+        }
+
+        $ok = QuickBooksService::testConnection($connection, $credentials);
 
         return $ok
             ? Reply::success('QuickBooks connection is working!')
@@ -196,8 +212,14 @@ class QuickBooksController extends AccountBaseController
             return Reply::error('No active QuickBooks connection found.');
         }
 
+        $credentials = $this->resolveCredentials($connection->company_id);
+
+        if (!$credentials) {
+            return Reply::error('QuickBooks credentials are not configured for this company.');
+        }
+
         try {
-            $service = new QuickBooksService($connection);
+            $service = new QuickBooksService($connection, $credentials);
             $service->refreshTokenIfNeeded();
             $connection->refresh();
             return Reply::successWithData('Token refreshed successfully!', [
@@ -207,5 +229,36 @@ class QuickBooksController extends AccountBaseController
             Log::error('QuickBooks user refresh token error: ' . $e->getMessage());
             return Reply::error('Failed to refresh token: ' . $e->getMessage());
         }
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Load QB credentials for the given company.
+     * Falls back to the parent company (created_by) so sub-company users
+     * inherit the partner's credentials automatically.
+     */
+    private function resolveCredentials(int $companyId): ?array
+    {
+        $setting = CompanyQuickbooksSetting::where('company_id', $companyId)->first();
+
+        if (!$setting) {
+            $parentId = Company::withoutGlobalScopes()
+                ->where('id', $companyId)
+                ->value('created_by');
+
+            if ($parentId) {
+                $setting = CompanyQuickbooksSetting::where('company_id', $parentId)->first();
+            }
+        }
+
+        if (!$setting) return null;
+
+        return [
+            'client_id'     => $setting->client_id,
+            'client_secret' => $setting->client_secret,
+            'redirect_uri'  => $setting->redirect_uri,
+            'base_url'      => $setting->base_url,
+        ];
     }
 }

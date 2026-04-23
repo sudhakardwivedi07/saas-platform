@@ -131,6 +131,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/payment-gateway',  [TenantPaymentGatewayController::class, 'index'])->name('payment-gateway');
         Route::post('/payment-gateway', [TenantPaymentGatewayController::class, 'update'])->name('payment-gateway.update');
 
+        // QuickBooks Settings
+        Route::post('/quickbooks-settings', [SettingsController::class, 'updateQuickbooksSettings'])->name('quickbooks-settings.update');
+
         // Roles & Permissions
         Route::post('/roles',       [RoleController::class, 'store'])->name('roles.store');
         Route::post('/roles/{id}',  [RoleController::class, 'update'])->name('roles.update');

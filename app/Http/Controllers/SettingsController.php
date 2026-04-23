@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Helper\Reply;
 use App\Models\Company;
+use App\Models\CompanyQuickbooksSetting;
 use App\Models\EmailSmtpSetting;
 use App\Models\SmsSetting;
 use App\Models\CompanyPaymentGateway;
 use App\Models\ClientPackage;
+use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 
@@ -28,6 +31,7 @@ class SettingsController extends AccountBaseController
         $this->smtpSetting    = EmailSmtpSetting::where('company_id', $companyId)->first();
         $this->smsSetting     = SmsSetting::where('company_id', $companyId)->first();
         $this->paymentGateway = CompanyPaymentGateway::where('company_id', $companyId)->first();
+        $this->qbSetting      = CompanyQuickbooksSetting::where('company_id', $companyId)->first();
         $this->clientPackages = ClientPackage::forCompany($companyId)->orderBy('sort')->get();
         $this->branding       = company()?->branding;
 
@@ -64,5 +68,36 @@ class SettingsController extends AccountBaseController
         });
 
         return view('settings.index', $this->data);
+    }
+
+    public function updateQuickbooksSettings(Request $request)
+    {
+        abort_403(!auth()->user()->can('edit_settings'));
+
+        $request->validate([
+            'client_id'     => 'required|string|max:255',
+            'client_secret' => 'nullable|string|max:500',
+            'redirect_uri'  => 'required|string|max:500',
+            'base_url'      => 'required|in:development,production',
+        ]);
+
+        $setting = CompanyQuickbooksSetting::firstOrNew(['company_id' => company()->id]);
+
+        if (!$setting->exists && empty($request->client_secret)) {
+            return response()->json(Reply::error('Client Secret is required.'), 422);
+        }
+
+        $setting->client_id    = $request->client_id;
+        $setting->redirect_uri = $request->redirect_uri;
+        $setting->base_url     = $request->base_url;
+        $setting->company_id   = company()->id;
+
+        if ($request->filled('client_secret')) {
+            $setting->client_secret = $request->client_secret;
+        }
+
+        $setting->save();
+
+        return Reply::success('QuickBooks settings saved.');
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Jobs;
 
+use App\Models\Company;
+use App\Models\CompanyQuickbooksSetting;
 use App\Models\QuickBooksConnection;
 use App\Services\QuickBooksService;
 use Illuminate\Bus\Queueable;
@@ -32,12 +34,37 @@ class SyncQuickBooksJob implements ShouldQueue
             return;
         }
 
-        $service = new QuickBooksService($connection);
+        $credentials = $this->resolveCredentials($connection->company_id);
+        $service     = new QuickBooksService($connection, $credentials ?? []);
 
         match ($this->syncType) {
             'customers' => $service->syncCustomers(),
             'invoices'  => $service->syncInvoices(),
             default     => throw new \InvalidArgumentException("Unknown sync type: {$this->syncType}"),
         };
+    }
+
+    private function resolveCredentials(int $companyId): ?array
+    {
+        $setting = CompanyQuickbooksSetting::where('company_id', $companyId)->first();
+
+        if (!$setting) {
+            $parentId = Company::withoutGlobalScopes()
+                ->where('id', $companyId)
+                ->value('created_by');
+
+            if ($parentId) {
+                $setting = CompanyQuickbooksSetting::where('company_id', $parentId)->first();
+            }
+        }
+
+        if (!$setting) return null;
+
+        return [
+            'client_id'     => $setting->client_id,
+            'client_secret' => $setting->client_secret,
+            'redirect_uri'  => $setting->redirect_uri,
+            'base_url'      => $setting->base_url,
+        ];
     }
 }

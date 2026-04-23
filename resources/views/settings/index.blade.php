@@ -238,7 +238,7 @@
             </div>
             <div class="f-group">
                 <label class="f-label">QuickBooks Redirect URI <span style="color:var(--red)">*</span></label>
-                <input type="text" name="redirect_uri" class="f-inp" placeholder="https://yourdomain.com/account/quickbooks-integration/callback"
+                <input type="text" name="redirect_uri" class="f-inp" placeholder="your domain"
                     value="{{ $qbSetting->redirect_uri ?? url('account/quickbooks-integration/callback') }}" required autocomplete="off">
                 <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Must match the redirect URI registered in your QuickBooks app.</div>
             </div>

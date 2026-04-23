@@ -1,0 +1,15 @@
+title = "Local Security Scan"
+
+[extend]
+useDefault = true
+
+[allowlist]
+paths = [
+  "vendor/",
+  "node_modules/",
+  "storage/",
+  "bootstrap/cache/",
+  "microservices/",
+  ".env.example",
+  "tools/gitleaks/README.md"
+]

@@ -66,10 +66,14 @@ Route::middleware(['auth'])->group(function () {
     });
 
     // QuickBooks
+    Route::get('account/quickbooks-integration/callback', [QuickBooksController::class, 'callback'])->name('quickbooks.callback');
     Route::prefix('quickbooks')->name('quickbooks.')->group(function () {
         Route::get('/',                    [QuickBooksController::class, 'index'])->name('index');
         Route::get('/connect',             [QuickBooksController::class, 'connect'])->name('connect');
-        Route::get('/callback',            [QuickBooksController::class, 'callback'])->name('callback');
+        Route::get('/user-connect',         [QuickBooksController::class, 'userConnect'])->name('user-connect');
+        Route::post('/user-disconnect',     [QuickBooksController::class, 'userDisconnect'])->name('user-disconnect');
+        Route::get('/user-test-connection', [QuickBooksController::class, 'userTestConnection'])->name('user-test-connection');
+        Route::post('/user-refresh-token',  [QuickBooksController::class, 'userRefreshToken'])->name('user-refresh-token');
         Route::post('/{id}/sync',          [QuickBooksController::class, 'sync'])->name('sync');
         Route::post('/{id}/disconnect',    [QuickBooksController::class, 'disconnect'])->name('disconnect');
     });

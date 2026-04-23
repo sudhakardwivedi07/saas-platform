@@ -11,5 +11,5 @@ on:
 
 jobs:
   security:
-    uses: YOUR_ORG_OR_USERNAME/devops-platform/.github/workflows/security-laravel.yml@main
+    uses: OA-Nitin/devops-platform/.github/workflows/security-laravel.yml@main
     secrets: inherit

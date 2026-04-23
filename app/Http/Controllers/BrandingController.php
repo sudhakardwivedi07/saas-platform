@@ -55,6 +55,9 @@ class BrandingController extends AccountBaseController
         ));
         $branding->save();
 
+        // Bust the parent-branding cache so sub-company users see updated colors immediately
+        cache()->forget('branding_parent_' . company()->id);
+
         $logoUrl = $branding->logo ? asset('storage/' . $branding->logo) : null;
 
         return Reply::successWithData('Branding updated successfully.', ['logo_url' => $logoUrl]);

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClientPackage;
-use App\Models\SuperAdmin\Package;
 use App\Models\SupportTicket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -30,13 +29,6 @@ class AccountController extends AccountBaseController
                     ->orderBy('monthly_price')
                     ->get()
                 : collect();
-
-            if ($plans->isEmpty()) {
-                $plans = Package::where('is_active', true)
-                    ->orderBy('sort')
-                    ->orderBy('monthly_price')
-                    ->get();
-            }
 
             $this->plans        = $plans;
             $this->currentPlan  = $company->activePlan();

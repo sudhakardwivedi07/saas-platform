@@ -7,7 +7,6 @@ use App\Models\Company;
 use App\Models\Document;
 use App\Models\Payment;
 use App\Models\QuickBooksConnection;
-use App\Models\SuperAdmin\Package;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -154,13 +153,6 @@ class DashboardController extends AccountBaseController
                 ->orderBy('monthly_price')
                 ->get()
             : collect();
-
-        if ($plans->isEmpty()) {
-            $plans = Package::where('is_active', true)
-                ->orderBy('sort')
-                ->orderBy('monthly_price')
-                ->get();
-        }
 
         $parentCompany = $parentId ? Company::find($parentId) : null;
 

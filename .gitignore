@@ -15,9 +15,7 @@
 /node_modules
 /public/build
 /public/hot
-/public/storage
-/public/vendor
-/storage/*.key
+/public/storage/storage/*.key
 /storage/pail
 /vendor
 Homestead.json

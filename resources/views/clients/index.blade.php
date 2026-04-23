@@ -123,7 +123,7 @@
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                     View Client Details
                                 </a>
-                                <a href="{{ route('clients.show', $client) }}#dashboard" class="dm-item">
+                                <a href="{{ route('clients.dashboard', $client) }}" class="dm-item">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                                     View Dashboard
                                 </a>
@@ -282,7 +282,7 @@
                             <button class="dot-menu" data-menu="dm-co-{{ $company->id }}" title="Actions">•••</button>
                             <div class="dm-popup" id="dm-co-{{ $company->id }}">
                                 @if($owner)
-                                <a href="{{ route('clients.show', $owner->id) }}" class="dm-item">
+                                <a href="{{ route('clients.dashboard', $owner->id) }}" class="dm-item">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                                     View Dashboard
                                 </a>
@@ -300,17 +300,6 @@
                     </td>
                 </tr>
                 @empty
-                <tr>
-                    <td colspan="8" style="text-align:center;padding:56px 20px">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
-                        <div style="font-size:14px;font-weight:500;color:var(--text-2)">No companies yet</div>
-                        <div style="font-size:12.5px;color:var(--text-3);margin-top:4px;margin-bottom:14px">Sub-companies will appear here once created.</div>
-                        <a href="{{ route('my-companies.create') }}" class="btn btn-primary btn-sm" style="display:inline-flex">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                            Add Company
-                        </a>
-                    </td>
-                </tr>
                 @endforelse
             </tbody>
         </table>
@@ -599,7 +588,7 @@ $(document).ready(function() {
             info: 'Showing _START_–_END_ of _TOTAL_ companies',
             infoEmpty: 'No companies found',
             paginate: { previous: '‹', next: '›' },
-            emptyTable: '<div style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No companies yet</div>',
+            emptyTable: '<div style="text-align:center;padding:56px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">No companies yet</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px">Sub-companies will appear here once created.</div></div>',
         }
     });
 

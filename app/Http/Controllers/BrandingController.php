@@ -58,8 +58,12 @@ class BrandingController extends AccountBaseController
         // Bust the parent-branding cache so sub-company users see updated colors immediately
         cache()->forget('branding_parent_' . company()->id);
 
-        $logoUrl = $branding->logo ? asset('storage/' . $branding->logo) : null;
+        $logoUrl    = $branding->logo    ? asset('storage/' . $branding->logo)    : null;
+        $faviconUrl = $branding->favicon ? asset('storage/' . $branding->favicon) : null;
 
-        return Reply::successWithData('Branding updated successfully.', ['logo_url' => $logoUrl]);
+        return Reply::successWithData('Branding updated successfully.', [
+            'logo_url'    => $logoUrl,
+            'favicon_url' => $faviconUrl,
+        ]);
     }
 }

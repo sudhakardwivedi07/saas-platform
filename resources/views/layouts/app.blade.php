@@ -7,8 +7,10 @@
     <title>@yield('title', $appName ?? config('app.name'))</title>
 
     {{-- Favicon --}}
-    @if($branding?->favicon)
-        <link rel="icon" href="{{ asset('storage/' . $branding->favicon) }}">
+    @if($branding)
+        <link rel="icon" type="image/x-icon" href="{{ $branding->favicon_url }}">
+    @elseif($globalSetting?->favicon)
+        <link rel="icon" type="image/x-icon" href="{{ asset('storage/' . $globalSetting->favicon) }}">
     @endif
 
     {{-- Fonts --}}
@@ -350,7 +352,7 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         @if($branding?->logo)
             <img src="{{ asset('storage/' . $branding->logo) }}" alt="Logo" class="ca-logo-img">
         @else
-            <a href="{{ route('settings.branding') }}" class="ca-logo-placeholder">
+            <a class="ca-logo-placeholder">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-right:5px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                 Your Logo
             </a>

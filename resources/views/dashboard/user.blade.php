@@ -101,7 +101,7 @@
 </style>
 
 <div class="user-db-header">
-    <h1>Hi <span>{{ auth()->user()->name }}</span></h1>
+    <h1>Hi <span>{{ auth()->user()->first_name }}</span></h1>
     <p>
         You're one step away from unlocking your first CFO-level financial insights.
         @if(auth()->user()->can('view_quickbooks'))

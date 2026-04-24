@@ -57,7 +57,8 @@
                     <div class="f-group">
                         <label class="f-label">Firm Name <span style="color:var(--red)">*</span></label>
                         <input name="company_name" id="company_name" class="f-inp" placeholder="Acme Corp" required
-                               oninput="autoFillSubdomain(this.value)">
+                               maxlength="100" minlength="2"
+                               oninput="this.value=this.value.replace(/[^a-zA-Z0-9 .&_-]/g,'');autoFillSubdomain(this.value)">
                         <div class="field-error-msg" id="err-company_name"></div>
                     </div>
                     <div class="f-group">
@@ -70,14 +71,19 @@
                         <div class="field-error-msg" id="err-company_email"></div>
                     </div>
                     <div class="f-group">
-                        <label class="f-label">Phone</label>
-                        <input name="company_phone" class="f-inp" placeholder="+1 (555) 000-0000">
+                        <label class="f-label">Phone <span style="color:var(--red)">*</span></label>
+                        <input name="company_phone" id="company_phone" class="f-inp"
+                               placeholder="10-digit phone number" required
+                               maxlength="10" inputmode="numeric"
+                               oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                        <div class="field-error-msg" id="err-company_phone"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Subdomain <span style="color:var(--red)">*</span></label>
                         <div style="display:flex;align-items:stretch;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:#fff">
                             <input name="subdomain" id="subdomain" class="f-inp"
                                    placeholder="acme" required
+                                   maxlength="50"
                                    style="border:none;border-radius:0;flex:1;outline:none"
                                    oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'');this.dataset.manual='1'">
                             <span style="padding:0 12px;display:flex;align-items:center;background:var(--bg);border-left:1.5px solid var(--border);font-size:12px;color:var(--text-3);white-space:nowrap;flex-shrink:0">
@@ -576,15 +582,36 @@ function validateCreateForm() {
     document.querySelectorAll('.f-inp.is-invalid, .f-sel.is-invalid').forEach(el => el.classList.remove('is-invalid'));
 
     const companyName = (document.getElementById('company_name').value || '').trim();
-    if (!companyName) showErr('err-company_name', 'company_name', 'Firm name is required.');
+    if (!companyName) {
+        showErr('err-company_name', 'company_name', 'Firm Name is required.');
+    } else if (companyName.length < 2 || companyName.length > 100 || !/^[a-zA-Z0-9 .&_-]+$/.test(companyName)) {
+        showErr('err-company_name', 'company_name', 'Please enter a valid Firm Name.');
+    }
 
     const companyEmail = (document.getElementById('company_email').value || '').trim();
-    if (!companyEmail) showErr('err-company_email', 'company_email', 'Firm email is required.');
-    else if (!emailRe.test(companyEmail)) showErr('err-company_email', 'company_email', 'Please enter a valid email address.');
+    const emailAllowedRe = /^[a-zA-Z0-9@._-]+$/;
+    const emailFormatRe  = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,}$/;
+    if (!companyEmail) {
+        showErr('err-company_email', 'company_email', 'Email is required.');
+    } else if (companyEmail.length < 5 || companyEmail.length > 100 || !emailAllowedRe.test(companyEmail) || !emailFormatRe.test(companyEmail)) {
+        showErr('err-company_email', 'company_email', 'Please enter a valid email address.');
+    }
+
+    const companyPhone = (document.getElementById('company_phone').value || '').trim();
+    if (!companyPhone) {
+        showErr('err-company_phone', 'company_phone', 'Phone number is required.');
+    } else if (!/^[0-9]+$/.test(companyPhone)) {
+        showErr('err-company_phone', 'company_phone', 'Please enter a valid phone number.');
+    } else if (companyPhone.length !== 10) {
+        showErr('err-company_phone', 'company_phone', 'Phone number must be 10 digits.');
+    }
 
     const subdomain = (document.getElementById('subdomain').value || '').trim();
-    if (!subdomain) showErr('err-subdomain', 'subdomain', 'Subdomain is required.');
-    else if (!/^[a-z0-9][a-z0-9-]*$/.test(subdomain)) showErr('err-subdomain', 'subdomain', 'Subdomain must contain only lowercase letters, numbers, and hyphens.');
+    if (!subdomain) {
+        showErr('err-subdomain', 'subdomain', 'Subdomain is required.');
+    } else if (subdomain.length < 3 || subdomain.length > 50 || !/^[a-z0-9-]+$/.test(subdomain)) {
+        showErr('err-subdomain', 'subdomain', 'Only lowercase letters, numbers, and hyphens are allowed.');
+    }
 
     const status = (document.getElementById('status').value || '').trim();
     if (!status) showErr('err-status', 'status', 'Please select a status.');
@@ -608,7 +635,7 @@ function validateCreateForm() {
 }
 
 // Clear error on input
-['company_name','company_email','subdomain','admin_name','admin_email','admin_password','admin_pw_confirm'].forEach(function(id) {
+['company_name','company_email','company_phone','subdomain','admin_name','admin_email','admin_password','admin_pw_confirm'].forEach(function(id) {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', function() {
         this.classList.remove('is-invalid');
@@ -640,10 +667,19 @@ document.getElementById('createForm').addEventListener('submit', async function(
     const res  = await apiCall('{{ route("superadmin.companies.store") }}', 'POST', body);
 
     if (res.status === 'success') {
-        showToast('Firm created successfully!');
+        showToast('Firm created successfully.');
         setTimeout(() => window.location = res.redirect, 900);
     } else {
-        showToast(res.message || 'Error creating firm', 'error');
+        if (res.errors) {
+            Object.entries(res.errors).forEach(([field, messages]) => {
+                const errEl = document.getElementById('err-' + field);
+                const inp   = document.getElementById(field);
+                if (errEl) { errEl.textContent = Array.isArray(messages) ? messages[0] : messages; errEl.style.display = 'block'; }
+                if (inp)   inp.classList.add('is-invalid');
+            });
+        } else {
+            showToast(res.message || 'Error creating firm', 'error');
+        }
         btn.disabled = false;
         btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg> Create Firm';
     }

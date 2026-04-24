@@ -45,6 +45,12 @@ class FinanceController extends AccountBaseController
             ->get();
 
         $this->revenueByCompany = Company::withoutGlobalScopes()
+            ->whereHas('payments', function ($q) use ($from, $to) {
+                $q->where('status', 'complete');
+                if ($from) {
+                    $q->whereBetween('paid_at', [$from, $to]);
+                }
+            })
             ->with(['payments' => function ($q) use ($from, $to) {
                 $q->where('status', 'complete');
                 if ($from) {
@@ -77,6 +83,12 @@ class FinanceController extends AccountBaseController
             ->sum('amount');
 
         $companies = Company::withoutGlobalScopes()
+            ->whereHas('payments', function ($q) use ($from, $to) {
+                $q->where('status', 'complete');
+                if ($from) {
+                    $q->whereBetween('paid_at', [$from, $to]);
+                }
+            })
             ->with(['payments' => function ($q) use ($from, $to) {
                 $q->where('status', 'complete');
                 if ($from) {
@@ -88,7 +100,11 @@ class FinanceController extends AccountBaseController
             ->limit(20)
             ->get();
 
-        $firmCount  = $companies->count();
+        $firmCount  = Payment::withoutGlobalScopes()
+            ->where('status', 'complete')
+            ->when($from, fn($q) => $q->whereBetween('paid_at', [$from, $to]))
+            ->distinct('company_id')
+            ->count('company_id');
         $avgPerFirm = $firmCount > 0 ? round($totalRevenue / $firmCount) : 0;
         $rootDomain = config('tenancy.root_domain');
 
@@ -103,7 +119,7 @@ class FinanceController extends AccountBaseController
                 'email'       => $co->company_email ?? '—',
                 'plan'        => $co->package?->name ?? '—',
                 'total'       => '$' . number_format($total, 0),
-                'nextBilling' => $lastPayment ? $lastPayment->paid_at?->addMonth()->format('M d, Y') : '—',
+                'nextBilling' => $lastPayment ? $lastPayment->paid_at?->copy()->addMonth()->format('M d, Y') : '—',
                 'joined'      => $co->created_at?->format('M d, Y') ?? '—',
                 'payStatus'   => $total > 0 ? 'Paid' : 'Pending',
                 'payBadge'    => $total > 0 ? 'b-green' : 'b-amber',
@@ -112,7 +128,7 @@ class FinanceController extends AccountBaseController
 
         $upcomingRenewals = $companies->take(8)->map(function ($co) {
             $last         = $co->payments->sortByDesc('paid_at')->first();
-            $renewal      = $last ? $last->paid_at?->addMonth() : null;
+            $renewal      = $last ? $last->paid_at?->copy()->addMonth() : null;
             $daysLeft     = $renewal ? (int) now()->diffInDays($renewal, false) : null;
             $maxInsights  = max(1, $co->package?->max_users ?? 50);
             $usedInsights = $co->users_count ?? 0;

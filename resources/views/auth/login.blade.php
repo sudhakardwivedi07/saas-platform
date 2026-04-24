@@ -11,8 +11,8 @@
         <link rel="icon" href="{{ asset('storage/' . $setting->favicon) }}">
     @endif
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="{{ asset(config('assets.font_dm_sans')) }}" rel="stylesheet">
+    <link href="{{ asset(config('assets.font_inter')) }}" rel="stylesheet">
 
     <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}

@@ -7,7 +7,7 @@
 <div class="ph">
     <div class="ph-left">
         <h1>Settings</h1>
-        <p>Configure payment, email, SMS, and plan settings</p>
+        <p>Configure payment, email, SMS, QuickBooks, and plan settings</p>
     </div>
 </div>
 
@@ -24,6 +24,10 @@
     <button class="tab-btn" data-tab="tab-sms">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
         SMS
+    </button>
+    <button class="tab-btn" data-tab="tab-quickbooks">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        QuickBooks
     </button>
     <button class="tab-btn" data-tab="tab-plans">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -195,7 +199,60 @@
     </div>
 </div>
 
-{{-- Tab 4: Plan Management --}}
+{{-- Tab 4: QuickBooks --}}
+<div class="tab-panel" id="tab-quickbooks">
+    <div class="acc-card">
+        <div class="acc-section-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            QuickBooks Integration Settings
+        </div>
+
+        <div class="info-banner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span class="info-banner-txt">Configure your QuickBooks app credentials to enable OAuth integration for your sub-companies.</span>
+        </div>
+
+        <form id="qb-settings-form" onsubmit="submitQbSettings(event)">
+            @csrf
+            <div class="form-2col">
+                <div class="f-group">
+                    <label class="f-label">QuickBooks Client ID <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="client_id" class="f-inp" placeholder="Enter Client ID"
+                        value="{{ $qbSetting->client_id ?? '' }}" required autocomplete="off">
+                </div>
+                <div class="f-group">
+                    <label class="f-label">QuickBooks Base URL <span style="color:var(--red)">*</span></label>
+                    <select name="base_url" class="f-sel" required>
+                        <option value="development" {{ ($qbSetting->base_url ?? 'development') === 'development' ? 'selected' : '' }}>Development</option>
+                        <option value="production"  {{ ($qbSetting->base_url ?? '') === 'production'  ? 'selected' : '' }}>Production</option>
+                    </select>
+                </div>
+            </div>
+            <div class="f-group">
+                <label class="f-label">QuickBooks Client Secret <span style="color:var(--red)">*</span></label>
+                <input type="password" name="client_secret" class="f-inp" placeholder="••••••••••••••••"
+                    autocomplete="new-password">
+                @if($qbSetting)
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Leave blank to keep current value.</div>
+                @endif
+            </div>
+            <div class="f-group">
+                <label class="f-label">QuickBooks Redirect URI <span style="color:var(--red)">*</span></label>
+                <input type="text" name="redirect_uri" class="f-inp" placeholder="your domain "
+                    value="{{ $qbSetting->redirect_uri ?? url('account/quickbooks-integration/callback') }}" required autocomplete="off">
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Must match the redirect URI registered in your QuickBooks app.</div>
+            </div>
+            <div style="margin-top:20px">
+                <button type="submit" class="btn btn-primary" id="qb-submit">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Tab 5: Plan Management --}}
 <div class="tab-panel" id="tab-plans">
     <div class="tc">
         <div class="tc-head">
@@ -501,8 +558,8 @@
 @endsection
 
 @push('scripts')
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="{{ asset(config('assets.jquery')) }}"></script>
+<script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
 $(document).ready(function() {
     // Only init DataTable if the plans tab has rows
@@ -636,7 +693,7 @@ function submitEditRole(e) {
     var data   = new FormData(form);
     btn.disabled = true;
 
-    fetch('{{ url("settings/roles") }}/' + roleId, { method: 'POST', headers: {'X-Requested-With':'XMLHttpRequest'}, body: data })
+    fetch('{{ route("settings.roles.update", ":id") }}'.replace(':id', roleId), { method: 'POST', headers: {'X-Requested-With':'XMLHttpRequest'}, body: data })
         .then(function(r) { return r.json(); })
         .then(function(res) {
             btn.disabled = false;
@@ -656,7 +713,7 @@ function deleteRole(id, name) {
     if (!confirm('Delete role "' + name + '"? This cannot be undone.')) return;
 
     var csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '{{ csrf_token() }}';
-    fetch('{{ url("settings/roles") }}/' + id, {
+    fetch('{{ route("settings.roles.destroy", ":id") }}'.replace(':id', id), {
         method: 'DELETE',
         headers: {'X-Requested-With':'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken, 'Content-Type':'application/json'},
     })
@@ -672,7 +729,32 @@ function deleteRole(id, name) {
     .catch(function() { showToast('Request failed.', 'error'); });
 }
 
-// Auto-switch tab based on URL hash (#payment, #plans, #email, #sms, #roles)
+// ── QuickBooks Settings ────────────────────────────────────────────────────────
+function submitQbSettings(e) {
+    e.preventDefault();
+    var form = document.getElementById('qb-settings-form');
+    var btn  = document.getElementById('qb-submit');
+    var data = new FormData(form);
+    btn.disabled = true;
+
+    fetch('{{ route("settings.quickbooks-settings.update") }}', {
+        method: 'POST',
+        headers: {'X-Requested-With': 'XMLHttpRequest'},
+        body: data
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+        btn.disabled = false;
+        if (res.status === 'success') {
+            showToast(res.message || 'QuickBooks settings saved.', 'success');
+        } else {
+            showToast(res.message || 'Something went wrong.', 'error');
+        }
+    })
+    .catch(function() { btn.disabled = false; showToast('Request failed.', 'error'); });
+}
+
+// Auto-switch tab based on URL hash (#payment, #plans, #email, #sms, #roles, #quickbooks)
 // Must be DOMContentLoaded so it runs AFTER the layout registers tab click handlers
 document.addEventListener('DOMContentLoaded', function () {
     var hash = window.location.hash.replace('#', '');

@@ -356,21 +356,13 @@
     <div class="usage-kpi or">
         <div class="usage-kpi-lbl">Total Insights Remaining</div>
         <div class="usage-kpi-val orange">{{ $totalInsightsRemaining ?? 0 }}</div>
-        <div class="usage-kpi-ctx">Resets {{ now()->endOfMonth()->addDay()->format('F j, Y') }}</div>
+        <div class="usage-kpi-ctx">Resets {{ now()->startOfMonth()->addMonth()->format('F j, Y') }}</div>
     </div>
     <div class="usage-kpi rd">
         <div class="usage-kpi-lbl">Companies at Risk</div>
         <div class="usage-kpi-val red">{{ $companiesAtRisk ?? 0 }}</div>
         <div class="usage-kpi-ctx">
-            @php
-                $inactive = ($subCompanies ?? collect())->where('status', 'inactive')->count();
-                $noQB     = ($subCompanies ?? collect())->filter(fn($c) => $c->quickbooksConnections->where('is_active', true)->isEmpty())->count();
-            @endphp
-            @if($inactive || $noQB)
-                {{ $inactive }} inactive · {{ $noQB }} no QB
-            @else
-                No issues detected
-            @endif
+            {{ !empty($atRiskContext) ? $atRiskContext : 'No issues detected' }}
         </div>
     </div>
 </div>
@@ -380,7 +372,7 @@
     <div class="tc-head">
         <div style="font-size:14px;font-weight:600;color:var(--text-1)">Company-wise Usage</div>
         <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:12.5px;color:var(--text-3)">{{ ($subCompanies ?? collect())->count() }} companies</span>
+            <span style="font-size:12.5px;color:var(--text-3)">{{ ($subCompanies ?? collect())->count() }} companies across {{ $uniqueClients ?? 0 }} clients</span>
             <div class="srch-wrap">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" class="srch-inp" id="usage-search" placeholder="Search companies…" autocomplete="off">
@@ -416,7 +408,7 @@
                     $plan       = $co->clientPackage ?? $co->package;
                     $planName   = $plan?->name ?? '—';
                     $limit      = $plan?->max_documents ?? 0;
-                    $used       = 0; // wire to real insight data
+                    $used       = $co->insights_used ?? 0;
                     $remaining  = $limit > 0 ? max(0, $limit - $used) : '∞';
                     $pct        = ($limit > 0 && $used > 0) ? min(100, round(($used / $limit) * 100)) : 0;
                     $isQB       = $co->quickbooksConnections->where('is_active', true)->isNotEmpty();
@@ -474,8 +466,8 @@
                     <td style="font-size:13px;color:{{ $remaining === 0 ? 'var(--red)' : 'var(--text-2)' }}">
                         {{ is_numeric($remaining) ? $remaining : $remaining }}
                     </td>
-                    <td style="font-size:12.5px;color:var(--text-3)">
-                        {{ $co->last_active_at ? $co->last_active_at->diffForHumans() : 'Not yet' }}
+                    <td style="font-size:12.5px;color:{{ $co->last_active_at ? 'var(--text-2)' : 'var(--text-3)' }}">
+                        {{ $co->last_active_at ? $co->last_active_at->diffForHumans() : 'N/A' }}
                     </td>
                     <td data-search="{{ $usageStatus }}">
                         <span class="badge {{ $usageBadge }}" style="font-size:11.5px">{{ $usageLabel }}</span>
@@ -494,8 +486,8 @@
 @endsection
 
 @push('scripts')
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="{{ asset(config('assets.jquery')) }}"></script>
+<script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
 $(document).ready(function() {
     document.getElementById('usage-search').value        = '';
@@ -549,8 +541,21 @@ async function startCheckout(packageId, btn) {
 }
 
 function cancelSubscription() {
-    if (!confirm('Are you sure you want to cancel your subscription? This will take effect at the end of your current billing period.')) return;
-    showToast('Cancellation request sent.', 'success');
+    Swal.fire({
+        title: 'Cancel Subscription?',
+        text: 'Your plan will remain active until the end of the current billing period. You can re-subscribe at any time.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Cancel Subscription',
+        cancelButtonText: 'Keep Subscription',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    }).then(function(result) {
+        if (result.isConfirmed) {
+            SwalToast.fire({ icon: 'success', title: 'Cancellation request submitted.' });
+        }
+    });
 }
 </script>
 @endpush

@@ -1,208 +1,457 @@
 @extends('layouts.app')
-
+@section('title', 'Users')
 @section('page-title', 'Users')
+
+@push('styles')
+<style>
+.role-badge-client_admin { background:rgba(26,106,168,.1); color:#1a6aa8; }
+.role-badge-manager      { background:rgba(240,107,33,.1);  color:#f06b21; }
+.role-badge-analyst      { background:rgba(124,58,237,.1);  color:#7c3aed; }
+.role-badge-viewer       { background:rgba(156,163,175,.15);color:#6b7280; }
+.role-badge-user         { background:rgba(156,163,175,.15);color:#6b7280; }
+.role-badge              { display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600; }
+.u-perm-text             { font-size:12.5px;color:var(--text-2); }
+.u-last-login            { font-size:12.5px;color:var(--text-2); }
+.u-last-login.stale      { color:var(--red); }
+</style>
+@endpush
 
 @section('content')
 
 {{-- Page Header --}}
 <div class="ph">
     <div class="ph-left">
-        <h1 style="font-size:1.5rem;font-weight:700;color:var(--text-1);margin:0 0 2px 0;">Users</h1>
-        <p style="font-size:0.875rem;color:var(--text-2);margin:0;">Manage team members and their access levels.</p>
+        <h1>Users</h1>
+        <p>Manage team members in your organisation — assign roles and control access</p>
     </div>
+    @if(auth()->user()->can('create_users'))
     <div class="ph-actions">
-        <button class="btn btn-primary" onclick="document.getElementById('inviteUserModal').style.display='flex'">
-            + Invite User
+        <button class="btn btn-primary" onclick="document.getElementById('modal-add-user').classList.add('open')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add User
         </button>
     </div>
-</div>
-
-{{-- Users Table --}}
-<div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
-        <div>
-            <div class="card-title">Team Members</div>
-            <div class="card-sub">All users with access to this account.</div>
-        </div>
-        <div class="srch-wrap">
-            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="var(--text-3)" stroke-width="2" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);">
-                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-            </svg>
-            <input type="text" class="srch-inp" placeholder="Search users..." id="userSearch"
-                   oninput="filterUsers(this.value)">
-        </div>
-    </div>
-
-    @if($users->isEmpty())
-        <div style="text-align:center;padding:3rem 1rem;">
-            <div style="width:56px;height:56px;border-radius:50%;background:#f0f4f8;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem auto;">
-                <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="var(--text-3)" stroke-width="1.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-            </div>
-            <p style="font-size:0.9375rem;font-weight:600;color:var(--text-1);margin:0 0 4px 0;">No users yet</p>
-            <p style="font-size:0.8125rem;color:var(--text-2);margin:0 0 1rem 0;">Invite your first team member to get started.</p>
-            <button class="btn btn-primary btn-sm" onclick="document.getElementById('inviteUserModal').style.display='flex'">
-                + Invite User
-            </button>
-        </div>
-    @else
-        <div class="tc">
-            <table id="usersTable">
-                <thead>
-                    <tr class="tc-head">
-                        <th>Name</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Last Login</th>
-                        <th>Joined</th>
-                        <th style="width:60px;text-align:center;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($users as $user)
-                    @php
-                        $initials = collect(explode(' ', $user->name))->map(fn($w) => strtoupper(substr($w,0,1)))->take(2)->implode('');
-                        $role = $user->roles()->first();
-                        $roleName = $role ? $role->name : 'viewer';
-                        $isActive = ($user->status ?? 'active') === 'active';
-                    @endphp
-                    <tr class="user-row">
-                        <td>
-                            <div style="display:flex;align-items:center;gap:10px;">
-                                <div style="width:34px;height:34px;border-radius:6px;background:var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                                    <span style="font-size:0.6875rem;font-weight:700;color:#fff;letter-spacing:0.03em;">{{ $initials }}</span>
-                                </div>
-                                <div>
-                                    <div style="font-weight:600;color:var(--text-1);font-size:0.875rem;">{{ $user->name }}</div>
-                                    <div style="font-size:0.75rem;color:var(--text-2);">{{ $user->email }}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="badge b-blue">{{ ucfirst($roleName) }}</span>
-                        </td>
-                        <td>
-                            <span class="badge {{ $isActive ? 'b-green' : 'b-red' }}">
-                                {{ $isActive ? 'Active' : 'Inactive' }}
-                            </span>
-                        </td>
-                        <td style="font-size:0.8125rem;color:var(--text-2);">
-                            {{ $user->last_login_at ? \Carbon\Carbon::parse($user->last_login_at)->diffForHumans() : 'Never' }}
-                        </td>
-                        <td style="font-size:0.8125rem;color:var(--text-2);">
-                            {{ $user->created_at ? \Carbon\Carbon::parse($user->created_at)->format('M j, Y') : '—' }}
-                        </td>
-                        <td style="text-align:center;">
-                            <div class="dm-wrap">
-                                <button class="dot-menu" onclick="toggleDotMenu(this)" aria-label="Actions">
-                                    <span></span><span></span><span></span>
-                                </button>
-                                <div class="dm-popup">
-                                    <button class="dm-item" onclick="editUser({{ $user->id }})">
-                                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                        </svg>
-                                        Edit
-                                    </button>
-                                    <div class="dm-divider"></div>
-                                    <button class="dm-item dm-danger" onclick="removeUser({{ $user->id }}, '{{ addslashes($user->name) }}')">
-                                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"/>
-                                        </svg>
-                                        Remove
-                                    </button>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
     @endif
 </div>
 
-{{-- Invite User Modal --}}
-<div id="inviteUserModal" class="modal-overlay" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
-    <div class="modal-box" style="width:100%;max-width:480px;">
-        <button class="modal-close" onclick="document.getElementById('inviteUserModal').style.display='none'" aria-label="Close">
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-            </svg>
-        </button>
+{{-- Info banner --}}
+<div class="info-banner" style="margin-bottom:18px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" width="15" height="15" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div style="font-size:12.5px;color:var(--blue)">
+        Users added here have access to the {{ $appName ?? config('app.name') }}. Assign roles carefully — Admin users have full access. Viewer users have read-only access.
+    </div>
+</div>
 
-        <div class="modal-title">Invite Team Member</div>
-        <div class="modal-sub">They will receive an email invitation to join your account.</div>
+
+<div class="tc">
+    {{-- Filters --}}
+    <div class="tc-head">
+        <div class="tc-filters">
+            <div class="srch-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" class="srch-inp" id="user-search" placeholder="Search users…" autocomplete="off">
+            </div>
+            <select class="sel" id="user-role-filter" autocomplete="off">
+                <option value="">All Roles</option>
+                @foreach($roles as $role)
+                <option value="{{ $role->name }}">{{ ucwords(str_replace('_',' ',$role->name)) }}</option>
+                @endforeach
+            </select>
+            <select class="sel" id="user-status-filter" autocomplete="off">
+                <option value="">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+            </select>
+        </div>
+        <span class="badge b-gray" id="user-count-badge">{{ $users->count() }} user{{ $users->count() !== 1 ? 's' : '' }}</span>
+    </div>
+
+    <table id="users-table" style="width:100%;border-collapse:collapse">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Permissions</th>
+                <th>Last Login</th>
+                <th>Status</th>
+                <th style="width:48px"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($users as $user)
+            @php
+                $initials  = strtoupper(substr($user->name,0,1)) . strtoupper(substr(strstr($user->name,' ') ?: ' ',1,1));
+                $roleName  = $user->roles->first()?->name ?? 'user';
+                $roleLabel = ucwords(str_replace('_',' ',$roleName));
+                $status    = $user->status ?? 'active';
+                $isActive  = $status === 'active';
+                $lastLogin = $user->last_login_at ? \Carbon\Carbon::parse($user->last_login_at) : null;
+                $stale     = $lastLogin && $lastLogin->diffInDays(now()) > 7;
+
+                // Permission summary
+                $perms = $user->roles->first()?->permissions->pluck('name') ?? collect();
+                $permSummary = match($roleName) {
+                    'client_admin' => 'Full access',
+                    'manager'      => 'Clients, Insights, Support',
+                    'analyst'      => 'Insights, Reports only',
+                    'viewer'       => 'Read-only access',
+                    default        => $perms->isEmpty() ? '—' : ucwords(str_replace('_',' ',$perms->first())) . ($perms->count() > 1 ? ', +'.($perms->count()-1).' more' : ''),
+                };
+
+                // Avatar colour per role
+                $avatarColor = match($roleName) {
+                    'client_admin' => 'var(--blue)',
+                    'manager'      => 'var(--orange)',
+                    'analyst'      => 'var(--purple)',
+                    default        => '#64748b',
+                };
+            @endphp
+            <tr data-user-id="{{ $user->id }}">
+                <td>
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <div style="width:34px;height:34px;border-radius:9px;background:{{ $avatarColor }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">{{ $initials }}</div>
+                        <div>
+                            <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $user->name }}</div>
+                            <div style="font-size:11.5px;color:var(--text-3)">
+                                {{ $user->job_title ?? ($user->id === auth()->id() ? 'Owner' : '') }}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td style="font-size:13px;color:var(--text-2)">{{ $user->email }}</td>
+                <td>
+                    <span class="role-badge role-badge-{{ $roleName }}">{{ $roleLabel }}</span>
+                </td>
+                <td class="u-perm-text">{{ $permSummary }}</td>
+                <td>
+                    @if($lastLogin)
+                        <span class="u-last-login {{ $stale ? 'stale' : '' }}">{{ $lastLogin->diffForHumans() }}</span>
+                    @else
+                        <span class="u-last-login" style="color:var(--text-3)">Never</span>
+                    @endif
+                </td>
+                <td>
+                    <span class="user-status-badge" style="font-size:13px;font-weight:500;color:{{ $isActive ? 'var(--green)' : 'var(--red)' }}">
+                        {{ $isActive ? 'Active' : 'Inactive' }}
+                    </span>
+                </td>
+                <td>
+                    <div class="dm-wrap">
+                        <button class="dot-menu" data-menu="dm-u-{{ $user->id }}" title="Actions">•••</button>
+                        <div class="dm-popup" id="dm-u-{{ $user->id }}">
+                            @if(auth()->user()->can('edit_users'))
+                            <a href="javascript:void(0)" class="dm-item" onclick="openEditUser({{ $user->id }}, '{{ addslashes($user->name) }}', '{{ $user->email }}', '{{ $roleName }}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                Edit User
+                            </a>
+                            <div class="dm-divider"></div>
+                            @if($isActive)
+                            <a href="javascript:void(0)" class="dm-item dm-danger toggle-status-link" onclick="toggleUserStatus({{ $user->id }}, '{{ $status }}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                                Disable User
+                            </a>
+                            @else
+                            <a href="javascript:void(0)" class="dm-item toggle-status-link" style="color:var(--green)" onclick="toggleUserStatus({{ $user->id }}, '{{ $status }}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+                                Enable User
+                            </a>
+                            @endif
+                            @endif
+                            @if(auth()->user()->can('delete_users') && $user->id !== auth()->id())
+                            <div class="dm-divider"></div>
+                            <a href="javascript:void(0)" class="dm-item dm-danger" onclick="removeUser({{ $user->id }}, '{{ addslashes($user->name) }}')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+                                Remove User
+                            </a>
+                            @endif
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
+
+{{-- ── Add User Modal ────────────────────────────────────── --}}
+<div class="modal-overlay {{ $errors->any() ? 'open' : '' }}" id="modal-add-user" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box" style="width:500px">
+        <button class="modal-close" onclick="document.getElementById('modal-add-user').classList.remove('open')">&times;</button>
+        <div class="modal-title">Add User</div>
+        <div class="modal-sub">Invite a team member to access the {{ $appName ?? config('app.name') }}</div>
+
+        @if($errors->any())
+        <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 13px;margin-bottom:14px">
+            @foreach($errors->all() as $error)
+            <div style="font-size:12.5px;color:var(--red)">{{ $error }}</div>
+            @endforeach
+        </div>
+        @endif
 
         <form method="POST" action="{{ route('users.store') }}">
             @csrf
-
-            <div class="mf-field">
-                <label class="mf-label" for="invite-name">Full Name</label>
-                <input type="text" id="invite-name" name="name" class="mf-inp"
-                       placeholder="Jane Smith" required>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div class="mf-field" style="margin:0 0 14px">
+                    <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="name" class="mf-inp" placeholder="e.g. Priya Sharma" value="{{ old('name') }}" required>
+                </div>
+                <div class="mf-field" style="margin:0 0 14px">
+                    <label class="mf-label">Email Address <span style="color:var(--red)">*</span></label>
+                    <input type="email" name="email" class="mf-inp" placeholder="priya@rightfocuscfo.com" value="{{ old('email') }}" required>
+                </div>
             </div>
-
-            <div class="mf-field">
-                <label class="mf-label" for="invite-email">Email Address</label>
-                <input type="email" id="invite-email" name="email" class="mf-inp"
-                       placeholder="jane@company.com" required>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div class="mf-field" style="margin:0 0 14px">
+                    <label class="mf-label">Role <span style="color:var(--red)">*</span></label>
+                    <select name="role" class="mf-sel" style="height:40px" required>
+                        <option value="" disabled selected>e.g. Manager, Analyst, Viewer</option>
+                        @foreach($roles as $role)
+                        <option value="{{ $role->name }}" {{ old('role') === $role->name ? 'selected' : '' }}>
+                            {{ ucwords(str_replace('_',' ',$role->name)) }}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mf-field" style="margin:0 0 14px">
+                    <label class="mf-label">Job Title</label>
+                    <input type="text" name="job_title" class="mf-inp" placeholder="e.g. Financial Analyst" value="{{ old('job_title') }}">
+                </div>
             </div>
-
             <div class="mf-field">
-                <label class="mf-label" for="invite-role">Role</label>
-                <select id="invite-role" name="role" class="mf-sel">
-                    <option value="admin">Admin — Full access</option>
-                    <option value="manager" selected>Manager — Manage users &amp; data</option>
-                    <option value="viewer">Viewer — Read only</option>
-                </select>
+                <label class="mf-label">Password <span style="color:var(--red)">*</span></label>
+                <div style="position:relative;display:flex;align-items:center">
+                    <input type="password" name="password" id="add-pwd" class="mf-inp" placeholder="Min. 8 characters" style="padding-right:88px" required>
+                    <button type="button" title="Show/hide" onclick="togglePwd('add-pwd','add-eye')" style="position:absolute;right:44px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text-3);display:flex">
+                        <svg id="add-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                    <button type="button" title="Generate password" onclick="genPwd('add-pwd','add-eye')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--blue);display:flex">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                    </button>
+                </div>
+                <div style="font-size:11px;color:var(--text-3);margin-top:4px">Click the refresh icon to auto-generate a secure password.</div>
             </div>
-
+            <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:11px 14px;margin-bottom:16px;font-size:12.5px;color:#3b82f6;line-height:1.5">
+                An invitation email will be sent to the user's email address with their login credentials.
+            </div>
             <div class="mf-foot">
-                <button type="button" class="btn btn-secondary"
-                        onclick="document.getElementById('inviteUserModal').style.display='none'">
-                    Cancel
-                </button>
-                <button type="submit" class="btn btn-primary">Send Invite</button>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-add-user').classList.remove('open')">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Send Invite</button>
             </div>
         </form>
     </div>
 </div>
 
-<script>
-function toggleDotMenu(btn) {
-    var popup = btn.nextElementSibling;
-    var isOpen = popup.classList.contains('open');
-    document.querySelectorAll('.dm-popup.open').forEach(function(p) { p.classList.remove('open'); });
-    if (!isOpen) { popup.classList.add('open'); }
-}
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.dm-wrap')) {
-        document.querySelectorAll('.dm-popup.open').forEach(function(p) { p.classList.remove('open'); });
-    }
-});
-function filterUsers(query) {
-    var q = query.toLowerCase();
-    document.querySelectorAll('#usersTable .user-row').forEach(function(row) {
-        var text = row.textContent.toLowerCase();
-        row.style.display = text.includes(q) ? '' : 'none';
-    });
-}
-function editUser(id) {
-    // TODO: open edit modal or navigate to edit page
-    console.log('Edit user', id);
-}
-function removeUser(id, name) {
-    if (confirm('Remove ' + name + ' from your account? This cannot be undone.')) {
-        var form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/users/' + id;
-        form.innerHTML = '@csrf @method("DELETE")';
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-</script>
+{{-- ── Edit User Modal ───────────────────────────────────── --}}
+<div class="modal-overlay" id="modal-edit-user" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box" style="width:480px">
+        <button class="modal-close" onclick="document.getElementById('modal-edit-user').classList.remove('open')">&times;</button>
+        <div class="modal-title">Edit User</div>
+        <div class="modal-sub">Update name, email, role or reset password</div>
+
+        <form method="POST" id="form-edit-user">
+            @csrf
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div class="mf-field" style="margin:0 0 14px">
+                    <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="name" id="edit-name" class="mf-inp" required>
+                </div>
+                <div class="mf-field" style="margin:0 0 14px">
+                    <label class="mf-label">Email Address <span style="color:var(--red)">*</span></label>
+                    <input type="email" name="email" id="edit-email" class="mf-inp" required>
+                </div>
+            </div>
+            <div class="mf-field">
+                <label class="mf-label">Role <span style="color:var(--red)">*</span></label>
+                <select name="role" id="edit-role" class="mf-sel" style="height:40px" required>
+                    @foreach($roles as $role)
+                    <option value="{{ $role->name }}">{{ ucwords(str_replace('_',' ',$role->name)) }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="mf-field">
+                <label class="mf-label">New Password <span style="font-size:11px;color:var(--text-3)">(leave blank to keep current)</span></label>
+                <div style="position:relative;display:flex;align-items:center">
+                    <input type="password" name="password" id="edit-pwd" class="mf-inp" placeholder="Leave blank to keep current" style="padding-right:88px">
+                    <button type="button" title="Show/hide" onclick="togglePwd('edit-pwd','edit-eye')" style="position:absolute;right:44px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text-3);display:flex">
+                        <svg id="edit-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                    <button type="button" title="Generate password" onclick="genPwd('edit-pwd','edit-eye')" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--blue);display:flex">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="mf-foot">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-edit-user').classList.remove('open')">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Delete hidden form --}}
+<form id="form-remove-user" method="POST" style="display:none">@csrf @method('DELETE')</form>
 
 @endsection
+
+@push('scripts')
+<script src="{{ asset(config('assets.jquery')) }}"></script>
+<script src="{{ asset(config('assets.datatables_js')) }}"></script>
+<script>
+$(document).ready(function() {
+    window.usersTable = $('#users-table').DataTable({
+        paging: true, pageLength: 15, lengthChange: false,
+        searching: true, ordering: true, info: true,
+        dom: '<"dt-tscroll"t><"dt-footer"ip>',
+        columnDefs: [{ orderable: false, targets: [3, 6] }],
+        language: {
+            info: 'Showing _START_–_END_ of _TOTAL_ users',
+            infoEmpty: 'No users found',
+            paginate: { previous: '‹', next: '›' },
+            emptyTable: '<div style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No users yet</div>',
+        },
+        drawCallback: function() {
+            var info = this.api().page.info();
+            document.getElementById('user-count-badge').textContent = info.recordsDisplay + ' user' + (info.recordsDisplay !== 1 ? 's' : '');
+        }
+    });
+
+    document.getElementById('user-search').addEventListener('keyup', function() {
+        usersTable.search(this.value).draw();
+    });
+    document.getElementById('user-role-filter').addEventListener('change', function() {
+        usersTable.column(2).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+    });
+    document.getElementById('user-status-filter').addEventListener('change', function() {
+        usersTable.column(5).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+    });
+});
+
+function togglePwd(inputId, eyeId) {
+    var inp = document.getElementById(inputId);
+    var eye = document.getElementById(eyeId);
+    if (inp.type === 'password') {
+        inp.type = 'text';
+        eye.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+    } else {
+        inp.type = 'password';
+        eye.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    }
+}
+function genPwd(inputId, eyeId) {
+    var chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+    var pwd = '';
+    for (var i = 0; i < 12; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+    var inp = document.getElementById(inputId);
+    inp.type = 'text';
+    inp.value = pwd;
+    var eye = document.getElementById(eyeId);
+    eye.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+}
+
+function openEditUser(id, name, email, role) {
+    document.getElementById('edit-name').value  = name;
+    document.getElementById('edit-email').value = email;
+    document.getElementById('edit-role').value  = role;
+    document.getElementById('edit-pwd').value   = '';
+    document.getElementById('form-edit-user').action = '{{ route("users.update", ":id") }}'.replace(':id', id);
+    document.getElementById('modal-edit-user').classList.add('open');
+}
+
+function toggleUserStatus(id, currentStatus) {
+    var isActive = currentStatus === 'active';
+    Swal.fire({
+        title: isActive ? 'Disable User?' : 'Enable User?',
+        text: isActive ? 'This user will lose access to the platform.' : 'This user will regain access to the platform.',
+        icon: isActive ? 'warning' : 'question',
+        showCancelButton: true,
+        confirmButtonText: isActive ? 'Yes, Disable' : 'Yes, Enable',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: isActive ? '#ef4444' : '#10b981',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    }).then(function(result) {
+        if (!result.isConfirmed) return;
+
+        fetch('{{ route("users.toggle", ":id") }}'.replace(':id', id), {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ _method: 'POST' }),
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            // Show toast
+            SwalToast.fire({
+                icon: data.status === 'success' ? 'success' : 'warning',
+                title: data.message,
+            });
+
+            if (data.status !== 'success') return;
+
+            // Update the DataTable row without reload
+            var row = document.querySelector('tr[data-user-id="' + id + '"]');
+            if (!row) return;
+
+            var newStatus   = data.newStatus;
+            var isNowActive = newStatus === 'active';
+
+            // Update status badge
+            var statusCell = row.querySelector('.user-status-badge');
+            if (statusCell) {
+                statusCell.textContent = isNowActive ? 'Active' : 'Inactive';
+                statusCell.style.color = isNowActive ? 'var(--green)' : 'var(--red)';
+            }
+
+            // Swap the dot-menu action link
+            var dmPopup = row.querySelector('.dm-popup');
+            if (dmPopup) {
+                var toggleLink = dmPopup.querySelector('.toggle-status-link');
+                if (toggleLink) {
+                    toggleLink.setAttribute('onclick', 'toggleUserStatus(' + id + ', \'' + newStatus + '\')');
+                    if (isNowActive) {
+                        toggleLink.classList.add('dm-danger');
+                        toggleLink.removeAttribute('style');
+                        toggleLink.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> Disable User';
+                    } else {
+                        toggleLink.classList.remove('dm-danger');
+                        toggleLink.setAttribute('style', 'color:var(--green)');
+                        toggleLink.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg> Enable User';
+                    }
+                }
+            }
+
+            // Redraw DataTable to apply filter state
+            if (typeof usersTable !== 'undefined') {
+                usersTable.draw(false);
+            }
+        })
+        .catch(function() {
+            SwalToast.fire({ icon: 'error', title: 'Something went wrong. Please try again.' });
+        });
+    });
+}
+
+function removeUser(id, name) {
+    Swal.fire({
+        title: 'Remove User?',
+        text: '"' + name + '" will be permanently removed. This cannot be undone.',
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Remove',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    }).then(function(result) {
+        if (!result.isConfirmed) return;
+        var form = document.getElementById('form-remove-user');
+        form.action = '{{ route("users.destroy", ":id") }}'.replace(':id', id);
+        form.submit();
+    });
+}
+</script>
+@endpush

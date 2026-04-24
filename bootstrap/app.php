@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // ── Global middleware ──────────────────────────────────────────────────
         $middleware->web(append: [
             IdentifyTenant::class,
+            \App\Http\Middleware\AutoMigrate::class,
         ]);
 
         // ── Named middleware aliases ───────────────────────────────────────────

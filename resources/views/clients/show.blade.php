@@ -250,7 +250,7 @@ function switchTab(tabName, btn) {
 }
 function saveNotes() {
     var notes = document.getElementById('clientNotes').value;
-    fetch('/clients/{{ $client->id }}/notes', {
+    fetch('{{ url("clients/" . $client->id . "/notes") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

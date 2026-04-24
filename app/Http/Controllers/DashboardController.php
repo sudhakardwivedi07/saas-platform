@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClientPackage;
 use App\Models\Company;
 use App\Models\Document;
 use App\Models\Payment;
@@ -29,6 +30,7 @@ class DashboardController extends AccountBaseController
 
         // Simple dashboard for basic users — no access to management stats
         if (!auth()->user()->hasAnyRole(['client_admin', 'manager'])) {
+            $this->loadUserPlanData($company);
             return view('dashboard.user', $this->data);
         }
 
@@ -138,6 +140,28 @@ class DashboardController extends AccountBaseController
         $this->brandingDone = $company->branding?->logo !== null;
 
         return view('dashboard.index', $this->data);
+    }
+
+    private function loadUserPlanData(Company $company): void
+    {
+        $parentId = $company->created_by;
+
+        $plans = $parentId
+            ? ClientPackage::where('company_id', $parentId)
+                ->where('is_active', true)
+                ->orderBy('sort')
+                ->orderBy('monthly_price')
+                ->get()
+            : collect();
+
+        $parentCompany = $parentId ? Company::find($parentId) : null;
+
+        $this->plans            = $plans;
+        $this->currentPlan      = $company->activePlan();
+        $this->subscription     = $company->subscription;
+        $this->clientAdminName  = $parentCompany?->app_name
+            ?? $parentCompany?->company_name
+            ?? $this->appName;
     }
 
     private function resolvePeriod(string $period, Request $request): array

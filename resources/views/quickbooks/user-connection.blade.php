@@ -126,11 +126,18 @@
                 </svg>
             </div>
             <div style="font-size:14.5px;color:var(--text-2);margin-bottom:22px">QuickBooks is not connected yet.</div>
+
+            @if($qbConfigured ?? false)
             <a href="{{ route('quickbooks.user-connect') }}"
                style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 32px;background:var(--orange);color:#fff;border-radius:8px;font-size:14px;font-weight:600;text-decoration:none;transition:background .14s;min-width:240px"
                onmouseover="this.style.background='var(--orange-dark)'" onmouseout="this.style.background='var(--orange)'">
                 Connect QuickBooks
             </a>
+            @else
+            <div style="background:var(--amber-light);border:1px solid var(--amber);border-radius:9px;padding:13px 18px;font-size:13px;color:var(--text-1);max-width:380px">
+                QuickBooks integration is not configured. Please contact your administrator to set up the credentials.
+            </div>
+            @endif
         </div>
     </div>
     @endif

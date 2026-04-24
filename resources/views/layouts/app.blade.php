@@ -12,19 +12,19 @@
     @endif
 
     {{-- Fonts --}}
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+    <link href="{{ asset(config('assets.font_dm_sans')) }}" rel="stylesheet">
 
     {{-- DataTables (used on multiple pages) --}}
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="{{ asset(config('assets.datatables_css')) }}">
 
     {{-- White-label CSS variables from branding --}}
+    <!-- DEBUG_BRANDING: company_id={{ $branding?->company_id ?? 'null' }} primary={{ $branding?->primary_color ?? 'null' }} accent={{ $branding?->accent_color ?? 'null' }} -->
     <style>
 /* ── BRAND TOKENS ─────────────────────────────────────── */
 :root {
-  --blue:{{ $branding->primary_color ?? '#1a6aa8' }};
+  --blue:{{ $branding?->primary_color ?? '#1a6aa8' }};
   --blue-light:#e8f2fb; --blue-pale:#f0f7ff;
-  --orange:{{ $branding->accent_color ?? '#f06b21' }};
+  --orange:{{ $branding?->accent_color ?? '#f06b21' }};
   --orange-dark:#d05519; --orange-light:#fef3ec;
   --green:#10b981; --green-light:#ecfdf5;
   --red:#ef4444; --red-light:#fef2f2;
@@ -324,6 +324,13 @@ div.dataTables_wrapper .dt-footer div.dataTables_info{float:none!important;paddi
 div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;padding:8px 0!important}
     </style>
     @stack('styles')
+    <link rel="stylesheet" href="{{ asset(config('assets.sweetalert2_css')) }}">
+    <style>
+    .swal-toast-popup { font-family: inherit !important; font-size: 13.5px !important; border-radius: 10px !important; padding: 10px 16px !important; min-width: 280px; }
+    .swal-toast-popup .swal2-title { font-size: 13.5px !important; font-weight: 500 !important; margin: 0 !important; padding: 0 !important; }
+    .swal-toast-popup .swal2-icon { width: 22px !important; height: 22px !important; margin: 0 8px 0 0 !important; border-width: 2px !important; }
+    .swal-toast-popup .swal2-icon .swal2-icon-content { font-size: 13px !important; }
+    </style>
 </head>
 <body>
 
@@ -382,6 +389,14 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         </a>
         @endif
 
+        {{-- Insights: basic user role only --}}
+        @if(!auth()->user()->hasAnyRole(['client_admin','manager']))
+        <a href="#" class="ca-nav-item {{ request()->routeIs('insights.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Insights
+        </a>
+        @endif
+
         {{-- QuickBooks: anyone with view_quickbooks --}}
         @if(auth()->user()->can('view_quickbooks'))
         <a href="{{ route('quickbooks.index') }}" class="ca-nav-item {{ request()->routeIs('quickbooks.*') ? 'active' : '' }}">
@@ -406,11 +421,13 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         </a>
         @endif
 
-        {{-- Support: all roles --}}
+        {{-- Support: admin/manager roles only --}}
+        @if(auth()->user()->hasAnyRole(['client_admin','manager']))
         <a href="{{ route('support.index') }}" class="ca-nav-item {{ request()->routeIs('support.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             Support
         </a>
+        @endif
 
         {{-- My Account: all roles --}}
         <a href="{{ route('account.index') }}" class="ca-nav-item {{ request()->routeIs('account.*') ? 'active' : '' }}">
@@ -574,6 +591,30 @@ async function apiCall(url, method='POST', body={}) {
     });
     return r.json();
 }
+</script>
+<script src="{{ asset(config('assets.sweetalert2_js')) }}"></script>
+<script>
+const SwalToast = Swal.mixin({
+    toast: true,
+    position: 'top-end',
+    showConfirmButton: false,
+    timer: 3500,
+    timerProgressBar: true,
+    customClass: { popup: 'swal-toast-popup' },
+    didOpen: function(toast) {
+        toast.addEventListener('mouseenter', Swal.stopTimer);
+        toast.addEventListener('mouseleave', Swal.resumeTimer);
+    }
+});
+@if(session('toast_success'))
+SwalToast.fire({ icon: 'success', title: @json(session('toast_success')) });
+@endif
+@if(session('toast_warning'))
+SwalToast.fire({ icon: 'warning', title: @json(session('toast_warning')) });
+@endif
+@if(session('toast_error'))
+SwalToast.fire({ icon: 'error', title: @json(session('toast_error')) });
+@endif
 </script>
 @stack('scripts')
 </body>

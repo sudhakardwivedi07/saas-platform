@@ -146,7 +146,7 @@ class CompanyController extends AccountBaseController
     public function store(Request $request)
     {
         $request->validate([
-            'company_name' => 'required|string|max:255',
+            'company_name' => ['required','string','min:2','max:100','regex:/^[a-zA-Z0-9 .&\-_]+$/'],
             'subdomain'    => 'required|string|max:63|alpha_dash|unique:companies,subdomain',
             'company_email'=> 'required|email|max:255',
             'package_id'   => 'nullable|exists:packages,id',
@@ -154,6 +154,11 @@ class CompanyController extends AccountBaseController
             'admin_name'   => 'required|string|max:255',
             'admin_email'  => 'required|email|max:255',
             'admin_password'=> 'required|string|min:8',
+        ], [
+            'company_name.required' => 'Firm Name is required.',
+            'company_name.min'      => 'Please enter a valid Firm Name.',
+            'company_name.max'      => 'Please enter a valid Firm Name.',
+            'company_name.regex'    => 'Please enter a valid Firm Name.',
         ]);
 
         $package = $request->package_id ? Package::find($request->package_id) : null;
@@ -240,9 +245,14 @@ class CompanyController extends AccountBaseController
         $company = Company::withoutGlobalScopes()->findOrFail($id);
 
         $request->validate([
-            'company_name' => 'required|string|max:255',
+            'company_name' => ['required','string','min:2','max:100','regex:/^[a-zA-Z0-9 .&\-_]+$/'],
             'status'       => 'nullable|in:active,inactive,suspended',
             'package_id'   => 'nullable|exists:packages,id',
+        ], [
+            'company_name.required' => 'Firm Name is required.',
+            'company_name.min'      => 'Please enter a valid Firm Name.',
+            'company_name.max'      => 'Please enter a valid Firm Name.',
+            'company_name.regex'    => 'Please enter a valid Firm Name.',
         ]);
 
         $data = $request->only('company_name', 'app_name', 'package_id', 'company_email', 'company_phone');

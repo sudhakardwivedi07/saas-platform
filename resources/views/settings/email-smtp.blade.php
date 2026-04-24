@@ -117,7 +117,7 @@ toggleDriverFields(document.getElementById('driver-select').value);
 async function sendTestEmail() {
     const email = prompt('Send test email to:', '{{ auth()->user()->email }}');
     if (!email) return;
-    const json = await fetch('/email-templates/user_welcome/test', {
+    const json = await fetch('{{ route("email-templates.test", "user_welcome") }}', {
         method:'POST',
         headers:{'Content-Type':'application/json','X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'},
         body:JSON.stringify({to_email: email})

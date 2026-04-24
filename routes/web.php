@@ -131,6 +131,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/payment-gateway',  [TenantPaymentGatewayController::class, 'index'])->name('payment-gateway');
         Route::post('/payment-gateway', [TenantPaymentGatewayController::class, 'update'])->name('payment-gateway.update');
 
+        // QuickBooks Settings
+        Route::post('/quickbooks-settings', [SettingsController::class, 'updateQuickbooksSettings'])->name('quickbooks-settings.update');
+
         // Roles & Permissions
         Route::post('/roles',       [RoleController::class, 'store'])->name('roles.store');
         Route::post('/roles/{id}',  [RoleController::class, 'update'])->name('roles.update');
@@ -146,6 +149,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{id}', [ClientController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/toggle-status', [ClientController::class, 'toggleStatus'])->name('toggle-status');
         Route::post('/bulk-upload',        [ClientController::class, 'bulkUpload'])->name('bulk-upload');
+        Route::get('/{id}/dashboard',      [ClientController::class, 'dashboard'])->name('dashboard');
         // Insights sub-pages
         Route::get('/{id}/insights',        [ClientController::class, 'insights'])->name('insights');
         Route::get('/{clientId}/insights/{insightId}', [ClientController::class, 'insightDetail'])->name('insight.detail');
@@ -162,9 +166,11 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('support/{ticket}/notes', [SupportController::class, 'updateNotes'])->name('support.notes');
 
     // Users (tenant-scoped)
-    Route::get('users',  [TenantUserController::class, 'index'])->name('users.index');
-    Route::post('users', [TenantUserController::class, 'store'])->name('users.store');
-    Route::delete('users/{id}', [TenantUserController::class, 'destroy'])->name('users.destroy');
+    Route::get('users',              [TenantUserController::class, 'index'])->name('users.index');
+    Route::post('users',             [TenantUserController::class, 'store'])->name('users.store');
+    Route::post('users/{id}/update', [TenantUserController::class, 'update'])->name('users.update');
+    Route::post('users/{id}/toggle', [TenantUserController::class, 'toggleStatus'])->name('users.toggle');
+    Route::delete('users/{id}',      [TenantUserController::class, 'destroy'])->name('users.destroy');
 
     // My Account
     Route::get('my-account',          [AccountController::class, 'index'])->name('account.index');

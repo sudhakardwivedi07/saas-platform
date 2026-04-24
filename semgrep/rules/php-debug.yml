@@ -1,0 +1,9 @@
+rules:
+  - id: php-dd-detected
+    message: >
+      Dangerous debug call detected: dd().
+      Remove it before committing.
+    severity: ERROR
+    languages:
+      - php
+    pattern: dd(...)

@@ -1,0 +1,10 @@
+rules:
+  - id: js-console-log-detected
+    message: >
+      console.log detected.
+      Ensure this is removed or guarded before production.
+    severity: WARNING
+    languages:
+      - javascript
+      - typescript
+    pattern: console.log(...)

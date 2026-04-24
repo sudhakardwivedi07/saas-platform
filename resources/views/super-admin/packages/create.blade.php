@@ -94,33 +94,39 @@
                     Billing Cycle <span style="color:#ef4444;">*</span>
                 </label>
                 <div style="position:relative;">
-                    <select name="billing_cycle"
+                    @php $billingVal = old('billing_cycle', $package->billing_cycle ?? ''); @endphp
+                    <select name="billing_cycle" id="field-billing_cycle"
                             style="width:100%; padding:10px 36px 10px 13px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; color:#111827; outline:none; box-sizing:border-box; appearance:none; background:#fff; cursor:pointer; transition:border-color .15s;"
                             onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'">
-                        <option value="monthly"  {{ old('billing_cycle', $package->billing_cycle ?? 'monthly') === 'monthly'  ? 'selected' : '' }}>Monthly</option>
-                        <option value="annual"   {{ old('billing_cycle', $package->billing_cycle ?? '') === 'annual'   ? 'selected' : '' }}>Annual</option>
-                        <option value="both"     {{ old('billing_cycle', $package->billing_cycle ?? '') === 'both'     ? 'selected' : '' }}>Both</option>
+                        <option value="" {{ $billingVal === '' ? 'selected' : '' }}>-- Select Billing Cycle --</option>
+                        <option value="monthly"  {{ $billingVal === 'monthly'  ? 'selected' : '' }}>Monthly</option>
+                        <option value="annual"   {{ $billingVal === 'annual'   ? 'selected' : '' }}>Annual</option>
+                        <option value="both"     {{ $billingVal === 'both'     ? 'selected' : '' }}>Both</option>
                     </select>
                     <span style="position:absolute; right:11px; top:50%; transform:translateY(-50%); pointer-events:none; color:#6b7280;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                     </span>
                 </div>
+                <div id="err-billing_cycle" style="display:none; color:#ef4444; font-size:12px; margin-top:4px;"></div>
             </div>
             <div>
                 <label style="display:block; font-size:13px; font-weight:600; color:#374151; margin-bottom:6px;">
-                    Status
+                    Status <span style="color:#ef4444;">*</span>
                 </label>
                 <div style="position:relative;">
-                    <select name="is_active"
+                    @php $activeVal = old('is_active', isset($package) ? ($package->is_active ? '1' : '0') : ''); @endphp
+                    <select name="is_active" id="field-is_active"
                             style="width:100%; padding:10px 36px 10px 13px; border:1px solid #e5e7eb; border-radius:8px; font-size:14px; color:#111827; outline:none; box-sizing:border-box; appearance:none; background:#fff; cursor:pointer; transition:border-color .15s;"
                             onfocus="this.style.borderColor='#f97316'" onblur="this.style.borderColor='#e5e7eb'">
-                        <option value="1" {{ old('is_active', $package->is_active ?? true) ? 'selected' : '' }}>Active</option>
-                        <option value="0" {{ !old('is_active', $package->is_active ?? true) ? 'selected' : '' }}>Inactive</option>
+                        <option value="" {{ $activeVal === '' ? 'selected' : '' }}>-- Select Status --</option>
+                        <option value="1" {{ $activeVal === '1' ? 'selected' : '' }}>Active</option>
+                        <option value="0" {{ $activeVal === '0' ? 'selected' : '' }}>Inactive</option>
                     </select>
                     <span style="position:absolute; right:11px; top:50%; transform:translateY(-50%); pointer-events:none; color:#6b7280;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                     </span>
                 </div>
+                <div id="err-is_active" style="display:none; color:#ef4444; font-size:12px; margin-top:4px;"></div>
             </div>
         </div>
 
@@ -196,65 +202,128 @@ function pkgClearError(fieldId) {
 }
 
 function pkgClearAllErrors() {
-    ['name','monthly_price','max_users','max_insights_per_month','description','features_lines'].forEach(pkgClearError);
+    ['name','monthly_price','max_users','max_insights_per_month','billing_cycle','is_active','description','features_lines'].forEach(pkgClearError);
 }
 
 function pkgValidate() {
     pkgClearAllErrors();
     var valid = true;
 
+    // Plan Name: required, min 2, max 100, allowed chars
     var name = document.getElementById('field-name').value.trim();
     if (!name) {
-        pkgShowError('name', 'Plan name is required.');
+        pkgShowError('name', 'Plan Name is required.');
+        valid = false;
+    } else if (name.length < 2) {
+        pkgShowError('name', 'Plan Name must be at least 2 characters.');
+        valid = false;
+    } else if (name.length > 100) {
+        pkgShowError('name', 'Plan Name cannot exceed 100 characters.');
+        valid = false;
+    } else if (!/^[a-zA-Z0-9 .&\-_]+$/.test(name)) {
+        pkgShowError('name', 'Plan Name contains invalid characters.');
         valid = false;
     }
 
-    var price = document.getElementById('field-monthly_price').value.trim();
-    if (price === '') {
-        pkgShowError('monthly_price', 'Price is required.');
+    // Price / Month: required, numeric, not negative
+    var priceStr = document.getElementById('field-monthly_price').value.trim();
+    if (priceStr === '') {
+        pkgShowError('monthly_price', 'Price per month is required.');
         valid = false;
-    } else if (isNaN(price) || Number(price) < 0) {
-        pkgShowError('monthly_price', 'Price must be a valid number (0 or greater).');
+    } else if (!/^\d+(\.\d+)?$/.test(priceStr)) {
+        pkgShowError('monthly_price', 'Please enter a valid price.');
         valid = false;
-    }
-
-    var maxUsers = document.getElementById('field-max_users').value.trim();
-    if (maxUsers === '') {
-        pkgShowError('max_users', 'Max clients is required.');
-        valid = false;
-    } else if (!Number.isInteger(Number(maxUsers)) || Number(maxUsers) < 1) {
-        pkgShowError('max_users', 'Max clients must be a whole number of at least 1.');
+    } else if (Number(priceStr) < 0) {
+        pkgShowError('monthly_price', 'Price cannot be negative.');
         valid = false;
     }
 
-    var insights = document.getElementById('field-max_insights_per_month').value.trim();
-    if (insights === '') {
+    // Max Clients: required, whole number, > 0
+    var maxUsersStr = document.getElementById('field-max_users').value.trim();
+    if (maxUsersStr === '') {
+        pkgShowError('max_users', 'Max Clients is required.');
+        valid = false;
+    } else if (!/^\d+$/.test(maxUsersStr)) {
+        pkgShowError('max_users', 'Please enter a valid client limit.');
+        valid = false;
+    } else if (Number(maxUsersStr) <= 0) {
+        pkgShowError('max_users', 'Max Clients must be greater than 0.');
+        valid = false;
+    }
+
+    // Insights / Month: required, whole number, > 0
+    var insightsStr = document.getElementById('field-max_insights_per_month').value.trim();
+    if (insightsStr === '') {
         pkgShowError('max_insights_per_month', 'Insights per month is required.');
         valid = false;
-    } else if (!Number.isInteger(Number(insights)) || Number(insights) < 1) {
-        pkgShowError('max_insights_per_month', 'Insights per month must be a whole number of at least 1.');
+    } else if (!/^\d+$/.test(insightsStr)) {
+        pkgShowError('max_insights_per_month', 'Please enter a valid insights limit.');
+        valid = false;
+    } else if (Number(insightsStr) <= 0) {
+        pkgShowError('max_insights_per_month', 'Insights per month must be greater than 0.');
         valid = false;
     }
 
+    // Billing Cycle: required selection
+    var billingCycleVal = document.getElementById('field-billing_cycle').value;
+    if (!billingCycleVal) {
+        pkgShowError('billing_cycle', 'Please select a billing cycle.');
+        valid = false;
+    }
+
+    // Status: required selection
+    var isActiveVal = document.getElementById('field-is_active').value;
+    if (isActiveVal === '') {
+        pkgShowError('is_active', 'Please select a status.');
+        valid = false;
+    }
+
+    // Description: required, min 10, max 500
     var desc = document.getElementById('field-description').value.trim();
     if (!desc) {
         pkgShowError('description', 'Description is required.');
         valid = false;
+    } else if (desc.length < 10) {
+        pkgShowError('description', 'Description must be at least 10 characters.');
+        valid = false;
+    } else if (desc.length > 500) {
+        pkgShowError('description', 'Description exceeds the allowed limit.');
+        valid = false;
     }
 
-    var features = document.getElementById('field-features_lines').value.trim();
-    if (!features) {
-        pkgShowError('features_lines', 'Please enter at least one feature.');
+    // Features: at least one non-empty line, total max 500 chars
+    var featuresRaw = document.getElementById('field-features_lines').value.trim();
+    if (!featuresRaw) {
+        pkgShowError('features_lines', 'Please add at least one feature.');
         valid = false;
+    } else {
+        var featureLines = featuresRaw.split('\n').map(function(f) { return f.trim(); }).filter(Boolean);
+        if (featureLines.length === 0) {
+            pkgShowError('features_lines', 'Please add at least one feature.');
+            valid = false;
+        } else if (featureLines.some(function(f) { return f.length > 500; })) {
+            pkgShowError('features_lines', 'Please enter valid feature details.');
+            valid = false;
+        }
+    }
+
+    if (!valid) {
+        showToast('Please fill in all required fields.', 'error');
     }
 
     return valid;
 }
 
-// Clear individual field error on input
+// Clear error on input for text/number/textarea fields
 ['name','monthly_price','max_users','max_insights_per_month','description','features_lines'].forEach(function(id) {
     var el = document.getElementById('field-' + id);
     if (el) el.addEventListener('input', function() { pkgClearError(id); });
+});
+
+// Clear error on change for select fields
+['billing_cycle','is_active'].forEach(function(id) {
+    var el = document.getElementById('field-' + id);
+    if (el) el.addEventListener('change', function() { pkgClearError(id); });
 });
 
 document.getElementById('pkg-form').addEventListener('submit', async (e) => {
@@ -270,7 +339,7 @@ document.getElementById('pkg-form').addEventListener('submit', async (e) => {
     data.delete('features_lines');
     lines.forEach(f => data.append('features[]', f));
 
-    // is_active comes from a select — ensure unchecked checkboxes send 0
+    // Ensure unchecked checkboxes send 0
     if (!data.has('is_trial_allowed')) data.append('is_trial_allowed', '0');
     if (!data.has('is_recommended'))   data.append('is_recommended', '0');
     if (!data.has('is_free'))          data.append('is_free', '0');
@@ -283,8 +352,17 @@ document.getElementById('pkg-form').addEventListener('submit', async (e) => {
     const json = await r.json();
 
     if (json.status === 'success') {
-        showToast(json.message, 'success');
+        showToast('Plan saved successfully.', 'success');
         setTimeout(() => window.location = '{{ route("superadmin.packages.index") }}', 1000);
+    } else if (json.errors) {
+        // Laravel validation errors (HTTP 422) — show each error inline on its field
+        Object.keys(json.errors).forEach(function(field) {
+            var displayField = field.startsWith('features') ? 'features_lines' : field;
+            pkgShowError(displayField, json.errors[field][0]);
+        });
+        showToast('Please fill in all required fields.', 'error');
+        btn.disabled = false;
+        btn.textContent = 'Save Plan';
     } else {
         showToast(json.message || 'Validation error', 'error');
         btn.disabled = false;

@@ -1,0 +1,11 @@
+rules:
+  - id: hardcoded-url-detected
+    message: Hardcoded URL detected. Use environment variables or config files instead.
+    severity: ERROR
+    languages:
+      - php
+      - javascript
+      - typescript
+    patterns:
+      - pattern-regex: '(http|https)://[^"'']+'
+      - pattern-not-regex: "(localhost|127\\.0\\.0\\.1)"

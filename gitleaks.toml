@@ -11,5 +11,8 @@ paths = [
   "bootstrap/cache/",
   "microservices/",
   ".env.example",
-  "tools/gitleaks/README.md"
+   "tools/",
+   "public/vendor/",
+  "public/js/libs/",
+  "resources/vendor/"
 ]

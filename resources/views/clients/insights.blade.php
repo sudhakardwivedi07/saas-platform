@@ -133,14 +133,26 @@ function filterInsights(query) {
     });
 }
 function deleteInsight(id, title) {
-    if (!confirm('Delete insight "' + title + '"? This cannot be undone.')) return;
-    var form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '/clients/{{ $client->id }}/insights/' + id;
-    form.innerHTML = '<input type="hidden" name="_token" value="{{ csrf_token() }}">'
-                   + '<input type="hidden" name="_method" value="DELETE">';
-    document.body.appendChild(form);
-    form.submit();
+    Swal.fire({
+        title: 'Delete insight?',
+        text: 'Delete insight "' + title + '"? This cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+        var form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/clients/{{ $client->id }}/insights/' + id;
+        form.innerHTML = '<input type="hidden" name="_token" value="{{ csrf_token() }}">'
+                       + '<input type="hidden" name="_method" value="DELETE">';
+        document.body.appendChild(form);
+        form.submit();
+    });
 }
 </script>
 

@@ -78,7 +78,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
             </button>
             @can('delete_documents')
-            <form method="POST" action="{{ route('documents.destroy', $doc) }}" onsubmit="return confirm('Delete this document?')">
+            <form method="POST" action="{{ route('documents.destroy', $doc) }}" class="js-doc-delete-form">
                 @csrf @method('DELETE')
                 <button type="submit" class="btn btn-ghost btn-sm" style="color:var(--red)" title="Delete">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
@@ -166,6 +166,26 @@
 @push('scripts')
 <script>
 let currentDocId = null;
+
+document.addEventListener('submit', function (e) {
+    const form = e.target;
+    if (!form || !form.classList || !form.classList.contains('js-doc-delete-form')) return;
+    e.preventDefault();
+    Swal.fire({
+        title: 'Delete document?',
+        text: 'This cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+        form.submit();
+    });
+});
 
 function handleDrop(e) {
     e.preventDefault();

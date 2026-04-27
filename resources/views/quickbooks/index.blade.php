@@ -191,7 +191,18 @@ async function syncQB(id, type) {
 }
 
 async function disconnectQB(id) {
-    if (!confirm('Disconnect this QuickBooks account? Synced data will remain but no new syncs will occur.')) return;
+    const c = await Swal.fire({
+        title: 'Disconnect QuickBooks?',
+        text: 'Synced data will remain but no new syncs will occur.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, disconnect',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    });
+    if (!c.isConfirmed) return;
     const json = await fetch('{{ route("quickbooks.disconnect", ":id") }}'.replace(':id', id), {
         method: 'POST',
         headers: {

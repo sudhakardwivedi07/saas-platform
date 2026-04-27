@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClientPackage;
 use App\Models\Company;
+use App\Models\SuperAdmin\Package;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -10,6 +12,40 @@ use Illuminate\Support\Str;
 
 class ClientController extends AccountBaseController
 {
+    private function resolveFallbackPackageId(): ?int
+    {
+        return Package::query()
+            ->where('is_active', true)
+            ->orderBy('sort')
+            ->value('id');
+    }
+
+    private function resolveClientPackageId(int $parentCompanyId, ?int $requestedPackageId): ?int
+    {
+        if ($requestedPackageId) {
+            $requestedPlan = ClientPackage::forCompany($parentCompanyId)
+                ->where('is_active', true)
+                ->find($requestedPackageId);
+
+            if ($requestedPlan) {
+                return $requestedPlan->id;
+            }
+        }
+
+        // Default to the first active free plan when no explicit plan was selected.
+        $freePlan = ClientPackage::forCompany($parentCompanyId)
+            ->where('is_active', true)
+            ->where(function ($query) {
+                $query->where('is_free', true)
+                    ->orWhere('monthly_price', '<=', 0);
+            })
+            ->orderBy('sort')
+            ->orderBy('id')
+            ->first();
+
+        return $freePlan?->id;
+    }
+
     public function __construct()
     {
         parent::__construct();
@@ -80,13 +116,19 @@ class ClientController extends AccountBaseController
 
         $parentCompanyId = company()->id;
 
+        $resolvedClientPackageId = $this->resolveClientPackageId(
+            $parentCompanyId,
+            $request->filled('client_package_id') ? (int) $request->client_package_id : null
+        );
+
         $subCompany = Company::create([
             'created_by'        => $parentCompanyId,
             'company_name'      => $request->company_name,
             'company_email'     => $request->email,
             'status'            => 'active',
+            'package_id'        => $this->resolveFallbackPackageId(),
             'industry_type'     => $request->industry_type,
-            'client_package_id' => $request->client_package_id ?: null,
+            'client_package_id' => $resolvedClientPackageId,
         ]);
 
         $user = User::create([
@@ -137,18 +179,24 @@ class ClientController extends AccountBaseController
             }
 
             $pkg = $planTier
-                ? \App\Models\ClientPackage::forCompany($parentCompanyId)
+                ? ClientPackage::forCompany($parentCompanyId)
                     ->where('is_active', true)
                     ->whereRaw('LOWER(name) = ?', [strtolower($planTier)])
                     ->first()
                 : null;
+
+            $resolvedClientPackageId = $this->resolveClientPackageId(
+                $parentCompanyId,
+                $pkg?->id
+            );
 
             $subCompany = Company::create([
                 'created_by'        => $parentCompanyId,
                 'company_name'      => $clientName ?: ($email . "'s Company"),
                 'company_email'     => $email,
                 'status'            => 'active',
-                'client_package_id' => $pkg?->id,
+                'package_id'        => $this->resolveFallbackPackageId(),
+                'client_package_id' => $resolvedClientPackageId,
             ]);
 
             $user = User::create([

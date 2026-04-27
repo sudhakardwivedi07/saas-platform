@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\Document;
 use App\Models\Payment;
 use App\Models\QuickBooksConnection;
+use App\Models\SuperAdmin\Package;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -146,8 +147,51 @@ class DashboardController extends AccountBaseController
         $this->isFreshUser  = $allCompanies->isEmpty();
         $this->brandingDone = $company->branding?->logo !== null;
         $this->settingsDone = ClientPackage::where('company_id', $companyId)->where('is_active', true)->exists();
+        $this->clientPackages = ClientPackage::forCompany($companyId)
+            ->where('is_active', true)
+            ->orderBy('sort')
+            ->orderBy('monthly_price')
+            ->get();
 
         return view('dashboard.index', $this->data);
+    }
+
+    public function assignPlan(Request $request)
+    {
+        $user = auth()->user();
+        abort_unless($user, 403);
+        abort_unless(!$user->hasAnyRole(['client_admin', 'manager']), 403);
+
+        $company = company();
+        abort_unless($company, 404);
+
+        $parentId = $company->created_by;
+        abort_unless($parentId, 403);
+
+        $validated = $request->validate([
+            'client_package_id' => 'required|integer',
+        ]);
+
+        $plan = ClientPackage::where('company_id', $parentId)
+            ->where('is_active', true)
+            ->findOrFail((int) $validated['client_package_id']);
+
+        // Legacy schemas may still require package_id (super-admin package) to be non-null.
+        if (empty($company->package_id)) {
+            $fallbackPackageId = Package::query()
+                ->where('is_active', true)
+                ->orderBy('sort')
+                ->value('id');
+
+            if ($fallbackPackageId) {
+                $company->package_id = $fallbackPackageId;
+            }
+        }
+
+        $company->client_package_id = $plan->id;
+        $company->save();
+
+        return back()->with('success', "Plan '{$plan->name}' assigned successfully.");
     }
 
     private function loadUserPlanData(Company $company): void
@@ -167,6 +211,10 @@ class DashboardController extends AccountBaseController
         $this->plans            = $plans;
         $this->currentPlan      = $company->activePlan();
         $this->subscription     = $company->subscription;
+        $this->isQuickbooksConnected = QuickBooksConnection::withoutGlobalScopes()
+            ->where('company_id', $company->id)
+            ->where('is_active', true)
+            ->exists();
         $this->clientAdminName  = $parentCompany?->app_name
             ?? $parentCompany?->company_name
             ?? $this->appName;

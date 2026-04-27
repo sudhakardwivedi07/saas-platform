@@ -374,17 +374,6 @@
 
 @section('content')
 
-{{-- Trial Banner: only show when trialing and not yet on an active paid plan --}}
-@if($subscription && $subscription->isTrialing() && ($subscription->status ?? '') !== 'active')
-<div class="info-banner" style="background:#fffbeb;border-color:#fde68a;margin-bottom:16px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    <div class="info-banner-txt" style="color:#92400e">
-        Free trial active — ends {{ $subscription->trial_ends_at?->diffForHumans() }}.
-        <a href="{{ route('billing.index') }}" style="color:var(--orange);font-weight:600">Upgrade now →</a>
-    </div>
-</div>
-@endif
-
 @php
     $canAddClient = ($brandingDone ?? false) && ($settingsDone ?? false);
     $disabledTip  = 'The Add Client option will be enabled once Step 1: Branding Setup and Step 2: Settings Configuration are completed.';
@@ -428,8 +417,8 @@
 <div class="ob-banner">
     <div>
         <div class="ob-badge">{{ strtoupper(company()?->company_name ?? 'YOUR PORTAL') }}</div>
-        <div class="ob-title">Hi {{ auth()->user()->name }}, welcome to your Partner Portal 👋</div>
-        <p class="ob-sub">Three steps stand between you and delivering AI-powered CFO insights to your clients. Follow the setup guide below to get your portal fully configured.</p>
+        <div class="ob-title">Welcome, {{ auth()->user()->first_name }}.</div>
+        <p class="ob-sub">Complete the setup below to configure your partner portal and start onboarding clients.</p>
     </div>
     <div class="ob-banner-btns">
         @if($canAddClient)

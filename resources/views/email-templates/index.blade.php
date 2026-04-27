@@ -63,7 +63,7 @@ $templateLabels = [
                     </button>
                     @if($hasCustom)
                     <form method="POST" action="{{ route('email-templates.destroy', $slug) }}"
-                          onsubmit="return confirm('Remove custom version and revert to global default?')">
+                          class="js-email-template-revert-form">
                         @csrf @method('DELETE')
                         <button class="btn btn-ghost btn-sm" style="color:var(--red)">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 102.13-9.36L1 10"/></svg>
@@ -101,6 +101,26 @@ $templateLabels = [
 
 @push('scripts')
 <script>
+document.addEventListener('submit', function (e) {
+    const form = e.target;
+    if (!form || !form.classList || !form.classList.contains('js-email-template-revert-form')) return;
+    e.preventDefault();
+    Swal.fire({
+        title: 'Revert template?',
+        text: 'Remove the custom version and revert to the global default?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, revert',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+        form.submit();
+    });
+});
+
 function sendTest(slug) {
     document.getElementById('test-slug').value = slug;
     document.getElementById('test-modal').classList.add('open');

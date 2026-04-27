@@ -712,12 +712,25 @@ function submitBulkUpload() {
 
 function toggleClientStatus(id, name, currentStatus) {
     var action = currentStatus === 'active' ? 'disable' : 'enable';
-    if (!confirm('Are you sure you want to ' + action + ' client "' + name + '"?')) return;
-    fetch('{{ route("clients.toggle-status", ":id") }}'.replace(':id', id), {
-        method: 'POST',
-        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
-    }).then(r => r.json()).then(function(data) {
-        if (data.status === 'success') window.location.reload();
+    var isDisable = currentStatus === 'active';
+    Swal.fire({
+        title: (isDisable ? 'Disable' : 'Enable') + ' client?',
+        text: 'Are you sure you want to ' + action + ' client "' + name + '"?',
+        icon: isDisable ? 'warning' : 'question',
+        showCancelButton: true,
+        confirmButtonText: isDisable ? 'Yes, disable' : 'Yes, enable',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: isDisable ? '#ef4444' : '#10b981',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+        fetch('{{ route("clients.toggle-status", ":id") }}'.replace(':id', id), {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+        }).then(r => r.json()).then(function(data) {
+            if (data.status === 'success') window.location.reload();
+        });
     });
 }
 

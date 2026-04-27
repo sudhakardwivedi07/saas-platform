@@ -142,7 +142,7 @@
                     </button>
                     @endcan
                     @can('delete_plan')
-                    <button onclick="deletePlan({{ $plan->id }}, '{{ addslashes($plan->name) }}')"
+                    <button type="button" onclick="deletePlan({{ $plan->id }}, @json($plan->name))"
                             class="btn btn-outline btn-sm text-xs text-red-600 ml-auto">
                         <span class="material-icons text-sm">delete</span>
                     </button>
@@ -184,10 +184,22 @@ async function togglePlan(id, btn) {
 }
 
 function deletePlan(id, name) {
-    if (!confirm(`Delete plan "${name}"? This cannot be undone.`)) return;
-    const form = document.getElementById('delete-plan-form');
-    form.action = '{{ route("plans.destroy", ":id") }}'.replace(':id', id);
-    form.submit();
+    Swal.fire({
+        title: 'Delete plan?',
+        text: 'Delete plan "' + name + '"? This cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+        const form = document.getElementById('delete-plan-form');
+        form.action = '{{ route("plans.destroy", ":id") }}'.replace(':id', id);
+        form.submit();
+    });
 }
 </script>
 @endpush

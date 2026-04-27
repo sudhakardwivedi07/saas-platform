@@ -50,6 +50,7 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('/',         [DashboardController::class, 'index'])->name('dashboard');
     Route::get('dashboard', [DashboardController::class, 'index']);
+    Route::post('dashboard/assign-plan', [DashboardController::class, 'assignPlan'])->name('dashboard.assign-plan');
 
     // Profile
     Route::get('profile',               [ProfileController::class, 'index'])->name('profile');

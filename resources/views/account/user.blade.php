@@ -429,9 +429,13 @@
                 <div class="pro-plan-actions">
                     <div class="pro-section-lbl">Actions</div>
                     <p class="pro-action-hint">Upgrading will unlock {{ $plan->name }} features for this workspace. Existing data remains intact.</p>
-                    <button type="button" class="plan-btn btn-orange" style="width:100%;margin-bottom:10px;padding:12px 16px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-family:inherit">
-                        Upgrade to {{ $plan->name }}
-                    </button>
+                    <form method="POST" action="{{ route('dashboard.assign-plan') }}">
+                        @csrf
+                        <input type="hidden" name="client_package_id" value="{{ $plan->id }}">
+                        <button type="submit" class="plan-btn btn-orange" style="width:100%;margin-bottom:10px;padding:12px 16px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-family:inherit">
+                            Upgrade to {{ $plan->name }}
+                        </button>
+                    </form>
                     <button type="button" class="plan-btn btn-orange-outline" style="width:100%;padding:12px 16px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;border:2px solid var(--orange);background:#fff;color:var(--orange);display:flex;align-items:center;justify-content:center;font-family:inherit">
                         Contact Support
                     </button>

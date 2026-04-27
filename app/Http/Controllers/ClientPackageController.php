@@ -89,7 +89,7 @@ class ClientPackageController extends AccountBaseController
             'stripe_annual_price_id'  => $data['stripe_annual_price_id'] ?? null,
         ]);
 
-        return redirect()->route('plans.index')
+        return redirect()->to(route('settings.index') . '#plans')
             ->with('success', "Plan '{$data['name']}' created successfully.");
     }
 
@@ -156,7 +156,7 @@ class ClientPackageController extends AccountBaseController
             'stripe_annual_price_id'  => $data['stripe_annual_price_id'] ?? null,
         ]);
 
-        return redirect()->route('plans.index')
+        return redirect()->to(route('settings.index') . '#plans')
             ->with('success', "Plan '{$plan->name}' updated successfully.");
     }
 

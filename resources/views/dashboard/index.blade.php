@@ -328,13 +328,54 @@
 .ob-step-link:hover { opacity: .8; }
 
 @media(max-width:900px) { .ob-steps { grid-template-columns: 1fr; } }
+
+/* ── Disabled CTA tooltip ────────────────────────────── */
+.cta-disabled-wrap {
+    position: relative;
+    display: inline-flex;
+    cursor: not-allowed;
+}
+.cta-disabled-wrap .btn,
+.cta-disabled-wrap .ob-step-link {
+    pointer-events: none;
+    opacity: .42;
+}
+.cta-tip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 9px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a202c;
+    color: #fff;
+    font-size: 12px;
+    line-height: 1.55;
+    padding: 9px 13px;
+    border-radius: 8px;
+    width: 250px;
+    z-index: 200;
+    text-align: center;
+    white-space: normal;
+    box-shadow: 0 4px 14px rgba(0,0,0,.22);
+    pointer-events: none;
+}
+.cta-tip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1a202c;
+}
+.cta-disabled-wrap:hover .cta-tip { display: block; }
 </style>
 @endpush
 
 @section('content')
 
-{{-- Trial Banner --}}
-@if($subscription && $subscription->isTrialing())
+{{-- Trial Banner: only show when trialing and not yet on an active paid plan --}}
+@if($subscription && $subscription->isTrialing() && ($subscription->status ?? '') !== 'active')
 <div class="info-banner" style="background:#fffbeb;border-color:#fde68a;margin-bottom:16px">
     <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     <div class="info-banner-txt" style="color:#92400e">
@@ -343,6 +384,11 @@
     </div>
 </div>
 @endif
+
+@php
+    $canAddClient = ($brandingDone ?? false) && ($settingsDone ?? false);
+    $disabledTip  = 'The Add Client option will be enabled once Step 1: Branding Setup and Step 2: Settings Configuration are completed.';
+@endphp
 
 @if($isFreshUser)
 
@@ -361,10 +407,20 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
             Branding Settings
         </a>
+        @if($canAddClient)
         <a href="{{ route('clients.index') }}" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
         </a>
+        @else
+        <span class="cta-disabled-wrap">
+            <span class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Client
+            </span>
+            <div class="cta-tip">{{ $disabledTip }}</div>
+        </span>
+        @endif
     </div>
 </div>
 
@@ -376,10 +432,20 @@
         <p class="ob-sub">Three steps stand between you and delivering AI-powered CFO insights to your clients. Follow the setup guide below to get your portal fully configured.</p>
     </div>
     <div class="ob-banner-btns">
+        @if($canAddClient)
         <a href="{{ route('clients.index') }}" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
         </a>
+        @else
+        <span class="cta-disabled-wrap" style="width:100%">
+            <span class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;width:100%">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Client
+            </span>
+            <div class="cta-tip">{{ $disabledTip }}</div>
+        </span>
+        @endif
         <a href="{{ route('account.index') . '#branding' }}" class="btn-outline-white">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
             Branding Settings
@@ -389,12 +455,12 @@
 
 {{-- 3 Setup Steps --}}
 @php
-    $activeStep = !$brandingDone ? 1 : 2;
+    $activeStep = !($brandingDone ?? false) ? 1 : (!($settingsDone ?? false) ? 2 : 3);
 @endphp
 <div class="ob-steps">
 
-    {{-- Step 1: Set Your Branding --}}
-    <div class="ob-step {{ $activeStep === 1 ? 'active' : '' }}">
+    {{-- Step 1: Set Your Branding — entire card is clickable --}}
+    <a href="{{ route('account.index') . '#branding' }}" class="ob-step {{ $activeStep === 1 ? 'active' : '' }}" style="text-decoration:none;display:flex;flex-direction:column">
         @if($activeStep === 1)
         <div class="ob-step-badge">START HERE</div>
         @elseif($brandingDone)
@@ -407,15 +473,15 @@
         <div class="ob-step-num" style="color:{{ $activeStep === 1 ? 'var(--orange)' : 'var(--text-3)' }}">STEP 1</div>
         <div class="ob-step-title">Set Your Branding</div>
         <div class="ob-step-desc">Upload your firm logo and set your brand colours. Your clients experience your identity — not a generic interface. This is the first thing they will see.</div>
-        <a href="{{ route('account.index') . '#branding' }}" class="ob-step-link" style="color:var(--orange)">
-            My Account → Branding
-        </a>
-    </div>
+        <span class="ob-step-link" style="color:var(--orange)">My Account → Branding</span>
+    </a>
 
-    {{-- Step 2: Configure Settings --}}
-    <div class="ob-step {{ $activeStep === 2 ? 'active' : '' }}">
+    {{-- Step 2: Configure Settings — entire card is clickable --}}
+    <a href="{{ route('settings.index') }}" class="ob-step {{ $activeStep === 2 ? 'active' : '' }}" style="text-decoration:none;display:flex;flex-direction:column">
         @if($activeStep === 2)
         <div class="ob-step-badge">START HERE</div>
+        @elseif($settingsDone)
+        <div class="ob-step-badge" style="background:var(--green)">✓ DONE</div>
         @endif
 
         <div class="ob-step-ico" style="background:#ecfdf5">
@@ -424,23 +490,36 @@
         <div class="ob-step-num" style="color:{{ $activeStep === 2 ? '#10b981' : 'var(--text-3)' }}">STEP 2</div>
         <div class="ob-step-title">Configure Settings</div>
         <div class="ob-step-desc">Set up your <strong>Payment Gateway</strong>, configure <strong>Email &amp; SMS</strong> for client communications, and create your <strong>Client Plans</strong> before onboarding anyone.</div>
-        <a href="{{ route('settings.index') }}" class="ob-step-link" style="color:#10b981">
-            Go to Settings →
-        </a>
-    </div>
+        <span class="ob-step-link" style="color:#10b981">Go to Settings →</span>
+    </a>
 
-    {{-- Step 3: Add Your Clients --}}
-    <div class="ob-step">
+    {{-- Step 3: Add Your Clients — clickable only when steps 1 & 2 are done --}}
+    @if($canAddClient)
+    <a href="{{ route('clients.index') }}" class="ob-step {{ $activeStep === 3 ? 'active' : '' }}" style="text-decoration:none;display:flex;flex-direction:column">
+        @if($activeStep === 3)
+        <div class="ob-step-badge">START HERE</div>
+        @endif
+
+        <div class="ob-step-ico" style="background:#ecfdf5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8" width="22" height="22"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+        </div>
+        <div class="ob-step-num" style="color:#10b981">STEP 3</div>
+        <div class="ob-step-title">Add Your Clients</div>
+        <div class="ob-step-desc">Add the individuals your portal serves — one at a time or bulk-import via CSV. Once added, each client receives a personalised portal invitation automatically.</div>
+        <span class="ob-step-link" style="color:#10b981">Add Client →</span>
+    </a>
+    @else
+    <div class="ob-step cta-disabled-wrap" style="cursor:not-allowed;display:flex;flex-direction:column">
         <div class="ob-step-ico" style="background:#ecfdf5">
             <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8" width="22" height="22"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
         </div>
         <div class="ob-step-num" style="color:var(--text-3)">STEP 3</div>
-        <div class="ob-step-title">Add Your Clients</div>
-        <div class="ob-step-desc">Add the individuals your portal serves — one at a time or bulk-import via CSV. Once added, each client receives a personalised portal invitation automatically.</div>
-        <a href="{{ route('clients.index') }}" class="ob-step-link" style="color:#10b981">
-            Add Client →
-        </a>
+        <div class="ob-step-title" style="opacity:.55">Add Your Clients</div>
+        <div class="ob-step-desc" style="opacity:.55">Add the individuals your portal serves — one at a time or bulk-import via CSV. Once added, each client receives a personalised portal invitation automatically.</div>
+        <span class="ob-step-link" style="color:#10b981;opacity:.42;pointer-events:none">Add Client →</span>
+        <div class="cta-tip" style="bottom:calc(100% + 9px);left:50%;transform:translateX(-50%)">{{ $disabledTip }}</div>
     </div>
+    @endif
 
 </div>
 
@@ -470,10 +549,20 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="display:inline-block;vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             Last updated: {{ now()->format('M j, Y · g:i A') }}
         </span>
+        @if($canAddClient)
         <a href="{{ route('clients.index') }}" class="btn btn-primary btn-sm">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
         </a>
+        @else
+        <span class="cta-disabled-wrap">
+            <span class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Client
+            </span>
+            <div class="cta-tip" style="left:auto;right:0;transform:none">{{ $disabledTip }}</div>
+        </span>
+        @endif
     </div>
 </div>
 

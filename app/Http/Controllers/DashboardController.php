@@ -83,10 +83,11 @@ class DashboardController extends AccountBaseController
         )->count();
 
         // Finance — revenue from sub-companies (clients paying the firm), filtered by period
+        // amount is stored in dollars (StripeService already divides cents by 100 before saving)
         $this->totalRevenue = Payment::whereIn('company_id', $subCompanyIds)
             ->where('status', 'complete')
             ->whereBetween('paid_at', [$startDate, $endDate])
-            ->sum('amount') / 100;
+            ->sum('amount');
 
         $this->paymentsReceived = Payment::whereIn('company_id', $subCompanyIds)
             ->where('status', 'complete')
@@ -122,14 +123,20 @@ class DashboardController extends AccountBaseController
         $this->chartCompanies = $chartCompanies;
         $this->chartPayments  = $chartPayments;
 
-        // Recent activity
-        $this->recentDocs = Document::with('uploader')
-            ->whereIn('company_id', $subCompanyIds->prepend($companyId))
+        // Recent activity — withoutGlobalScopes() bypasses TenantScope so we can query
+        // across sub-companies (Document and QuickBooksConnection both use HasTenant,
+        // which would otherwise append AND company_id = {parent_id} and hide all sub-company records)
+        $allIds = $subCompanyIds->prepend($companyId);
+
+        $this->recentDocs = Document::withoutGlobalScopes()
+            ->with('uploader')
+            ->whereIn('company_id', $allIds)
             ->orderByDesc('created_at')
             ->limit(5)
             ->get();
 
-        $this->qbConnections = QuickBooksConnection::whereIn('company_id', $subCompanyIds)
+        $this->qbConnections = QuickBooksConnection::withoutGlobalScopes()
+            ->whereIn('company_id', $allIds)
             ->where('is_active', true)
             ->orderByDesc('created_at')
             ->limit(5)
@@ -138,6 +145,7 @@ class DashboardController extends AccountBaseController
         // Onboarding state (fresh user = no sub-companies yet)
         $this->isFreshUser  = $allCompanies->isEmpty();
         $this->brandingDone = $company->branding?->logo !== null;
+        $this->settingsDone = ClientPackage::where('company_id', $companyId)->where('is_active', true)->exists();
 
         return view('dashboard.index', $this->data);
     }

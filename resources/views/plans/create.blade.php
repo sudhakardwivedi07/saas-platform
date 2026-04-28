@@ -4,7 +4,7 @@
 
 @section('content')
 
-<a href="{{ route('plans.index') }}" class="back-btn">
+<a href="{{ route('settings.index') }}#tab-plans" class="back-btn">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
     Back to Plans
 </a>

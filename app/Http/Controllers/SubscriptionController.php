@@ -9,7 +9,6 @@ use App\Models\SuperAdmin\Subscription;
 use App\Services\StripeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
-use Stripe\Stripe;
 use Stripe\Subscription as StripeSubscription;
 
 class SubscriptionController extends AccountBaseController
@@ -118,8 +117,10 @@ class SubscriptionController extends AccountBaseController
         }
 
         try {
-            $stripeService = new StripeService();
-            Stripe::setApiKey((new \App\Models\SuperAdmin\GlobalPaymentGatewayCredentials())->getActiveSecret() ?: '');
+            // StripeService constructor sets the API key from SuperAdmin's
+            // GlobalPaymentGatewayCredentials — always used regardless of who
+            // triggers the cancellation (client_admin, superadmin, etc.)
+            new StripeService();
 
             // Cancel at period end — user keeps access until billing cycle ends
             StripeSubscription::update($sub->stripe_subscription_id, [

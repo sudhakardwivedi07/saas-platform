@@ -129,8 +129,8 @@
             <strong>No logs yet.</strong>
             Configure Stripe to send webhooks to one of these endpoints, then trigger a test event:
             <div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">
-                <code style="background:#fff;border:1px solid #fde68a;padding:4px 10px;border-radius:5px;font-size:12px;display:inline-block">Local:  http://127.0.0.1:8000/webhooks/stripe</code>
-                <code style="background:#fff;border:1px solid #fde68a;padding:4px 10px;border-radius:5px;font-size:12px;display:inline-block">Server: https://dev-box.occams.ai/webhooks/stripe</code>
+                <code style="background:#fff;border:1px solid #fde68a;padding:4px 10px;border-radius:5px;font-size:12px;display:inline-block">Local:  http:-127.0.0.1:8000-webhooks-.stripe</code>
+                <code style="background:#fff;border:1px solid #fde68a;padding:4px 10px;border-radius:5px;font-size:12px;display:inline-block">Server: https-dev-box.occams.ai-webhooks-stripe</code>
             </div>
         </div>
     </div>

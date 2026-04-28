@@ -124,10 +124,25 @@ class StripeService
     public function handleInvoicePaid(array $invoice): void
     {
         $stripeSubId = $invoice['subscription'] ?? null;
-        if (!$stripeSubId) return;
+
+        Log::channel('stripe')->info('[StripeService] handleInvoicePaid called', [
+            'invoice_id'   => $invoice['id'] ?? 'n/a',
+            'stripe_sub_id'=> $stripeSubId,
+            'amount_paid'  => ($invoice['amount_paid'] ?? 0) / 100,
+        ]);
+
+        if (!$stripeSubId) {
+            Log::channel('stripe')->warning('[StripeService] handleInvoicePaid — no subscription ID, skipping');
+            return;
+        }
 
         $sub = Subscription::where('stripe_subscription_id', $stripeSubId)->first();
-        if (!$sub) return;
+        if (!$sub) {
+            Log::channel('stripe')->warning('[StripeService] handleInvoicePaid — subscription not found in DB', [
+                'stripe_sub_id' => $stripeSubId,
+            ]);
+            return;
+        }
 
         $stripeSub = StripeSubscription::retrieve($stripeSubId);
 
@@ -137,24 +152,39 @@ class StripeService
             'current_period_end'   => now()->createFromTimestamp($stripeSub->current_period_end),
         ]);
 
-        Payment::create([
-            'company_id'       => $sub->company_id,
-            'subscription_id'  => $sub->id,
+        $payment = Payment::create([
+            'company_id'        => $sub->company_id,
+            'subscription_id'   => $sub->id,
             'stripe_invoice_id' => $invoice['id'],
-            'transaction_id'   => $invoice['payment_intent'],
-            'amount'           => $invoice['amount_paid'] / 100,
-            'currency'         => $invoice['currency'],
-            'status'           => 'complete',
-            'paid_at'          => now(),
+            'transaction_id'    => $invoice['payment_intent'],
+            'amount'            => $invoice['amount_paid'] / 100,
+            'currency'          => $invoice['currency'],
+            'status'            => 'complete',
+            'paid_at'           => now(),
         ]);
 
-        Log::info("Stripe invoice paid for company {$sub->company_id}");
+        Log::channel('stripe')->info('[StripeService] handleInvoicePaid — payment record created', [
+            'payment_id'    => $payment->id,
+            'company_id'    => $sub->company_id,
+            'amount'        => $payment->amount,
+            'stripe_sub_id' => $stripeSubId,
+        ]);
     }
 
     public function handleSubscriptionDeleted(array $stripeSub): void
     {
+        Log::channel('stripe')->info('[StripeService] handleSubscriptionDeleted called', [
+            'stripe_sub_id' => $stripeSub['id'] ?? 'n/a',
+            'status'        => $stripeSub['status'] ?? 'n/a',
+        ]);
+
         $sub = Subscription::where('stripe_subscription_id', $stripeSub['id'])->first();
-        if (!$sub) return;
+        if (!$sub) {
+            Log::channel('stripe')->warning('[StripeService] handleSubscriptionDeleted — subscription not found in DB', [
+                'stripe_sub_id' => $stripeSub['id'] ?? 'n/a',
+            ]);
+            return;
+        }
 
         $sub->update([
             'status'      => 'canceled',
@@ -162,30 +192,52 @@ class StripeService
             'ends_at'     => now()->createFromTimestamp($stripeSub['current_period_end']),
         ]);
 
-        Log::info("Stripe subscription canceled for company {$sub->company_id}");
+        Log::channel('stripe')->info('[StripeService] handleSubscriptionDeleted — subscription marked canceled', [
+            'company_id'    => $sub->company_id,
+            'stripe_sub_id' => $stripeSub['id'],
+        ]);
     }
 
     public function handlePaymentFailed(array $invoice): void
     {
         $stripeSubId = $invoice['subscription'] ?? null;
-        if (!$stripeSubId) return;
+
+        Log::channel('stripe')->warning('[StripeService] handlePaymentFailed called', [
+            'invoice_id'    => $invoice['id'] ?? 'n/a',
+            'stripe_sub_id' => $stripeSubId,
+            'amount_due'    => ($invoice['amount_due'] ?? 0) / 100,
+        ]);
+
+        if (!$stripeSubId) {
+            Log::channel('stripe')->warning('[StripeService] handlePaymentFailed — no subscription ID, skipping');
+            return;
+        }
 
         $sub = Subscription::where('stripe_subscription_id', $stripeSubId)->first();
-        if (!$sub) return;
+        if (!$sub) {
+            Log::channel('stripe')->warning('[StripeService] handlePaymentFailed — subscription not found in DB', [
+                'stripe_sub_id' => $stripeSubId,
+            ]);
+            return;
+        }
 
         $sub->update(['status' => 'past_due']);
 
-        Payment::create([
-            'company_id'       => $sub->company_id,
-            'subscription_id'  => $sub->id,
+        $payment = Payment::create([
+            'company_id'        => $sub->company_id,
+            'subscription_id'   => $sub->id,
             'stripe_invoice_id' => $invoice['id'],
-            'transaction_id'   => $invoice['payment_intent'],
-            'amount'           => $invoice['amount_due'] / 100,
-            'currency'         => $invoice['currency'],
-            'status'           => 'failed',
+            'transaction_id'    => $invoice['payment_intent'],
+            'amount'            => $invoice['amount_due'] / 100,
+            'currency'          => $invoice['currency'],
+            'status'            => 'failed',
         ]);
 
-        Log::warning("Stripe payment failed for company {$sub->company_id}");
+        Log::channel('stripe')->warning('[StripeService] handlePaymentFailed — failed payment record created', [
+            'payment_id' => $payment->id,
+            'company_id' => $sub->company_id,
+            'amount'     => $payment->amount,
+        ]);
     }
 
     public function handleCheckoutCompleted(array $session): void
@@ -195,11 +247,26 @@ class StripeService
         $billingCycle = $session['metadata']['billing_cycle'] ?? 'monthly';
         $stripeSubId  = $session['subscription'] ?? null;
 
-        if (!$companyId || !$stripeSubId) return;
+        Log::channel('stripe')->info('[StripeService] handleCheckoutCompleted called', [
+            'session_id'    => $session['id'] ?? 'n/a',
+            'company_id'    => $companyId,
+            'package_id'    => $packageId,
+            'billing_cycle' => $billingCycle,
+            'stripe_sub_id' => $stripeSubId,
+            'amount_total'  => ($session['amount_total'] ?? 0) / 100,
+        ]);
+
+        if (!$companyId || !$stripeSubId) {
+            Log::channel('stripe')->error('[StripeService] handleCheckoutCompleted — missing company_id or subscription in session metadata', [
+                'company_id'    => $companyId,
+                'stripe_sub_id' => $stripeSubId,
+            ]);
+            return;
+        }
 
         $stripeSub = StripeSubscription::retrieve($stripeSubId);
 
-        Subscription::updateOrCreate(
+        $sub = Subscription::updateOrCreate(
             ['stripe_subscription_id' => $stripeSubId],
             [
                 'company_id'           => $companyId,
@@ -215,21 +282,39 @@ class StripeService
             ]
         );
 
+        Log::channel('stripe')->info('[StripeService] handleCheckoutCompleted — subscription upserted', [
+            'local_sub_id'  => $sub->id,
+            'stripe_sub_id' => $stripeSubId,
+            'status'        => $stripeSub->status,
+            'wasRecentlyCreated' => $sub->wasRecentlyCreated,
+        ]);
+
         // Update company's current package
         Company::where('id', $companyId)->update(['package_id' => $packageId]);
+
+        Log::channel('stripe')->info('[StripeService] handleCheckoutCompleted — company package updated', [
+            'company_id' => $companyId,
+            'package_id' => $packageId,
+        ]);
 
         // Activate company and its admin user if they were pending payment (registration flow)
         $company = Company::withoutGlobalScopes()->find($companyId);
         if ($company && $company->status === 'inactive') {
             $company->update(['status' => 'active']);
-            User::withoutGlobalScopes()
+            $activated = User::withoutGlobalScopes()
                 ->where('company_id', $companyId)
                 ->where('status', 'inactive')
                 ->update(['status' => 'active', 'email_verified_at' => now()]);
-            Log::info("Activated company {$companyId} after Stripe checkout.");
+
+            Log::channel('stripe')->info('[StripeService] handleCheckoutCompleted — company activated after payment', [
+                'company_id'      => $companyId,
+                'users_activated' => $activated,
+            ]);
         }
 
-        Log::info("Stripe checkout completed for company {$companyId}");
+        Log::channel('stripe')->info('[StripeService] handleCheckoutCompleted — ✓ done', [
+            'company_id' => $companyId,
+        ]);
     }
 
     public function getWebhookSecret(): string

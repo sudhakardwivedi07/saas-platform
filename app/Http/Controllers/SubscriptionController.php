@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Helper\Reply;
 use App\Models\Company;
 use App\Models\SuperAdmin\Package;
+use App\Models\SuperAdmin\Subscription;
 use App\Services\StripeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Stripe\Stripe;
+use Stripe\Subscription as StripeSubscription;
 
 class SubscriptionController extends AccountBaseController
 {
@@ -88,5 +92,57 @@ class SubscriptionController extends AccountBaseController
     public function cancel()
     {
         return redirect()->route('billing.index')->with('info', 'Checkout was cancelled.');
+    }
+
+    public function cancelSubscription(Request $request)
+    {
+        abort_403(!auth()->user()->can('view_billing'));
+
+        $company = company();
+        $sub     = Subscription::where('company_id', $company->id)
+            ->whereNotIn('status', ['canceled'])
+            ->latest()
+            ->first();
+
+        if (!$sub) {
+            return Reply::error('No active subscription found.');
+        }
+
+        if (!$sub->stripe_subscription_id) {
+            // No Stripe subscription linked — just mark canceled locally
+            $sub->update([
+                'status'      => 'canceled',
+                'canceled_at' => now(),
+            ]);
+            return Reply::success('Subscription canceled.');
+        }
+
+        try {
+            $stripeService = new StripeService();
+            Stripe::setApiKey((new \App\Models\SuperAdmin\GlobalPaymentGatewayCredentials())->getActiveSecret() ?: '');
+
+            // Cancel at period end — user keeps access until billing cycle ends
+            StripeSubscription::update($sub->stripe_subscription_id, [
+                'cancel_at_period_end' => true,
+            ]);
+
+            $sub->update([
+                'status'      => 'canceled',
+                'canceled_at' => now(),
+            ]);
+
+            Log::channel('stripe')->info('Subscription canceled at period end by user', [
+                'company_id'    => $company->id,
+                'stripe_sub_id' => $sub->stripe_subscription_id,
+            ]);
+
+            return Reply::success('Your subscription has been canceled. You will retain access until the end of the current billing period.');
+        } catch (\Exception $e) {
+            Log::channel('stripe')->error('Failed to cancel subscription', [
+                'company_id' => $company->id,
+                'error'      => $e->getMessage(),
+            ]);
+            return Reply::error('Could not cancel subscription: ' . $e->getMessage());
+        }
     }
 }

@@ -561,6 +561,21 @@
 <script src="{{ asset(config('assets.jquery')) }}"></script>
 <script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
+// ── Activate tab from URL hash (e.g. #tab-plans from "Back to Plans") ─────────
+(function () {
+    var hash = window.location.hash.replace('#', '');
+    if (hash) {
+        var targetBtn   = document.querySelector('.tab-btn[data-tab="' + hash + '"]');
+        var targetPanel = document.getElementById(hash);
+        if (targetBtn && targetPanel) {
+            document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+            document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+            targetBtn.classList.add('active');
+            targetPanel.classList.add('active');
+        }
+    }
+})();
+
 $(document).ready(function() {
     // Only init DataTable if the plans tab has rows
     if ($('#plans-table tbody tr td').length && !$('#plans-table tbody tr td[colspan]').length) {

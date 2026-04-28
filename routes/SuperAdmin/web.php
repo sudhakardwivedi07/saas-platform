@@ -29,6 +29,7 @@ Route::middleware(['auth', 'super-admin'])
         Route::post('companies/bulk',   [CompanyController::class, 'bulkStore'])->name('companies.bulk-store');
         Route::resource('companies', CompanyController::class)->except(['create', 'store']);
         Route::post('companies/{id}/impersonate', [CompanyController::class, 'impersonate'])->name('companies.impersonate');
+        Route::post('companies/{id}/checkout',   [CompanyController::class, 'initiateCheckout'])->name('companies.checkout');
 
         // Users
         Route::resource('users', UserController::class)->except(['show']);

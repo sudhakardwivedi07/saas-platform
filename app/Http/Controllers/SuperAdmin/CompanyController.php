@@ -10,6 +10,7 @@ use App\Models\SuperAdmin\Package;
 use App\Models\SuperAdmin\Subscription;
 use App\Models\User;
 use App\Services\EmailService;
+use App\Services\StripeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -219,7 +220,50 @@ class CompanyController extends AccountBaseController
             '{{password}}' => $request->admin_password,
         ]);
 
+        // If a paid plan is selected, redirect to Stripe checkout
+        if ($package && $package->monthly_price > 0) {
+            try {
+                $session = (new StripeService())->createCheckoutSession(
+                    $company,
+                    $package,
+                    $request->input('billing_cycle', 'monthly'),
+                    route('superadmin.companies.index'),
+                    route('superadmin.companies.index')
+                );
+                return Reply::successWithData('Firm created. Redirecting to payment…', [
+                    'checkout_url' => $session->url,
+                ]);
+            } catch (\Exception $e) {
+                // Stripe not configured or failed — firm is created, payment can be done later
+                \Illuminate\Support\Facades\Log::error('SuperAdmin checkout error: ' . $e->getMessage());
+            }
+        }
+
         return Reply::successWithData('Firm created successfully.', ['redirect' => route('superadmin.companies.index')]);
+    }
+
+    public function initiateCheckout(Request $request, int $id)
+    {
+        $request->validate([
+            'package_id'    => 'required|exists:packages,id',
+            'billing_cycle' => 'required|in:monthly,annual',
+        ]);
+
+        $company = Company::withoutGlobalScopes()->findOrFail($id);
+        $package = Package::findOrFail($request->package_id);
+
+        try {
+            $session = (new StripeService())->createCheckoutSession(
+                $company,
+                $package,
+                $request->billing_cycle,
+                route('superadmin.companies.index'),
+                route('superadmin.companies.index')
+            );
+            return Reply::successWithData('Redirecting to payment.', ['checkout_url' => $session->url]);
+        } catch (\Exception $e) {
+            return Reply::error('Payment gateway error: ' . $e->getMessage());
+        }
     }
 
     public function index(Request $request)

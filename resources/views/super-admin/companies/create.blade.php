@@ -159,19 +159,19 @@
                 <div class="form-2col">
                     <div class="f-group">
                         <label class="f-label">Full Name <span style="color:var(--red)">*</span></label>
-                        <input name="admin_name" id="admin_name" class="f-inp" placeholder="John Smith" required>
+                        <input name="admin_name" id="admin_name" class="f-inp" placeholder="John Smith" required autocomplete="off">
                         <div class="field-error-msg" id="err-admin_name"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Email Address <span style="color:var(--red)">*</span></label>
-                        <input name="admin_email" id="admin_email" type="email" class="f-inp" placeholder="john@acme.com" required>
+                        <input name="admin_email" id="admin_email" type="email" class="f-inp" placeholder="john@acme.com" required autocomplete="off">
                         <div class="field-error-msg" id="err-admin_email"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Password <span style="color:var(--red)">*</span></label>
                         <div style="position:relative">
                             <input name="admin_password" id="admin_password" type="password" class="f-inp"
-                                   placeholder="Min. 8 characters" required minlength="8" style="padding-right:40px">
+                                   placeholder="Min. 8 characters" required minlength="8" style="padding-right:40px" autocomplete="new-password">
                             <button type="button" onclick="togglePw()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-3);cursor:pointer;padding:4px">
                                 <svg id="pw-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                             </button>
@@ -181,7 +181,7 @@
                     <div class="f-group">
                         <label class="f-label">Confirm Password <span style="color:var(--red)">*</span></label>
                         <input name="admin_password_confirmation" id="admin_pw_confirm" type="password" class="f-inp"
-                               placeholder="Re-enter password" required minlength="8">
+                               placeholder="Re-enter password" required minlength="8" autocomplete="new-password">
                         <div id="pw-match-msg" style="font-size:11.5px;margin-top:4px;display:none"></div>
                         <div class="field-error-msg" id="err-admin_password_confirmation"></div>
                     </div>

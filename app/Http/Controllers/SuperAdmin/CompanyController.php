@@ -227,6 +227,7 @@ class CompanyController extends AccountBaseController
         $this->companies = Company::withoutGlobalScopes()
             ->with(['package', 'subscription', 'onboardedBy', 'adminUser'])
             ->withCount('users')
+            ->whereHas('users', fn($q) => $q->whereHas('roles', fn($r) => $r->where('name', 'client_admin')))
             ->orderByDesc('created_at')
             ->get();
 

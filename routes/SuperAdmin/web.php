@@ -13,6 +13,7 @@ use App\Http\Controllers\SuperAdmin\RoleController;
 use App\Http\Controllers\SuperAdmin\StripeWebhookController;
 use App\Http\Controllers\SuperAdmin\SupportController;
 use App\Http\Controllers\SuperAdmin\UserController;
+use App\Http\Controllers\SuperAdmin\WebhookLogController;
 use Illuminate\Support\Facades\Route;
 
 // ── SuperAdmin Panel ───────────────────────────────────────────────────────────
@@ -78,6 +79,11 @@ Route::middleware(['auth', 'super-admin'])
 
         // Activity Log
         Route::get('activity', [ActivityController::class, 'index'])->name('activity');
+
+        // Stripe Webhook Logs
+        Route::get('webhook-logs',          [WebhookLogController::class, 'index'])->name('webhook-logs.index');
+        Route::post('webhook-logs/clear',   [WebhookLogController::class, 'clear'])->name('webhook-logs.clear');
+        Route::get('webhook-logs/download', [WebhookLogController::class, 'download'])->name('webhook-logs.download');
     });
 
 // ── Stop Impersonation (auth only — accessible while impersonating) ───────────

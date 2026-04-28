@@ -330,7 +330,7 @@
                         <td>
                             <div style="display:flex;gap:5px">
                                 <a href="{{ route('plans.edit', $plan) }}" class="btn btn-ghost btn-xs">Edit</a>
-                                <form method="POST" action="{{ route('plans.destroy', $plan) }}" onsubmit="return confirm('Delete plan &quot;{{ addslashes($plan->name) }}&quot;? This cannot be undone.')">
+                                <form method="POST" action="{{ route('plans.destroy', $plan) }}" class="js-plan-delete-form" data-plan-name="{{ $plan->name }}">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-xs" style="background:rgba(239,68,68,.07);color:var(--red);border:1px solid rgba(239,68,68,.2)">Delete</button>
                                 </form>
@@ -577,6 +577,27 @@
 })();
 
 $(document).ready(function() {
+    // Plan delete: delegated so it works with DataTables; Swal must run (not native confirm)
+    $(document).on('submit', '.js-plan-delete-form', function (e) {
+        e.preventDefault();
+        var form = this;
+        var name = form.getAttribute('data-plan-name') || '';
+        Swal.fire({
+            title: 'Delete plan?',
+            text: 'Delete plan "' + name + '"? This cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+        }).then(function (result) {
+            if (!result.isConfirmed) return;
+            form.submit();
+        });
+    });
+
     // Only init DataTable if the plans tab has rows
     if ($('#plans-table tbody tr td').length && !$('#plans-table tbody tr td[colspan]').length) {
         document.getElementById('plan-search').value        = '';
@@ -725,23 +746,35 @@ function submitEditRole(e) {
 
 // ── Delete Role ────────────────────────────────────────────────────────────────
 function deleteRole(id, name) {
-    if (!confirm('Delete role "' + name + '"? This cannot be undone.')) return;
+    Swal.fire({
+        title: 'Delete role?',
+        text: 'Delete role "' + name + '"? This cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
 
-    var csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '{{ csrf_token() }}';
-    fetch('{{ route("settings.roles.destroy", ":id") }}'.replace(':id', id), {
-        method: 'DELETE',
-        headers: {'X-Requested-With':'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken, 'Content-Type':'application/json'},
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(res) {
-        if (res.status === 'success') {
-            showToast(res.message || 'Role deleted.', 'success');
-            setTimeout(function() { location.reload(); }, 900);
-        } else {
-            showToast(res.message || 'Cannot delete role.', 'error');
-        }
-    })
-    .catch(function() { showToast('Request failed.', 'error'); });
+        var csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '{{ csrf_token() }}';
+        fetch('{{ route("settings.roles.destroy", ":id") }}'.replace(':id', id), {
+            method: 'DELETE',
+            headers: {'X-Requested-With':'XMLHttpRequest', 'X-CSRF-TOKEN': csrfToken, 'Content-Type':'application/json'},
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (res.status === 'success') {
+                showToast(res.message || 'Role deleted.', 'success');
+                setTimeout(function() { location.reload(); }, 900);
+            } else {
+                showToast(res.message || 'Cannot delete role.', 'error');
+            }
+        })
+        .catch(function() { showToast('Request failed.', 'error'); });
+    });
 }
 
 // ── QuickBooks Settings ────────────────────────────────────────────────────────

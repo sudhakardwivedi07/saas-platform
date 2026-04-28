@@ -155,7 +155,24 @@ document.addEventListener('click', (e) => {
 
 // ── Confirm Delete Helper ─────────────────────────────────────
 window.confirmDelete = async function (url, label = 'this item') {
-    if (!confirm(`Are you sure you want to delete ${label}? This cannot be undone.`)) return;
+    let proceed = false;
+    if (typeof Swal !== 'undefined') {
+        const result = await Swal.fire({
+            title: 'Delete?',
+            text: 'Are you sure you want to delete ' + label + '? This cannot be undone.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+        });
+        proceed = result.isConfirmed;
+    } else {
+        proceed = confirm('Are you sure you want to delete ' + label + '? This cannot be undone.');
+    }
+    if (!proceed) return;
     const json = await apiPost(url, {}, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf(), 'Accept': 'application/json' } });
     handleReply(json);
     if (json.status === 'success') setTimeout(() => window.location.reload(), 800);

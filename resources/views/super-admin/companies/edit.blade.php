@@ -41,7 +41,8 @@
                         <label class="f-label">Firm Name <span style="color:var(--red)">*</span></label>
                         <input type="text" name="company_name" id="company_name" class="f-inp"
                                value="{{ old('company_name', $company->company_name) }}" required
-                               oninput="updatePreview()">
+                               maxlength="100" minlength="2"
+                               oninput="this.value=this.value.replace(/[^a-zA-Z0-9 .&_-]/g,'');updatePreview()">
                         <div class="field-error-msg" id="err-company_name"></div>
                     </div>
                     <div class="f-group">
@@ -57,10 +58,13 @@
                         <div class="field-error-msg" id="err-company_email"></div>
                     </div>
                     <div class="f-group">
-                        <label class="f-label">Phone</label>
-                        <input type="text" name="company_phone" class="f-inp"
+                        <label class="f-label">Phone <span style="color:var(--red)">*</span></label>
+                        <input type="text" name="company_phone" id="company_phone" class="f-inp"
                                value="{{ old('company_phone', $company->company_phone) }}"
-                               placeholder="+1 (555) 000-0000">
+                               placeholder="10-digit phone number" required
+                               maxlength="10" inputmode="numeric"
+                               oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                        <div class="field-error-msg" id="err-company_phone"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Subdomain <span style="color:var(--red)">*</span></label>
@@ -244,7 +248,6 @@ function updateStatusPreview(val) {
 
 function validateEditForm() {
     let valid = true;
-    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
     function showErr(errId, inputId, msg) {
         const errEl = document.getElementById(errId);
@@ -258,11 +261,29 @@ function validateEditForm() {
     document.querySelectorAll('.f-inp.is-invalid, .f-sel.is-invalid').forEach(el => el.classList.remove('is-invalid'));
 
     const companyName = (document.getElementById('company_name').value || '').trim();
-    if (!companyName) showErr('err-company_name', 'company_name', 'Firm name is required.');
+    if (!companyName) {
+        showErr('err-company_name', 'company_name', 'Firm Name is required.');
+    } else if (companyName.length < 2 || companyName.length > 100 || !/^[a-zA-Z0-9 .&_-]+$/.test(companyName)) {
+        showErr('err-company_name', 'company_name', 'Please enter a valid Firm Name.');
+    }
 
     const companyEmail = (document.getElementById('company_email').value || '').trim();
-    if (!companyEmail) showErr('err-company_email', 'company_email', 'Firm email is required.');
-    else if (!emailRe.test(companyEmail)) showErr('err-company_email', 'company_email', 'Please enter a valid email address.');
+    const emailAllowedRe = /^[a-zA-Z0-9@._-]+$/;
+    const emailFormatRe  = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z]{2,}$/;
+    if (!companyEmail) {
+        showErr('err-company_email', 'company_email', 'Email is required.');
+    } else if (companyEmail.length < 5 || companyEmail.length > 100 || !emailAllowedRe.test(companyEmail) || !emailFormatRe.test(companyEmail)) {
+        showErr('err-company_email', 'company_email', 'Please enter a valid email address.');
+    }
+
+    const companyPhone = (document.getElementById('company_phone').value || '').trim();
+    if (!companyPhone) {
+        showErr('err-company_phone', 'company_phone', 'Phone number is required.');
+    } else if (!/^[0-9]+$/.test(companyPhone)) {
+        showErr('err-company_phone', 'company_phone', 'Please enter a valid phone number.');
+    } else if (companyPhone.length !== 10) {
+        showErr('err-company_phone', 'company_phone', 'Phone number must be 10 digits.');
+    }
 
     const status = (document.getElementById('status').value || '').trim();
     if (!status) showErr('err-status', 'status', 'Please select a status.');
@@ -270,7 +291,7 @@ function validateEditForm() {
     return valid;
 }
 
-['company_name', 'company_email'].forEach(function(id) {
+['company_name', 'company_email', 'company_phone'].forEach(function(id) {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', function() {
         this.classList.remove('is-invalid');
@@ -289,14 +310,29 @@ document.getElementById('company-form').addEventListener('submit', async (e) => 
     if (!validateEditForm()) return;
     const btn = e.target.querySelector('[type=submit]');
     btn.disabled = true;
-    const r = await fetch(e.target.action, {
-        method: 'POST', body: new FormData(e.target),
-        headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
-    });
-    const j = await r.json();
-    showToast(j.message, j.status === 'success' ? 'success' : 'error');
-    if (j.status === 'success') setTimeout(() => window.location = '{{ route('superadmin.companies.index') }}', 900);
-    else btn.disabled = false;
+    try {
+        const r = await fetch(e.target.action, {
+            method: 'POST', body: new FormData(e.target),
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
+        });
+        const j = await r.json();
+        if (r.status === 422 && j.errors) {
+            Object.entries(j.errors).forEach(([field, messages]) => {
+                const errEl = document.getElementById('err-' + field);
+                const inp   = document.getElementById(field);
+                if (errEl) { errEl.textContent = Array.isArray(messages) ? messages[0] : messages; errEl.style.display = 'block'; }
+                if (inp)   inp.classList.add('is-invalid');
+            });
+            btn.disabled = false;
+        } else {
+            showToast(j.message, j.status === 'success' ? 'success' : 'error');
+            if (j.status === 'success') setTimeout(() => window.location = '{{ route('superadmin.companies.index') }}', 900);
+            else btn.disabled = false;
+        }
+    } catch (ex) {
+        showToast('An error occurred. Please try again.', 'error');
+        btn.disabled = false;
+    }
 });
 </script>
 @endpush

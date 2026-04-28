@@ -148,6 +148,35 @@
                     </div>
                 </div>
 
+                {{-- Favicon Upload --}}
+                <div class="brand-sec">
+                    <div class="brand-sec-title">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                        Favicon
+                    </div>
+
+                    <div style="display:flex;align-items:center;gap:14px">
+                        <label for="favicon-upload" id="favicon-drop-zone" style="display:flex;align-items:center;justify-content:center;flex-direction:column;width:80px;height:80px;border:2px dashed #bfdbfe;border-radius:10px;background:var(--blue-pale);cursor:pointer;transition:border-color .15s,background .15s;flex-shrink:0" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='#bfdbfe'">
+                            <div id="favicon-preview-wrap">
+                                @if($branding?->favicon)
+                                    <img id="favicon-preview-img" src="{{ asset('storage/' . $branding->favicon) }}" alt="Favicon" style="width:32px;height:32px;object-fit:contain;display:block">
+                                @else
+                                    <svg id="favicon-preview-img" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="1.6"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                                @endif
+                            </div>
+                        </label>
+                        <input type="file" name="favicon" id="favicon-upload" accept="image/x-icon,image/png,image/jpeg" style="display:none" onchange="previewFavicon(this)">
+                        <div>
+                            <div style="font-size:13px;font-weight:500;color:var(--text-1);margin-bottom:3px">Browser Tab Icon</div>
+                            <div style="font-size:12px;color:var(--text-3);margin-bottom:8px;line-height:1.5">Appears in the browser tab for both your portal and all client portals. Recommended: 32×32px ICO or PNG.</div>
+                            <label for="favicon-upload" class="btn btn-ghost btn-xs" style="cursor:pointer">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                Upload Favicon
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Brand Colors --}}
                 <div class="brand-sec">
                     <div class="brand-sec-title">
@@ -365,6 +394,19 @@ function previewLogo(input) {
     }
 }
 
+function previewFavicon(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const wrap = document.getElementById('favicon-preview-wrap');
+            if (wrap) {
+                wrap.innerHTML = '<img id="favicon-preview-img" src="' + e.target.result + '" style="width:32px;height:32px;object-fit:contain;display:block">';
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
 function handleLogoDrop(event) {
     event.preventDefault();
     const zone = document.getElementById('logo-drop-zone');
@@ -405,6 +447,22 @@ document.getElementById('branding-form').addEventListener('submit', async functi
             const accent  = document.getElementById('accent-color-inp').value;
             document.documentElement.style.setProperty('--blue',   primary);
             document.documentElement.style.setProperty('--orange', accent);
+
+            // Update browser tab favicon live if a new one was saved
+            if (json.favicon_url) {
+                let link = document.querySelector("link[rel='icon']");
+                if (!link) {
+                    link = document.createElement('link');
+                    link.rel = 'icon';
+                    document.head.appendChild(link);
+                }
+                link.href = json.favicon_url;
+                // Update preview in the upload zone
+                const wrap = document.getElementById('favicon-preview-wrap');
+                if (wrap) {
+                    wrap.innerHTML = '<img id="favicon-preview-img" src="' + json.favicon_url + '" style="width:32px;height:32px;object-fit:contain;display:block">';
+                }
+            }
 
             // Update sidebar logo and drop zone if a new logo was saved
             if (json.logo_url) {

@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Spatie\Permission\Models\Role;
 
 class CompanyController extends AccountBaseController
@@ -147,19 +148,33 @@ class CompanyController extends AccountBaseController
     public function store(Request $request)
     {
         $request->validate([
-            'company_name' => ['required','string','min:2','max:100','regex:/^[a-zA-Z0-9 .&\-_]+$/'],
-            'subdomain'    => 'required|string|max:63|alpha_dash|unique:companies,subdomain',
-            'company_email'=> 'required|email|max:255',
-            'package_id'   => 'nullable|exists:packages,id',
-            'status'       => 'required|in:active,inactive,suspended',
-            'admin_name'   => 'required|string|max:255',
-            'admin_email'  => 'required|email|max:255',
+            'company_name'  => ['required','string','min:2','max:100','regex:/^[a-zA-Z0-9 .&\-_]+$/'],
+            'subdomain'     => ['required','string','min:3','max:50','regex:/^[a-z0-9-]+$/','unique:companies,subdomain'],
+            'company_email' => ['required','string','min:5','max:100','regex:/^[a-zA-Z0-9@._-]+$/','email','unique:companies,company_email'],
+            'company_phone' => 'required|digits:10',
+            'package_id'    => 'nullable|exists:packages,id',
+            'status'        => 'required|in:active,inactive,suspended',
+            'admin_name'    => 'required|string|max:255',
+            'admin_email'   => 'required|email|max:255',
             'admin_password'=> 'required|string|min:8',
         ], [
-            'company_name.required' => 'Firm Name is required.',
-            'company_name.min'      => 'Please enter a valid Firm Name.',
-            'company_name.max'      => 'Please enter a valid Firm Name.',
-            'company_name.regex'    => 'Please enter a valid Firm Name.',
+            'company_name.required'  => 'Firm Name is required.',
+            'company_name.min'       => 'Please enter a valid Firm Name.',
+            'company_name.max'       => 'Please enter a valid Firm Name.',
+            'company_name.regex'     => 'Please enter a valid Firm Name.',
+            'subdomain.required'     => 'Subdomain is required.',
+            'subdomain.min'          => 'Only lowercase letters, numbers, and hyphens are allowed.',
+            'subdomain.max'          => 'Only lowercase letters, numbers, and hyphens are allowed.',
+            'subdomain.regex'        => 'Only lowercase letters, numbers, and hyphens are allowed.',
+            'subdomain.unique'       => 'This subdomain is already taken.',
+            'company_email.required' => 'Email is required.',
+            'company_email.min'      => 'Please enter a valid email address.',
+            'company_email.max'      => 'Please enter a valid email address.',
+            'company_email.regex'    => 'Please enter a valid email address.',
+            'company_email.email'    => 'Please enter a valid email address.',
+            'company_email.unique'   => 'This email is already in use.',
+            'company_phone.required' => 'Phone number is required.',
+            'company_phone.digits'   => 'Phone number must be 10 digits.',
         ]);
 
         $package = $request->package_id ? Package::find($request->package_id) : null;
@@ -224,7 +239,7 @@ class CompanyController extends AccountBaseController
             }
         }
 
-        return Reply::successWithData('Company created successfully.', ['redirect' => route('superadmin.companies.index')]);
+        return Reply::successWithData('Firm created successfully.', ['redirect' => route('superadmin.companies.index')]);
     }
 
     public function initiateCheckout(Request $request, int $id)
@@ -290,14 +305,24 @@ class CompanyController extends AccountBaseController
         $company = Company::withoutGlobalScopes()->findOrFail($id);
 
         $request->validate([
-            'company_name' => ['required','string','min:2','max:100','regex:/^[a-zA-Z0-9 .&\-_]+$/'],
-            'status'       => 'nullable|in:active,inactive,suspended',
-            'package_id'   => 'nullable|exists:packages,id',
+            'company_name'  => ['required','string','min:2','max:100','regex:/^[a-zA-Z0-9 .&\-_]+$/'],
+            'company_email' => ['required','string','min:5','max:100','regex:/^[a-zA-Z0-9@._-]+$/','email', Rule::unique('companies','company_email')->ignore($id)],
+            'company_phone' => 'required|digits:10',
+            'status'        => 'nullable|in:active,inactive,suspended',
+            'package_id'    => 'nullable|exists:packages,id',
         ], [
-            'company_name.required' => 'Firm Name is required.',
-            'company_name.min'      => 'Please enter a valid Firm Name.',
-            'company_name.max'      => 'Please enter a valid Firm Name.',
-            'company_name.regex'    => 'Please enter a valid Firm Name.',
+            'company_name.required'  => 'Firm Name is required.',
+            'company_name.min'       => 'Please enter a valid Firm Name.',
+            'company_name.max'       => 'Please enter a valid Firm Name.',
+            'company_name.regex'     => 'Please enter a valid Firm Name.',
+            'company_email.required' => 'Email is required.',
+            'company_email.min'      => 'Please enter a valid email address.',
+            'company_email.max'      => 'Please enter a valid email address.',
+            'company_email.regex'    => 'Please enter a valid email address.',
+            'company_email.email'    => 'Please enter a valid email address.',
+            'company_email.unique'   => 'This email is already in use.',
+            'company_phone.required' => 'Phone number is required.',
+            'company_phone.digits'   => 'Phone number must be 10 digits.',
         ]);
 
         $data = $request->only('company_name', 'app_name', 'package_id', 'company_email', 'company_phone');
@@ -306,8 +331,7 @@ class CompanyController extends AccountBaseController
         }
         $company->update($data);
 
-        return redirect()->route('superadmin.companies.index')
-            ->with('success', 'Company updated successfully.');
+        return Reply::successWithData('Company updated successfully.', []);
     }
 
     public function destroy(int $id)

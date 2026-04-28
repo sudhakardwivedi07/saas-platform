@@ -125,6 +125,11 @@ class User extends Authenticatable
         );
     }
 
+    protected function firstName(): Attribute
+    {
+        return Attribute::get(fn () => explode(' ', trim($this->name))[0]);
+    }
+
     // ─── Business Logic ────────────────────────────────────────────────────────
 
     /**

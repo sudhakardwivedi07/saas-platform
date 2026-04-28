@@ -101,7 +101,7 @@
 </style>
 
 <div class="user-db-header">
-    <h1>Hi <span>{{ auth()->user()->name }}</span></h1>
+    <h1>Hi <span>{{ auth()->user()->first_name }}</span></h1>
     <p>
         You're one step away from unlocking your first CFO-level financial insights.
         @if(auth()->user()->can('view_quickbooks'))
@@ -211,30 +211,34 @@
             @endif
 
             @if($isCurrent)
-                <button type="button" class="plan-btn btn-orange" style="margin-top:auto">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-                    Generate Insights
-                </button>
+                @if(!empty($isQuickbooksConnected))
+                    <button type="button" class="plan-btn btn-orange" style="margin-top:auto">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                        Generate Insights
+                    </button>
+                @else
+                    <a href="{{ route('quickbooks.index') }}" class="plan-btn btn-orange-outline" style="margin-top:auto">
+                        Connect QuickBooks
+                    </a>
+                @endif
             @else
-                <a href="#" class="plan-btn btn-orange-outline" style="margin-top:auto">
-                    Upgrade to {{ $plan->name }} &rarr;
-                </a>
+                <form method="POST" action="{{ route('dashboard.assign-plan') }}" style="margin-top:auto">
+                    @csrf
+                    <input type="hidden" name="client_package_id" value="{{ $plan->id }}">
+                    <button type="submit" class="plan-btn btn-orange-outline">
+                        Upgrade to {{ $plan->name }} &rarr;
+                    </button>
+                </form>
             @endif
         </div>
     @empty
-        {{-- Fallback when no plans are configured yet --}}
-        <div class="plan-card">
-            <div class="plan-card-title">Free <span class="plan-badge">CURRENT</span></div>
-            <p class="plan-card-desc">Connect your data to see your dashboard and track key metrics instantly.</p>
-            <div class="entitlement-box">
-                <div class="entitlement-label">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                    Entitlement
-                </div>
-                <div class="entitlement-title">Complimentary access</div>
-                <div class="entitlement-sub">Get started with your financial dashboard at no cost.</div>
+        {{-- No plans configured by client_admin yet --}}
+        <div class="plan-card" style="grid-column:span 2;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 32px;min-height:220px">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.4" style="margin-bottom:14px"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+            <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:6px">No plans available yet</div>
+            <div style="font-size:13px;color:var(--text-3);max-width:320px;line-height:1.6">
+                Your account administrator hasn't set up any subscription plans yet. Please contact them for more information.
             </div>
-            <button type="button" class="plan-btn btn-orange" style="margin-top:auto">Generate Insights</button>
         </div>
     @endforelse
 

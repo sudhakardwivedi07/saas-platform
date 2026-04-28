@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Helper\Reply;
 use App\Models\ClientPackage;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 
 class ClientPackageController extends AccountBaseController
 {
@@ -89,7 +91,7 @@ class ClientPackageController extends AccountBaseController
             'stripe_annual_price_id'  => $data['stripe_annual_price_id'] ?? null,
         ]);
 
-        return redirect()->route('plans.index')
+        return redirect()->to(route('settings.index') . '#plans')
             ->with('success', "Plan '{$data['name']}' created successfully.");
     }
 
@@ -156,13 +158,13 @@ class ClientPackageController extends AccountBaseController
             'stripe_annual_price_id'  => $data['stripe_annual_price_id'] ?? null,
         ]);
 
-        return redirect()->route('plans.index')
+        return redirect()->to(route('settings.index') . '#plans')
             ->with('success', "Plan '{$plan->name}' updated successfully.");
     }
 
     // ── Delete ───────────────────────────────────────────────────────────────
 
-    public function destroy(int $id)
+    public function destroy(Request $request, int $id): JsonResponse|RedirectResponse
     {
         abort_unless(auth()->user()->can('delete_plan'), 403);
 
@@ -170,7 +172,20 @@ class ClientPackageController extends AccountBaseController
         $name = $plan->name;
         $plan->delete();
 
-        return Reply::success("Plan '{$name}' deleted.");
+        $message = "Plan '{$name}' deleted.";
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(Reply::success($message));
+        }
+
+        $referer = $request->headers->get('Referer', '');
+        if ($referer !== '' && str_contains($referer, '/settings')) {
+            return redirect()->to(route('settings.index') . '#plans')
+                ->with('toast_success', $message);
+        }
+
+        return redirect()->route('plans.index')
+            ->with('toast_success', $message);
     }
 
     // ── Toggle active status (AJAX) ───────────────────────────────────────────

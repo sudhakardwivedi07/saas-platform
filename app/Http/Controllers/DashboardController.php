@@ -84,10 +84,11 @@ class DashboardController extends AccountBaseController
         )->count();
 
         // Finance — revenue from sub-companies (clients paying the firm), filtered by period
+        // amount is stored in dollars (StripeService already divides cents by 100 before saving)
         $this->totalRevenue = Payment::whereIn('company_id', $subCompanyIds)
             ->where('status', 'complete')
             ->whereBetween('paid_at', [$startDate, $endDate])
-            ->sum('amount') / 100;
+            ->sum('amount');
 
         $this->paymentsReceived = Payment::whereIn('company_id', $subCompanyIds)
             ->where('status', 'complete')
@@ -123,14 +124,20 @@ class DashboardController extends AccountBaseController
         $this->chartCompanies = $chartCompanies;
         $this->chartPayments  = $chartPayments;
 
-        // Recent activity
-        $this->recentDocs = Document::with('uploader')
-            ->whereIn('company_id', $subCompanyIds->prepend($companyId))
+        // Recent activity — withoutGlobalScopes() bypasses TenantScope so we can query
+        // across sub-companies (Document and QuickBooksConnection both use HasTenant,
+        // which would otherwise append AND company_id = {parent_id} and hide all sub-company records)
+        $allIds = $subCompanyIds->prepend($companyId);
+
+        $this->recentDocs = Document::withoutGlobalScopes()
+            ->with('uploader')
+            ->whereIn('company_id', $allIds)
             ->orderByDesc('created_at')
             ->limit(5)
             ->get();
 
-        $this->qbConnections = QuickBooksConnection::whereIn('company_id', $subCompanyIds)
+        $this->qbConnections = QuickBooksConnection::withoutGlobalScopes()
+            ->whereIn('company_id', $allIds)
             ->where('is_active', true)
             ->orderByDesc('created_at')
             ->limit(5)
@@ -139,8 +146,52 @@ class DashboardController extends AccountBaseController
         // Onboarding state (fresh user = no sub-companies yet)
         $this->isFreshUser  = $allCompanies->isEmpty();
         $this->brandingDone = $company->branding?->logo !== null;
+        $this->settingsDone = ClientPackage::where('company_id', $companyId)->where('is_active', true)->exists();
+        $this->clientPackages = ClientPackage::forCompany($companyId)
+            ->where('is_active', true)
+            ->orderBy('sort')
+            ->orderBy('monthly_price')
+            ->get();
 
         return view('dashboard.index', $this->data);
+    }
+
+    public function assignPlan(Request $request)
+    {
+        $user = auth()->user();
+        abort_unless($user, 403);
+        abort_unless(!$user->hasAnyRole(['client_admin', 'manager']), 403);
+
+        $company = company();
+        abort_unless($company, 404);
+
+        $parentId = $company->created_by;
+        abort_unless($parentId, 403);
+
+        $validated = $request->validate([
+            'client_package_id' => 'required|integer',
+        ]);
+
+        $plan = ClientPackage::where('company_id', $parentId)
+            ->where('is_active', true)
+            ->findOrFail((int) $validated['client_package_id']);
+
+        // Legacy schemas may still require package_id (super-admin package) to be non-null.
+        if (empty($company->package_id)) {
+            $fallbackPackageId = Package::query()
+                ->where('is_active', true)
+                ->orderBy('sort')
+                ->value('id');
+
+            if ($fallbackPackageId) {
+                $company->package_id = $fallbackPackageId;
+            }
+        }
+
+        $company->client_package_id = $plan->id;
+        $company->save();
+
+        return back()->with('success', "Plan '{$plan->name}' assigned successfully.");
     }
 
     private function loadUserPlanData(Company $company): void
@@ -155,18 +206,15 @@ class DashboardController extends AccountBaseController
                 ->get()
             : collect();
 
-        if ($plans->isEmpty()) {
-            $plans = Package::where('is_active', true)
-                ->orderBy('sort')
-                ->orderBy('monthly_price')
-                ->get();
-        }
-
         $parentCompany = $parentId ? Company::find($parentId) : null;
 
         $this->plans            = $plans;
         $this->currentPlan      = $company->activePlan();
         $this->subscription     = $company->subscription;
+        $this->isQuickbooksConnected = QuickBooksConnection::withoutGlobalScopes()
+            ->where('company_id', $company->id)
+            ->where('is_active', true)
+            ->exists();
         $this->clientAdminName  = $parentCompany?->app_name
             ?? $parentCompany?->company_name
             ?? $this->appName;

@@ -64,150 +64,168 @@
     </div>
 </div>
 
-{{-- Revenue by Firm Table --}}
-<div class="tc" style="margin-bottom:18px">
-    <div class="tc-head">
-        <div>
-            <div style="font-size:14px;font-weight:600">Revenue by Firm</div>
-            <div style="font-size:12px;color:var(--text-3)">Subscription &amp; billing details per firm</div>
-        </div>
+{{-- Tab bar --}}
+<div class="fin-tabs">
+    <div class="tab-bar">
+        <button class="tab-btn active" data-tab="tab-subscriptions">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            Subscription Details
+        </button>
+        <button class="tab-btn" data-tab="tab-renewals">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+            Upcoming Renewals
+        </button>
     </div>
-    <div style="overflow-x:auto">
-        <table>
-            <thead>
-                <tr>
-                    <th>Firm</th>
-                    <th>Contact</th>
-                    <th>Plan</th>
-                    <th>Fee</th>
-                    <th>Billing</th>
-                    <th>Next Billing</th>
-                    <th>Joined</th>
-                    <th>Payment</th>
-                </tr>
-            </thead>
-            <tbody id="revenue-tbody">
-                @forelse($revenueByCompany as $co)
-                @php
-                    $total = $co->payments->sum('amount');
-                    $lastPayment = $co->payments->sortByDesc('paid_at')->first();
-                    $payStatus = $total > 0 ? 'Paid' : 'Pending';
-                    $payBadge  = $total > 0 ? 'b-green' : 'b-amber';
-                @endphp
-                <tr>
-                    <td>
-                        <div style="display:flex;align-items:center;gap:10px">
-                            <div class="firm-av">{{ strtoupper(substr($co->company_name, 0, 2)) }}</div>
-                            <div>
-                                <div style="font-weight:500">{{ $co->company_name }}</div>
-                                <div style="font-size:11.5px;color:var(--text-3)">{{ $co->subdomain }}.{{ config('tenancy.root_domain') }}</div>
-                            </div>
-                        </div>
-                    </td>
-                    <td style="color:var(--text-2)">{{ $co->company_email ?? '—' }}</td>
-                    <td>{{ $co->package?->name ?? '—' }}</td>
-                    <td style="font-weight:600">${{ number_format($total, 0) }}</td>
-                    <td style="color:var(--text-3)">Monthly</td>
-                    <td style="color:var(--text-2)">
-                        {{ $lastPayment ? $lastPayment->paid_at?->addMonth()->format('M d, Y') : '—' }}
-                    </td>
-                    <td style="color:var(--text-3)">{{ $co->created_at?->format('M d, Y') }}</td>
-                    <td><span class="badge {{ $payBadge }}">{{ $payStatus }}</span></td>
-                </tr>
-                @empty
-                <tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:28px">No firms with payments yet</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-</div>
 
-{{-- Upcoming Renewals --}}
-<div class="tc">
-    <div class="tc-head">
-        <div>
-            <div style="font-size:14px;font-weight:600">Upcoming Renewals</div>
-            <div style="font-size:12px;color:var(--text-3)" id="renewal-subtitle">Next 30 days &middot; {{ $revenueByCompany->take(8)->count() }} firms renewing</div>
+    {{-- Tab 1: Subscription Details --}}
+    <div id="tab-subscriptions" class="tab-panel active">
+        <div class="tc">
+            <div class="tc-head">
+                <div>
+                    <div style="font-size:14px;font-weight:600">Subscription Details</div>
+                    <div style="font-size:12px;color:var(--text-3)">Billing &amp; payment details per firm</div>
+                </div>
+            </div>
+            <div style="overflow-x:auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Firm</th>
+                            <th>Contact</th>
+                            <th>Plan</th>
+                            <th>Fee</th>
+                            <th>Billing</th>
+                            <th>Next Billing</th>
+                            <th>Joined</th>
+                            <th>Payment</th>
+                        </tr>
+                    </thead>
+                    <tbody id="revenue-tbody">
+                        @forelse($revenueByCompany as $co)
+                        @php
+                            $total = $co->payments->sum('amount');
+                            $lastPayment = $co->payments->sortByDesc('paid_at')->first();
+                            $payStatus = $total > 0 ? 'Paid' : 'Pending';
+                            $payBadge  = $total > 0 ? 'b-green' : 'b-amber';
+                        @endphp
+                        <tr>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:10px">
+                                    <div class="firm-av">{{ strtoupper(substr($co->company_name, 0, 2)) }}</div>
+                                    <div>
+                                        <div style="font-weight:500">{{ $co->company_name }}</div>
+                                        <div style="font-size:11.5px;color:var(--text-3)">{{ $co->subdomain }}.{{ config('tenancy.root_domain') }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="color:var(--text-2)">{{ $co->company_email ?? '—' }}</td>
+                            <td>{{ $co->package?->name ?? '—' }}</td>
+                            <td style="font-weight:600">${{ number_format($total, 0) }}</td>
+                            <td style="color:var(--text-3)">Monthly</td>
+                            <td style="color:var(--text-2)">
+                                {{ $lastPayment ? $lastPayment->paid_at?->copy()->addMonth()->format('M d, Y') : '—' }}
+                            </td>
+                            <td style="color:var(--text-3)">{{ $co->created_at?->format('M d, Y') }}</td>
+                            <td><span class="badge {{ $payBadge }}">{{ $payStatus }}</span></td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:28px">No firms with payments yet</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-    <div style="overflow-x:auto">
-        <table>
-            <thead>
-                <tr>
-                    <th>Firm</th>
-                    <th>Plan</th>
-                    <th>Renewal Date</th>
-                    <th>Amount</th>
-                    <th>Last Login</th>
-                    <th>Insight Usage</th>
-                    <th>Risk</th>
-                </tr>
-            </thead>
-            <tbody id="renewals-tbody">
-                @forelse($revenueByCompany->take(8) as $co)
-                @php
-                    $last      = $co->payments->sortByDesc('paid_at')->first();
-                    $renewal   = $last ? $last->paid_at?->addMonth() : null;
-                    $daysLeft  = $renewal ? (int) now()->diffInDays($renewal, false) : null;
-                    $maxInsights  = max(1, $co->package?->max_users ?? 50);
-                    $usedInsights = $co->users_count ?? 0;
-                    $usagePct  = min(100, round(($usedInsights / $maxInsights) * 100));
-                    $barColor  = $usagePct >= 80 ? 'var(--orange)' : 'var(--blue)';
-                    $riskLabel = $usagePct >= 80 ? 'High' : ($usagePct >= 60 ? 'Medium' : 'Low');
-                    $riskBadge = $usagePct >= 80 ? 'b-red' : ($usagePct >= 60 ? 'b-amber' : 'b-green');
-                    $planBadge = match(strtolower($co->package?->name ?? '')) {
-                        'enterprise' => 'b-blue',
-                        'starter'    => 'b-amber',
-                        'pro'        => 'b-purple',
-                        default      => 'b-gray',
-                    };
-                    $lastLogin = $co->last_active_at;
-                @endphp
-                <tr>
-                    <td>
-                        <div style="display:flex;align-items:center;gap:10px">
-                            <div class="firm-av" style="width:30px;height:30px;font-size:11px">{{ strtoupper(substr($co->company_name, 0, 2)) }}</div>
-                            <div style="font-weight:500">{{ $co->company_name }}</div>
-                        </div>
-                    </td>
-                    <td>
-                        @if($co->package)
-                            <span class="badge {{ $planBadge }}">{{ $co->package->name }}</span>
-                        @else
-                            <span style="color:var(--text-3)">—</span>
-                        @endif
-                    </td>
-                    <td style="color:{{ $daysLeft !== null && $daysLeft <= 15 ? 'var(--orange)' : 'var(--text-2)' }};white-space:nowrap">
-                        @if($renewal)
-                            {{ $renewal->format('M j, Y') }}
-                            @if($daysLeft !== null)
-                                &middot; {{ $daysLeft }} days
-                            @endif
-                        @else
-                            —
-                        @endif
-                    </td>
-                    <td style="font-weight:600;color:var(--green)">${{ number_format($co->package?->monthly_price ?? 0, 2) }}</td>
-                    <td style="color:var(--text-2);white-space:nowrap">
-                        {{ $lastLogin ? $lastLogin->diffForHumans() : '—' }}
-                    </td>
-                    <td style="min-width:140px">
-                        <div style="display:flex;align-items:center;gap:8px">
-                            <div style="flex:1;height:6px;background:var(--border);border-radius:999px;overflow:hidden">
-                                <div style="width:{{ $usagePct }}%;height:6px;background:{{ $barColor }};border-radius:999px"></div>
-                            </div>
-                            <span style="font-size:11px;color:var(--text-3);flex-shrink:0">{{ $usedInsights }}/{{ $maxInsights }}</span>
-                        </div>
-                    </td>
-                    <td><span class="badge {{ $riskBadge }}">{{ $riskLabel }}</span></td>
-                </tr>
-                @empty
-                <tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:28px">No upcoming renewals</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+
+    {{-- Tab 2: Upcoming Renewals --}}
+    <div id="tab-renewals" class="tab-panel">
+        <div class="tc">
+            <div class="tc-head">
+                <div>
+                    <div style="font-size:14px;font-weight:600">Upcoming Renewals</div>
+                    <div style="font-size:12px;color:var(--text-3)" id="renewal-subtitle">Next 30 days &middot; {{ $revenueByCompany->take(8)->count() }} firms renewing</div>
+                </div>
+            </div>
+            <div style="overflow-x:auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Firm</th>
+                            <th>Plan</th>
+                            <th>Renewal Date</th>
+                            <th>Amount</th>
+                            <th>Last Login</th>
+                            <th>Insight Usage</th>
+                            <th>Risk</th>
+                        </tr>
+                    </thead>
+                    <tbody id="renewals-tbody">
+                        @forelse($revenueByCompany->take(8) as $co)
+                        @php
+                            $last      = $co->payments->sortByDesc('paid_at')->first();
+                            $renewal   = $last ? $last->paid_at?->copy()->addMonth() : null;
+                            $daysLeft  = $renewal ? (int) now()->diffInDays($renewal, false) : null;
+                            $maxInsights  = max(1, $co->package?->max_users ?? 50);
+                            $usedInsights = $co->users_count ?? 0;
+                            $usagePct  = min(100, round(($usedInsights / $maxInsights) * 100));
+                            $barColor  = $usagePct >= 80 ? 'var(--orange)' : 'var(--blue)';
+                            $riskLabel = $usagePct >= 80 ? 'High' : ($usagePct >= 60 ? 'Medium' : 'Low');
+                            $riskBadge = $usagePct >= 80 ? 'b-red' : ($usagePct >= 60 ? 'b-amber' : 'b-green');
+                            $planBadge = match(strtolower($co->package?->name ?? '')) {
+                                'enterprise' => 'b-blue',
+                                'starter'    => 'b-amber',
+                                'pro'        => 'b-purple',
+                                default      => 'b-gray',
+                            };
+                            $lastLogin = $co->last_active_at;
+                        @endphp
+                        <tr>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:10px">
+                                    <div class="firm-av" style="width:30px;height:30px;font-size:11px">{{ strtoupper(substr($co->company_name, 0, 2)) }}</div>
+                                    <div style="font-weight:500">{{ $co->company_name }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                @if($co->package)
+                                    <span class="badge {{ $planBadge }}">{{ $co->package->name }}</span>
+                                @else
+                                    <span style="color:var(--text-3)">—</span>
+                                @endif
+                            </td>
+                            <td style="color:{{ $daysLeft !== null && $daysLeft <= 15 ? 'var(--orange)' : 'var(--text-2)' }};white-space:nowrap">
+                                @if($renewal)
+                                    {{ $renewal->format('M j, Y') }}
+                                    @if($daysLeft !== null)
+                                        &middot; {{ $daysLeft }} days
+                                    @endif
+                                @else
+                                    —
+                                @endif
+                            </td>
+                            <td style="font-weight:600;color:var(--green)">${{ number_format($co->package?->monthly_price ?? 0, 2) }}</td>
+                            <td style="color:var(--text-2);white-space:nowrap">
+                                {{ $lastLogin ? $lastLogin->diffForHumans() : '—' }}
+                            </td>
+                            <td style="min-width:140px">
+                                <div style="display:flex;align-items:center;gap:8px">
+                                    <div style="flex:1;height:6px;background:var(--border);border-radius:999px;overflow:hidden">
+                                        <div style="width:{{ $usagePct }}%;height:6px;background:{{ $barColor }};border-radius:999px"></div>
+                                    </div>
+                                    <span style="font-size:11px;color:var(--text-3);flex-shrink:0">{{ $usedInsights }}/{{ $maxInsights }}</span>
+                                </div>
+                            </td>
+                            <td><span class="badge {{ $riskBadge }}">{{ $riskLabel }}</span></td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="7" style="text-align:center;color:var(--text-3);padding:28px">No upcoming renewals</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-</div>
+</div>{{-- /.fin-tabs --}}
 
 <script>
 (function () {
@@ -299,11 +317,15 @@
         fetch(dataUrl + '?period=' + encodeURIComponent(period), {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) throw new Error('Server error: ' + r.status);
+            return r.json();
+        })
         .then(data => {
             applyData(data);
             exportBtn.href = exportBase + '?period=' + encodeURIComponent(period);
         })
+        .catch(err => { console.error('Finance filter error:', err); })
         .finally(() => { select.disabled = false; });
     }
 

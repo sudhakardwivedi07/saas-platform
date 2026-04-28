@@ -44,17 +44,26 @@ class AccountBaseController extends Controller
             ? \App\Models\CompanyBranding::where('company_id', $company->id)->first()
             : null;
 
-        // If this company has no custom colors (user-role sub-company), fall back
-        // to the parent firm's branding. created_by stores the parent company_id
-        // when a client_admin creates sub-companies via ClientController.
-        if (!($branding?->primary_color) && $company?->created_by) {
-            $parentBranding = cache()->remember(
-                'branding_parent_' . $company->created_by,
-                now()->addMinutes(1),
-                fn () => \App\Models\CompanyBranding::where('company_id', $company->created_by)->first()
-            );
-            if ($parentBranding?->primary_color) {
+        // Client users belong to sub-companies (created_by = client_admin company_id).
+        // withoutGlobalScopes() is required: TenantScope silently appends
+        // "AND company_id = {current_company_id}" to every CompanyBranding query,
+        // which would make a cross-company lookup always return null.
+        if ($company?->created_by) {
+            $parentBranding = \App\Models\CompanyBranding::withoutGlobalScopes()
+                ->where('company_id', $company->created_by)
+                ->first();
+
+            if ($parentBranding) {
                 $branding = $parentBranding;
+
+                // Inherit the parent's app name so client users see the portal's branded name,
+                // not the global platform name.
+                $parentCompany = \App\Models\Company::withoutGlobalScopes()
+                    ->find($company->created_by);
+                if ($parentCompany) {
+                    $this->appName   = $parentCompany->app_name ?? $parentCompany->company_name ?? $this->appName;
+                    $this->companyName = $parentCompany->company_name ?? $this->companyName;
+                }
             }
         }
 

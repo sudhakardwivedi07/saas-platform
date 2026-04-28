@@ -288,7 +288,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
         </div>
     </div>
 
-</div>0
+</div>
 
 {{-- ── View Ticket Modal ──────────────────────────────────────────────────────── --}}
 <div id="viewTicketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">

@@ -328,21 +328,56 @@
 .ob-step-link:hover { opacity: .8; }
 
 @media(max-width:900px) { .ob-steps { grid-template-columns: 1fr; } }
+
+/* ── Disabled CTA tooltip ────────────────────────────── */
+.cta-disabled-wrap {
+    position: relative;
+    display: inline-flex;
+    cursor: not-allowed;
+}
+.cta-disabled-wrap .btn,
+.cta-disabled-wrap .ob-step-link {
+    pointer-events: none;
+    opacity: .42;
+}
+.cta-tip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 9px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a202c;
+    color: #fff;
+    font-size: 12px;
+    line-height: 1.55;
+    padding: 9px 13px;
+    border-radius: 8px;
+    width: 250px;
+    z-index: 200;
+    text-align: center;
+    white-space: normal;
+    box-shadow: 0 4px 14px rgba(0,0,0,.22);
+    pointer-events: none;
+}
+.cta-tip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #1a202c;
+}
+.cta-disabled-wrap:hover .cta-tip { display: block; }
 </style>
 @endpush
 
 @section('content')
 
-{{-- Trial Banner --}}
-@if($subscription && $subscription->isTrialing())
-<div class="info-banner" style="background:#fffbeb;border-color:#fde68a;margin-bottom:16px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    <div class="info-banner-txt" style="color:#92400e">
-        Free trial active — ends {{ $subscription->trial_ends_at?->diffForHumans() }}.
-        <a href="{{ route('billing.index') }}" style="color:var(--orange);font-weight:600">Upgrade now →</a>
-    </div>
-</div>
-@endif
+@php
+    $canAddClient = ($brandingDone ?? false) && ($settingsDone ?? false);
+    $disabledTip  = 'The Add Client option will be enabled once Step 1: Branding Setup and Step 2: Settings Configuration are completed.';
+@endphp
 
 @if($isFreshUser)
 
@@ -361,10 +396,20 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
             Branding Settings
         </a>
-        <a href="{{ route('clients.index') }}" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px">
+        @if($canAddClient)
+        <button type="button" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px" onclick="openDashboardAddClientModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
-        </a>
+        </button>
+        @else
+        <span class="cta-disabled-wrap">
+            <span class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Client
+            </span>
+            <div class="cta-tip">{{ $disabledTip }}</div>
+        </span>
+        @endif
     </div>
 </div>
 
@@ -372,14 +417,24 @@
 <div class="ob-banner">
     <div>
         <div class="ob-badge">{{ strtoupper(company()?->company_name ?? 'YOUR PORTAL') }}</div>
-        <div class="ob-title">Hi {{ auth()->user()->name }}, welcome to your Partner Portal 👋</div>
-        <p class="ob-sub">Three steps stand between you and delivering AI-powered CFO insights to your clients. Follow the setup guide below to get your portal fully configured.</p>
+        <div class="ob-title">Welcome, {{ auth()->user()->first_name }}.</div>
+        <p class="ob-sub">Complete the setup below to configure your partner portal and start onboarding clients.</p>
     </div>
     <div class="ob-banner-btns">
-        <a href="{{ route('clients.index') }}" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap">
+        @if($canAddClient)
+        <button type="button" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap" onclick="openDashboardAddClientModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
-        </a>
+        </button>
+        @else
+        <span class="cta-disabled-wrap" style="width:100%">
+            <span class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;width:100%">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Client
+            </span>
+            <div class="cta-tip">{{ $disabledTip }}</div>
+        </span>
+        @endif
         <a href="{{ route('account.index') . '#branding' }}" class="btn-outline-white">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
             Branding Settings
@@ -389,12 +444,12 @@
 
 {{-- 3 Setup Steps --}}
 @php
-    $activeStep = !$brandingDone ? 1 : 2;
+    $activeStep = !($brandingDone ?? false) ? 1 : (!($settingsDone ?? false) ? 2 : 3);
 @endphp
 <div class="ob-steps">
 
-    {{-- Step 1: Set Your Branding --}}
-    <div class="ob-step {{ $activeStep === 1 ? 'active' : '' }}">
+    {{-- Step 1: Set Your Branding — entire card is clickable --}}
+    <a href="{{ route('account.index') . '#branding' }}" class="ob-step {{ $activeStep === 1 ? 'active' : '' }}" style="text-decoration:none;display:flex;flex-direction:column">
         @if($activeStep === 1)
         <div class="ob-step-badge">START HERE</div>
         @elseif($brandingDone)
@@ -407,15 +462,15 @@
         <div class="ob-step-num" style="color:{{ $activeStep === 1 ? 'var(--orange)' : 'var(--text-3)' }}">STEP 1</div>
         <div class="ob-step-title">Set Your Branding</div>
         <div class="ob-step-desc">Upload your firm logo and set your brand colours. Your clients experience your identity — not a generic interface. This is the first thing they will see.</div>
-        <a href="{{ route('account.index') . '#branding' }}" class="ob-step-link" style="color:var(--orange)">
-            My Account → Branding
-        </a>
-    </div>
+        <span class="ob-step-link" style="color:var(--orange)">My Account → Branding</span>
+    </a>
 
-    {{-- Step 2: Configure Settings --}}
-    <div class="ob-step {{ $activeStep === 2 ? 'active' : '' }}">
+    {{-- Step 2: Configure Settings — entire card is clickable --}}
+    <a href="{{ route('settings.index') }}" class="ob-step {{ $activeStep === 2 ? 'active' : '' }}" style="text-decoration:none;display:flex;flex-direction:column">
         @if($activeStep === 2)
         <div class="ob-step-badge">START HERE</div>
+        @elseif($settingsDone)
+        <div class="ob-step-badge" style="background:var(--green)">✓ DONE</div>
         @endif
 
         <div class="ob-step-ico" style="background:#ecfdf5">
@@ -424,23 +479,36 @@
         <div class="ob-step-num" style="color:{{ $activeStep === 2 ? '#10b981' : 'var(--text-3)' }}">STEP 2</div>
         <div class="ob-step-title">Configure Settings</div>
         <div class="ob-step-desc">Set up your <strong>Payment Gateway</strong>, configure <strong>Email &amp; SMS</strong> for client communications, and create your <strong>Client Plans</strong> before onboarding anyone.</div>
-        <a href="{{ route('settings.index') }}" class="ob-step-link" style="color:#10b981">
-            Go to Settings →
-        </a>
-    </div>
+        <span class="ob-step-link" style="color:#10b981">Go to Settings →</span>
+    </a>
 
-    {{-- Step 3: Add Your Clients --}}
-    <div class="ob-step">
+    {{-- Step 3: Add Your Clients — clickable only when steps 1 & 2 are done --}}
+    @if($canAddClient)
+    <a href="{{ route('clients.index') }}" class="ob-step {{ $activeStep === 3 ? 'active' : '' }}" style="text-decoration:none;display:flex;flex-direction:column">
+        @if($activeStep === 3)
+        <div class="ob-step-badge">START HERE</div>
+        @endif
+
+        <div class="ob-step-ico" style="background:#ecfdf5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8" width="22" height="22"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+        </div>
+        <div class="ob-step-num" style="color:#10b981">STEP 3</div>
+        <div class="ob-step-title">Add Your Clients</div>
+        <div class="ob-step-desc">Add the individuals your portal serves — one at a time or bulk-import via CSV. Once added, each client receives a personalised portal invitation automatically.</div>
+        <span class="ob-step-link" style="color:#10b981">Add Client →</span>
+    </a>
+    @else
+    <div class="ob-step cta-disabled-wrap" style="cursor:not-allowed;display:flex;flex-direction:column">
         <div class="ob-step-ico" style="background:#ecfdf5">
             <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8" width="22" height="22"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
         </div>
         <div class="ob-step-num" style="color:var(--text-3)">STEP 3</div>
-        <div class="ob-step-title">Add Your Clients</div>
-        <div class="ob-step-desc">Add the individuals your portal serves — one at a time or bulk-import via CSV. Once added, each client receives a personalised portal invitation automatically.</div>
-        <a href="{{ route('clients.index') }}" class="ob-step-link" style="color:#10b981">
-            Add Client →
-        </a>
+        <div class="ob-step-title" style="opacity:.55">Add Your Clients</div>
+        <div class="ob-step-desc" style="opacity:.55">Add the individuals your portal serves — one at a time or bulk-import via CSV. Once added, each client receives a personalised portal invitation automatically.</div>
+        <span class="ob-step-link" style="color:#10b981;opacity:.42;pointer-events:none">Add Client →</span>
+        <div class="cta-tip" style="bottom:calc(100% + 9px);left:50%;transform:translateX(-50%)">{{ $disabledTip }}</div>
     </div>
+    @endif
 
 </div>
 
@@ -470,10 +538,20 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="display:inline-block;vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             Last updated: {{ now()->format('M j, Y · g:i A') }}
         </span>
-        <a href="{{ route('clients.index') }}" class="btn btn-primary btn-sm">
+        @if($canAddClient)
+        <button type="button" class="btn btn-primary btn-sm" onclick="openDashboardAddClientModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
-        </a>
+        </button>
+        @else
+        <span class="cta-disabled-wrap">
+            <span class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Client
+            </span>
+            <div class="cta-tip" style="left:auto;right:0;transform:none">{{ $disabledTip }}</div>
+        </span>
+        @endif
     </div>
 </div>
 
@@ -716,12 +794,260 @@
 
 @endif {{-- end @if($isFreshUser) / @else --}}
 
+{{-- Add Client Modal (Dashboard) --}}
+<div class="modal-overlay {{ $errors->any() ? 'open' : '' }}" id="modal-dashboard-add-client" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box" style="width:560px">
+        <button class="modal-close" onclick="document.getElementById('modal-dashboard-add-client').classList.remove('open')">&times;</button>
+        <div class="modal-title">Add New Client</div>
+        <div class="modal-sub">Invite a new client to your partner portal</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:20px;gap:0">
+            <button type="button" id="dash-tab-manual-btn" onclick="switchDashboardAddClientTab('manual')"
+                style="border:none;border-radius:8px;padding:9px 0;font-size:13px;font-weight:600;cursor:pointer;background:var(--orange);color:#fff;transition:all .15s">
+                Manual Entry
+            </button>
+            <button type="button" id="dash-tab-bulk-btn" onclick="switchDashboardAddClientTab('bulk')"
+                style="border:none;border-radius:8px;padding:9px 0;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--text-2);transition:all .15s">
+                Bulk Upload
+            </button>
+        </div>
+
+        @if($errors->any())
+        <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 13px;margin-bottom:14px">
+            @foreach($errors->all() as $error)
+            <div style="font-size:12.5px;color:var(--red);display:flex;align-items:center;gap:6px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {{ $error }}
+            </div>
+            @endforeach
+        </div>
+        @endif
+
+        <div id="dash-panel-manual">
+            <form method="POST" action="{{ route('clients.store') }}">
+                @csrf
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                    <div class="mf-field" style="margin:0 0 14px">
+                        <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
+                        <input type="text" name="name" class="mf-inp" placeholder="e.g. Sarah Chen" value="{{ old('name') }}" required>
+                    </div>
+                    <div class="mf-field" style="margin:0 0 14px">
+                        <label class="mf-label">Email ID <span style="color:var(--red)">*</span></label>
+                        <input type="email" name="email" class="mf-inp" placeholder="sarah@chen.com" value="{{ old('email') }}" required>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                    <div class="mf-field" style="margin:0 0 14px">
+                        <label class="mf-label">Phone Number</label>
+                        <input type="tel" name="phone" class="mf-inp" placeholder="+1 (555) 000-0000" value="{{ old('phone') }}">
+                    </div>
+                    <div class="mf-field" style="margin:0 0 14px">
+                        <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
+                        <input type="text" name="company_name" class="mf-inp" placeholder="e.g. TechCorp Inc." value="{{ old('company_name') }}" required>
+                    </div>
+                </div>
+                <div class="mf-field">
+                    <label class="mf-label">Industry Type <span style="color:var(--red)">*</span></label>
+                    <select name="industry_type" class="mf-sel" style="height:40px" required>
+                        <option value="" disabled {{ old('industry_type') ? '' : 'selected' }}>Select Industry Type</option>
+                        @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
+                        <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mf-field">
+                    <label class="mf-label">Plan Tier</label>
+                    <select name="client_package_id" class="mf-sel" style="height:40px">
+                        <option value="">— No Plan —</option>
+                        @foreach($clientPackages ?? [] as $pkg)
+                        <option value="{{ $pkg->id }}" {{ old('client_package_id') == $pkg->id ? 'selected' : '' }}>
+                            {{ $pkg->name }}@if($pkg->max_documents) — {{ $pkg->max_documents }} insights / company / month @endif
+                        </option>
+                        @endforeach
+                    </select>
+                    <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Plan tiers are managed by the CFO Insights platform.</div>
+                </div>
+                <div class="mf-field">
+                    <label class="mf-label" style="display:flex;align-items:center;justify-content:space-between">
+                        <span>Password <span style="color:var(--red)">*</span></span>
+                    </label>
+                    <div style="position:relative;display:flex;align-items:center">
+                        <input type="password" name="password" id="dash-ac-password" class="mf-inp"
+                            placeholder="Min. 8 characters" style="padding-right:88px" required>
+                        <button type="button" title="Show/hide password"
+                            onclick="toggleDashboardAcPassword()"
+                            style="position:absolute;right:44px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text-3);display:flex;align-items:center">
+                            <svg id="dash-ac-eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        </button>
+                        <button type="button" title="Auto-generate password"
+                            onclick="generateDashboardAcPassword()"
+                            style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--blue);display:flex;align-items:center">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+                        </button>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-3);margin-top:4px">Click <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11" style="vertical-align:middle"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> to auto-generate a secure password.</div>
+                </div>
+                <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:11px 14px;margin-bottom:16px;font-size:12.5px;color:#3b82f6;line-height:1.5">
+                    An email invite will be sent to the client automatically after submission.
+                </div>
+                <div class="mf-foot">
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-dashboard-add-client').classList.remove('open')">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Add Client</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="dash-panel-bulk" style="display:none">
+            <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:10px">Upload CSV File</div>
+            <div id="dash-csv-drop-zone"
+                style="border:2px dashed #c7d9f0;border-radius:12px;background:rgba(59,130,246,.04);padding:36px 20px;text-align:center;cursor:pointer;transition:border-color .15s"
+                onclick="document.getElementById('dash-csv-file-input').click()"
+                ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
+                ondragleave="this.style.borderColor='#c7d9f0'"
+                ondrop="handleDashboardCsvDrop(event)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" width="32" height="32" style="margin:0 auto 10px;display:block">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <div style="font-size:13.5px;color:var(--text-2)">
+                    Drag &amp; drop your CSV here, or <span style="color:var(--blue);font-weight:500;text-decoration:underline">click to browse</span>
+                </div>
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:6px">.csv files only · Max 5 MB · Up to 200 clients per upload</div>
+                <input type="file" id="dash-csv-file-input" accept=".csv" style="display:none" onchange="handleDashboardCsvFile(this.files[0])">
+            </div>
+            <div id="dash-csv-file-name" style="font-size:12px;color:var(--green);margin-top:8px;display:none"></div>
+
+            <div style="margin-top:18px">
+                <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:10px">CSV Format</div>
+                <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+                    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:10px">Your CSV must include the following columns in order:</div>
+                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 14px;font-family:monospace;font-size:13px;color:var(--text-1)">
+                        client_name, email, plan_tier
+                    </div>
+                    <div style="font-size:12px;color:var(--text-3);margin-top:10px">
+                        Example: <em>TechCorp Inc., info@techcorp.com, Professional</em>
+                    </div>
+                    <a href="javascript:void(0)" onclick="downloadDashboardSampleCsv()" style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--blue);margin-top:10px;text-decoration:none;font-weight:500">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Download sample CSV
+                    </a>
+                </div>
+            </div>
+
+            <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:11px 14px;margin-top:16px;margin-bottom:16px;font-size:12.5px;color:#3b82f6;line-height:1.5">
+                All clients in the CSV will receive an email invite automatically after upload.
+            </div>
+
+            <div id="dash-bulk-error" style="display:none;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 13px;margin-bottom:14px;font-size:12.5px;color:var(--red)"></div>
+
+            <div class="mf-foot">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-dashboard-add-client').classList.remove('open')">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="submitDashboardBulkUpload()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Upload &amp; Invite
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script src="{{ asset(config('assets.chartjs')) }}"></script>
 <script>
 const CURRENT_PERIOD = '{{ $period }}';
+const HAS_DASHBOARD_CLIENT_FORM_ERRORS = {{ $errors->any() ? 'true' : 'false' }};
+
+function openDashboardAddClientModal() {
+    const modal = document.getElementById('modal-dashboard-add-client');
+    if (modal) modal.classList.add('open');
+}
+
+function switchDashboardAddClientTab(tab) {
+    var isManual = tab === 'manual';
+    document.getElementById('dash-panel-manual').style.display = isManual ? '' : 'none';
+    document.getElementById('dash-panel-bulk').style.display   = isManual ? 'none' : '';
+    var manualBtn = document.getElementById('dash-tab-manual-btn');
+    var bulkBtn   = document.getElementById('dash-tab-bulk-btn');
+    manualBtn.style.background = isManual ? 'var(--orange)' : 'transparent';
+    manualBtn.style.color      = isManual ? '#fff' : 'var(--text-2)';
+    bulkBtn.style.background   = isManual ? 'transparent' : 'var(--orange)';
+    bulkBtn.style.color        = isManual ? 'var(--text-2)' : '#fff';
+}
+
+function toggleDashboardAcPassword() {
+    var inp  = document.getElementById('dash-ac-password');
+    var icon = document.getElementById('dash-ac-eye-icon');
+    if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+    } else {
+        inp.type = 'password';
+        icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    }
+}
+
+function generateDashboardAcPassword() {
+    var chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+    var pwd = '';
+    for (var i = 0; i < 12; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+    var inp = document.getElementById('dash-ac-password');
+    inp.type  = 'text';
+    inp.value = pwd;
+    document.getElementById('dash-ac-eye-icon').innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+}
+
+var _dashboardCsvFile = null;
+function handleDashboardCsvFile(file) {
+    if (!file) return;
+    _dashboardCsvFile = file;
+    var el = document.getElementById('dash-csv-file-name');
+    el.textContent = '✓ ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+    el.style.display = 'block';
+    document.getElementById('dash-csv-drop-zone').style.borderColor = 'var(--green)';
+}
+
+function handleDashboardCsvDrop(e) {
+    e.preventDefault();
+    document.getElementById('dash-csv-drop-zone').style.borderColor = '#c7d9f0';
+    var file = e.dataTransfer.files[0];
+    if (file && file.name.endsWith('.csv')) handleDashboardCsvFile(file);
+}
+
+function downloadDashboardSampleCsv() {
+    var csv = 'client_name,email,plan_tier\nTechCorp Inc.,info@techcorp.com,Professional\nAcme Corp,hello@acme.com,Starter\n';
+    var a = document.createElement('a');
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+    a.download = 'sample_clients.csv';
+    a.click();
+}
+
+function submitDashboardBulkUpload() {
+    var errBox = document.getElementById('dash-bulk-error');
+    errBox.style.display = 'none';
+    if (!_dashboardCsvFile) {
+        errBox.textContent = 'Please select a CSV file first.';
+        errBox.style.display = 'block';
+        return;
+    }
+    var formData = new FormData();
+    formData.append('_token', '{{ csrf_token() }}');
+    formData.append('csv_file', _dashboardCsvFile);
+    fetch('{{ route("clients.bulk-upload") }}', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(function(data) {
+            if (data.status === 'success') {
+                window.location.href = '{{ route("clients.index") }}';
+            } else {
+                errBox.textContent = data.message || 'Upload failed.';
+                errBox.style.display = 'block';
+            }
+        })
+        .catch(function() {
+            errBox.textContent = 'Network error. Please try again.';
+            errBox.style.display = 'block';
+        });
+}
 
 function setTP(el, period) {
     if (period === 'custom') {
@@ -750,6 +1076,10 @@ function applyCustomRange() {
 // Show custom range row if currently active
 if (CURRENT_PERIOD === 'custom') {
     document.getElementById('customRangeRow').classList.add('visible');
+}
+
+if (HAS_DASHBOARD_CLIENT_FORM_ERRORS) {
+    openDashboardAddClientModal();
 }
 
 // Chart

@@ -34,7 +34,25 @@ class StripeService
     public function createOrRetrieveCustomer(Company $company): Customer
     {
         if ($company->stripe_customer_id) {
-            return Customer::retrieve($company->stripe_customer_id);
+            try {
+                $customer = Customer::retrieve($company->stripe_customer_id);
+
+                // If the customer was deleted in Stripe, treat as non-existent
+                if (!empty($customer->deleted)) {
+                    throw new \Exception('Customer deleted in Stripe');
+                }
+
+                return $customer;
+            } catch (\Stripe\Exception\InvalidRequestException $e) {
+                // Customer doesn't exist in Stripe (wrong mode, deleted, etc.)
+                // Clear the stale ID and fall through to create a new one
+                Log::channel('stripe')->warning('[StripeService] Stale stripe_customer_id — creating new customer', [
+                    'company_id'          => $company->id,
+                    'stale_customer_id'   => $company->stripe_customer_id,
+                    'error'               => $e->getMessage(),
+                ]);
+                $company->update(['stripe_customer_id' => null]);
+            }
         }
 
         $customer = Customer::create([
@@ -44,6 +62,11 @@ class StripeService
         ]);
 
         $company->update(['stripe_customer_id' => $customer->id]);
+
+        Log::channel('stripe')->info('[StripeService] New Stripe customer created', [
+            'company_id'  => $company->id,
+            'customer_id' => $customer->id,
+        ]);
 
         return $customer;
     }

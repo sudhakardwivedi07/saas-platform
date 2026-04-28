@@ -203,7 +203,8 @@ table.dataTable thead th:after { font-size: 10px; }
                     </td>
 
                     {{-- Onboarded On --}}
-                    <td style="padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12.5px;color:var(--text-2)">
+                    <td style="padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12.5px;color:var(--text-2)"
+                        data-sort="{{ $co->created_at ? $co->created_at->timestamp : 0 }}">
                         {{ $co->created_at ? $co->created_at->format('M d, Y') : '—' }}
                     </td>
 
@@ -232,7 +233,7 @@ table.dataTable thead th:after { font-size: 10px; }
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                                     Change Plan
                                 </button>
-                                @if($co->package_id && ($co->package?->monthly_price ?? 0) > 0)
+                                @if($co->package_id && ($co->package?->monthly_price ?? 0) > 0 && ($co->complete_payments_count ?? 0) == 0)
                                 <button class="dm-item" type="button" onclick="openMakePayment({{ $co->id }}, '{{ addslashes($co->company_name) }}', {{ $co->package_id }})">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
                                     Make Payment
@@ -366,8 +367,9 @@ $(document).ready(function() {
             emptyTable: 'No firms registered yet',
             zeroRecords: 'No firms match your filters',
         },
+        order: [],   // preserve server-side created_at DESC order
         columnDefs: [
-            { orderable: false, targets: [1, 6, 7, 8, 9] },  // Name&Contact, LastActive, OnboardedBy, OnboardedOn, Actions
+            { orderable: false, targets: [1, 6, 7, 9] },  // Name&Contact, LastActive, OnboardedBy, Actions
         ],
         drawCallback: function() {
             // Re-count visible rows after DataTables paging

@@ -759,21 +759,22 @@
 
         @php
             $actItems = collect();
-            foreach($recentDocs->take(4) as $doc) {
+            foreach(($recentActivities ?? collect()) as $activity) {
+                $eventType = $activity->event_type ?? 'unknown';
+                $color = match(true) {
+                    str_contains($eventType, 'login')  => 'var(--green)',
+                    str_contains($eventType, 'delete') => 'var(--red)',
+                    str_contains($eventType, 'create') => 'var(--blue)',
+                    str_contains($eventType, 'update') => 'var(--orange)',
+                    default                             => 'var(--text-3)',
+                };
+
                 $actItems->push([
-                    'color' => 'var(--blue)',
-                    'text'  => ($doc->name ?? 'Document') . ' uploaded',
-                    'time'  => $doc->created_at->diffForHumans(),
+                    'color' => $color,
+                    'text'  => $activity->display_event,
+                    'time'  => $activity->created_at?->diffForHumans() ?? '',
                 ]);
             }
-            foreach($qbConnections->take(2) as $conn) {
-                $actItems->push([
-                    'color' => 'var(--green)',
-                    'text'  => ($conn->company?->company_name ?? $conn->qb_company_name ?? 'Account') . ' connected QuickBooks',
-                    'time'  => $conn->created_at?->diffForHumans() ?? '',
-                ]);
-            }
-            $actItems = $actItems->sortByDesc('time')->values();
         @endphp
 
         @forelse($actItems as $item)

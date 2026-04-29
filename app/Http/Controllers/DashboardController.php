@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ClientPackage;
 use App\Models\Company;
-use App\Models\Document;
+use App\Models\EventLog;
 use App\Models\Payment;
 use App\Models\QuickBooksConnection;
 use App\Models\SuperAdmin\Package;
@@ -124,23 +124,11 @@ class DashboardController extends AccountBaseController
         $this->chartCompanies = $chartCompanies;
         $this->chartPayments  = $chartPayments;
 
-        // Recent activity — withoutGlobalScopes() bypasses TenantScope so we can query
-        // across sub-companies (Document and QuickBooksConnection both use HasTenant,
-        // which would otherwise append AND company_id = {parent_id} and hide all sub-company records)
-        $allIds = $subCompanyIds->prepend($companyId);
-
-        $this->recentDocs = Document::withoutGlobalScopes()
-            ->with('uploader')
-            ->whereIn('company_id', $allIds)
+        // Recent activity — keep same source as Activity Log page for consistency.
+        $this->recentActivities = EventLog::query()
+            ->where('company_id', $companyId)
             ->orderByDesc('created_at')
-            ->limit(5)
-            ->get();
-
-        $this->qbConnections = QuickBooksConnection::withoutGlobalScopes()
-            ->whereIn('company_id', $allIds)
-            ->where('is_active', true)
-            ->orderByDesc('created_at')
-            ->limit(5)
+            ->limit(6)
             ->get();
 
         // Onboarding state (fresh user = no sub-companies yet)

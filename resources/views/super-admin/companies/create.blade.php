@@ -119,9 +119,9 @@
                     </div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px" id="pkg-grid">
                     <label class="pkg-option {{ !old('package_id') ? 'selected' : '' }}">
-                        <input type="radio" name="package_id" value="" {{ !old('package_id') ? 'checked' : '' }}>
+                        <input type="radio" name="package_id" value="" data-price="0" {{ !old('package_id') ? 'checked' : '' }}>
                         <div class="pkg-option-body">
                             <div style="font-size:13px;font-weight:600;margin-bottom:2px">No Plan</div>
                             <div style="font-size:11.5px;color:var(--text-3)">Assign later</div>
@@ -129,7 +129,7 @@
                     </label>
                     @foreach($packages as $pkg)
                     <label class="pkg-option {{ old('package_id') == $pkg->id ? 'selected' : '' }}" id="pkg-{{ $pkg->id }}">
-                        <input type="radio" name="package_id" value="{{ $pkg->id }}" {{ old('package_id') == $pkg->id ? 'checked' : '' }}>
+                        <input type="radio" name="package_id" value="{{ $pkg->id }}" data-price="{{ $pkg->monthly_price }}" data-annual="{{ $pkg->annual_price ?? 0 }}" {{ old('package_id') == $pkg->id ? 'checked' : '' }}>
                         <div class="pkg-option-body">
                             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
                                 <div style="font-size:13px;font-weight:600">{{ $pkg->name }}</div>
@@ -141,6 +141,31 @@
                         </div>
                     </label>
                     @endforeach
+                </div>
+
+                {{-- Billing cycle (shown only when a paid plan is selected) --}}
+                <div id="billing-cycle-wrap" style="display:none;margin-top:14px;padding:14px;background:var(--bg);border-radius:10px;border:1.5px solid var(--border)">
+                    <div style="font-size:12.5px;font-weight:600;color:var(--text-2);margin-bottom:10px">Billing Cycle</div>
+                    <div style="display:flex;gap:10px">
+                        <label style="flex:1;display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;background:#fff;transition:border-color .13s" id="bc-monthly-label">
+                            <input type="radio" name="billing_cycle" value="monthly" checked style="accent-color:var(--orange)" onchange="bcChanged()">
+                            <div>
+                                <div style="font-size:13px;font-weight:500">Monthly</div>
+                                <div style="font-size:11px;color:var(--text-3)">Billed each month</div>
+                            </div>
+                        </label>
+                        <label style="flex:1;display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;cursor:pointer;background:#fff;transition:border-color .13s" id="bc-annual-label">
+                            <input type="radio" name="billing_cycle" value="annual" style="accent-color:var(--orange)" onchange="bcChanged()">
+                            <div>
+                                <div style="font-size:13px;font-weight:500">Annual <span style="font-size:10.5px;color:var(--green);font-weight:600">Save ~17%</span></div>
+                                <div style="font-size:11px;color:var(--text-3)">Billed once per year</div>
+                            </div>
+                        </label>
+                    </div>
+                    <div style="margin-top:10px;font-size:12px;color:var(--text-3);padding:8px 10px;background:var(--blue3);border-radius:6px">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" width="13" height="13" style="vertical-align:middle;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        After creating the firm, you'll be redirected to Stripe to complete payment.
+                    </div>
                 </div>
             </div>
 
@@ -159,19 +184,19 @@
                 <div class="form-2col">
                     <div class="f-group">
                         <label class="f-label">Full Name <span style="color:var(--red)">*</span></label>
-                        <input name="admin_name" id="admin_name" class="f-inp" placeholder="John Smith" required>
+                        <input name="admin_name" id="admin_name" class="f-inp" placeholder="John Smith" required autocomplete="off">
                         <div class="field-error-msg" id="err-admin_name"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Email Address <span style="color:var(--red)">*</span></label>
-                        <input name="admin_email" id="admin_email" type="email" class="f-inp" placeholder="john@acme.com" required>
+                        <input name="admin_email" id="admin_email" type="email" class="f-inp" placeholder="john@acme.com" required autocomplete="off">
                         <div class="field-error-msg" id="err-admin_email"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Password <span style="color:var(--red)">*</span></label>
                         <div style="position:relative">
                             <input name="admin_password" id="admin_password" type="password" class="f-inp"
-                                   placeholder="Min. 8 characters" required minlength="8" style="padding-right:40px">
+                                   placeholder="Min. 8 characters" required minlength="8" style="padding-right:40px" autocomplete="new-password">
                             <button type="button" onclick="togglePw()" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-3);cursor:pointer;padding:4px">
                                 <svg id="pw-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                             </button>
@@ -181,7 +206,7 @@
                     <div class="f-group">
                         <label class="f-label">Confirm Password <span style="color:var(--red)">*</span></label>
                         <input name="admin_password_confirmation" id="admin_pw_confirm" type="password" class="f-inp"
-                               placeholder="Re-enter password" required minlength="8">
+                               placeholder="Re-enter password" required minlength="8" autocomplete="new-password">
                         <div id="pw-match-msg" style="font-size:11.5px;margin-top:4px;display:none"></div>
                         <div class="field-error-msg" id="err-admin_password_confirmation"></div>
                     </div>
@@ -509,12 +534,26 @@ function autoFillSubdomain(val) {
     updatePreview();
 }
 
+function bcChanged() {
+    // Visual highlight for selected billing cycle label
+    ['monthly','annual'].forEach(function(v) {
+        const lbl = document.getElementById('bc-' + v + '-label');
+        const inp = lbl?.querySelector('input');
+        if (lbl) lbl.style.borderColor = inp?.checked ? 'var(--orange)' : 'var(--border)';
+    });
+}
+
 document.querySelectorAll('.pkg-option input[type=radio]').forEach(r => {
     r.addEventListener('change', function() {
         document.querySelectorAll('.pkg-option').forEach(c => c.classList.remove('selected'));
         this.closest('.pkg-option').classList.add('selected');
         const label = this.closest('.pkg-option').querySelector('[style*="font-weight:600"]');
         document.getElementById('preview-plan').textContent = label ? label.textContent : 'No Plan';
+
+        // Show/hide billing cycle based on whether plan is paid
+        const price = parseFloat(this.dataset.price || 0);
+        const isPaid = this.value && price > 0;
+        document.getElementById('billing-cycle-wrap').style.display = isPaid ? '' : 'none';
     });
 });
 
@@ -661,14 +700,21 @@ document.getElementById('createForm').addEventListener('submit', async function(
     if (pw !== pwc) { showToast('Passwords do not match', 'error'); return; }
 
     const btn = document.getElementById('submit-btn');
-    btn.disabled = true; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="animation:spin 1s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> Creating…';
+    btn.disabled = true;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="animation:spin 1s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> Creating…';
 
     const body = Object.fromEntries(new FormData(this).entries());
     const res  = await apiCall('{{ route("superadmin.companies.store") }}', 'POST', body);
 
     if (res.status === 'success') {
-        showToast('Firm created successfully.');
-        setTimeout(() => window.location = res.redirect, 900);
+        if (res.checkout_url) {
+            // Paid plan selected — redirect to Stripe checkout
+            showToast('Firm created! Redirecting to payment…');
+            setTimeout(() => window.location.href = res.checkout_url, 900);
+        } else {
+            showToast('Firm created successfully!');
+            setTimeout(() => window.location = res.redirect, 900);
+        }
     } else {
         if (res.errors) {
             Object.entries(res.errors).forEach(([field, messages]) => {

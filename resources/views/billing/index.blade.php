@@ -551,9 +551,49 @@ function cancelSubscription() {
         confirmButtonColor: '#ef4444',
         cancelButtonColor: '#6b7280',
         reverseButtons: true,
-    }).then(function(result) {
-        if (result.isConfirmed) {
-            SwalToast.fire({ icon: 'success', title: 'Cancellation request submitted.' });
+    }).then(async function(result) {
+        if (!result.isConfirmed) return;
+
+        Swal.fire({
+            title: 'Canceling…',
+            text: 'Please wait while we process your request.',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading(),
+        });
+
+        try {
+            const resp = await fetch('{{ route("billing.cancel-subscription") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN':     '{{ csrf_token() }}',
+                    'Content-Type':     'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept':           'application/json',
+                },
+            });
+            const res = await resp.json();
+
+            if (res.status === 'success') {
+                await Swal.fire({
+                    icon:             'success',
+                    title:            'Subscription Canceled',
+                    text:             res.message || 'You will retain access until the end of the current billing period.',
+                    confirmButtonText:'OK',
+                });
+                window.location.reload();
+            } else {
+                Swal.fire({
+                    icon:  'error',
+                    title: 'Cancellation Failed',
+                    text:  res.message || 'Something went wrong. Please try again.',
+                });
+            }
+        } catch (e) {
+            Swal.fire({
+                icon:  'error',
+                title: 'Network Error',
+                text:  'Could not reach the server. Please try again.',
+            });
         }
     });
 }

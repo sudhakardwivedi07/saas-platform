@@ -19,17 +19,35 @@ class DashboardController extends AccountBaseController
 
     public function index()
     {
+        // Only count companies that have a client_admin user (real tenant firms)
+        $firmBase = Company::withoutGlobalScopes()
+            ->whereHas('users', fn($q) => $q->whereHas('roles', fn($r) => $r->where('name', 'client_admin')));
+
         $this->stats = [
-            'total_companies'      => Company::withoutGlobalScopes()->count(),
-            'active_companies'     => Company::withoutGlobalScopes()->where('status', 'active')->count(),
-            'total_revenue'        => Payment::withoutGlobalScopes()->where('status', 'complete')->sum('amount'),
-            'monthly_revenue'      => Payment::withoutGlobalScopes()
-                                        ->where('status', 'complete')
-                                        ->whereMonth('paid_at', now()->month)
-                                        ->sum('amount'),
+            // Count only firms that have a client_admin user
+            'total_companies'  => (clone $firmBase)->count(),
+            'active_companies' => (clone $firmBase)->where('status', 'active')->count(),
+
+            // Revenue: sum of all completed payments
+            'total_revenue'   => Payment::withoutGlobalScopes()->where('status', 'complete')->sum('amount'),
+            'monthly_revenue' => Payment::withoutGlobalScopes()
+                                    ->where('status', 'complete')
+                                    ->whereMonth('paid_at', now()->month)
+                                    ->whereYear('paid_at', now()->year)
+                                    ->sum('amount'),
+            'yearly_revenue'  => Payment::withoutGlobalScopes()
+                                    ->where('status', 'complete')
+                                    ->whereYear('paid_at', now()->year)
+                                    ->sum('amount'),
+
             'active_subscriptions' => Subscription::withoutGlobalScopes()
                                         ->whereIn('status', ['active', 'trialing'])->count(),
-            'total_users'          => User::whereNotNull('company_id')->count(),
+
+            // End-clients: users with the 'user' role (not client_admin/super_admin)
+            'total_users' => User::withoutGlobalScopes()
+                                ->whereNotNull('company_id')
+                                ->whereHas('roles', fn($q) => $q->where('name', 'user'))
+                                ->count(),
         ];
 
         $this->recentCompanies = Company::withoutGlobalScopes()

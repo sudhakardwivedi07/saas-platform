@@ -203,7 +203,8 @@ table.dataTable thead th:after { font-size: 10px; }
                     </td>
 
                     {{-- Onboarded On --}}
-                    <td style="padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12.5px;color:var(--text-2)">
+                    <td style="padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12.5px;color:var(--text-2)"
+                        data-sort="{{ $co->created_at ? $co->created_at->timestamp : 0 }}">
                         {{ $co->created_at ? $co->created_at->format('M d, Y') : '—' }}
                     </td>
 
@@ -232,6 +233,12 @@ table.dataTable thead th:after { font-size: 10px; }
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                                     Change Plan
                                 </button>
+                                @if($co->package_id && ($co->package?->monthly_price ?? 0) > 0 && ($co->complete_payments_count ?? 0) == 0)
+                                <button class="dm-item" type="button" onclick="openMakePayment({{ $co->id }}, '{{ addslashes($co->company_name) }}', {{ $co->package_id }})">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                                    Make Payment
+                                </button>
+                                @endif
                                 <div class="dm-div"></div>
                                 <form method="POST" action="{{ route('superadmin.companies.update', $co) }}" style="display:contents"
                                       onsubmit="return confirm('{{ $co->status === 'suspended' ? 'Re-activate' : 'Disable' }} {{ addslashes($co->company_name) }}?')">
@@ -277,20 +284,63 @@ table.dataTable thead th:after { font-size: 10px; }
             <input type="hidden" name="company_name" id="cp-company-name">
             <div class="mf-field">
                 <label class="mf-label">Select Plan</label>
-                <select name="package_id" id="cp-package" class="mf-inp">
+                <select name="package_id" id="cp-package" class="mf-inp" onchange="cpPlanChanged(this)">
                     <option value="">— No Plan —</option>
                     @foreach($packages as $pkg)
-                    <option value="{{ $pkg->id }}" data-price="{{ $pkg->monthly_price }}">
+                    <option value="{{ $pkg->id }}" data-price="{{ $pkg->monthly_price }}" data-annual="{{ $pkg->annual_price ?? 0 }}">
                         {{ $pkg->name }} — ${{ number_format($pkg->monthly_price, 0) }}/mo
                     </option>
                     @endforeach
                 </select>
             </div>
+            <div class="mf-field" id="cp-billing-wrap" style="display:none">
+                <label class="mf-label">Billing Cycle</label>
+                <select id="cp-billing-cycle" class="mf-inp">
+                    <option value="monthly">Monthly</option>
+                    <option value="annual">Annual (save ~17%)</option>
+                </select>
+            </div>
+            <div id="cp-payment-note" style="display:none;font-size:12px;color:var(--text-2);margin-bottom:14px;padding:10px 12px;background:var(--blue3);border-radius:8px;line-height:1.5">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" width="14" height="14" style="vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                This is a paid plan. You will be redirected to the payment gateway to complete setup.
+            </div>
             <div class="mf-foot">
                 <button type="button" onclick="document.getElementById('change-plan-modal').classList.remove('open')" class="btn btn-ghost">Cancel</button>
-                <button type="submit" class="btn btn-primary">Save Plan</button>
+                <button type="submit" id="cp-submit-btn" class="btn btn-primary">Save Plan</button>
             </div>
         </form>
+    </div>
+</div>
+
+{{-- Make Payment Modal --}}
+<div id="make-payment-modal" class="modal-overlay">
+    <div class="modal-box" style="width:420px">
+        <button class="modal-close" onclick="document.getElementById('make-payment-modal').classList.remove('open')">×</button>
+        <div class="modal-title">Make Payment</div>
+        <div id="mp-firm" class="modal-sub"></div>
+        <div style="padding:14px;background:var(--bg);border-radius:8px;margin-bottom:16px">
+            <div style="font-size:11.5px;color:var(--text-3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Current Plan</div>
+            <div id="mp-plan-name" style="font-size:14px;font-weight:600;color:var(--text-1)"></div>
+            <div id="mp-plan-price" style="font-size:13px;color:var(--orange);margin-top:2px;font-weight:500"></div>
+        </div>
+        <div class="mf-field">
+            <label class="mf-label">Billing Cycle</label>
+            <select id="mp-billing-cycle" class="mf-inp">
+                <option value="monthly">Monthly</option>
+                <option value="annual">Annual (save ~17%)</option>
+            </select>
+        </div>
+        <div style="font-size:12px;color:var(--text-2);margin-bottom:16px;padding:10px 12px;background:var(--blue3);border-radius:8px;line-height:1.5">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" width="14" height="14" style="vertical-align:middle;margin-right:5px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            You will be redirected to Stripe to complete the payment securely.
+        </div>
+        <div class="mf-foot">
+            <button type="button" onclick="document.getElementById('make-payment-modal').classList.remove('open')" class="btn btn-ghost">Cancel</button>
+            <button type="button" id="mp-submit-btn" onclick="submitMakePayment()" class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                Proceed to Payment
+            </button>
+        </div>
     </div>
 </div>
 
@@ -317,8 +367,9 @@ $(document).ready(function() {
             emptyTable: 'No firms registered yet',
             zeroRecords: 'No firms match your filters',
         },
+        order: [],   // preserve server-side created_at DESC order
         columnDefs: [
-            { orderable: false, targets: [1, 6, 7, 8, 9] },  // Name&Contact, LastActive, OnboardedBy, OnboardedOn, Actions
+            { orderable: false, targets: [1, 6, 7, 9] },  // Name&Contact, LastActive, OnboardedBy, Actions
         ],
         drawCallback: function() {
             // Re-count visible rows after DataTables paging
@@ -380,13 +431,129 @@ window.addEventListener('scroll', function() {
     });
 }, true);
 
+let _cpCompanyId = null;
+let _mpCompanyId = null;
+let _mpPackageId = null;
+
+function cpPlanChanged(sel) {
+    const opt   = sel.options[sel.selectedIndex];
+    const price = parseFloat(opt?.dataset?.price || 0);
+    const isPaid = sel.value && price > 0;
+    document.getElementById('cp-billing-wrap').style.display  = isPaid ? '' : 'none';
+    document.getElementById('cp-payment-note').style.display  = isPaid ? '' : 'none';
+    const btn = document.getElementById('cp-submit-btn');
+    btn.textContent = isPaid ? 'Proceed to Payment' : 'Save Plan';
+}
+
 function openChangePlan(id, name, currentPlanId) {
+    _cpCompanyId = id;
     document.getElementById('change-plan-form').action = `/superadmin/companies/${id}`;
     document.getElementById('cp-company-name').value = name;
     document.getElementById('change-plan-firm').textContent = `Firm: ${name}`;
     const sel = document.getElementById('cp-package');
     sel.value = currentPlanId || '';
+    cpPlanChanged(sel);
     document.getElementById('change-plan-modal').classList.add('open');
+}
+
+document.getElementById('change-plan-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const sel   = document.getElementById('cp-package');
+    const opt   = sel.options[sel.selectedIndex];
+    const price = parseFloat(opt?.dataset?.price || 0);
+    const isPaid = sel.value && price > 0;
+
+    if (isPaid) {
+        const btn = document.getElementById('cp-submit-btn');
+        btn.disabled = true;
+        btn.textContent = 'Redirecting…';
+
+        try {
+            const resp = await fetch('{{ route("superadmin.companies.checkout", ":id") }}'.replace(':id', _cpCompanyId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    package_id:    sel.value,
+                    billing_cycle: document.getElementById('cp-billing-cycle').value,
+                }),
+            });
+            const res = await resp.json();
+            if (res.status === 'success' && res.checkout_url) {
+                window.location.href = res.checkout_url;
+            } else {
+                showToast(res.message || 'Payment gateway error', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Proceed to Payment';
+            }
+        } catch(ex) {
+            showToast('Network error. Please try again.', 'error');
+            btn.disabled = false;
+            btn.textContent = 'Proceed to Payment';
+        }
+    } else {
+        // Free plan or removing plan — do a regular PATCH
+        this.submit();
+    }
+});
+
+function openMakePayment(id, name, packageId) {
+    _mpCompanyId = id;
+    _mpPackageId = packageId;
+
+    // Resolve plan name & price from the Change Plan select options
+    const sel = document.getElementById('cp-package');
+    let planName = '', planPrice = '';
+    for (const opt of sel.options) {
+        if (String(opt.value) === String(packageId)) {
+            planName  = opt.textContent.split(' — ')[0].trim();
+            planPrice = '$' + parseFloat(opt.dataset.price || 0).toLocaleString() + '/mo';
+            break;
+        }
+    }
+
+    document.getElementById('mp-firm').textContent      = `Firm: ${name}`;
+    document.getElementById('mp-plan-name').textContent = planName  || 'Current Plan';
+    document.getElementById('mp-plan-price').textContent = planPrice || '';
+    document.getElementById('make-payment-modal').classList.add('open');
+}
+
+async function submitMakePayment() {
+    const btn = document.getElementById('mp-submit-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="animation:spin 1s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> Redirecting…';
+
+    try {
+        const resp = await fetch('{{ route("superadmin.companies.checkout", ":id") }}'.replace(':id', _mpCompanyId), {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                package_id:    _mpPackageId,
+                billing_cycle: document.getElementById('mp-billing-cycle').value,
+            }),
+        });
+        const res = await resp.json();
+        if (res.status === 'success' && res.checkout_url) {
+            window.location.href = res.checkout_url;
+        } else {
+            showToast(res.message || 'Payment gateway error', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Proceed to Payment';
+        }
+    } catch(ex) {
+        showToast('Network error. Please try again.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg> Proceed to Payment';
+    }
 }
 </script>
 @endpush

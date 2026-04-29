@@ -114,10 +114,11 @@ Route::middleware(['auth'])->group(function () {
 
     // Billing / Subscriptions
     Route::prefix('billing')->name('billing.')->group(function () {
-        Route::get('/',              [SubscriptionController::class, 'index'])->name('index');
-        Route::post('/checkout',     [SubscriptionController::class, 'checkout'])->name('checkout');
-        Route::get('/success',       [SubscriptionController::class, 'success'])->name('success');
-        Route::get('/cancel',        [SubscriptionController::class, 'cancel'])->name('cancel');
+        Route::get('/',                      [SubscriptionController::class, 'index'])->name('index');
+        Route::post('/checkout',             [SubscriptionController::class, 'checkout'])->name('checkout');
+        Route::get('/success',               [SubscriptionController::class, 'success'])->name('success');
+        Route::get('/cancel',                [SubscriptionController::class, 'cancel'])->name('cancel');
+        Route::post('/cancel-subscription',  [SubscriptionController::class, 'cancelSubscription'])->name('cancel-subscription');
     });
 
     // Settings — unified tabbed page + individual sub-routes

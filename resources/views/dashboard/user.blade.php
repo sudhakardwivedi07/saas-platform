@@ -167,6 +167,8 @@
             $features  = is_array($plan->features) ? array_filter($plan->features) : [];
             $isFree    = (bool)($plan->is_free ?? false);
             $price     = $isFree ? null : '$' . number_format((float)($plan->monthly_price ?? 0), 2);
+            $insightsLimit  = $plan->insights_per_month ?? $plan->max_insights_per_month ?? null;
+            $companiesLimit = $plan->max_companies ?? $plan->max_users ?? null;
         @endphp
         <div class="plan-card">
             <div class="plan-card-title">
@@ -204,11 +206,22 @@
             @elseif($price)
                 <div class="plan-price-label" style="margin-top:24px">
                     {{ $price }}/MONTH
-                    @if($plan->max_insights_per_month ?? null)
-                        &bull; INCLUDES {{ $plan->max_insights_per_month }} ANALYSIS RUNS
+                    @if($insightsLimit)
+                        &bull; INCLUDES {{ $insightsLimit }} ANALYSIS RUNS
                     @endif
                 </div>
             @endif
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 16px;">
+                <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--bg)">
+                    <div style="font-size:10.5px;font-weight:700;letter-spacing:.05em;color:var(--text-3);text-transform:uppercase">Insights / Month</div>
+                    <div style="font-size:15px;font-weight:700;color:var(--text-1);margin-top:2px">{{ $insightsLimit ?: '—' }}</div>
+                </div>
+                <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--bg)">
+                    <div style="font-size:10.5px;font-weight:700;letter-spacing:.05em;color:var(--text-3);text-transform:uppercase">Max Companies</div>
+                    <div style="font-size:15px;font-weight:700;color:var(--text-1);margin-top:2px">{{ $companiesLimit ?: 'Unlimited' }}</div>
+                </div>
+            </div>
 
             @if($isCurrent)
                 @if(!empty($isQuickbooksConnected))

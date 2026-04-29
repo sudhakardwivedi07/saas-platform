@@ -281,8 +281,8 @@
                         <th>Plan Name</th>
                         <th>Monthly Price</th>
                         <th>Annual Price</th>
-                        <th>Max Users</th>
-                        <th>Storage</th>
+                        <th>Insights / Month</th>
+                        <th>Max Companies</th>
                         <th>Status</th>
                         <th style="width:100px">Actions</th>
                     </tr>
@@ -314,10 +314,10 @@
                             @endif
                         </td>
                         <td style="font-size:12.5px;color:var(--text-2)">
-                            {{ $plan->max_users ? $plan->max_users . ' users' : '∞' }}
+                            {{ $plan->insights_per_month ?? '—' }}
                         </td>
                         <td style="font-size:12.5px;color:var(--text-2)">
-                            {{ $plan->max_storage_gb ? $plan->max_storage_gb . ' GB' : '∞' }}
+                            {{ $plan->max_companies ? $plan->max_companies . ' companies' : '∞' }}
                         </td>
                         <td data-search="{{ $planStatus }}">
                             @if($planStatus === 'active')

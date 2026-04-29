@@ -85,28 +85,22 @@
 
                 {{-- Details --}}
                 <div class="text-sm text-gray-600 space-y-1">
-                    @if($plan->max_users)
+                    @if($plan->insights_per_month)
                     <div class="flex items-center gap-2">
-                        <span class="material-icons text-sm text-gray-400">people</span>
-                        Up to {{ $plan->max_users }} users
+                        <span class="material-icons text-sm text-gray-400">insights</span>
+                        {{ $plan->insights_per_month }} insights / month
                     </div>
                     @endif
-                    @if($plan->max_storage_gb)
+                    @if($plan->max_companies)
                     <div class="flex items-center gap-2">
-                        <span class="material-icons text-sm text-gray-400">storage</span>
-                        {{ $plan->max_storage_gb }}GB storage
+                        <span class="material-icons text-sm text-gray-400">business</span>
+                        Up to {{ $plan->max_companies }} companies
                     </div>
                     @endif
                     @if($plan->is_trial_allowed && $plan->trial_days)
                     <div class="flex items-center gap-2 text-green-600">
                         <span class="material-icons text-sm">verified</span>
                         {{ $plan->trial_days }}-day free trial
-                    </div>
-                    @endif
-                    @if($plan->stripe_monthly_price_id)
-                    <div class="flex items-center gap-2 text-indigo-600">
-                        <span class="material-icons text-sm">link</span>
-                        Stripe Price ID linked
                     </div>
                     @endif
                 </div>

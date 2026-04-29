@@ -118,6 +118,8 @@
 <form method="POST" action="{{ route('my-companies.store') }}" id="create-company-form">
 @csrf
 
+@php $isClientUserFlow = auth()->user()->hasRole('user'); @endphp
+
 <div class="create-co-layout">
 
     {{-- ── Left column: form ──────────────────────────────── --}}
@@ -190,6 +192,7 @@
             </div>
         </div>
 
+        @if(!$isClientUserFlow)
         {{-- Section 2: Admin Account --}}
         <div class="acc-card" style="margin-bottom:16px">
             <div style="display:flex;align-items:center;margin-bottom:6px">
@@ -234,7 +237,9 @@
                 </div>
             </div>
         </div>
+        @endif
 
+        @if(!$isClientUserFlow)
         {{-- Section 3: Choose a Plan --}}
         <div class="acc-card">
             <div style="display:flex;align-items:center;margin-bottom:6px">
@@ -284,11 +289,11 @@
                                     {{ $pkg->trial_days }}-day free trial included
                                 </div>
                                 @endif
-                                @if($pkg->max_users || $pkg->max_storage_gb)
+                                @if($pkg->insights_per_month || $pkg->max_companies)
                                 <div style="font-size:11px;color:var(--text-3);margin-top:3px">
-                                    @if($pkg->max_users) Up to {{ $pkg->max_users }} users @endif
-                                    @if($pkg->max_users && $pkg->max_storage_gb) · @endif
-                                    @if($pkg->max_storage_gb) {{ $pkg->max_storage_gb }}GB storage @endif
+                                    @if($pkg->insights_per_month) {{ $pkg->insights_per_month }} insights/month @endif
+                                    @if($pkg->insights_per_month && $pkg->max_companies) · @endif
+                                    @if($pkg->max_companies) Up to {{ $pkg->max_companies }} companies @endif
                                 </div>
                                 @endif
                             </div>
@@ -329,6 +334,15 @@
                 </button>
             </div>
         </div>
+        @else
+        <div style="margin-top:16px">
+            <button type="submit" id="submit-btn" class="btn btn-primary"
+                    style="width:100%;justify-content:center;padding:11px 20px;font-size:14px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                Create Company
+            </button>
+        </div>
+        @endif
 
     </div>
 

@@ -23,10 +23,8 @@ class ClientPackage extends BaseModel
         'description',
         'monthly_price',
         'annual_price',
-        'stripe_monthly_price_id',
-        'stripe_annual_price_id',
-        'max_users',
-        'max_storage_gb',
+        'insights_per_month',
+        'max_companies',
         'features',
         'is_active',
         'is_trial_allowed',
@@ -44,6 +42,8 @@ class ClientPackage extends BaseModel
         'is_recommended'   => 'boolean',
         'monthly_price'    => 'decimal:2',
         'annual_price'     => 'decimal:2',
+        'insights_per_month' => 'integer',
+        'max_companies'      => 'integer',
     ];
 
     // ── Relationships ─────────────────────────────────────────────────────────

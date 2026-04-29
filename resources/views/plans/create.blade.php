@@ -21,7 +21,7 @@
                 <div style="font-size:12.5px;color:var(--text-3);margin-top:2px">Configure pricing, limits, and features</div>
             </div>
             <div style="display:flex;gap:8px">
-                <a href="{{ route('plans.index') }}" class="btn btn-ghost btn-sm">Cancel</a>
+                <a href="{{ route('settings.index') }}#tab-plans" class="btn btn-ghost btn-sm">Cancel</a>
                 <button type="submit" class="btn btn-primary btn-sm">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                     Create Plan
@@ -79,12 +79,12 @@
 
         <div class="form-2col">
             <div class="f-group">
-                <label class="f-label">Max Users <span style="font-size:11px;color:var(--text-3);font-weight:400">(blank = unlimited)</span></label>
-                <input type="number" name="max_users" min="1" class="f-inp" value="{{ old('max_users') }}" placeholder="e.g. 10">
+                <label class="f-label">Insights per Month <span style="color:var(--red)">*</span></label>
+                <input type="number" name="insights_per_month" min="1" class="f-inp" value="{{ old('insights_per_month', 50) }}" placeholder="e.g. 50" required>
             </div>
             <div class="f-group">
-                <label class="f-label">Max Storage (GB) <span style="font-size:11px;color:var(--text-3);font-weight:400">(blank = unlimited)</span></label>
-                <input type="number" name="max_storage_gb" min="1" class="f-inp" value="{{ old('max_storage_gb') }}" placeholder="e.g. 50">
+                <label class="f-label">Max Companies <span style="font-size:11px;color:var(--text-3);font-weight:400">(blank = unlimited)</span></label>
+                <input type="number" name="max_companies" min="1" class="f-inp" value="{{ old('max_companies') }}" placeholder="e.g. 10">
             </div>
         </div>
 
@@ -155,25 +155,6 @@
             <div style="font-size:12px;color:var(--text-3);margin-top:5px">Each line will be shown as a bullet point on the pricing page.</div>
         </div>
 
-        {{-- ── Section: Stripe ──────────────────────────────── --}}
-        <div style="border-top:1px solid var(--border);margin:20px 0 18px"></div>
-        <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)">Stripe Price IDs</div>
-            <span class="badge b-gray" style="font-size:10.5px">optional</span>
-        </div>
-        <div style="font-size:12px;color:var(--text-3);margin-bottom:14px">Leave blank to use the inline prices set above. Only needed for Stripe-managed plans.</div>
-
-        <div class="form-2col">
-            <div class="f-group">
-                <label class="f-label">Monthly Price ID</label>
-                <input type="text" name="stripe_monthly_price_id" class="f-inp" style="font-family:monospace;font-size:12.5px" value="{{ old('stripe_monthly_price_id') }}" placeholder="price_xxxxxxxx">
-            </div>
-            <div class="f-group">
-                <label class="f-label">Annual Price ID</label>
-                <input type="text" name="stripe_annual_price_id" class="f-inp" style="font-family:monospace;font-size:12.5px" value="{{ old('stripe_annual_price_id') }}" placeholder="price_xxxxxxxx">
-            </div>
-        </div>
-
         {{-- ── Section: Sort ────────────────────────────────── --}}
         <div style="border-top:1px solid var(--border);margin:20px 0 18px"></div>
 
@@ -189,7 +170,7 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                 Create Plan
             </button>
-            <a href="{{ route('plans.index') }}" class="btn btn-ghost">Cancel</a>
+            <a href="{{ route('settings.index') }}#tab-plans" class="btn btn-ghost">Cancel</a>
         </div>
 
     </div>

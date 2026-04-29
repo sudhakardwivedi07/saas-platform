@@ -10,14 +10,32 @@
         <p>Create and manage multiple companies from one account</p>
     </div>
     <div class="ph-actions">
-        @can('add_company')
+        @if(auth()->user()->can('add_company') || auth()->user()->hasRole('user'))
+        @if($canAddCompany)
         <a href="{{ route('my-companies.create') }}" class="btn btn-primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add New Company
         </a>
-        @endcan
+        @else
+        <button class="btn btn-primary" disabled title="{{ $hasActivePlan ? 'Company limit reached (' . $maxCompanies . ' max)' : 'No plan assigned to this account' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add New Company
+        </button>
+        @endif
+        @endif
     </div>
 </div>
+
+@if(!$canAddCompany)
+<div class="info-banner" style="margin-bottom: 1rem;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span class="info-banner-txt">
+        {{ $hasActivePlan
+            ? 'You have reached your company limit (' . $currentCompaniesCount . '/' . $maxCompanies . '). Upgrade your plan to add more companies.'
+            : 'No plan is assigned to this account. Please select a plan before adding companies.' }}
+    </span>
+</div>
+@endif
 
 
 <div class="tc">

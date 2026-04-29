@@ -12,6 +12,44 @@ use Illuminate\Support\Str;
 
 class ClientController extends AccountBaseController
 {
+    private function enforceMaxCompaniesLimit(int $ownerCompanyId): void
+    {
+        $ownerCompany = Company::withoutGlobalScopes()->find($ownerCompanyId);
+        $plan = $ownerCompany?->activePlan();
+        $maxCompanies = $plan?->max_companies;
+
+        if (!$maxCompanies || (int) $maxCompanies <= 0) {
+            return;
+        }
+
+        $createdCompaniesCount = Company::withoutGlobalScopes()
+            ->where('created_by', $ownerCompanyId)
+            ->count();
+
+        abort_if(
+            $createdCompaniesCount >= (int) $maxCompanies,
+            422,
+            "Company limit reached for your plan ({$maxCompanies} max companies)."
+        );
+    }
+
+    private function ensureInsightsQuotaAvailable(Company $company): void
+    {
+        $plan = $company->activePlan();
+        $limit = (int) ($plan?->insights_per_month ?? 0);
+
+        if ($limit <= 0) {
+            return;
+        }
+
+        $used = (int) ($company->insights_used ?? 0);
+        abort_if(
+            $used >= $limit,
+            422,
+            "Monthly insights limit reached ({$limit}/{$limit}). Upgrade your plan to continue."
+        );
+    }
+
     private function resolveFallbackPackageId(): ?int
     {
         return Package::query()
@@ -115,6 +153,7 @@ class ClientController extends AccountBaseController
         ]);
 
         $parentCompanyId = company()->id;
+        $this->enforceMaxCompaniesLimit($parentCompanyId);
 
         $resolvedClientPackageId = $this->resolveClientPackageId(
             $parentCompanyId,
@@ -163,6 +202,16 @@ class ClientController extends AccountBaseController
         $errors  = [];
 
         while (($row = fgetcsv($handle)) !== false) {
+            try {
+                $this->enforceMaxCompaniesLimit($parentCompanyId);
+            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+                if ($e->getStatusCode() === 422) {
+                    $errors[] = $e->getMessage();
+                    break;
+                }
+                throw $e;
+            }
+
             if (count($row) < 2) continue;
 
             [$clientName, $email] = array_map('trim', $row);
@@ -213,7 +262,7 @@ class ClientController extends AccountBaseController
 
         return response()->json([
             'status'  => 'success',
-            'message' => "$created client(s) imported" . ($skipped ? ", $skipped skipped." : '.'),
+            'message' => "$created client(s) imported" . ($skipped ? ", $skipped skipped." : '.') . (!empty($errors) ? ' ' . $errors[0] : ''),
         ]);
     }
 
@@ -251,6 +300,7 @@ class ClientController extends AccountBaseController
     public function insights($id)
     {
         $this->client = User::findOrFail($id);
+        $this->ensureInsightsQuotaAvailable($this->client->company);
         $this->pageTitle = 'Insights';
         return view('clients.insights', $this->data);
     }
@@ -258,6 +308,7 @@ class ClientController extends AccountBaseController
     public function insightDetail($clientId, $insightId)
     {
         $this->client = User::findOrFail($clientId);
+        $this->ensureInsightsQuotaAvailable($this->client->company);
         $this->pageTitle = 'Insight Detail';
         return view('clients.insight-detail', $this->data);
     }

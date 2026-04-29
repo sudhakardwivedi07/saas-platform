@@ -85,12 +85,12 @@
 
         <div class="form-2col">
             <div class="f-group">
-                <label class="f-label">Max Users <span style="font-size:11px;color:var(--text-3);font-weight:400">(blank = unlimited)</span></label>
-                <input type="number" name="max_users" min="1" class="f-inp" value="{{ old('max_users', $plan->max_users) }}" placeholder="e.g. 10">
+                <label class="f-label">Insights per Month <span style="color:var(--red)">*</span></label>
+                <input type="number" name="insights_per_month" min="1" class="f-inp" value="{{ old('insights_per_month', $plan->insights_per_month) }}" placeholder="e.g. 50" required>
             </div>
             <div class="f-group">
-                <label class="f-label">Max Storage (GB) <span style="font-size:11px;color:var(--text-3);font-weight:400">(blank = unlimited)</span></label>
-                <input type="number" name="max_storage_gb" min="1" class="f-inp" value="{{ old('max_storage_gb', $plan->max_storage_gb) }}" placeholder="e.g. 50">
+                <label class="f-label">Max Companies <span style="font-size:11px;color:var(--text-3);font-weight:400">(blank = unlimited)</span></label>
+                <input type="number" name="max_companies" min="1" class="f-inp" value="{{ old('max_companies', $plan->max_companies) }}" placeholder="e.g. 10">
             </div>
         </div>
 
@@ -156,25 +156,6 @@
             @php $featuresText = old('features', $plan->features ? implode("\n", $plan->features) : ''); @endphp
             <textarea name="features" class="f-textarea" rows="5" style="font-family:monospace;font-size:13px" placeholder="Up to 10 users&#10;50GB storage&#10;Priority support">{{ $featuresText }}</textarea>
             <div style="font-size:12px;color:var(--text-3);margin-top:5px">Each line will be shown as a bullet point on the pricing page.</div>
-        </div>
-
-        {{-- ── Section: Stripe ──────────────────────────────── --}}
-        <div style="border-top:1px solid var(--border);margin:20px 0 18px"></div>
-        <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
-            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)">Stripe Price IDs</div>
-            <span class="badge b-gray" style="font-size:10.5px">optional</span>
-        </div>
-        <div style="font-size:12px;color:var(--text-3);margin-bottom:14px">Leave blank to use the inline prices set above.</div>
-
-        <div class="form-2col">
-            <div class="f-group">
-                <label class="f-label">Monthly Price ID</label>
-                <input type="text" name="stripe_monthly_price_id" class="f-inp" style="font-family:monospace;font-size:12.5px" value="{{ old('stripe_monthly_price_id', $plan->stripe_monthly_price_id) }}" placeholder="price_xxxxxxxx">
-            </div>
-            <div class="f-group">
-                <label class="f-label">Annual Price ID</label>
-                <input type="text" name="stripe_annual_price_id" class="f-inp" style="font-family:monospace;font-size:12.5px" value="{{ old('stripe_annual_price_id', $plan->stripe_annual_price_id) }}" placeholder="price_xxxxxxxx">
-            </div>
         </div>
 
         {{-- ── Section: Sort ────────────────────────────────── --}}

@@ -67,8 +67,14 @@ class LogClientAdminActivity
             return false;
         }
 
-        if ($routeName === 'logout') {
-            // Logout is already logged explicitly in AuthController.
+        // Do not audit authentication flows (login submit fires after session starts).
+        $skipAuthRoutes = [
+            'login', 'login.submit', 'logout',
+            'register', 'register.submit',
+            'password.request', 'password.email', 'password.reset', 'password.update',
+            '2fa.challenge', '2fa.verify',
+        ];
+        if (in_array($routeName, $skipAuthRoutes, true)) {
             return false;
         }
 

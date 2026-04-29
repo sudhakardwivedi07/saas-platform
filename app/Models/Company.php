@@ -146,7 +146,12 @@ class Company extends BaseModel
             if ($this->custom_domain) {
                 return 'https://' . $this->custom_domain . '/login';
             }
-            return tenant_url($this->subdomain, 'login');
+
+            if (!empty($this->subdomain)) {
+                return tenant_url($this->subdomain, 'login');
+            }
+
+            return null;
         });
     }
 

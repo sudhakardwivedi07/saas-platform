@@ -6,6 +6,7 @@ use App\Models\ClientPackage;
 use App\Models\Company;
 use App\Models\CompanyBranding;
 use App\Models\GlobalSetting;
+use App\Models\SuperAdmin\Package;
 use App\Models\SuperAdmin\Subscription;
 use App\Models\User;
 use App\Services\StripeService;
@@ -17,6 +18,51 @@ use Spatie\Permission\Models\Role;
 
 class ClientCompanyController extends AccountBaseController
 {
+    private function resolveFallbackPackageId(): ?int
+    {
+        return Package::query()
+            ->where('is_active', true)
+            ->orderBy('sort')
+            ->value('id');
+    }
+
+    private function canManageCompanies(): bool
+    {
+        $user = auth()->user();
+        return $user->can('manage_company') || $user->hasRole('user');
+    }
+
+    private function canAddCompanies(): bool
+    {
+        $user = auth()->user();
+        return $user->can('add_company') || $user->hasRole('user');
+    }
+
+    private function enforceMaxCompaniesLimit(int $ownerCompanyId): void
+    {
+        $ownerCompany = Company::withoutGlobalScopes()->find($ownerCompanyId);
+        $plan = $ownerCompany?->activePlan();
+        $maxCompanies = $plan?->max_companies;
+
+        if (!$plan) {
+            abort(422, 'No plan is assigned to your account. Please select a plan before adding companies.');
+        }
+
+        if (!$maxCompanies || (int) $maxCompanies <= 0) {
+            return;
+        }
+
+        $createdCompaniesCount = Company::withoutGlobalScopes()
+            ->whereIn('created_by', array_filter([$ownerCompanyId, auth()->id()]))
+            ->count();
+
+        abort_if(
+            $createdCompaniesCount >= (int) $maxCompanies,
+            422,
+            "Company limit reached for your plan ({$maxCompanies} max companies)."
+        );
+    }
+
     public function __construct()
     {
         parent::__construct();
@@ -28,9 +74,10 @@ class ClientCompanyController extends AccountBaseController
 
     public function index()
     {
-        abort_unless(auth()->user()->can('manage_company'), 403, 'You do not have permission to manage companies.');
+        abort_unless($this->canManageCompanies(), 403, 'You do not have permission to manage companies.');
 
         $authUser = auth()->user();
+        $companyId = $authUser->company_id;
 
         // Companies the user created (via created_by) OR linked via user_companies
         $ownedCompanies = Company::withoutGlobalScopes()
@@ -54,6 +101,19 @@ class ClientCompanyController extends AccountBaseController
 
         $this->companies = $companies;
 
+        // Check if user can add more companies based on their plan
+        $ownerCompany = Company::withoutGlobalScopes()->find($companyId);
+        $plan = $ownerCompany?->activePlan();
+        $maxCompanies = $plan?->max_companies ?? 0;
+        $currentCompaniesCount = $companies->count();
+        $hasActivePlan = (bool) $plan;
+        $canAddCompany = $hasActivePlan && ($maxCompanies == 0 || $currentCompaniesCount < $maxCompanies);
+
+        $this->canAddCompany = $canAddCompany;
+        $this->maxCompanies = $maxCompanies;
+        $this->currentCompaniesCount = $currentCompaniesCount;
+        $this->hasActivePlan = $hasActivePlan;
+
         return view('companies.index', $this->data);
     }
 
@@ -61,7 +121,7 @@ class ClientCompanyController extends AccountBaseController
 
     public function create()
     {
-        abort_unless(auth()->user()->can('add_company'), 403, 'You do not have permission to add companies.');
+        abort_unless($this->canAddCompanies(), 403, 'You do not have permission to add companies.');
 
         $companyId = auth()->user()->company_id;
 
@@ -78,30 +138,47 @@ class ClientCompanyController extends AccountBaseController
 
     public function store(Request $request)
     {
-        abort_unless(auth()->user()->can('add_company'), 403);
+        abort_unless($this->canAddCompanies(), 403);
 
         $companyId = auth()->user()->company_id;
+        $this->enforceMaxCompaniesLimit($companyId);
+        $authUser = auth()->user();
+        $isClientUserFlow = $authUser->hasRole('user');
 
-        $request->validate([
+        $rules = [
             'company_name'    => 'required|string|max:255',
             'subdomain'       => 'required|string|max:63|alpha_dash|unique:companies,subdomain',
             'company_email'   => 'required|email|max:255',
-            'admin_name'      => 'required|string|max:255',
-            'admin_email'     => 'required|email|max:255|unique:users,email',
-            'admin_password'  => 'required|string|min:8|confirmed',
             'package_id'      => 'nullable|exists:client_packages,id',
             'industry_type'   => 'nullable|string|max:100',
             'entity_type'     => 'nullable|string|max:100',
             'state'           => 'nullable|string|max:100',
-        ]);
+        ];
+
+        if (!$isClientUserFlow) {
+            $rules['admin_name'] = 'required|string|max:255';
+            $rules['admin_email'] = 'required|email|max:255|unique:users,email';
+            $rules['admin_password'] = 'required|string|min:8|confirmed';
+        }
+
+        $request->validate($rules);
 
         $setting  = global_setting();
-        $authUser = auth()->user();
 
-        // Resolve the chosen client plan (scoped to this admin's company)
-        $package = $request->package_id
-            ? ClientPackage::forCompany($companyId)->find($request->package_id)
-            : ClientPackage::forCompany($companyId)->active()->orderBy('sort')->first();
+        // Resolve plan:
+        // - user flow: always use the client's currently assigned plan
+        // - admin/manager flow: use selected plan or default first active plan
+        $package = $isClientUserFlow
+            ? $authUser->company?->clientPackage
+            : ($request->package_id
+                ? ClientPackage::forCompany($companyId)->find($request->package_id)
+                : ClientPackage::forCompany($companyId)->active()->orderBy('sort')->first());
+
+        if ($isClientUserFlow && !$package) {
+            return back()->withErrors([
+                'package_id' => 'No plan is assigned to your account. Please contact your administrator.',
+            ])->withInput();
+        }
  
         // Determine if Stripe payment is required
         $stripeReady     = $this->stripeIsConfigured();
@@ -141,7 +218,7 @@ class ClientCompanyController extends AccountBaseController
         if ($package && !$requiresPayment) {
             Subscription::create([
                 'company_id'           => $company->id,
-                'package_id'           => null,
+                'package_id'           => $this->resolveFallbackPackageId(),
                 'client_package_id'    => $package->id,
                 'status'               => 'trialing',
                 'billing_cycle'        => 'monthly',
@@ -151,18 +228,21 @@ class ClientCompanyController extends AccountBaseController
             ]);
         }
 
-        // Create the new company's admin user
-        $role    = Role::firstOrCreate(['name' => 'client_admin', 'guard_name' => 'web']);
-        $newUser = User::create([
-            'company_id'        => $company->id,
-            'name'              => $request->admin_name,
-            'email'             => $request->admin_email,
-            'password'          => Hash::make($request->admin_password),
-            'status'            => $requiresPayment ? 'inactive' : 'active',
-            'admin_approval'    => true,
-            'email_verified_at' => ($setting?->email_verification || $requiresPayment) ? null : now(),
-        ]);
-        $newUser->assignRole($role);
+        $newUser = null;
+        if (!$isClientUserFlow) {
+            // Create the new company's admin user
+            $role    = Role::firstOrCreate(['name' => 'client_admin', 'guard_name' => 'web']);
+            $newUser = User::create([
+                'company_id'        => $company->id,
+                'name'              => $request->admin_name,
+                'email'             => $request->admin_email,
+                'password'          => Hash::make($request->admin_password),
+                'status'            => $requiresPayment ? 'inactive' : 'active',
+                'admin_approval'    => true,
+                'email_verified_at' => ($setting?->email_verification || $requiresPayment) ? null : now(),
+            ]);
+            $newUser->assignRole($role);
+        }
 
         // Link the CREATING admin to the new company via user_companies
         $authUser->managedCompanies()->syncWithoutDetaching([
@@ -184,7 +264,7 @@ class ClientCompanyController extends AccountBaseController
 
                 session([
                     'pending_company_id'      => $company->id,
-                    'pending_company_user_id' => $newUser->id,
+                    'pending_company_user_id' => $newUser?->id,
                 ]);
 
                 Log::info('ClientAdmin company: redirecting to Stripe', [
@@ -317,7 +397,7 @@ class ClientCompanyController extends AccountBaseController
         if ($package && !Subscription::where('company_id', $company->id)->exists()) {
             Subscription::create([
                 'company_id'           => $company->id,
-                'package_id'           => null,
+                'package_id'           => $this->resolveFallbackPackageId(),
                 'client_package_id'    => $package->id,
                 'status'               => 'trialing',
                 'billing_cycle'        => 'monthly',
@@ -335,6 +415,7 @@ class ClientCompanyController extends AccountBaseController
         abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
 
         $companyId = company()?->id ?? auth()->user()->company_id;
+        $this->enforceMaxCompaniesLimit($companyId);
 
         $data = $request->validate([
             'company_name'  => 'required|string|max:255',

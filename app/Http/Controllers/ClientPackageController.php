@@ -50,16 +50,14 @@ class ClientPackageController extends AccountBaseController
             'description'      => 'nullable|string|max:1000',
             'monthly_price'    => 'required|numeric|min:0',
             'annual_price'     => 'nullable|numeric|min:0',
-            'max_users'        => 'nullable|integer|min:1',
-            'max_storage_gb'   => 'nullable|integer|min:1',
+            'insights_per_month' => 'required|integer|min:1',
+            'max_companies'    => 'nullable|integer|min:1',
             'is_free'          => 'boolean',
             'is_recommended'   => 'boolean',
             'is_trial_allowed' => 'boolean',
             'trial_days'       => 'nullable|integer|min:1|max:365',
             'is_active'        => 'boolean',
             'sort'             => 'nullable|integer|min:0',
-            'stripe_monthly_price_id' => 'nullable|string|max:255',
-            'stripe_annual_price_id'  => 'nullable|string|max:255',
             'features'         => 'nullable|string',
         ]);
 
@@ -78,8 +76,8 @@ class ClientPackageController extends AccountBaseController
             'description'             => $data['description'] ?? null,
             'monthly_price'           => $data['monthly_price'],
             'annual_price'            => $data['annual_price'] ?? null,
-            'max_users'               => $data['max_users'] ?? null,
-            'max_storage_gb'          => $data['max_storage_gb'] ?? null,
+            'insights_per_month'      => $data['insights_per_month'],
+            'max_companies'           => $data['max_companies'] ?? null,
             'features'                => $features,
             'is_free'                 => (bool) ($data['is_free'] ?? false),
             'is_recommended'          => (bool) ($data['is_recommended'] ?? false),
@@ -87,8 +85,6 @@ class ClientPackageController extends AccountBaseController
             'trial_days'              => $data['trial_days'] ?? 0,
             'is_active'               => (bool) ($data['is_active'] ?? true),
             'sort'                    => $data['sort'] ?? 0,
-            'stripe_monthly_price_id' => $data['stripe_monthly_price_id'] ?? null,
-            'stripe_annual_price_id'  => $data['stripe_annual_price_id'] ?? null,
         ]);
 
         return redirect()->to(route('settings.index') . '#plans')
@@ -120,16 +116,14 @@ class ClientPackageController extends AccountBaseController
             'description'      => 'nullable|string|max:1000',
             'monthly_price'    => 'required|numeric|min:0',
             'annual_price'     => 'nullable|numeric|min:0',
-            'max_users'        => 'nullable|integer|min:1',
-            'max_storage_gb'   => 'nullable|integer|min:1',
+            'insights_per_month' => 'required|integer|min:1',
+            'max_companies'    => 'nullable|integer|min:1',
             'is_free'          => 'boolean',
             'is_recommended'   => 'boolean',
             'is_trial_allowed' => 'boolean',
             'trial_days'       => 'nullable|integer|min:1|max:365',
             'is_active'        => 'boolean',
             'sort'             => 'nullable|integer|min:0',
-            'stripe_monthly_price_id' => 'nullable|string|max:255',
-            'stripe_annual_price_id'  => 'nullable|string|max:255',
             'features'         => 'nullable|string',
         ]);
 
@@ -145,8 +139,8 @@ class ClientPackageController extends AccountBaseController
             'description'             => $data['description'] ?? null,
             'monthly_price'           => $data['monthly_price'],
             'annual_price'            => $data['annual_price'] ?? null,
-            'max_users'               => $data['max_users'] ?? null,
-            'max_storage_gb'          => $data['max_storage_gb'] ?? null,
+            'insights_per_month'      => $data['insights_per_month'],
+            'max_companies'           => $data['max_companies'] ?? null,
             'features'                => $features,
             'is_free'                 => (bool) ($data['is_free'] ?? false),
             'is_recommended'          => (bool) ($data['is_recommended'] ?? false),
@@ -154,8 +148,6 @@ class ClientPackageController extends AccountBaseController
             'trial_days'              => $data['trial_days'] ?? 0,
             'is_active'               => (bool) ($data['is_active'] ?? true),
             'sort'                    => $data['sort'] ?? 0,
-            'stripe_monthly_price_id' => $data['stripe_monthly_price_id'] ?? null,
-            'stripe_annual_price_id'  => $data['stripe_annual_price_id'] ?? null,
         ]);
 
         return redirect()->to(route('settings.index') . '#plans')

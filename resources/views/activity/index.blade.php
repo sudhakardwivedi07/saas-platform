@@ -25,6 +25,10 @@
 {{-- Filters --}}
 <div class="card" style="margin-bottom:1.25rem;">
     <div class="tc-filters" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;">
+        <div class="srch-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="srch-inp" id="activitySearch" placeholder="Search activity..." autocomplete="off">
+        </div>
 
         <div style="display:flex;flex-direction:column;gap:4px;">
             <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">From</label>
@@ -42,13 +46,11 @@
             <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">Event Type</label>
             <select class="sel" id="filterEventType" style="min-width:190px;">
                 <option value="">All Events</option>
-                <option value="login" {{ request('event_type') === 'login' ? 'selected' : '' }}>Login</option>
-                <option value="logout" {{ request('event_type') === 'logout' ? 'selected' : '' }}>Logout</option>
-                <option value="user_invited" {{ request('event_type') === 'user_invited' ? 'selected' : '' }}>User Invited</option>
-                <option value="user_removed" {{ request('event_type') === 'user_removed' ? 'selected' : '' }}>User Removed</option>
-                <option value="settings_updated" {{ request('event_type') === 'settings_updated' ? 'selected' : '' }}>Settings Updated</option>
-                <option value="ticket_created" {{ request('event_type') === 'ticket_created' ? 'selected' : '' }}>Ticket Created</option>
-                <option value="company_created" {{ request('event_type') === 'company_created' ? 'selected' : '' }}>Company Created</option>
+                @foreach(($eventTypes ?? collect()) as $eventType)
+                    <option value="{{ $eventType }}" {{ request('event_type') === $eventType ? 'selected' : '' }}>
+                        {{ ucwords(str_replace(['_', '-'], ' ', $eventType)) }}
+                    </option>
+                @endforeach
             </select>
         </div>
 
@@ -64,6 +66,7 @@
             <div class="card-title">Recent Activity</div>
             <div class="card-sub">Showing the latest events across your account.</div>
         </div>
+        <span class="badge b-gray" id="activity-count-badge">{{ $activities->count() }} event{{ $activities->count() !== 1 ? 's' : '' }}</span>
     </div>
 
     @php $activities = $activities ?? collect(); @endphp
@@ -82,9 +85,9 @@
         </div>
     @else
         <div class="tc">
-            <table>
+            <table id="activity-table" style="width:100%;border-collapse:collapse">
                 <thead>
-                    <tr class="tc-head">
+                    <tr>
                         <th>Event</th>
                         <th>User</th>
                         <th>IP Address</th>
@@ -97,38 +100,38 @@
                         <td>
                             <div style="display:flex;align-items:center;gap:8px;">
                                 @php
-                                    $eventType = $activity->event ?? $activity->description ?? 'unknown';
-                                    $icoColor = match(true) {
-                                        str_contains($eventType, 'login')   => '#16a34a',
-                                        str_contains($eventType, 'delete')  => '#dc2626',
-                                        str_contains($eventType, 'create')  => 'var(--blue)',
-                                        str_contains($eventType, 'update')  => 'var(--orange)',
-                                        default                             => 'var(--text-3)',
+                                    $eventType = $activity->event_type ?? 'unknown';
+                                    $icoClass = match(true) {
+                                        str_contains($eventType, 'login')   => 'activity-dot-success',
+                                        str_contains($eventType, 'delete')  => 'activity-dot-danger',
+                                        str_contains($eventType, 'create')  => 'activity-dot-info',
+                                        str_contains($eventType, 'update')  => 'activity-dot-warning',
+                                        default                             => 'activity-dot-muted',
                                     };
                                 @endphp
-                                <span style="width:8px;height:8px;border-radius:50%;background:{{ $icoColor }};flex-shrink:0;display:inline-block;"></span>
+                                <span class="{{ $icoClass }}"></span>
                                 <span style="font-weight:500;color:var(--text-1);font-size:0.875rem;">
-                                    {{ ucwords(str_replace(['_','-'], ' ', $eventType)) }}
+                                    {{ $activity->display_event }}
                                 </span>
                             </div>
-                            @if(!empty($activity->properties) && is_array($activity->properties))
+                            @if(!empty($activity->display_description) && $activity->display_description !== $activity->display_event)
                                 <div style="font-size:0.75rem;color:var(--text-3);margin-top:2px;padding-left:16px;">
-                                    {{ Arr::get($activity->properties, 'description', '') }}
+                                    {{ $activity->display_description }}
                                 </div>
                             @endif
                         </td>
                         <td>
                             <div style="font-size:0.875rem;font-weight:500;color:var(--text-1);">
-                                {{ optional($activity->causer)->name ?? 'System' }}
+                                {{ optional($activity->user)->name ?? 'System' }}
                             </div>
                             <div style="font-size:0.75rem;color:var(--text-2);">
-                                {{ optional($activity->causer)->email ?? '' }}
+                                {{ optional($activity->user)->email ?? '' }}
                             </div>
                         </td>
                         <td style="font-size:0.8125rem;color:var(--text-2);font-family:monospace;">
-                            {{ $activity->properties['ip'] ?? '—' }}
+                            {{ $activity->ip_address ?? '—' }}
                         </td>
-                        <td style="font-size:0.8125rem;color:var(--text-2);">
+                        <td style="font-size:0.8125rem;color:var(--text-2);" data-order="{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->timestamp : 0 }}">
                             <div>{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format('M j, Y') : '—' }}</div>
                             <div style="color:var(--text-3);">{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format('g:i A') : '' }}</div>
                         </td>
@@ -138,13 +141,15 @@
             </table>
         </div>
 
-        @if(method_exists($activities, 'links'))
-            <div style="margin-top:1rem;">{{ $activities->links() }}</div>
-        @endif
     @endif
 </div>
 
+@push('scripts')
+<script src="{{ asset(config('assets.jquery')) }}"></script>
+<script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
+var activityTable;
+
 function applyFilters() {
     var from = document.getElementById('filterFrom').value;
     var to   = document.getElementById('filterTo').value;
@@ -158,6 +163,53 @@ function applyFilters() {
 function clearFilters() {
     window.location.href = window.location.pathname;
 }
+
+$(document).ready(function() {
+    if (document.getElementById('activity-table')) {
+        activityTable = $('#activity-table').DataTable({
+            paging: true,
+            pageLength: 15,
+            lengthChange: false,
+            searching: true,
+            ordering: true,
+            info: true,
+            dom: '<"dt-tscroll"t><"dt-footer"ip>',
+            order: [[3, 'desc']],
+            language: {
+                info: 'Showing _START_–_END_ of _TOTAL_ events',
+                infoEmpty: 'No activity found',
+                paginate: { previous: '‹', next: '›' },
+                emptyTable: '<div style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No activity yet</div>',
+            },
+            drawCallback: function() {
+                var info = this.api().page.info();
+                document.getElementById('activity-count-badge').textContent = info.recordsDisplay + ' event' + (info.recordsDisplay !== 1 ? 's' : '');
+            }
+        });
+
+        document.getElementById('activitySearch').addEventListener('keyup', function() {
+            activityTable.search(this.value).draw();
+        });
+    }
+});
 </script>
+@endpush
+
+@push('styles')
+<style>
+.activity-dot-success,.activity-dot-danger,.activity-dot-info,.activity-dot-warning,.activity-dot-muted{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    flex-shrink:0;
+    display:inline-block;
+}
+.activity-dot-success{background:#16a34a;}
+.activity-dot-danger{background:#dc2626;}
+.activity-dot-info{background:var(--blue);}
+.activity-dot-warning{background:var(--orange);}
+.activity-dot-muted{background:var(--text-3);}
+</style>
+@endpush
 
 @endsection

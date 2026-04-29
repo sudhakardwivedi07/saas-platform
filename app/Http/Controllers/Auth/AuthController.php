@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SendEmailJob;
 use App\Models\Company;
 use App\Models\CompanyBranding;
+use App\Models\EventLog;
 use App\Models\GlobalSetting;
 use App\Models\SuperAdmin\Package;
 use App\Models\SuperAdmin\Subscription;
@@ -70,6 +71,11 @@ class AuthController extends Controller
         Auth::login($user, $request->boolean('remember'));
         $user->update(['last_login' => now()]);
         $request->session()->regenerate();
+        if ($user->roles()->where('name', 'client_admin')->exists()) {
+            EventLog::record('login', 'User logged in', [
+                'path' => $request->path(),
+            ]);
+        }
 
         return redirect()->intended($this->redirectPath($user));
     }
@@ -339,6 +345,22 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        /** @var \App\Models\User|null $user */
+        $user = Auth::user();
+        if ($user && $user->roles()->where('name', 'client_admin')->exists()) {
+            EventLog::create([
+                'company_id'  => $user->company_id ?? company()?->id,
+                'user_id'     => $user->id,
+                'event_type'  => 'logout',
+                'description' => 'User logged out',
+                'metadata'    => [
+                    'path' => $request->path(),
+                ],
+                'ip_address'  => $request->ip(),
+                'created_at'  => now(),
+            ]);
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

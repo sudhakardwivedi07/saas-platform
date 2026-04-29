@@ -52,7 +52,7 @@
             <span class="info-banner-txt">Configure your Stripe keys to enable payments for your sub-companies.</span>
         </div>
 
-        <form method="POST" action="{{ route('settings.payment-gateway.update') }}">
+        <form method="POST" action="{{ route('settings.payment-gateway.update') }}#tab-payment">
             @csrf
             <div class="form-2col">
                 <div class="f-group">
@@ -84,8 +84,7 @@
             </div>
             <div class="f-group">
                 <label class="f-label">Webhook URL</label>
-                <div style="display:flex;gap:8px;align-items:center">
-                    <input type="text" class="f-inp" value="{{ url('webhooks/stripe') }}" readonly style="background:var(--bg);color:var(--text-2);flex:1">
+                <div style="display:flex;gap:8px;align-items:center"> <input type="text" class="f-inp" value="{{ url('webhooks/stripe') }}" readonly style="background:var(--bg);color:var(--text-2);flex:1">
                     <button type="button" class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText('{{ url('webhooks/stripe') }}').then(()=>showToast('Copied!','success'))">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                         Copy
@@ -111,7 +110,7 @@
             Email SMTP Settings
         </div>
 
-        <form method="POST" action="{{ route('settings.email.update') }}">
+        <form method="POST" action="{{ route('settings.email.update') }}#tab-email">
             @csrf
             <div class="form-2col">
                 <div class="f-group">
@@ -174,7 +173,7 @@
             <span class="info-banner-txt">SMS notifications are powered by Twilio. Enter your credentials from the Twilio Console.</span>
         </div>
 
-        <form method="POST" action="{{ route('settings.sms.update') }}">
+        <form method="POST" action="{{ route('settings.sms.update') }}#tab-sms">
             @csrf
             <div class="f-group">
                 <label class="f-label">Account SID</label>

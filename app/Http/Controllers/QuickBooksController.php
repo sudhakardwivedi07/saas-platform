@@ -6,6 +6,7 @@ use App\Helper\Reply;
 use App\Jobs\SyncQuickBooksJob;
 use App\Models\Company;
 use App\Models\CompanyQuickbooksSetting;
+use App\Models\EventLog;
 use App\Models\QuickBooksConnection;
 use App\Services\QuickBooksService;
 use Illuminate\Http\Request;
@@ -61,7 +62,6 @@ class QuickBooksController extends AccountBaseController
         }
 
         session(['qb_company_id' => $companyId, 'qb_user_id' => auth()->id()]);
-
         return redirect(QuickBooksService::getAuthorizationUrl($credentials));
     }
 
@@ -112,6 +112,7 @@ class QuickBooksController extends AccountBaseController
             if ($connection) {
                 $connection->update(array_merge($tokenData, ['is_active' => true]));
                 $message = 'QuickBooks reconnected successfully!';
+                $eventType = 'quickbooks_reconnected';
             } else {
                 QuickBooksConnection::create([
                     'user_id'    => $userId,
@@ -120,7 +121,19 @@ class QuickBooksController extends AccountBaseController
                     ...$tokenData,
                 ]);
                 $message = 'QuickBooks connected successfully!';
+                $eventType = 'quickbooks_connected';
             }
+
+            $this->logQuickBooksActivity(
+                eventType: $eventType,
+                description: $message,
+                actorCompanyId: (int) $companyId,
+                meta: [
+                    'route' => 'quickbooks.callback',
+                    'realm_id' => $realmId,
+                ],
+                actorUserId: (int) $userId
+            );
 
             return redirect()->route('quickbooks.index')->with('success', $message);
 
@@ -148,6 +161,14 @@ class QuickBooksController extends AccountBaseController
     {
         $connection = QuickBooksConnection::findOrFail($connectionId);
         $connection->update(['is_active' => false]);
+
+        $this->logQuickBooksActivity(
+            eventType: 'quickbooks_disconnected',
+            description: 'QuickBooks disconnected',
+            actorCompanyId: (int) $connection->company_id,
+            meta: ['route' => 'quickbooks.disconnect']
+        );
+
         return Reply::success('QuickBooks disconnected.');
     }
 
@@ -176,6 +197,12 @@ class QuickBooksController extends AccountBaseController
         }
 
         $connection->update(['is_active' => false]);
+        $this->logQuickBooksActivity(
+            eventType: 'quickbooks_disconnected',
+            description: 'QuickBooks disconnected',
+            actorCompanyId: (int) $connection->company_id,
+            meta: ['route' => 'quickbooks.user-disconnect']
+        );
         return Reply::success('QuickBooks disconnected successfully.');
     }
 
@@ -260,5 +287,45 @@ class QuickBooksController extends AccountBaseController
             'redirect_uri'  => $setting->redirect_uri,
             'base_url'      => $setting->base_url,
         ];
+    }
+
+    private function logQuickBooksActivity(
+        string $eventType,
+        string $description,
+        int $actorCompanyId,
+        array $meta = [],
+        ?int $actorUserId = null
+    ): void
+    {
+        try {
+            $ownerCompanyId = $this->resolveOwnerCompanyId($actorCompanyId);
+
+            EventLog::create([
+                'company_id'  => $ownerCompanyId,
+                'user_id'     => $actorUserId ?? auth()->id(),
+                'event_type'  => $eventType,
+                'description' => $description,
+                'metadata'    => array_merge($meta, [
+                    'actor_company_id' => $actorCompanyId,
+                ]),
+                'ip_address'  => request()->ip(),
+                'created_at'  => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('QuickBooks activity log failed: ' . $e->getMessage());
+        }
+    }
+
+    private function resolveOwnerCompanyId(int $actorCompanyId): int
+    {
+        $parentId = Company::withoutGlobalScopes()
+            ->where('id', $actorCompanyId)
+            ->value('created_by');
+
+        if ($parentId && Company::withoutGlobalScopes()->whereKey($parentId)->exists()) {
+            return (int) $parentId;
+        }
+
+        return $actorCompanyId;
     }
 }

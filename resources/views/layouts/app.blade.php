@@ -16,6 +16,9 @@
     {{-- Fonts --}}
     <link href="{{ asset(config('assets.font_dm_sans')) }}" rel="stylesheet">
 
+    {{-- FontAwesome 5 --}}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+
     {{-- DataTables (used on multiple pages) --}}
     <link rel="stylesheet" href="{{ asset(config('assets.datatables_css')) }}">
 
@@ -375,14 +378,6 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         </a>
         @endif
 
-        {{-- My Companies: client_admin + manager + user --}}
-        @if(auth()->user()->hasAnyRole(['client_admin','manager','user']))
-        <a href="{{ route('my-companies.index') }}" class="ca-nav-item {{ request()->routeIs('my-companies.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-            My Companies
-        </a>
-        @endif
-
         {{-- Subscription & Usage: client_admin only (billing) --}}
         @if(auth()->user()->can('view_billing'))
         <a href="{{ route('billing.index') }}" class="ca-nav-item {{ request()->routeIs('billing.*') ? 'active' : '' }}">
@@ -401,7 +396,7 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 
         {{-- Insights: basic user role only --}}
         @if(!auth()->user()->hasAnyRole(['client_admin','manager']))
-        <a href="#" class="ca-nav-item {{ request()->routeIs('insights.*') ? 'active' : '' }}">
+        <a href="{{ route('insights.index') }}" class="ca-nav-item {{ request()->routeIs('insights.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             Insights
         </a>

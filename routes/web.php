@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\ClientCompanyController;
 use App\Http\Controllers\ClientController;
@@ -181,4 +182,16 @@ Route::middleware(['auth'])->group(function () {
 
     // Activity Log
     Route::get('activity', [ActivityController::class, 'index'])->name('activity.index');
+
+    // Insights (user role)
+    Route::prefix('insights')->name('insights.')->group(function () {
+        Route::get('/',                            [InsightsController::class, 'index'])->name('index');
+        Route::post('/generate',                   [InsightsController::class, 'generate'])->name('generate');
+        Route::get('/status/{id}',                 [InsightsController::class, 'checkStatus'])->name('status');
+        Route::get('/{encryptedId}/view',          [InsightsController::class, 'view'])->name('view');
+        Route::get('/{id}/data',                   [InsightsController::class, 'getData'])->name('data');
+        Route::get('/{id}/export-pdf',             [InsightsController::class, 'exportPdf'])->name('export-pdf');
+        Route::get('/{id}/download',               [InsightsController::class, 'download'])->name('download');
+        Route::delete('/{id}',                     [InsightsController::class, 'destroy'])->name('destroy');
+    });
 });

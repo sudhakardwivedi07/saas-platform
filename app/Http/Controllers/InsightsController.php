@@ -26,7 +26,7 @@ class InsightsController extends AccountBaseController
         $this->pageTitle = 'Insights';
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user      = auth()->user();
         $companyId = $user->company_id;
@@ -37,11 +37,56 @@ class InsightsController extends AccountBaseController
 
         $this->qbConfigured = $this->resolveCredentials($companyId) !== null;
 
+        // Build list of companies the user can view insights for
+        $ownCompany = Company::withoutGlobalScopes()->find($companyId);
+        $managedCompanies = $user->managedCompanies()->withoutGlobalScopes()->get();
+
+        $allCompanies = collect();
+        if ($ownCompany) $allCompanies->push($ownCompany);
+        foreach ($managedCompanies as $mc) {
+            if (!$allCompanies->contains('id', $mc->id)) $allCompanies->push($mc);
+        }
+
+        $this->companies = $allCompanies;
+
+        // Determine selected company for filtering
+        $selectedCompanyId = $request->get('company_id', $companyId);
+        if (!$allCompanies->contains('id', (int) $selectedCompanyId)) {
+            $selectedCompanyId = $companyId;
+        }
+        $this->selectedCompanyId = (int) $selectedCompanyId;
+        $this->selectedCompany   = $allCompanies->firstWhere('id', $this->selectedCompanyId);
+
+        // Load reports scoped to selected company (or fall back to user's reports if no company_id on older records)
         $this->reports = Report::where('user_id', $user->id)
+            ->where(function ($q) use ($selectedCompanyId) {
+                $q->where('company_id', $selectedCompanyId)
+                  ->orWhereNull('company_id');
+            })
             ->orderByDesc('created_at')
             ->get();
 
+        // Monthly usage for limit enforcement
+        $this->monthlyUsed  = $this->countMonthlyInsights($user->id, (int) $selectedCompanyId);
+        $this->monthlyLimit = $this->resolveMonthlyLimit($companyId);
+
         return view('insights.index', $this->data);
+    }
+
+    public function saveBusinessContext(Request $request)
+    {
+        $request->validate([
+            'business_context' => 'required|string|max:100',
+        ]);
+
+        $user = auth()->user();
+        $user->business_context = $request->business_context;
+        $user->save();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Industry type saved.',
+        ]);
     }
 
     public function generate(Request $request)
@@ -68,6 +113,18 @@ class InsightsController extends AccountBaseController
             ], 422);
         }
 
+        // Check monthly insight limit from plan
+        $monthlyLimit = $this->resolveMonthlyLimit($companyId);
+        if ($monthlyLimit !== null) {
+            $used = $this->countMonthlyInsights($user->id, $companyId);
+            if ($used >= $monthlyLimit) {
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => "You have reached your monthly insight limit ({$monthlyLimit} insights/month). Please upgrade your plan or wait until next month.",
+                ], 422);
+            }
+        }
+
         // Check for an already-processing report
         $processing = Report::where('user_id', $user->id)
             ->whereIn('status', ['Uploading', 'Analyzing'])
@@ -78,6 +135,15 @@ class InsightsController extends AccountBaseController
                 'status'  => 'error',
                 'message' => 'Insight generation is already in progress. Please wait for it to complete.',
             ], 422);
+        }
+
+        // Resolve company_id for this report (from request or user's own company)
+        $reportCompanyId = (int) $request->get('company_id', $companyId);
+        // Validate the user can access the requested company
+        $ownCompany      = Company::withoutGlobalScopes()->find($companyId);
+        $managedIds      = $user->managedCompanies()->withoutGlobalScopes()->pluck('companies.id')->toArray();
+        if ($reportCompanyId !== $companyId && !in_array($reportCompanyId, $managedIds)) {
+            $reportCompanyId = $companyId;
         }
 
         $endDate   = $request->get('end_date',   Carbon::now()->format('Y-m-d'));
@@ -104,6 +170,7 @@ class InsightsController extends AccountBaseController
             try {
                 $report = Report::create([
                     'user_id'         => $user->id,
+                    'company_id'      => $reportCompanyId,
                     'report_name'     => 'QuickBooks Insight — ' . Carbon::now()->format('M j, Y g:i A'),
                     'upload_date'     => now()->toDateString(),
                     'total_file_size' => 0,
@@ -136,13 +203,19 @@ class InsightsController extends AccountBaseController
                 }
 
                 $report->update(['total_file_size' => $totalSize]);
+
+                // Increment company insights_used counter
+                Company::withoutGlobalScopes()
+                    ->where('id', $reportCompanyId)
+                    ->increment('insights_used');
+
                 DB::commit();
 
                 $style    = config('dashboard_graph_settings.default_style', 'plain');
                 $industry = $user->business_context ?? 'General Business';
 
-                ProcessReportInsightsJob::dispatch($report->id, $apiFiles, $style, $industry)
-                    ->onConnection('sync');
+                // Run synchronously so the result is ready when the response returns
+                ProcessReportInsightsJob::dispatchSync($report->id, $apiFiles, $style, $industry);
 
                 return response()->json([
                     'status'    => 'success',
@@ -275,10 +348,8 @@ class InsightsController extends AccountBaseController
             abort(404, 'No insight data available.');
         }
 
-        // Company name
         $companyName = trim($report->user?->company?->company_name ?? '');
 
-        // Analysis number (position of this report among all reports for this user)
         $allIds = Report::withTrashed()
             ->where('user_id', $report->user_id)
             ->orderBy('created_at')
@@ -288,12 +359,10 @@ class InsightsController extends AccountBaseController
             ? array_search($report->id, $allIds) + 1
             : 1;
 
-        // Full title for cover page
         $fullTitle = $companyName
             ? $companyName . ' — CFO Insights (Analysis ' . $analysisNumber . ')'
             : 'CFO Insights (Analysis ' . $analysisNumber . ')';
 
-        // Extract report text
         $insightData = $report->insight_json_data;
         $reportText  = '';
         if (is_string($insightData)) {
@@ -335,7 +404,6 @@ class InsightsController extends AccountBaseController
             'reportDate' => $report->created_at->format('M d, Y'),
         ]);
 
-        // Filename: "CompanyName - CFO Insights (Analysis N)_MMDDYYHHMMSS.pdf"
         $timestamp = $report->created_at->format('mdyHis');
         $base      = $companyName
             ? $companyName . ' - CFO Insights (Analysis ' . $analysisNumber . ')_' . $timestamp
@@ -356,6 +424,27 @@ class InsightsController extends AccountBaseController
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private function resolveMonthlyLimit(int $companyId): ?int
+    {
+        $company = Company::withoutGlobalScopes()->find($companyId);
+        if (!$company) return null;
+
+        $plan = $company->clientPackage ?? $company->package;
+        if (!$plan) return null;
+
+        $limit = $plan->insights_per_month ?? $plan->max_insights_per_month ?? null;
+        return $limit ? (int) $limit : null;
+    }
+
+    private function countMonthlyInsights(int $userId, int $companyId): int
+    {
+        return Report::where('user_id', $userId)
+            ->where('company_id', $companyId)
+            ->where('created_at', '>=', Carbon::now()->startOfMonth())
+            ->whereNotIn('status', ['Failed'])
+            ->count();
+    }
 
     private function resolveCredentials(int $companyId): ?array
     {
@@ -409,7 +498,6 @@ class InsightsController extends AccountBaseController
             if (!empty($sections)) return $sections;
         }
 
-        // Separator lines (═ or =)
         $parts = preg_split('/\n\s*[\x{2550}\x{2500}=]{10,}\s*\n/u', $text);
         if (count($parts) > 1) {
             $map = [];
@@ -434,7 +522,6 @@ class InsightsController extends AccountBaseController
             if (!empty($sections)) return $sections;
         }
 
-        // Markdown ## headers
         if (preg_match_all('/^##\s+(?:\d+\.\s*)?(.+)$/m', $text, $m, PREG_OFFSET_CAPTURE)) {
             $list = [];
             foreach ($m[1] as $i => $match) {
@@ -528,9 +615,7 @@ class InsightsController extends AccountBaseController
             else $out .= '<p>' . preg_replace('/\n/', '<br>', $para) . '</p>' . "\n";
         }
         $out = preg_replace('/<p>\s*<\/p>/', '', $out);
-        // Strip FA icon tags (render as ? in dompdf)
         $out = preg_replace('/<i\s[^>]*class="[^"]*fa[^"]*"[^>]*>.*?<\/i>/isu', '', $out);
-        // Replace math symbols dompdf can't render
         $out = preg_replace('/\x{2264}/u', '&lt;=', $out);
         $out = preg_replace('/\x{2265}/u', '&gt;=', $out);
         return $out;

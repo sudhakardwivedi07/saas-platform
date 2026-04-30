@@ -78,6 +78,71 @@
 .dashboard-action-card-btn.primary { background: #f06b25; color: white; }
 .dashboard-action-card-btn.primary:hover { background: #d95a1a; color: white; }
 .dashboard-action-card-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+/* ── Company Selector ────────────────────────────────────────── */
+.insights-company-bar {
+    background: white;
+    border-radius: 10px;
+    padding: 14px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.viewing-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #64748b;
+}
+.viewing-company {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a202c;
+}
+.company-selector-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+.company-select {
+    height: 36px;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    padding: 0 12px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #1a202c;
+    background: #f8fafc;
+    outline: none;
+    cursor: pointer;
+    min-width: 200px;
+}
+.company-select:focus { border-color: #1a6aa8; }
+/* ── Monthly Usage Bar ───────────────────────────────────────── */
+.monthly-usage-bar {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 13px;
+    color: #1a202c;
+}
+.monthly-usage-bar .usage-label { color: #64748b; font-size: 12px; }
+.monthly-usage-bar .usage-count { font-weight: 700; }
+.usage-progress-wrap { flex: 1; background: #e2e8f0; border-radius: 999px; height: 6px; min-width: 80px; }
+.usage-progress-fill { height: 100%; border-radius: 999px; background: #1a6aa8; transition: width .3s; }
+.usage-progress-fill.warn  { background: #f59e0b; }
+.usage-progress-fill.full  { background: #ef4444; }
 /* ── Reports Table ───────────────────────────────────────────── */
 .reports-table-container {
     background: white;
@@ -194,6 +259,43 @@
     font-size: 15px; font-weight: 500; cursor: pointer; transition: all .2s;
 }
 .qb-modal .btn-modal-cancel:hover { background: #fff4ee; }
+/* ── Industry Modal ─────────────────────────────────────────── */
+.ind-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    z-index: 10000; display: none; align-items: center; justify-content: center;
+}
+.ind-modal-overlay.open { display: flex; }
+.ind-modal {
+    background: white; border-radius: 20px;
+    padding: 36px 36px 28px; width: 480px; max-width: 95vw;
+    text-align: center;
+    animation: indSlide .25s ease;
+    box-shadow: 0 20px 60px rgba(0,0,0,.18);
+}
+@keyframes indSlide { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+.ind-modal h3 { font-size: 22px; font-weight: 700; color: #1a202c; margin: 0 0 10px; }
+.ind-modal p  { font-size: 14px; color: #6b7280; line-height: 1.6; margin: 0 0 20px; }
+.ind-modal select {
+    width: 100%; padding: 11px 14px; border: 1.5px solid #e2e8f0;
+    border-radius: 8px; font-size: 14px; font-family: inherit;
+    color: #1a202c; background: #fff; outline: none; cursor: pointer;
+    margin-bottom: 20px; transition: border-color .2s;
+}
+.ind-modal select:focus { border-color: #f06b25; }
+.ind-modal-actions { display: flex; gap: 12px; }
+.ind-btn-confirm {
+    flex: 1; background: #f06b25; color: white; border: none;
+    padding: 13px 20px; border-radius: 10px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: background .2s;
+}
+.ind-btn-confirm:hover { background: #d95a1a; }
+.ind-btn-confirm:disabled { opacity: .6; cursor: not-allowed; }
+.ind-btn-cancel {
+    flex: 1; background: transparent; color: #f06b25;
+    border: 1.5px solid #f06b25; padding: 12px 20px; border-radius: 10px;
+    font-size: 14px; font-weight: 500; cursor: pointer; transition: all .2s;
+}
+.ind-btn-cancel:hover { background: #fff4ee; }
 /* ── Processing bar ─────────────────────────────────────────── */
 .thinking-bar {
     display: flex; align-items: center; gap: 10px;
@@ -219,6 +321,16 @@
 
 @section('content')
 
+@php
+    $user            = auth()->user();
+    $hasCtx          = !empty($user->business_context);
+    $monthlyLimit    = $monthlyLimit ?? null;
+    $monthlyUsed     = $monthlyUsed ?? 0;
+    $limitReached    = $monthlyLimit !== null && $monthlyUsed >= $monthlyLimit;
+    $usagePct        = $monthlyLimit ? min(100, round($monthlyUsed / $monthlyLimit * 100)) : 0;
+    $usageClass      = $usagePct >= 100 ? 'full' : ($usagePct >= 80 ? 'warn' : '');
+@endphp
+
 {{-- ── Processing bar ──────────────────────────────────────────────────── --}}
 <div id="processingBar" style="display:none;">
     <div class="thinking-bar">
@@ -226,6 +338,44 @@
         <span id="processingMsg">Syncing your QuickBooks data and generating AI insights… This may take 2–5 minutes.</span>
     </div>
 </div>
+
+{{-- ── Company Selector Bar ─────────────────────────────────────────────── --}}
+@if($companies->count() > 0)
+<div class="insights-company-bar">
+    <div class="viewing-label">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M3 7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/>
+            <path d="M16 3v4M8 3v4"/>
+        </svg>
+        Viewing Insights For
+    </div>
+    <div class="viewing-company">{{ $selectedCompany?->company_name ?? 'Your Company' }}</div>
+
+    @if($companies->count() > 1)
+    <div class="company-selector-wrap">
+        <select class="company-select" onchange="switchCompany(this.value)">
+            @foreach($companies as $co)
+                <option value="{{ $co->id }}" {{ $co->id == $selectedCompanyId ? 'selected' : '' }}>
+                    {{ $co->company_name }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+    @endif
+
+    @if($monthlyLimit !== null)
+    <div class="monthly-usage-bar" style="margin-left:{{ $companies->count() > 1 ? '0' : 'auto' }}">
+        <span class="usage-label">Insights this month</span>
+        <span class="usage-count" style="color:{{ $limitReached ? '#ef4444' : '#1a202c' }}">
+            {{ $monthlyUsed }} / {{ $monthlyLimit }}
+        </span>
+        <div class="usage-progress-wrap">
+            <div class="usage-progress-fill {{ $usageClass }}" style="width:{{ $usagePct }}%"></div>
+        </div>
+    </div>
+    @endif
+</div>
+@endif
 
 {{-- ── Welcome (no reports yet) ────────────────────────────────────────── --}}
 <div id="insightsWelcomeMessage" style="{{ $reports->isEmpty() ? '' : 'display:none;' }}">
@@ -237,6 +387,11 @@
                 <p>Your <span style="color:#f06b25;">QuickBooks</span> is connected. Sync your data to generate insights. Your insights will appear here once the analysis is complete.</p>
             @else
                 <p>Connect <span style="color:#f06b25;">QuickBooks</span> to begin the analysis. Your insights will appear here once the analysis is complete.</p>
+            @endif
+            @if($limitReached)
+                <div style="margin-top:12px;padding:12px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#dc2626;font-size:13.5px;">
+                    <strong>Monthly limit reached.</strong> You've used all {{ $monthlyLimit }} insights for this month. Please upgrade your plan or wait until next month.
+                </div>
             @endif
         </div>
 
@@ -253,12 +408,16 @@
                               fill="white" font-size="16" font-weight="700" font-family="Arial,sans-serif">QB</text>
                     </svg>
                 </div>
-                @if($qbConnection)
+                @if($qbConnection && !$limitReached)
                     <h3>Sync QuickBooks Data</h3>
                     <p>Fetch your latest financial data from QuickBooks and generate CFO-level insights.</p>
                     <button class="dashboard-action-card-btn primary" id="insightsSyncQBBtn" onclick="generateInsight()">
                         <i class="fa fa-sync-alt"></i> Generate Insights
                     </button>
+                @elseif($qbConnection && $limitReached)
+                    <h3>Monthly Limit Reached</h3>
+                    <p>You've used all your insights for this month. Upgrade your plan or wait until next month.</p>
+                    <button class="dashboard-action-card-btn primary" disabled>Limit Reached</button>
                 @elseif($qbConfigured)
                     <h3>Connect QuickBooks</h3>
                     <p>Automatically sync your financial data and generate real-time insights.</p>
@@ -286,14 +445,18 @@
 <div id="reportsTableContainer" style="{{ $reports->isNotEmpty() ? '' : 'display:none;' }}">
     <div class="reports-table-container">
         <div class="table-header">
-            <div style="display:flex;align-items:center;gap:16px;">
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
                 <h2>All Insights</h2>
-                @if($qbConnection)
+                @if($qbConnection && !$limitReached)
                 <button id="btnGenerateNew" onclick="generateInsight()"
                         style="background:#f06b25;color:white;padding:8px 18px;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .2s;"
                         onmouseover="this.style.background='#d95a1a'" onmouseout="this.style.background='#f06b25'">
                     <i class="fa fa-sync-alt"></i> Generate New Insight
                 </button>
+                @elseif($limitReached)
+                <span style="font-size:12.5px;color:#ef4444;font-weight:600;background:#fef2f2;padding:6px 12px;border-radius:6px;border:1px solid #fecaca;">
+                    Monthly limit reached ({{ $monthlyUsed }}/{{ $monthlyLimit }})
+                </span>
                 @endif
             </div>
             <div class="search-box">
@@ -307,8 +470,9 @@
                 <thead>
                     <tr>
                         <th>Insight Name</th>
-                        <th>Upload Date</th>
+                        <th>Generated</th>
                         <th>Size</th>
+                        <th>Type</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -329,8 +493,9 @@
                                 </a>
                             </div>
                         </td>
-                        <td style="color:#64748b;">{{ $report->created_at->format('m/d/Y') }}</td>
+                        <td style="color:#64748b;">{{ $report->created_at->format('M d, Y') }}</td>
                         <td style="color:#64748b;">{{ $report->formatted_file_size }}</td>
+                        <td><span class="badge info">Monthly</span></td>
                         <td>
                             @if($report->isReady())
                                 <span class="badge success">Analyzed</span>
@@ -374,16 +539,45 @@
     </div>
 </div>
 
+{{-- ── Industry Type Selection Modal ──────────────────────────────────────── --}}
+<div id="industryModal" class="ind-modal-overlay">
+    <div class="ind-modal">
+        <h3>What's your industry?</h3>
+        <p>We use industry benchmarks to put your financials in context — from margins to cash flow trends. This helps our AI provide more relevant insights tailored to your business.</p>
+        <select id="industrySelect">
+            <option value="">— Select your industry —</option>
+            <option value="Automotive" {{ auth()->user()->business_context === 'Automotive' ? 'selected' : '' }}>Automotive</option>
+            <option value="Technology" {{ auth()->user()->business_context === 'Technology' ? 'selected' : '' }}>Technology</option>
+            <option value="Healthcare" {{ auth()->user()->business_context === 'Healthcare' ? 'selected' : '' }}>Healthcare</option>
+            <option value="Manufacturing" {{ auth()->user()->business_context === 'Manufacturing' ? 'selected' : '' }}>Manufacturing</option>
+            <option value="Finance" {{ auth()->user()->business_context === 'Finance' ? 'selected' : '' }}>Finance</option>
+            <option value="Retail" {{ auth()->user()->business_context === 'Retail' ? 'selected' : '' }}>Retail</option>
+            <option value="Construction" {{ auth()->user()->business_context === 'Construction' ? 'selected' : '' }}>Construction</option>
+            <option value="Transportation" {{ auth()->user()->business_context === 'Transportation' ? 'selected' : '' }}>Transportation</option>
+            <option value="Energy" {{ auth()->user()->business_context === 'Energy' ? 'selected' : '' }}>Energy</option>
+            <option value="Agriculture" {{ auth()->user()->business_context === 'Agriculture' ? 'selected' : '' }}>Agriculture</option>
+            <option value="Education" {{ auth()->user()->business_context === 'Education' ? 'selected' : '' }}>Education</option>
+            <option value="Real Estate" {{ auth()->user()->business_context === 'Real Estate' ? 'selected' : '' }}>Real Estate</option>
+            <option value="Entertainment" {{ auth()->user()->business_context === 'Entertainment' ? 'selected' : '' }}>Entertainment</option>
+            <option value="Consulting" {{ auth()->user()->business_context === 'Consulting' ? 'selected' : '' }}>Consulting</option>
+            <option value="Legal Services" {{ auth()->user()->business_context === 'Legal Services' ? 'selected' : '' }}>Legal Services</option>
+            <option value="Other" {{ auth()->user()->business_context === 'Other' ? 'selected' : '' }}>Other</option>
+        </select>
+        <div class="ind-modal-actions">
+            <button class="ind-btn-confirm" id="indBtnConfirm" onclick="saveIndustryAndProceed()">Continue</button>
+            <button class="ind-btn-cancel" onclick="closeIndustryModal()">Cancel</button>
+        </div>
+    </div>
+</div>
+
 {{-- ── QB Sync Confirm Modal ────────────────────────────────────────────── --}}
 <div id="qbGenerateModal" class="qb-modal-overlay" style="display:none;" onclick="closeGenerateModal(event)">
     <div class="qb-modal">
         <div class="qb-modal-logo">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 70" width="70" height="70">
                 <circle cx="35" cy="35" r="35" fill="#2CA01C"/>
-                <!-- q: circle bowl + diagonal tail -->
                 <circle cx="25" cy="36" r="11" fill="none" stroke="white" stroke-width="5.5"/>
                 <line x1="32.5" y1="43.5" x2="38" y2="52.5" stroke="white" stroke-width="5.5" stroke-linecap="round"/>
-                <!-- b: vertical stem + circle bowl -->
                 <line x1="44" y1="20" x2="44" y2="43" stroke="white" stroke-width="5.5" stroke-linecap="round"/>
                 <circle cx="45.5" cy="45" r="10.5" fill="none" stroke="white" stroke-width="5.5"/>
             </svg>
@@ -408,20 +602,88 @@
 @push('scripts')
 <script>
 (function () {
-    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const CSRF              = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const SAVE_CTX_URL      = '{{ route("insights.save-business-context") }}';
+    const HAS_BUSINESS_CTX  = {{ !empty(auth()->user()->business_context) ? 'true' : 'false' }};
+    const SELECTED_COMPANY  = {{ $selectedCompanyId }};
+    const LS_KEY            = 'insights_processing_ids';
 
-    // Auto-poll in-progress reports
+    // Auto-poll in-progress reports on page load
     const processingIds = @json($reports->filter(fn($r) => $r->isProcessing())->pluck('id'));
     if (processingIds.length > 0) {
         showProcessingBar('Analyzing your QuickBooks data…');
         processingIds.forEach(id => pollStatus(id));
     }
 
-    // ── Generate (show confirmation modal first) ─────────────────────────
+    // Clear any stale localStorage entries (sync dispatch means nothing runs in background)
+    localStorage.removeItem(LS_KEY);
+
+    // ── Company switch ────────────────────────────────────────────────────────
+    window.switchCompany = function (companyId) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('company_id', companyId);
+        window.location.href = url.toString();
+    };
+
+    // ── Generate (check industry first, then show confirmation modal) ────────
     window.generateInsight = function () {
+        if (!HAS_BUSINESS_CTX) {
+            openIndustryModal();
+        } else {
+            showQbModal();
+        }
+    };
+
+    // ── Industry modal ────────────────────────────────────────────────────────
+    window.openIndustryModal = function () {
+        document.getElementById('industryModal').classList.add('open');
+    };
+
+    window.closeIndustryModal = function () {
+        document.getElementById('industryModal').classList.remove('open');
+    };
+
+    window.saveIndustryAndProceed = function () {
+        const select = document.getElementById('industrySelect');
+        const value  = select.value;
+        if (!value) {
+            select.style.borderColor = '#ef4444';
+            return;
+        }
+        select.style.borderColor = '';
+
+        const btn = document.getElementById('indBtnConfirm');
+        btn.disabled    = true;
+        btn.textContent = 'Saving…';
+
+        fetch(SAVE_CTX_URL, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            body:    JSON.stringify({ business_context: value }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            btn.disabled    = false;
+            btn.textContent = 'Continue';
+            if (data.status === 'success') {
+                closeIndustryModal();
+                showQbModal();
+            } else {
+                alert(data.message || 'Could not save industry. Please try again.');
+            }
+        })
+        .catch(() => {
+            btn.disabled    = false;
+            btn.textContent = 'Continue';
+            alert('Network error. Please try again.');
+        });
+    };
+
+    // ── QB modal ──────────────────────────────────────────────────────────────
+    function showQbModal() {
         const modal = document.getElementById('qbGenerateModal');
         if (modal) modal.style.display = 'flex';
-    };
+    }
 
     window.closeGenerateModal = function (e) {
         if (e && e.target !== document.getElementById('qbGenerateModal')) return;
@@ -437,19 +699,19 @@
         const btn2 = document.getElementById('btnGenerateNew');
         [btn1, btn2].forEach(b => { if (b) { b.disabled = true; b.style.opacity = '0.7'; } });
 
-        showProcessingBar('Syncing QuickBooks data and generating AI insights… This may take 2–5 minutes.');
+        showProcessingBar('Syncing QuickBooks data and generating AI insights… This may take a few minutes. Please wait.');
 
         fetch('{{ route("insights.generate") }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            body: JSON.stringify({}),
+            body: JSON.stringify({ company_id: SELECTED_COMPANY }),
         })
         .then(r => r.json())
         .then(data => {
             if (data.status === 'success') {
-                showTableView();
-                prependPlaceholderRow(data.report_id);
-                pollStatus(data.report_id);
+                // Job ran synchronously — reload the page to show the finished insight
+                hideProcessingBar();
+                window.location.reload();
             } else {
                 hideProcessingBar();
                 resetGenerateBtns();
@@ -463,7 +725,7 @@
         });
     };
 
-    // ── Poll status ───────────────────────────────────────────────────────
+    // ── Poll status ───────────────────────────────────────────────────────────
     function pollStatus(reportId) {
         fetch(`/insights/status/${reportId}`, { headers: { 'Accept': 'application/json' } })
         .then(r => r.json())
@@ -488,7 +750,7 @@
         .catch(() => setTimeout(() => pollStatus(reportId), 15000));
     }
 
-    // ── DOM helpers ───────────────────────────────────────────────────────
+    // ── DOM helpers ───────────────────────────────────────────────────────────
     function showTableView() {
         const welcome = document.getElementById('insightsWelcomeMessage');
         const table   = document.getElementById('reportsTableContainer');
@@ -515,6 +777,7 @@
             </td>
             <td style="color:#64748b;">Just now</td>
             <td style="color:#64748b;">—</td>
+            <td><span class="badge info">Monthly</span></td>
             <td><span class="badge info" id="status-badge-${id}">Analyzing</span></td>
             <td>
                 <div class="action-buttons">
@@ -535,7 +798,7 @@
     }
 
     function markRowReady(id, encryptedId) {
-        const row = document.getElementById('insight-row-' + id);
+        const row   = document.getElementById('insight-row-' + id);
         const badge = document.getElementById('status-badge-' + id);
         if (!row) { location.reload(); return; }
         if (badge) { badge.className = 'badge success'; badge.textContent = 'Analyzed'; }
@@ -555,7 +818,6 @@
                     </svg>
                 </button>`;
         }
-        // Update the name link
         const nameLink = row.querySelector('.insight-name-cell a, .insight-name-cell span[style*="color:#1a202c"]');
         if (nameLink && nameLink.tagName === 'SPAN') {
             const a = document.createElement('a');
@@ -577,9 +839,9 @@
     }
 
     function showProcessingBar(msg) {
-        const bar = document.getElementById('processingBar');
+        const bar   = document.getElementById('processingBar');
         const msgEl = document.getElementById('processingMsg');
-        if (bar) bar.style.display = '';
+        if (bar)   bar.style.display = '';
         if (msgEl && msg) msgEl.textContent = msg;
     }
 
@@ -595,7 +857,7 @@
         if (btn2) { btn2.disabled = false; btn2.style.opacity = ''; btn2.innerHTML = '<i class="fa fa-sync-alt"></i> Generate New Insight'; }
     }
 
-    // ── Search ────────────────────────────────────────────────────────────
+    // ── Search ────────────────────────────────────────────────────────────────
     window.searchReports = function () {
         const q = document.getElementById('searchInput').value.toLowerCase();
         document.querySelectorAll('#reportsTableBody tr').forEach(row => {
@@ -603,7 +865,7 @@
         });
     };
 
-    // ── Download ──────────────────────────────────────────────────────────
+    // ── Download ──────────────────────────────────────────────────────────────
     window.downloadInsight = function (id) {
         Swal.fire({
             title: 'Preparing Download',
@@ -617,7 +879,7 @@
         setTimeout(() => Swal.close(), 2500);
     };
 
-    // ── Delete ────────────────────────────────────────────────────────────
+    // ── Delete ────────────────────────────────────────────────────────────────
     window.deleteInsight = function (id, name) {
         Swal.fire({
             title: 'Are you sure?',

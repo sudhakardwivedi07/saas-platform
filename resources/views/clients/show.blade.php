@@ -190,6 +190,7 @@
                             <th>QB Connected</th>
                             <th>Status</th>
                             <th>Created</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -214,6 +215,16 @@
                             </td>
                             <td style="font-size:0.8125rem;color:var(--text-2);">
                                 {{ $company->created_at?->format('M j, Y') ?? '—' }}
+                            </td>
+                            <td>
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <a href="{{ route('my-companies.edit', $company->id) }}" class="btn btn-ghost btn-xs">Edit</a>
+                                    <form method="POST" action="{{ route('my-companies.destroy', $company->id) }}" onsubmit="return confirmCompanyDelete(this);">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-ghost btn-xs" style="color:var(--red);border-color:rgba(239,68,68,.3);">Delete</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
@@ -262,6 +273,26 @@ function saveNotes() {
             document.getElementById('saveNotesBtn').style.display = 'none';
         }
     });
+}
+
+function confirmCompanyDelete(formEl) {
+    Swal.fire({
+        title: 'Delete company?',
+        text: 'This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true
+    }).then(function(result) {
+        if (result.isConfirmed) {
+            formEl.submit();
+        }
+    });
+
+    return false;
 }
 </script>
 

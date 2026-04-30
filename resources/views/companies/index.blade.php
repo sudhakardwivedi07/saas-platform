@@ -165,23 +165,19 @@
                         <div class="dm-wrap">
                             <button class="dot-menu" data-menu="dm-co-{{ $co->id }}" title="Actions">•••</button>
                             <div class="dm-popup" id="dm-co-{{ $co->id }}">
-                                @if($rawStatus === 'active' && $co->login_url)
-                                <a href="{{ $co->login_url }}" target="_blank" class="dm-item">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                                    Open Portal
+                                <a href="{{ route('my-companies.edit', $co->id) }}" class="dm-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                                    Edit
                                 </a>
-                                @endif
-                                <a href="{{ route('quickbooks.index') }}" class="dm-item">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-                                    QuickBooks
-                                </a>
-                                @if($rawStatus === 'inactive')
                                 <div class="dm-divider"></div>
-                                <a href="{{ route('billing.index') }}" class="dm-item">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                                    Complete Payment
-                                </a>
-                                @endif
+                                <form method="POST" action="{{ route('my-companies.destroy', $co->id) }}" onsubmit="return confirmCompanyDelete(this);">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="dm-item" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M19 6l-1 14a1 1 0 01-1 1H7a1 1 0 01-1-1L5 6"/></svg>
+                                        Delete
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </td>
@@ -223,5 +219,25 @@ $(document).ready(function() {
         table.column(4).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
     });
 });
+
+function confirmCompanyDelete(formEl) {
+    Swal.fire({
+        title: 'Delete company?',
+        text: 'This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true
+    }).then(function(result) {
+        if (result.isConfirmed) {
+            formEl.submit();
+        }
+    });
+
+    return false;
+}
 </script>
 @endpush

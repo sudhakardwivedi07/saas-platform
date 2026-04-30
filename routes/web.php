@@ -107,6 +107,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/',                          [ClientCompanyController::class, 'index'])->name('index');
         Route::get('/create',                    [ClientCompanyController::class, 'create'])->name('create');
         Route::post('/create',                   [ClientCompanyController::class, 'store'])->name('store');
+        Route::get('/{id}/edit',                 [ClientCompanyController::class, 'edit'])->name('edit');
+        Route::post('/{id}',                     [ClientCompanyController::class, 'update'])->name('update');
+        Route::delete('/{id}',                   [ClientCompanyController::class, 'destroy'])->name('destroy');
         Route::get('/payment-success',           [ClientCompanyController::class, 'paymentSuccess'])->name('payment.success');
         Route::get('/payment-cancel/{id}',       [ClientCompanyController::class, 'paymentCancel'])->name('payment.cancel');
         Route::post('/{id}/assign-plan',         [ClientCompanyController::class, 'assignPlan'])->name('assign-plan');

@@ -281,6 +281,10 @@
                         <div class="dm-wrap">
                             <button class="dot-menu" data-menu="dm-co-{{ $company->id }}" title="Actions">•••</button>
                             <div class="dm-popup" id="dm-co-{{ $company->id }}">
+                                <a href="{{ route('my-companies.edit', $company->id) }}" class="dm-item">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                                    Edit
+                                </a>
                                 @if($owner)
                                 <a href="{{ route('clients.dashboard', $owner->id) }}" class="dm-item">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
@@ -295,6 +299,15 @@
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                                     Assign Plan
                                 </a>
+                                <div class="dm-divider"></div>
+                                <form method="POST" action="{{ route('my-companies.destroy', $company->id) }}" onsubmit="return confirmCompanyDelete(this);">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="dm-item dm-danger" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M19 6l-1 14a1 1 0 01-1 1H7a1 1 0 01-1-1L5 6"/></svg>
+                                        Delete
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </td>
@@ -762,6 +775,26 @@ function confirmDelete(id, name) {
     document.getElementById('delete-msg').textContent = 'Delete "' + name + '"? This cannot be undone.';
     document.getElementById('delete-form').action = '{{ route("clients.destroy", ":id") }}'.replace(':id', id);
     document.getElementById('modal-delete-client').classList.add('open');
+}
+
+function confirmCompanyDelete(formEl) {
+    Swal.fire({
+        title: 'Delete company?',
+        text: 'This action cannot be undone.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true
+    }).then(function(result) {
+        if (result.isConfirmed) {
+            formEl.submit();
+        }
+    });
+
+    return false;
 }
 
 function openAssignPlanModal(companyId, companyName, currentPlanId) {

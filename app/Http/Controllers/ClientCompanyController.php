@@ -11,6 +11,7 @@ use App\Models\SuperAdmin\Subscription;
 use App\Models\User;
 use App\Services\StripeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -18,6 +19,14 @@ use Spatie\Permission\Models\Role;
 
 class ClientCompanyController extends AccountBaseController
 {
+    private function companyOwnerKeyForCurrentUser(): int
+    {
+        $user = auth()->user();
+        return $user->hasAnyRole(['client_admin', 'manager'])
+            ? (int) $user->company_id
+            : (int) $user->id;
+    }
+
     private function resolveFallbackPackageId(): ?int
     {
         return Package::query()
@@ -132,6 +141,95 @@ class ClientCompanyController extends AccountBaseController
             ->get();
 
         return view('companies.create', $this->data);
+    }
+
+    public function edit(int $id)
+    {
+        abort_unless($this->canManageCompanies(), 403, 'You do not have permission to manage companies.');
+
+        $company = $this->findEditableCompany($id);
+        $this->company = $company;
+        $this->company->loadMissing([
+            'adminUser',
+            'clientPackage',
+            'users' => fn ($query) => $query->orderBy('id'),
+        ]);
+
+        // Some companies may not have a dedicated client_admin user.
+        // Fall back to the first linked user so details still render.
+        $this->companyAdminUser = $this->company->adminUser ?: $this->company->users->first();
+
+        $authUser = auth()->user();
+        $this->isClientUserFlow = $authUser->hasRole('user');
+
+        if (!$this->isClientUserFlow) {
+            $this->packages = ClientPackage::forCompany($authUser->company_id)
+                ->active()
+                ->orderBy('sort')
+                ->get();
+        }
+
+        return view('companies.edit', $this->data);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        abort_unless($this->canManageCompanies(), 403, 'You do not have permission to manage companies.');
+
+        $company = $this->findEditableCompany($id);
+
+        $data = $request->validate([
+            'company_name'  => 'required|string|max:255',
+            'company_email' => 'required|email|max:255',
+            'industry_type' => 'nullable|string|max:100',
+            'entity_type'   => 'nullable|string|max:100',
+            'state'         => 'nullable|string|max:100',
+        ]);
+
+        // Defense-in-depth: only these keys are ever writable from edit form.
+        // Disabled/read-only fields (plan/admin/subdomain/package) are ignored
+        // even if someone tampers with the request payload.
+        $updatableKeys = ['company_name', 'company_email', 'industry_type', 'entity_type', 'state'];
+        $safeData = collect($data)->only($updatableKeys)->toArray();
+
+        $company->update($safeData);
+
+        return redirect()->route('my-companies.index')
+            ->with('success', "Company '{$company->company_name}' updated successfully!");
+    }
+
+    public function destroy(int $id)
+    {
+        abort_unless($this->canManageCompanies(), 403, 'You do not have permission to manage companies.');
+
+        $user = auth()->user();
+        $managedCompanyIds = $user->managedCompanies()->withoutGlobalScopes()->pluck('companies.id');
+        $ownerKey = $this->companyOwnerKeyForCurrentUser();
+
+        $company = Company::withoutGlobalScopes()
+            ->where('id', $id)
+            ->where(function ($query) use ($ownerKey, $managedCompanyIds, $user) {
+                $query->where('created_by', $ownerKey)
+                    ->orWhereIn('id', $managedCompanyIds)
+                    ->orWhere('id', $user->company_id);
+            })
+            ->firstOrFail();
+
+        if ((int) auth()->user()->company_id === (int) $company->id) {
+            return redirect()->route('my-companies.index')
+                ->with('error', 'Your primary company cannot be deleted.');
+        }
+
+        DB::transaction(function () use ($company) {
+            User::withoutGlobalScopes()->where('company_id', $company->id)->delete();
+            CompanyBranding::where('company_id', $company->id)->delete();
+            Subscription::where('company_id', $company->id)->delete();
+            DB::table('user_companies')->where('company_id', $company->id)->delete();
+            $company->delete();
+        });
+
+        return redirect()->route('my-companies.index')
+            ->with('success', 'Company deleted successfully!');
     }
 
     // ── Store new company ────────────────────────────────────────────────────
@@ -468,5 +566,21 @@ class ClientCompanyController extends AccountBaseController
         } catch (\Throwable) {
             return false;
         }
+    }
+
+    private function findEditableCompany(int $id): Company
+    {
+        $user = auth()->user();
+        $managedCompanyIds = $user->managedCompanies()->withoutGlobalScopes()->pluck('companies.id');
+        $ownerKey = $this->companyOwnerKeyForCurrentUser();
+
+        return Company::withoutGlobalScopes()
+            ->where('id', $id)
+            ->where(function ($query) use ($user, $managedCompanyIds, $ownerKey) {
+                $query->where('created_by', $ownerKey)
+                    ->orWhereIn('id', $managedCompanyIds)
+                    ->orWhere('id', $user->company_id);
+            })
+            ->firstOrFail();
     }
 }

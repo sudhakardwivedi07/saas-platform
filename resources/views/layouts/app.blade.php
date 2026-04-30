@@ -378,6 +378,16 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         </a>
         @endif
 
+
+        {{-- My Companies:  user --}}
+        @if(auth()->user()->hasAnyRole(['user']))
+        <a href="{{ route('my-companies.index') }}" class="ca-nav-item {{ request()->routeIs('my-companies.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            My Companies
+        </a>
+        @endif
+
+
         {{-- Subscription & Usage: client_admin only (billing) --}}
         @if(auth()->user()->can('view_billing'))
         <a href="{{ route('billing.index') }}" class="ca-nav-item {{ request()->routeIs('billing.*') ? 'active' : '' }}">

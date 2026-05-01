@@ -186,6 +186,42 @@
 }
 .ind-btn-cancel:hover { background: #fff4ee; }
 
+/* ── Free Report Limit Reached Modal ───────────────────────────── */
+.limit-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    z-index: 10002; display: none; align-items: center; justify-content: center;
+}
+.limit-modal-overlay.open { display: flex; }
+.limit-modal {
+    background: white; border-radius: 20px;
+    padding: 40px 40px 32px; width: 460px; max-width: 95vw;
+    text-align: center;
+    animation: limitSlide .25s ease;
+    box-shadow: 0 20px 60px rgba(0,0,0,.18);
+}
+@keyframes limitSlide { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+.limit-modal-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: #e0f2fe; display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+}
+.limit-modal h3 { font-size: 22px; font-weight: 700; color: #1a202c; margin: 0 0 12px; }
+.limit-modal p  { font-size: 14.5px; color: #6b7280; line-height: 1.65; margin: 0 0 28px; }
+.limit-modal-actions { display: flex; gap: 12px; }
+.limit-btn-subscribe {
+    flex: 1; background: var(--orange); color: white; border: none;
+    padding: 14px 20px; border-radius: 10px; font-size: 14.5px; font-weight: 600;
+    cursor: pointer; transition: background .2s; text-decoration: none;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 5px 10px rgba(240,107,37,.3);
+}
+.limit-btn-subscribe:hover { background: var(--orange-dark); color: white; text-decoration: none; }
+.limit-btn-later {
+    flex: 1; background: transparent; color: var(--orange);
+    border: 1.5px solid var(--orange); padding: 13px 20px; border-radius: 10px;
+    font-size: 14.5px; font-weight: 500; cursor: pointer; transition: all .2s;
+}
+.limit-btn-later:hover { background: #fff4ee; }
 /* ── QB Confirm Modal ───────────────────────────────────────────── */
 .qb-modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.45);
@@ -429,6 +465,39 @@
     </div>
 </div>
 
+{{-- ── Free Report Limit Reached Modal ───────────────────────────────────── --}}
+<div id="dashLimitModal" class="limit-modal-overlay">
+    <div class="limit-modal">
+        <div class="limit-modal-icon">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="#0ea5e9" stroke-width="2"/>
+                <line x1="12" y1="8" x2="12" y2="12" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="12" cy="16" r="1.2" fill="#0ea5e9"/>
+            </svg>
+        </div>
+        <h3>Free Report Limit Reached</h3>
+        <p>
+            @php
+                $limitPlanName   = $currentPlan?->name ?? null;
+                $limitMonthlyMax = $monthlyLimit ?? null;
+            @endphp
+            @if($limitPlanName && $limitMonthlyMax)
+                You're on the <strong>{{ $limitPlanName }}</strong> plan, which includes <strong>{{ $limitMonthlyMax }}</strong> insight{{ $limitMonthlyMax == 1 ? '' : 's' }} per month.
+                You've used all your insights for this month.
+            @elseif($limitMonthlyMax)
+                You've used all <strong>{{ $limitMonthlyMax }}</strong> insights included in your plan this month.
+            @else
+                You've reached your monthly insight limit.
+            @endif
+            Upgrade your plan to generate more insights.
+        </p>
+        <div class="limit-modal-actions">
+            <a href="{{ route('billing.index') }}" class="limit-btn-subscribe">Subscribe Now</a>
+            <button class="limit-btn-later" onclick="closeDashLimitModal()">Maybe Later</button>
+        </div>
+    </div>
+</div>
+
 {{-- ── QB Sync Confirm Modal ──────────────────────────────────────────────── --}}
 <div id="dashQbModal" class="qb-modal-overlay">
     <div class="qb-modal">
@@ -466,19 +535,24 @@
     const GENERATE_URL     = '{{ route("insights.generate") }}';
     const INSIGHTS_URL     = '{{ route("insights.index") }}';
     const HAS_BUSINESS_CTX = {{ auth()->user()->business_context ? 'true' : 'false' }};
+    const DB_LIMIT_REACHED = {{ ($monthlyLimit !== null && ($monthlyUsed ?? 0) >= $monthlyLimit) ? 'true' : 'false' }};
     const LS_KEY           = 'dash_processing_insight_id';
 
-    // ── On load: show loader if server reports an in-progress job ──────────────
+    // ── On load: if generation is running, show a non-blocking notice only ──────
     const serverInProgress = {{ !empty($insightInProgress) ? 'true' : 'false' }};
-    if (serverInProgress) {
-        showGeneratingLoader();
-        showProcessingBar('Insight generation is still in progress… Please wait.');
-    } else {
-        localStorage.removeItem(LS_KEY);
+    const lsProcessingId   = localStorage.getItem(LS_KEY);
+
+    if (serverInProgress || lsProcessingId) {
+        // Show a small, non-blocking banner — do NOT replace the button or block the page
+        showProcessingBar('Insight generation is running in the background. You can use this page normally.');
     }
 
     // ── Entry point: "Generate Insights" button click ────────────────────────
     window.dashTriggerGenerate = function () {
+        if (DB_LIMIT_REACHED) {
+            openDashLimitModal();
+            return;
+        }
         if (!HAS_BUSINESS_CTX) {
             openIndustryModal();
         } else {
@@ -543,8 +617,8 @@
     // ── Actually dispatch insight generation ──────────────────────────────────
     window.dashDoGenerate = function () {
         closeDashQbModal();
-        showGeneratingLoader();
-        showProcessingBar('Syncing QuickBooks data and generating AI insights… This may take a few minutes.');
+        const btn = document.getElementById('dashGenerateBtn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Starting…'; }
 
         fetch(GENERATE_URL, {
             method:  'POST',
@@ -553,21 +627,33 @@
         })
         .then(r => r.json())
         .then(data => {
-            if (data.status === 'success') {
-                // Job ran synchronously — redirect to insights page to view the result
-                localStorage.removeItem(LS_KEY);
+            if (data.status === 'processing') {
+                // Save report ID to localStorage so insights page can pick up polling
+                localStorage.setItem(LS_KEY, data.report_id);
+                // Navigate to insights page — generation continues in background
                 window.location.href = INSIGHTS_URL;
             } else {
-                hideProcessingBar();
-                resetDashBtn();
-                Swal.fire({ icon: 'error', title: 'Error', text: data.message });
+                if (btn) { btn.disabled = false; btn.textContent = 'Generate Insights'; }
+                if (data.limit_reached) {
+                    openDashLimitModal();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message });
+                }
             }
         })
         .catch(() => {
-            hideProcessingBar();
-            resetDashBtn();
+            if (btn) { btn.disabled = false; btn.textContent = 'Generate Insights'; }
             Swal.fire({ icon: 'error', title: 'Error', text: 'Something went wrong. Please try again.' });
         });
+    };
+
+    // ── Limit-reached modal ───────────────────────────────────────────────────
+    window.openDashLimitModal = function () {
+        document.getElementById('dashLimitModal').classList.add('open');
+    };
+
+    window.closeDashLimitModal = function () {
+        document.getElementById('dashLimitModal').classList.remove('open');
     };
 
     // ── Helpers ───────────────────────────────────────────────────────────────

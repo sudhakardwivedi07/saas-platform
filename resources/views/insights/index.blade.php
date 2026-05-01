@@ -78,53 +78,87 @@
 .dashboard-action-card-btn.primary { background: #f06b25; color: white; }
 .dashboard-action-card-btn.primary:hover { background: #d95a1a; color: white; }
 .dashboard-action-card-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-/* ── Company Selector ────────────────────────────────────────── */
+/* ── Company / Filter Bar ────────────────────────────────────── */
 .insights-company-bar {
     background: white;
     border-radius: 10px;
-    padding: 14px 20px;
+    padding: 12px 20px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     margin-bottom: 20px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     flex-wrap: wrap;
 }
 .viewing-label {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 11px;
+    gap: 6px;
+    font-size: 10px;
     font-weight: 700;
-    letter-spacing: .06em;
+    letter-spacing: .07em;
     text-transform: uppercase;
     color: #64748b;
+    white-space: nowrap;
 }
 .viewing-company {
     font-size: 14px;
     font-weight: 700;
     color: #1a202c;
+    white-space: nowrap;
 }
 .company-selector-wrap {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-left: auto;
 }
-.company-select {
-    height: 36px;
+.bar-select {
+    height: 34px;
     border: 1px solid #e2e8f0;
     border-radius: 7px;
-    padding: 0 12px;
+    padding: 0 28px 0 10px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #1a202c;
+    background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+    -webkit-appearance: none;
+    appearance: none;
+    outline: none;
+    cursor: pointer;
+    min-width: 160px;
+}
+.bar-select:focus { border-color: #1a6aa8; }
+.bar-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.bar-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.bar-search-wrap svg {
+    position: absolute;
+    left: 10px;
+    color: #94a3b8;
+    pointer-events: none;
+}
+.bar-search-inp {
+    height: 34px;
+    padding: 0 12px 0 32px;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
     font-size: 13px;
     font-family: inherit;
     color: #1a202c;
     background: #f8fafc;
     outline: none;
-    cursor: pointer;
-    min-width: 200px;
+    width: 200px;
 }
-.company-select:focus { border-color: #1a6aa8; }
+.bar-search-inp:focus { border-color: #1a6aa8; }
 /* ── Monthly Usage Bar ───────────────────────────────────────── */
 .monthly-usage-bar {
     background: #f8fafc;
@@ -157,17 +191,6 @@
     margin-bottom: 20px;
 }
 .table-header h2 { font-size: 20px; font-weight: 600; color: #1a202c; margin: 0; }
-.search-box { position: relative; }
-.search-box input {
-    padding: 8px 12px 8px 36px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 14px;
-    width: 220px;
-    outline: none;
-}
-.search-box input:focus { border-color: #1a6aa8; }
-.search-box i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 13px; }
 .reports-table { width: 100%; border-collapse: collapse; }
 .reports-table th {
     text-align: left;
@@ -296,6 +319,42 @@
     font-size: 14px; font-weight: 500; cursor: pointer; transition: all .2s;
 }
 .ind-btn-cancel:hover { background: #fff4ee; }
+/* ── Free Report Limit Reached Modal ───────────────────────── */
+.limit-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45);
+    z-index: 10002; display: none; align-items: center; justify-content: center;
+}
+.limit-modal-overlay.open { display: flex; }
+.limit-modal {
+    background: white; border-radius: 20px;
+    padding: 40px 40px 32px; width: 460px; max-width: 95vw;
+    text-align: center;
+    animation: limitSlide .25s ease;
+    box-shadow: 0 20px 60px rgba(0,0,0,.18);
+}
+@keyframes limitSlide { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
+.limit-modal-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    background: #e0f2fe; display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+}
+.limit-modal h3 { font-size: 22px; font-weight: 700; color: #1a202c; margin: 0 0 12px; }
+.limit-modal p  { font-size: 14.5px; color: #6b7280; line-height: 1.65; margin: 0 0 28px; }
+.limit-modal-actions { display: flex; gap: 12px; }
+.limit-btn-subscribe {
+    flex: 1; background: #f06b25; color: white; border: none;
+    padding: 14px 20px; border-radius: 10px; font-size: 14.5px; font-weight: 600;
+    cursor: pointer; transition: background .2s; text-decoration: none;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 5px 10px rgba(240,107,37,.3);
+}
+.limit-btn-subscribe:hover { background: #d95a1a; color: white; text-decoration: none; }
+.limit-btn-later {
+    flex: 1; background: transparent; color: #f06b25;
+    border: 1.5px solid #f06b25; padding: 13px 20px; border-radius: 10px;
+    font-size: 14.5px; font-weight: 500; cursor: pointer; transition: all .2s;
+}
+.limit-btn-later:hover { background: #fff4ee; }
 /* ── Processing bar ─────────────────────────────────────────── */
 .thinking-bar {
     display: flex; align-items: center; gap: 10px;
@@ -329,6 +388,7 @@
     $limitReached    = $monthlyLimit !== null && $monthlyUsed >= $monthlyLimit;
     $usagePct        = $monthlyLimit ? min(100, round($monthlyUsed / $monthlyLimit * 100)) : 0;
     $usageClass      = $usagePct >= 100 ? 'full' : ($usagePct >= 80 ? 'warn' : '');
+    $planName        = $currentPlan?->name ?? null;
 @endphp
 
 {{-- ── Processing bar ──────────────────────────────────────────────────── --}}
@@ -340,10 +400,11 @@
 </div>
 
 {{-- ── Company Selector Bar ─────────────────────────────────────────────── --}}
-@if($companies->count() > 0)
+{{-- ── Filter / Company Bar ─────────────────────────────────────────────── --}}
 <div class="insights-company-bar">
+    {{-- Left: company context --}}
     <div class="viewing-label">
-        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path d="M3 7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/>
             <path d="M16 3v4M8 3v4"/>
         </svg>
@@ -351,9 +412,10 @@
     </div>
     <div class="viewing-company">{{ $selectedCompany?->company_name ?? 'Your Company' }}</div>
 
-    @if($companies->count() > 1)
+    {{-- Company selector (always visible when there are companies) --}}
+    @if($companies->count() > 0)
     <div class="company-selector-wrap">
-        <select class="company-select" onchange="switchCompany(this.value)">
+        <select class="bar-select" onchange="switchCompany(this.value)">
             @foreach($companies as $co)
                 <option value="{{ $co->id }}" {{ $co->id == $selectedCompanyId ? 'selected' : '' }}>
                     {{ $co->company_name }}
@@ -363,19 +425,38 @@
     </div>
     @endif
 
-    @if($monthlyLimit !== null)
-    <div class="monthly-usage-bar" style="margin-left:{{ $companies->count() > 1 ? '0' : 'auto' }}">
-        <span class="usage-label">Insights this month</span>
-        <span class="usage-count" style="color:{{ $limitReached ? '#ef4444' : '#1a202c' }}">
-            {{ $monthlyUsed }} / {{ $monthlyLimit }}
-        </span>
-        <div class="usage-progress-wrap">
-            <div class="usage-progress-fill {{ $usageClass }}" style="width:{{ $usagePct }}%"></div>
+    {{-- Right: usage bar + status filter + search --}}
+    <div class="bar-right">
+        @if($monthlyLimit !== null)
+        <div class="monthly-usage-bar" style="margin-left:0">
+            <span class="usage-label">This month</span>
+            <span class="usage-count" style="color:{{ $limitReached ? '#ef4444' : '#1a202c' }}">
+                {{ $monthlyUsed }} / {{ $monthlyLimit }}
+            </span>
+            <div class="usage-progress-wrap">
+                <div class="usage-progress-fill {{ $usageClass }}" style="width:{{ $usagePct }}%"></div>
+            </div>
+        </div>
+        @endif
+
+        {{-- Status filter --}}
+        <select id="statusFilter" class="bar-select" style="min-width:140px;" onchange="applyFilters()">
+            <option value="">All Statuses</option>
+            <option value="analyzed">Analyzed</option>
+            <option value="processing">Processing</option>
+            <option value="failed">Failed</option>
+            <option value="deleted">Deleted</option>
+        </select>
+
+        {{-- Search --}}
+        <div class="bar-search-wrap">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input type="text" id="searchInput" class="bar-search-inp" placeholder="Search insights…" oninput="applyFilters()">
         </div>
     </div>
-    @endif
 </div>
-@endif
 
 {{-- ── Welcome (no reports yet) ────────────────────────────────────────── --}}
 <div id="insightsWelcomeMessage" style="{{ $reports->isEmpty() ? '' : 'display:none;' }}">
@@ -389,7 +470,7 @@
                 <p>Connect <span style="color:#f06b25;">QuickBooks</span> to begin the analysis. Your insights will appear here once the analysis is complete.</p>
             @endif
             @if($limitReached)
-                <div style="margin-top:12px;padding:12px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#dc2626;font-size:13.5px;">
+                <div class="limit-reached-notice" style="margin-top:12px;padding:12px 16px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#dc2626;font-size:13.5px;">
                     <strong>Monthly limit reached.</strong> You've used all {{ $monthlyLimit }} insights for this month. Please upgrade your plan or wait until next month.
                 </div>
             @endif
@@ -454,14 +535,10 @@
                     <i class="fa fa-sync-alt"></i> Generate New Insight
                 </button>
                 @elseif($limitReached)
-                <span style="font-size:12.5px;color:#ef4444;font-weight:600;background:#fef2f2;padding:6px 12px;border-radius:6px;border:1px solid #fecaca;">
+                <span class="limit-badge-inline" style="font-size:12.5px;color:#ef4444;font-weight:600;background:#fef2f2;padding:6px 12px;border-radius:6px;border:1px solid #fecaca;">
                     Monthly limit reached ({{ $monthlyUsed }}/{{ $monthlyLimit }})
                 </span>
                 @endif
-            </div>
-            <div class="search-box">
-                <i class="fa fa-search"></i>
-                <input type="text" id="searchInput" placeholder="Search insights" onkeyup="searchReports()">
             </div>
         </div>
 
@@ -472,14 +549,22 @@
                         <th>Insight Name</th>
                         <th>Generated</th>
                         <th>Size</th>
-                        <th>Type</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="reportsTableBody">
                     @foreach($reports as $report)
-                    <tr id="insight-row-{{ $report->id }}" data-search="{{ strtolower($report->report_name) }}">
+                    @php
+                        $isDeleted  = $report->trashed() || strtolower($report->status) === 'deleted';
+                        $rowStatus  = $isDeleted ? 'deleted'
+                            : (in_array(strtolower($report->status), ['uploading','analyzing']) ? 'processing'
+                            : strtolower($report->status));
+                    @endphp
+                    <tr id="insight-row-{{ $report->id }}"
+                        data-search="{{ strtolower($report->report_name) }}"
+                        data-status="{{ $rowStatus }}"
+                        style="{{ $isDeleted ? 'opacity:0.7;' : '' }}">
                         <td>
                             <div class="insight-name-cell">
                                 <span class="insight-name-icon">
@@ -487,17 +572,22 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                     </svg>
                                 </span>
-                                <a href="{{ !$report->isProcessing() ? route('insights.view', $report->encrypted_id) : '#' }}"
-                                   style="color:#1a6aa8;text-decoration:none;font-weight:500;{{ $report->isProcessing() ? 'pointer-events:none;color:#1a202c;' : '' }}">
-                                    {{ $report->report_name }}
-                                </a>
+                                @if($isDeleted)
+                                    <span style="color:#9ca3af;font-weight:500;">{{ $report->report_name }}</span>
+                                @else
+                                    <a href="{{ !$report->isProcessing() ? route('insights.view', $report->encrypted_id) : '#' }}"
+                                       style="color:#1a6aa8;text-decoration:none;font-weight:500;{{ $report->isProcessing() ? 'pointer-events:none;color:#1a202c;' : '' }}">
+                                        {{ $report->report_name }}
+                                    </a>
+                                @endif
                             </div>
                         </td>
                         <td style="color:#64748b;">{{ $report->created_at->format('M d, Y') }}</td>
                         <td style="color:#64748b;">{{ $report->formatted_file_size }}</td>
-                        <td><span class="badge info">Monthly</span></td>
                         <td>
-                            @if($report->isReady())
+                            @if($isDeleted)
+                                <span class="badge danger">Deleted</span>
+                            @elseif($report->isReady())
                                 <span class="badge success">Analyzed</span>
                             @elseif(strtolower($report->status) === 'failed')
                                 <span class="badge danger">Failed</span>
@@ -508,28 +598,32 @@
                             @endif
                         </td>
                         <td>
-                            <div class="action-buttons">
-                                @if($report->isProcessing())
-                                    <button class="btn-view-insight" disabled style="background:#9ca3af;cursor:not-allowed;">Processing…</button>
-                                @else
-                                    <a href="{{ route('insights.view', $report->encrypted_id) }}" class="btn-view-insight">
-                                        View Insight
-                                    </a>
-                                @endif
-                                <button class="btn-icon download" title="Download Files"
-                                        onclick="downloadInsight({{ $report->id }})">
-                                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                    </svg>
-                                </button>
-                                <button class="btn-icon delete" title="Delete"
-                                        onclick="deleteInsight({{ $report->id }}, '{{ addslashes($report->report_name) }}')">
-                                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                    </svg>
-                                </button>
-                            </div>
+                            @if($isDeleted)
+                                <span style="font-size:13px;color:#9ca3af;font-style:italic;">No actions available</span>
+                            @else
+                                <div class="action-buttons">
+                                    @if($report->isProcessing())
+                                        <button class="btn-view-insight" disabled style="background:#9ca3af;cursor:not-allowed;">Processing…</button>
+                                    @else
+                                        <a href="{{ route('insights.view', $report->encrypted_id) }}" class="btn-view-insight">
+                                            View Insight
+                                        </a>
+                                    @endif
+                                    <button class="btn-icon download" title="Download Files"
+                                            onclick="downloadInsight({{ $report->id }})">
+                                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                        </svg>
+                                    </button>
+                                    <button class="btn-icon delete" title="Delete"
+                                            onclick="deleteInsight({{ $report->id }}, '{{ addslashes($report->report_name) }}')">
+                                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round"
+                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            @endif
                         </td>
                     </tr>
                     @endforeach
@@ -570,6 +664,35 @@
     </div>
 </div>
 
+{{-- ── Free Report Limit Reached Modal ─────────────────────────────────── --}}
+<div id="limitReachedModal" class="limit-modal-overlay">
+    <div class="limit-modal">
+        <div class="limit-modal-icon">
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="#0ea5e9" stroke-width="2"/>
+                <line x1="12" y1="8" x2="12" y2="12" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round"/>
+                <circle cx="12" cy="16" r="1.2" fill="#0ea5e9"/>
+            </svg>
+        </div>
+        <h3>Free Report Limit Reached</h3>
+        <p>
+            @if($planName && $monthlyLimit)
+                You're on the <strong>{{ $planName }}</strong> plan, which includes <strong>{{ $monthlyLimit }}</strong> insight{{ $monthlyLimit == 1 ? '' : 's' }} per month.
+                You've used all your insights for this month.
+            @elseif($monthlyLimit)
+                You've used all <strong>{{ $monthlyLimit }}</strong> insights included in your plan this month.
+            @else
+                You've reached your monthly insight limit.
+            @endif
+            Upgrade your plan to generate more insights.
+        </p>
+        <div class="limit-modal-actions">
+            <a href="{{ route('billing.index') }}" class="limit-btn-subscribe">Subscribe Now</a>
+            <button class="limit-btn-later" onclick="closeLimitModal()">Maybe Later</button>
+        </div>
+    </div>
+</div>
+
 {{-- ── QB Sync Confirm Modal ────────────────────────────────────────────── --}}
 <div id="qbGenerateModal" class="qb-modal-overlay" style="display:none;" onclick="closeGenerateModal(event)">
     <div class="qb-modal">
@@ -606,17 +729,20 @@
     const SAVE_CTX_URL      = '{{ route("insights.save-business-context") }}';
     const HAS_BUSINESS_CTX  = {{ !empty(auth()->user()->business_context) ? 'true' : 'false' }};
     const SELECTED_COMPANY  = {{ $selectedCompanyId }};
+    const LIMIT_REACHED     = {{ $limitReached ? 'true' : 'false' }};
     const LS_KEY            = 'insights_processing_ids';
 
-    // Auto-poll in-progress reports on page load
-    const processingIds = @json($reports->filter(fn($r) => $r->isProcessing())->pluck('id'));
-    if (processingIds.length > 0) {
-        showProcessingBar('Analyzing your QuickBooks data…');
-        processingIds.forEach(id => pollStatus(id));
-    }
+    // ── On load: resume polling for any in-progress reports ─────────────────
+    const serverProcessingIds = @json($reports->filter(fn($r) => $r->isProcessing())->pluck('id'));
 
-    // Clear any stale localStorage entries (sync dispatch means nothing runs in background)
-    localStorage.removeItem(LS_KEY);
+    // Also check localStorage for a report started on another page (e.g. dashboard)
+    let lsId = localStorage.getItem(LS_KEY);
+    let allPollingIds = [...new Set([...serverProcessingIds, ...(lsId ? [parseInt(lsId)] : [])])];
+
+    if (allPollingIds.length > 0) {
+        showProcessingBar('Analyzing your QuickBooks data… You can navigate freely while this runs.');
+        allPollingIds.forEach(id => pollStatus(id));
+    }
 
     // ── Company switch ────────────────────────────────────────────────────────
     window.switchCompany = function (companyId) {
@@ -625,8 +751,12 @@
         window.location.href = url.toString();
     };
 
-    // ── Generate (check industry first, then show confirmation modal) ────────
+    // ── Generate (check limit → industry → QB confirmation) ──────────────────
     window.generateInsight = function () {
+        if (LIMIT_REACHED) {
+            openLimitModal();
+            return;
+        }
         if (!HAS_BUSINESS_CTX) {
             openIndustryModal();
         } else {
@@ -699,7 +829,7 @@
         const btn2 = document.getElementById('btnGenerateNew');
         [btn1, btn2].forEach(b => { if (b) { b.disabled = true; b.style.opacity = '0.7'; } });
 
-        showProcessingBar('Syncing QuickBooks data and generating AI insights… This may take a few minutes. Please wait.');
+        showProcessingBar('Starting insight generation… You can navigate to other pages freely while this runs.');
 
         fetch('{{ route("insights.generate") }}', {
             method: 'POST',
@@ -708,14 +838,21 @@
         })
         .then(r => r.json())
         .then(data => {
-            if (data.status === 'success') {
-                // Job ran synchronously — reload the page to show the finished insight
-                hideProcessingBar();
-                window.location.reload();
+            if (data.status === 'processing') {
+                // Job dispatched — save ID so polling resumes after navigation
+                localStorage.setItem(LS_KEY, data.report_id);
+                showProcessingBar('Insight generation is running in the background. Feel free to navigate.');
+                showTableView();
+                prependPlaceholderRow(data.report_id, data.report_name);
+                pollStatus(data.report_id);
             } else {
                 hideProcessingBar();
                 resetGenerateBtns();
-                Swal.fire({ icon: 'error', title: 'Error', text: data.message });
+                if (data.limit_reached) {
+                    openLimitModal();
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message });
+                }
             }
         })
         .catch(() => {
@@ -730,15 +867,17 @@
         fetch(`/insights/status/${reportId}`, { headers: { 'Accept': 'application/json' } })
         .then(r => r.json())
         .then(data => {
-            if (data.status !== 'success') return;
+            if (data.status !== 'success') { setTimeout(() => pollStatus(reportId), 10000); return; }
             const r = data.report;
             if (r.has_insights) {
+                localStorage.removeItem(LS_KEY);
                 hideProcessingBar();
                 resetGenerateBtns();
                 markRowReady(r.id, r.encrypted_id);
                 return;
             }
             if (r.is_failed) {
+                localStorage.removeItem(LS_KEY);
                 hideProcessingBar();
                 resetGenerateBtns();
                 markRowFailed(r.id);
@@ -758,12 +897,13 @@
         if (table)   table.style.display = '';
     }
 
-    function prependPlaceholderRow(id) {
+    function prependPlaceholderRow(id, reportName) {
         const tbody = document.getElementById('reportsTableBody');
         if (!tbody) { location.reload(); return; }
+        const displayName = reportName || 'Generating…';
         const tr = document.createElement('tr');
         tr.id = 'insight-row-' + id;
-        tr.dataset.search = 'quickbooks insight';
+        tr.dataset.search = displayName.toLowerCase();
         tr.innerHTML = `
             <td>
                 <div class="insight-name-cell">
@@ -772,12 +912,11 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
                     </span>
-                    <span style="color:#1a202c;font-weight:500;">QuickBooks Insight — generating…</span>
+                    <span style="color:#1a202c;font-weight:500;">${displayName}</span>
                 </div>
             </td>
             <td style="color:#64748b;">Just now</td>
             <td style="color:#64748b;">—</td>
-            <td><span class="badge info">Monthly</span></td>
             <td><span class="badge info" id="status-badge-${id}">Analyzing</span></td>
             <td>
                 <div class="action-buttons">
@@ -857,13 +996,17 @@
         if (btn2) { btn2.disabled = false; btn2.style.opacity = ''; btn2.innerHTML = '<i class="fa fa-sync-alt"></i> Generate New Insight'; }
     }
 
-    // ── Search ────────────────────────────────────────────────────────────────
-    window.searchReports = function () {
-        const q = document.getElementById('searchInput').value.toLowerCase();
+    // ── Search + Status filter ────────────────────────────────────────────────
+    window.applyFilters = function () {
+        const q      = (document.getElementById('searchInput')?.value ?? '').toLowerCase();
+        const status = (document.getElementById('statusFilter')?.value ?? '').toLowerCase();
         document.querySelectorAll('#reportsTableBody tr').forEach(row => {
-            row.style.display = (row.dataset.search || '').includes(q) ? '' : 'none';
+            const matchSearch = !q      || (row.dataset.search || '').includes(q);
+            const matchStatus = !status || (row.dataset.status || '') === status;
+            row.style.display = (matchSearch && matchStatus) ? '' : 'none';
         });
     };
+    window.searchReports = window.applyFilters;
 
     // ── Download ──────────────────────────────────────────────────────────────
     window.downloadInsight = function (id) {
@@ -877,6 +1020,59 @@
         });
         window.location.href = `/insights/${id}/download`;
         setTimeout(() => Swal.close(), 2500);
+    };
+
+    // ── Refresh usage bar after delete ────────────────────────────────────────
+    function refreshUsageBar(used, limit, limitReached) {
+        // Update count text
+        const countEl = document.querySelector('.usage-count');
+        if (countEl) {
+            countEl.textContent = used + ' / ' + limit;
+            countEl.style.color = limitReached ? '#ef4444' : '#1a202c';
+        }
+
+        // Update progress fill
+        const pct  = Math.min(100, Math.round(used / limit * 100));
+        const fill = document.querySelector('.usage-progress-fill');
+        if (fill) {
+            fill.style.width = pct + '%';
+            fill.className = 'usage-progress-fill' + (pct >= 100 ? ' full' : pct >= 80 ? ' warn' : '');
+        }
+
+        // Show/hide generate buttons based on new limit status
+        const btnNew      = document.getElementById('btnGenerateNew');
+        const limitBadge  = document.querySelector('.limit-badge-inline');
+
+        if (!limitReached) {
+            // Restore generate button if it was hidden
+            if (!btnNew) {
+                const header = document.querySelector('.table-header > div');
+                if (header) {
+                    const btn = document.createElement('button');
+                    btn.id = 'btnGenerateNew';
+                    btn.innerHTML = '<i class="fa fa-sync-alt"></i> Generate New Insight';
+                    btn.style.cssText = 'background:#f06b25;color:white;padding:8px 18px;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .2s;';
+                    btn.onmouseover = function(){ this.style.background='#d95a1a'; };
+                    btn.onmouseout  = function(){ this.style.background='#f06b25'; };
+                    btn.onclick = function(){ generateInsight(); };
+                    header.appendChild(btn);
+                }
+            }
+            if (limitBadge) limitBadge.remove();
+
+            // Remove limit notice from welcome section too
+            const limitNotice = document.querySelector('.limit-reached-notice');
+            if (limitNotice) limitNotice.remove();
+        }
+    }
+
+    // ── Limit-reached modal ───────────────────────────────────────────────────
+    window.openLimitModal = function () {
+        document.getElementById('limitReachedModal').classList.add('open');
+    };
+
+    window.closeLimitModal = function () {
+        document.getElementById('limitReachedModal').classList.remove('open');
     };
 
     // ── Delete ────────────────────────────────────────────────────────────────
@@ -910,12 +1106,30 @@
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.status === 'success') {
+                    // Update row in-place to show Deleted status (row stays visible)
                     var row = document.getElementById('insight-row-' + id);
-                    if (row) row.remove();
+                    if (row) {
+                        row.style.opacity = '0.7';
+                        row.dataset.status = 'deleted';
+                        // Name: make plain text
+                        var nameCell = row.querySelector('.insight-name-cell a, .insight-name-cell span[style]');
+                        if (nameCell) {
+                            var span = document.createElement('span');
+                            span.style.cssText = 'color:#9ca3af;font-weight:500;';
+                            span.textContent = nameCell.textContent.trim();
+                            nameCell.replaceWith(span);
+                        }
+                        // Status badge
+                        var statusTd = row.cells[3];
+                        if (statusTd) statusTd.innerHTML = '<span class="badge danger">Deleted</span>';
+                        // Actions
+                        var actionsTd = row.cells[4];
+                        if (actionsTd) actionsTd.innerHTML = '<span style="font-size:13px;color:#9ca3af;font-style:italic;">No actions available</span>';
+                    }
                     Swal.fire({ icon: 'success', title: 'Deleted', text: 'Insight deleted successfully.', timer: 2000, showConfirmButton: false });
-                    if (document.querySelectorAll('#reportsTableBody tr').length === 0) {
-                        document.getElementById('reportsTableContainer').style.display = 'none';
-                        document.getElementById('insightsWelcomeMessage').style.display = '';
+                    // Refresh the monthly usage bar and generate buttons live
+                    if (data.monthly_limit !== undefined && data.monthly_limit !== null) {
+                        refreshUsageBar(data.monthly_used, data.monthly_limit, data.limit_reached);
                     }
                 } else {
                     Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Could not delete insight.' });

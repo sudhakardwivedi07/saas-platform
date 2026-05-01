@@ -57,8 +57,9 @@ class InsightsController extends AccountBaseController
         $this->selectedCompanyId = (int) $selectedCompanyId;
         $this->selectedCompany   = $allCompanies->firstWhere('id', $this->selectedCompanyId);
 
-        // Load reports scoped to selected company (or fall back to user's reports if no company_id on older records)
-        $this->reports = Report::where('user_id', $user->id)
+        // Load reports — include soft-deleted so deleted records show with "Deleted" status
+        $this->reports = Report::withTrashed()
+            ->where('user_id', $user->id)
             ->where(function ($q) use ($selectedCompanyId) {
                 $q->where('company_id', $selectedCompanyId)
                   ->orWhereNull('company_id');
@@ -69,6 +70,10 @@ class InsightsController extends AccountBaseController
         // Monthly usage for limit enforcement
         $this->monthlyUsed  = $this->countMonthlyInsights($user->id, (int) $selectedCompanyId);
         $this->monthlyLimit = $this->resolveMonthlyLimit($companyId);
+
+        // Current plan info for the limit-reached modal
+        $company = Company::withoutGlobalScopes()->find($companyId);
+        $this->currentPlan = $company?->clientPackage ?? $company?->package;
 
         return view('insights.index', $this->data);
     }
@@ -119,8 +124,9 @@ class InsightsController extends AccountBaseController
             $used = $this->countMonthlyInsights($user->id, $companyId);
             if ($used >= $monthlyLimit) {
                 return response()->json([
-                    'status'  => 'error',
-                    'message' => "You have reached your monthly insight limit ({$monthlyLimit} insights/month). Please upgrade your plan or wait until next month.",
+                    'status'        => 'error',
+                    'limit_reached' => true,
+                    'message'       => "You have reached your monthly insight limit ({$monthlyLimit} insights/month). Please upgrade your plan or wait until next month.",
                 ], 422);
             }
         }
@@ -145,6 +151,14 @@ class InsightsController extends AccountBaseController
         if ($reportCompanyId !== $companyId && !in_array($reportCompanyId, $managedIds)) {
             $reportCompanyId = $companyId;
         }
+
+        // Build "Company Name (Analysis N)" report name
+        $reportCompany   = Company::withoutGlobalScopes()->find($reportCompanyId);
+        $companyLabel    = trim($reportCompany?->company_name ?? '');
+        $analysisNumber  = Report::withTrashed()->where('company_id', $reportCompanyId)->count() + 1;
+        $generatedName   = $companyLabel
+            ? $companyLabel . ' (Analysis ' . $analysisNumber . ')'
+            : 'Analysis ' . $analysisNumber;
 
         $endDate   = $request->get('end_date',   Carbon::now()->format('Y-m-d'));
         $startDate = $request->get('start_date', Carbon::parse($endDate)->subMonths(11)->startOfMonth()->format('Y-m-d'));
@@ -171,7 +185,7 @@ class InsightsController extends AccountBaseController
                 $report = Report::create([
                     'user_id'         => $user->id,
                     'company_id'      => $reportCompanyId,
-                    'report_name'     => 'QuickBooks Insight — ' . Carbon::now()->format('M j, Y g:i A'),
+                    'report_name'     => $generatedName,
                     'upload_date'     => now()->toDateString(),
                     'total_file_size' => 0,
                     'status'          => 'Uploading',
@@ -214,13 +228,18 @@ class InsightsController extends AccountBaseController
                 $style    = config('dashboard_graph_settings.default_style', 'plain');
                 $industry = $user->business_context ?? 'General Business';
 
-                // Run synchronously so the result is ready when the response returns
-                ProcessReportInsightsJob::dispatchSync($report->id, $apiFiles, $style, $industry);
+                // Dispatch async — HTTP response returns immediately so the user can navigate freely
+                ProcessReportInsightsJob::dispatch($report->id, $apiFiles, $style, $industry);
+
+                // Start a background queue worker on this machine so the job is processed without
+                // needing a separately running worker (WAMP / local dev convenience)
+                $this->startBackgroundQueueWorker();
 
                 return response()->json([
-                    'status'    => 'success',
-                    'message'   => 'Insight generation complete!',
-                    'report_id' => $report->id,
+                    'status'      => 'processing',
+                    'message'     => 'Insight generation started in the background.',
+                    'report_id'   => $report->id,
+                    'report_name' => $report->report_name,
                 ]);
 
             } catch (\Exception $e) {
@@ -348,20 +367,7 @@ class InsightsController extends AccountBaseController
             abort(404, 'No insight data available.');
         }
 
-        $companyName = trim($report->user?->company?->company_name ?? '');
-
-        $allIds = Report::withTrashed()
-            ->where('user_id', $report->user_id)
-            ->orderBy('created_at')
-            ->pluck('id')
-            ->toArray();
-        $analysisNumber = (array_search($report->id, $allIds) !== false)
-            ? array_search($report->id, $allIds) + 1
-            : 1;
-
-        $fullTitle = $companyName
-            ? $companyName . ' — CFO Insights (Analysis ' . $analysisNumber . ')'
-            : 'CFO Insights (Analysis ' . $analysisNumber . ')';
+        $fullTitle = $report->report_name ?: 'CFO Insights';
 
         $insightData = $report->insight_json_data;
         $reportText  = '';
@@ -405,22 +411,31 @@ class InsightsController extends AccountBaseController
         ]);
 
         $timestamp = $report->created_at->format('mdyHis');
-        $base      = $companyName
-            ? $companyName . ' - CFO Insights (Analysis ' . $analysisNumber . ')_' . $timestamp
-            : 'CFO Insights (Analysis ' . $analysisNumber . ')_' . $timestamp;
+        $base      = preg_replace('/[^A-Za-z0-9\-_ ]/', '', $fullTitle) . '_' . $timestamp;
 
         return $pdf->download($base . '.pdf');
     }
 
     public function destroy(int $reportId)
     {
+        $user   = auth()->user();
         $report = Report::where('id', $reportId)
-            ->where('user_id', auth()->id())
+            ->where('user_id', $user->id)
             ->firstOrFail();
 
         $report->delete();
 
-        return response()->json(['status' => 'success', 'message' => 'Insight deleted.']);
+        // Return updated monthly count so the UI can refresh without a page reload
+        $monthlyUsed  = $this->countMonthlyInsights($user->id, $user->company_id);
+        $monthlyLimit = $this->resolveMonthlyLimit($user->company_id);
+
+        return response()->json([
+            'status'        => 'success',
+            'message'       => 'Insight deleted.',
+            'monthly_used'  => $monthlyUsed,
+            'monthly_limit' => $monthlyLimit,
+            'limit_reached' => $monthlyLimit !== null && $monthlyUsed >= $monthlyLimit,
+        ]);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -439,10 +454,25 @@ class InsightsController extends AccountBaseController
 
     private function countMonthlyInsights(int $userId, int $companyId): int
     {
-        return Report::where('user_id', $userId)
-            ->where('company_id', $companyId)
+        return Report::withTrashed()
+            ->where('user_id', $userId)
+            ->where(function ($q) use ($companyId) {
+                $q->where('company_id', $companyId)
+                  ->orWhereNull('company_id');
+            })
             ->where('created_at', '>=', Carbon::now()->startOfMonth())
-            ->whereNotIn('status', ['Failed'])
+            ->where(function ($q) {
+                // Not soft-deleted → count active records except Failed and legacy 'Deleted' status
+                $q->where(function ($q2) {
+                    $q2->whereNull('deleted_at')
+                       ->whereNotIn('status', ['Failed', 'Deleted']);
+                })
+                // Soft-deleted → only count if it was Analyzed (slot was consumed)
+                ->orWhere(function ($q2) {
+                    $q2->whereNotNull('deleted_at')
+                       ->where('status', 'Analyzed');
+                });
+            })
             ->count();
     }
 
@@ -468,6 +498,25 @@ class InsightsController extends AccountBaseController
             'redirect_uri'  => $setting->redirect_uri,
             'base_url'      => $setting->base_url,
         ];
+    }
+
+    private function startBackgroundQueueWorker(): void
+    {
+        try {
+            $php     = PHP_BINARY;
+            $artisan = base_path('artisan');
+            if (PHP_OS_FAMILY === 'Windows') {
+                // Start a detached process; --stop-when-empty so it exits after all pending jobs
+                pclose(popen(
+                    "start /B \"\" \"{$php}\" \"{$artisan}\" queue:work --stop-when-empty --timeout=900 >NUL 2>&1",
+                    'r'
+                ));
+            } else {
+                exec("nohup {$php} {$artisan} queue:work --stop-when-empty --timeout=900 > /dev/null 2>&1 &");
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Could not start background queue worker: ' . $e->getMessage());
+        }
     }
 
     // ── PDF helpers ───────────────────────────────────────────────────────────

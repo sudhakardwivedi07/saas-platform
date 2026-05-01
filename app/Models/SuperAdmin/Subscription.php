@@ -3,6 +3,7 @@
 namespace App\Models\SuperAdmin;
 
 use App\Models\BaseModel;
+use App\Models\ClientPackage;
 use App\Models\Company;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -46,6 +47,11 @@ class Subscription extends BaseModel
     public function package(): BelongsTo
     {
         return $this->belongsTo(Package::class);
+    }
+
+    public function clientPackage(): BelongsTo
+    {
+        return $this->belongsTo(ClientPackage::class, 'client_package_id');
     }
 
     // ─── Helpers ───────────────────────────────────────────────────────────────

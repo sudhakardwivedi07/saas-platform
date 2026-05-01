@@ -18,12 +18,19 @@ class ClientController extends AccountBaseController
         $plan = $ownerCompany?->activePlan();
         $maxCompanies = $plan?->max_companies;
 
+        if (!$plan) {
+            abort(
+                422,
+                'No plan is assigned to your account. Please select a subscription plan before adding clients or companies.'
+            );
+        }
+
         if (!$maxCompanies || (int) $maxCompanies <= 0) {
             return;
         }
 
         $createdCompaniesCount = Company::withoutGlobalScopes()
-            ->where('created_by', $ownerCompanyId)
+            ->whereIn('created_by', array_filter([$ownerCompanyId, auth()->id()]))
             ->count();
 
         abort_if(
@@ -127,6 +134,9 @@ class ClientController extends AccountBaseController
             ->with(['company.quickbooksConnections', 'company.clientPackage', 'company.package'])
             ->orderByDesc('created_at')
             ->get();
+
+        $tenant = Company::withoutGlobalScopes()->find($companyId);
+        $this->hasActivePlan = (bool) $tenant?->activePlan();
 
         return view('clients.index', $this->data);
     }

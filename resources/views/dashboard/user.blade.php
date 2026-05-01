@@ -336,6 +336,20 @@
             $price     = $isFree ? null : '$' . number_format((float)($plan->monthly_price ?? 0), 2);
             $insightsLimit  = $plan->insights_per_month ?? $plan->max_insights_per_month ?? null;
             $companiesLimit = $plan->max_companies ?? $plan->max_users ?? null;
+
+            // Tier ordering for CTAs: avoid "Upgrade to Free" when already on a paid (or higher) plan.
+            $tierRank = static function ($p): int {
+                if (!$p) {
+                    return 0;
+                }
+                return ((int) ($p->sort ?? 0) * 1_000_000)
+                    + (int) round((float) ($p->monthly_price ?? 0) * 100)
+                    + (int) ($p->id ?? 0);
+            };
+            $planRank    = $tierRank($plan);
+            $currentRank = $tierRank($currentPlan);
+            $isLowerTierThanCurrent = $currentPlan && !$isCurrent && $planRank < $currentRank;
+            $isHigherTierThanCurrent = $currentPlan && !$isCurrent && $planRank > $currentRank;
         @endphp
         <div class="plan-card">
             <div class="plan-card-title">
@@ -411,12 +425,21 @@
                         Connect QuickBooks
                     </a>
                 @endif
+            @elseif($isLowerTierThanCurrent)
+                <div style="margin-top:auto;padding-top:8px;">
+                </div>
             @else
                 <form method="POST" action="{{ route('dashboard.assign-plan') }}" style="margin-top:auto">
                     @csrf
                     <input type="hidden" name="client_package_id" value="{{ $plan->id }}">
                     <button type="submit" class="plan-btn btn-orange-outline">
-                        Upgrade to {{ $plan->name }} &rarr;
+                        @if($isHigherTierThanCurrent)
+                            Upgrade to {{ $plan->name }} &rarr;
+                        @elseif($currentPlan)
+                            Switch to {{ $plan->name }} &rarr;
+                        @else
+                            Choose {{ $plan->name }} &rarr;
+                        @endif
                     </button>
                 </form>
             @endif

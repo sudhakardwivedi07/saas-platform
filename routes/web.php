@@ -163,6 +163,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Finance
     Route::get('finance', [FinanceController::class, 'index'])->name('finance.index');
+    Route::get('finance/payments/{payment}/invoice', [FinanceController::class, 'invoice'])->name('finance.invoice');
 
     // Support
     Route::get('support',                [SupportController::class, 'index'])->name('support.index');

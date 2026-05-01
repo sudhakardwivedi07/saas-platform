@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\Payment;
+use Illuminate\Support\Collection;
 
 class FinanceController extends AccountBaseController
 {
@@ -18,37 +19,96 @@ class FinanceController extends AccountBaseController
     {
         abort_403(!auth()->user()->hasRole('client_admin'));
 
-        $companyId = company()?->id ?? auth()->user()->company_id;
+        $ownerCompanyId = (int) (company()?->id ?? auth()->user()->company_id);
 
-        $this->mrr = Payment::where('company_id', $companyId)
+        /** @var Collection<int,int> $portfolioCompanyIds — client firms created under this admin */
+        $portfolioCompanyIds = Company::withoutGlobalScopes()
+            ->where('created_by', $ownerCompanyId)
+            ->pluck('id');
+
+        if ($portfolioCompanyIds->isEmpty()) {
+            $this->mrr = 0;
+            $this->totalRevenue = 0;
+            $this->recentPayments = collect();
+            $this->activeSubscriptions = 0;
+            $this->subscribedCompanies = collect();
+            $this->isFreshFinance = true;
+
+            return view('finance.index', $this->data);
+        }
+
+        // Payments are stored against each client company id, not the admin tenant company id.
+        $paymentsBase = Payment::query()->whereIn('company_id', $portfolioCompanyIds);
+
+        $this->mrr = (clone $paymentsBase)
             ->where('status', 'complete')
             ->whereMonth('paid_at', now()->month)
             ->whereYear('paid_at', now()->year)
-            ->sum('amount') / 100;
+            ->sum('amount');
 
-        $this->totalRevenue = Payment::where('company_id', $companyId)
+        $this->totalRevenue = (clone $paymentsBase)
             ->where('status', 'complete')
-            ->sum('amount') / 100;
+            ->sum('amount');
 
-        $this->recentPayments = Payment::where('company_id', $companyId)
-            ->where('status', 'complete')
+        $this->recentPayments = Payment::query()
+            ->whereIn('company_id', $portfolioCompanyIds)
+            ->with([
+                'company' => fn ($q) => $q->with([
+                    'users' => fn ($uq) => $uq->orderBy('id')->limit(1),
+                    'clientPackage',
+                ]),
+                'subscription.clientPackage',
+                'subscription.package',
+            ])
             ->orderByDesc('paid_at')
-            ->limit(50)
+            ->orderByDesc('id')
+            ->limit(100)
             ->get();
 
         $this->activeSubscriptions = Company::withoutGlobalScopes()
-            ->where('created_by', $companyId)
-            ->whereHas('subscription', fn($q) => $q->whereIn('status', ['active', 'trialing']))
+            ->where('created_by', $ownerCompanyId)
+            ->whereHas('subscription', fn ($q) => $q->whereIn('status', ['active', 'trialing']))
             ->count();
 
         $this->subscribedCompanies = Company::withoutGlobalScopes()
-            ->where('created_by', $companyId)
-            ->with(['subscription.package', 'clientPackage'])
+            ->where('created_by', $ownerCompanyId)
+            ->with([
+                'subscription.clientPackage',
+                'subscription.package',
+                'clientPackage',
+                'package',
+                'users' => fn ($q) => $q->orderBy('id')->limit(1),
+            ])
             ->orderBy('company_name')
             ->get();
 
-        $this->isFreshFinance = $this->recentPayments->isEmpty();
+        // Show onboarding UI only when no portfolio companies exist yet.
+        $this->isFreshFinance = false;
 
         return view('finance.index', $this->data);
+    }
+
+    /**
+     * Open Stripe Dashboard for the invoice (staff must be logged into Stripe).
+     */
+    public function invoice(Payment $payment)
+    {
+        abort_403(!auth()->user()->hasRole('client_admin'));
+
+        $ownerCompanyId = (int) (company()?->id ?? auth()->user()->company_id);
+        $portfolioIds = Company::withoutGlobalScopes()
+            ->where('created_by', $ownerCompanyId)
+            ->pluck('id');
+
+        abort_unless($portfolioIds->contains($payment->company_id), 404);
+
+        if (!$payment->stripe_invoice_id) {
+            return redirect()->route('finance.index')
+                ->with('error', 'No Stripe invoice ID is stored for this payment.');
+        }
+
+        return redirect()->away(
+            'https://dashboard.stripe.com/invoices/' . $payment->stripe_invoice_id
+        );
     }
 }

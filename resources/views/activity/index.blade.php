@@ -90,7 +90,6 @@
                     <tr>
                         <th>Event</th>
                         <th>User</th>
-                        <th>IP Address</th>
                         <th>Date &amp; Time</th>
                     </tr>
                 </thead>
@@ -127,9 +126,6 @@
                             <div style="font-size:0.75rem;color:var(--text-2);">
                                 {{ optional($activity->user)->email ?? '' }}
                             </div>
-                        </td>
-                        <td style="font-size:0.8125rem;color:var(--text-2);font-family:monospace;">
-                            {{ $activity->ip_address ?? '—' }}
                         </td>
                         <td style="font-size:0.8125rem;color:var(--text-2);" data-order="{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->timestamp : 0 }}">
                             <div>{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format('M j, Y') : '—' }}</div>
@@ -174,7 +170,7 @@ $(document).ready(function() {
             ordering: true,
             info: true,
             dom: '<"dt-tscroll"t><"dt-footer"ip>',
-            order: [[3, 'desc']],
+            order: [[2, 'desc']],
             language: {
                 info: 'Showing _START_–_END_ of _TOTAL_ events',
                 infoEmpty: 'No activity found',

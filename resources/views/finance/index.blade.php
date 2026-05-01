@@ -53,6 +53,12 @@
 
 @section('content')
 
+@if(session('error'))
+<div class="info-banner" style="margin-bottom:1rem;background:rgba(239,68,68,.06);border-color:var(--red)">
+    <span style="font-size:13px;color:var(--red)">{{ session('error') }}</span>
+</div>
+@endif
+
 {{-- Page Header --}}
 <div class="ph">
     <div class="ph-left">
@@ -210,45 +216,133 @@
 
 </div>
 
-{{-- ── ACTIVE: Payment History table ───────────────────────────────────── --}}
+{{-- ── Invoice & billing table (payments + plan/subscription fallback) ─── --}}
 <div class="fin-hist-card">
     <div class="fin-hist-head">
         <div class="fin-hist-title">Invoice &amp; Payment History</div>
     </div>
+    @if($recentPayments->isNotEmpty())
     <table class="fin-table">
         <thead>
             <tr>
-                <th>Company</th>
-                <th>Amount</th>
+                <th>Client Name</th>
+                <th>Company Name</th>
+                <th>Plan</th>
+                <th>Price</th>
                 <th>Status</th>
                 <th>Date</th>
-                <th>Method</th>
+                <th style="width:48px;text-align:right"> </th>
             </tr>
         </thead>
         <tbody>
         @foreach($recentPayments as $payment)
         @php
-            $status = $payment->status ?? 'paid';
-            $badgeClass = match(strtolower($status)) {
-                'paid','succeeded','complete' => 'b-green',
-                'pending'                     => 'b-amber',
-                'failed','overdue'            => 'b-red',
-                default                       => 'b-gray',
+            $co = $payment->company;
+            $clientName = $co?->users->first()?->name ?? '—';
+            $companyName = $co?->company_name ?? '—';
+            $planName = $co?->clientPackage?->name
+                ?? $payment->subscription?->clientPackage?->name
+                ?? $payment->subscription?->package?->name
+                ?? '—';
+            $status = $payment->status ?? 'pending';
+            $badgeClass = match(strtolower((string) $status)) {
+                'complete', 'paid', 'succeeded' => 'b-green',
+                'pending' => 'b-amber',
+                'failed', 'refunded' => 'b-red',
+                default => 'b-gray',
             };
+            $amt = (float) $payment->amount;
         @endphp
         <tr>
-            <td style="font-weight:500;color:var(--text-1)">{{ $payment->company_name ?? $payment->description ?? 'N/A' }}</td>
-            <td style="font-weight:700;color:#16a34a">${{ number_format($payment->amount / 100, 2) }}</td>
+            <td>{{ $clientName }}</td>
+            <td style="font-weight:500;color:var(--text-1)">{{ $companyName }}</td>
+            <td>{{ $planName }}</td>
+            <td style="font-weight:600;color:var(--text-1)">${{ number_format($amt, 2) }}</td>
             <td><span class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span></td>
-            <td style="color:var(--text-2);font-size:12.5px">{{ $payment->paid_at ? \Carbon\Carbon::parse($payment->paid_at)->format('M j, Y') : '—' }}</td>
-            <td style="color:var(--text-2);font-size:12.5px;display:flex;align-items:center;gap:5px">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                Stripe
+            <td style="color:var(--text-2);font-size:12.5px">{{ $payment->paid_at?->format('M j, Y') ?? '—' }}</td>
+            <td style="text-align:right">
+                <div class="dm-wrap">
+                    <button type="button" class="dot-menu" data-menu="fin-pay-{{ $payment->id }}" title="Actions">•••</button>
+                    <div class="dm-popup" id="fin-pay-{{ $payment->id }}">
+                        @if($payment->stripe_invoice_id)
+                        <a href="{{ route('finance.invoice', $payment) }}" target="_blank" rel="noopener noreferrer" class="dm-item">View invoice</a>
+                        @else
+                        <span class="dm-item" style="opacity:.55;cursor:default">No Stripe invoice</span>
+                        @endif
+                    </div>
+                </div>
             </td>
         </tr>
         @endforeach
         </tbody>
     </table>
+    @elseif(isset($subscribedCompanies) && $subscribedCompanies->isNotEmpty())
+    <p style="font-size:12.5px;color:var(--text-3);padding:0 24px 12px;margin:0;border-bottom:1px solid var(--border)">
+        No card payments recorded yet. Below is each client company’s assigned plan and subscription status (invoices appear after Stripe charges).
+    </p>
+    <table class="fin-table">
+        <thead>
+            <tr>
+                <th>Client Name</th>
+                <th>Company Name</th>
+                <th>Plan</th>
+                <th>Price</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th style="width:48px;text-align:right"> </th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach($subscribedCompanies as $co)
+        @php
+            $clientName = $co->users->first()?->name ?? '—';
+            $pkg = $co->clientPackage;
+            $planName = $pkg?->name
+                ?? $co->subscription?->clientPackage?->name
+                ?? $co->subscription?->package?->name
+                ?? '—';
+            $monthly = $pkg?->monthly_price;
+            $priceLabel = $planName === '—'
+                ? '—'
+                : (($monthly !== null && (float) $monthly == 0) || ($pkg?->is_free ?? false)
+                    ? 'Free'
+                    : '$' . number_format((float) $monthly, 2) . '/mo');
+            $sub = $co->subscription;
+            $subStatus = $sub?->status ?? 'unassigned';
+            $badgeClass = match(strtolower((string) $subStatus)) {
+                'active', 'trialing' => 'b-green',
+                'past_due' => 'b-amber',
+                'canceled', 'cancelled', 'unpaid' => 'b-red',
+                'unassigned' => 'b-gray',
+                default => 'b-gray',
+            };
+            $rowDate = $sub?->current_period_start ?? $sub?->updated_at ?? $co->updated_at;
+        @endphp
+        <tr>
+            <td>{{ $clientName }}</td>
+            <td style="font-weight:500;color:var(--text-1)">{{ $co->company_name }}</td>
+            <td>{{ $planName }}</td>
+            <td style="font-weight:600;color:var(--text-1)">{{ $priceLabel }}</td>
+            <td><span class="badge {{ $badgeClass }}">{{ str_replace('_', ' ', ucfirst($subStatus)) }}</span></td>
+            <td style="color:var(--text-2);font-size:12.5px">{{ $rowDate?->format('M j, Y') ?? '—' }}</td>
+            <td style="text-align:right">
+                <div class="dm-wrap">
+                    <button type="button" class="dot-menu" data-menu="fin-sub-{{ $co->id }}" title="Actions">•••</button>
+                    <div class="dm-popup" id="fin-sub-{{ $co->id }}">
+                        <span class="dm-item" style="opacity:.55;cursor:default">Invoice after first payment</span>
+                    </div>
+                </div>
+            </td>
+        </tr>
+        @endforeach
+        </tbody>
+    </table>
+    @else
+    <div class="fin-empty-state" style="padding:40px 24px">
+        <div class="fin-empty-title" style="font-size:15px">No billing rows yet</div>
+        <div class="fin-empty-body">Connect Stripe and process a payment, or assign plans to client companies to see activity here.</div>
+    </div>
+    @endif
 </div>
 
 @endif

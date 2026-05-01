@@ -133,6 +133,7 @@ class ClientCompanyController extends AccountBaseController
         abort_unless($this->canAddCompanies(), 403, 'You do not have permission to add companies.');
 
         $companyId = auth()->user()->company_id;
+        $this->enforceMaxCompaniesLimit($companyId);
 
         // Load only THIS client_admin's own plans (not SuperAdmin packages)
         $this->packages = ClientPackage::forCompany($companyId)

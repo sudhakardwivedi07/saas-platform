@@ -189,18 +189,24 @@ async function refreshToken(btn) {
 }
 
 async function disconnectQB(btn) {
-    const c = await Swal.fire({
-        title: 'Disconnect QuickBooks?',
-        text: 'You can reconnect at any time.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, disconnect',
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#ef4444',
-        cancelButtonColor: '#6b7280',
-        reverseButtons: true,
-    });
-    if (!c.isConfirmed) return;
+    let confirmed;
+    if (window.Swal) {
+        const c = await Swal.fire({
+            title: 'Disconnect QuickBooks?',
+            text: 'You can reconnect at any time.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, disconnect',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ef4444',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+        });
+        confirmed = c.isConfirmed;
+    } else {
+        confirmed = confirm('Disconnect QuickBooks? You can reconnect at any time.');
+    }
+    if (!confirmed) return;
     btn.disabled = true;
     btn.textContent = 'Disconnecting…';
 

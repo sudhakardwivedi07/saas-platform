@@ -660,7 +660,8 @@ async function apiCall(url, method='POST', body={}) {
 </script>
 <script src="{{ asset(config('assets.sweetalert2_js')) }}"></script>
 <script>
-const SwalToast = Swal.mixin({
+window.Swal = window.Swal || window.Sweetalert2 || null;
+const SwalToast = window.Swal ? window.Swal.mixin({
     toast: true,
     position: 'top-end',
     showConfirmButton: false,
@@ -671,15 +672,15 @@ const SwalToast = Swal.mixin({
         toast.addEventListener('mouseenter', Swal.stopTimer);
         toast.addEventListener('mouseleave', Swal.resumeTimer);
     }
-});
+}) : null;
 @if(session('toast_success'))
-SwalToast.fire({ icon: 'success', title: @json(session('toast_success')) });
+SwalToast && SwalToast.fire({ icon: 'success', title: @json(session('toast_success')) });
 @endif
 @if(session('toast_warning'))
-SwalToast.fire({ icon: 'warning', title: @json(session('toast_warning')) });
+SwalToast && SwalToast.fire({ icon: 'warning', title: @json(session('toast_warning')) });
 @endif
 @if(session('toast_error'))
-SwalToast.fire({ icon: 'error', title: @json(session('toast_error')) });
+SwalToast && SwalToast.fire({ icon: 'error', title: @json(session('toast_error')) });
 @endif
 </script>
 @stack('scripts')

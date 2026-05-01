@@ -185,7 +185,7 @@
 <div class="ph">
     <div class="ph-left">
         <h1>Subscription &amp; Usage</h1>
-        <p>Manage your CFO Insights plan and monitor company-level consumption</p>
+        <p>Manage your Insights plan and monitor company-level consumption</p>
     </div>
 </div>
 

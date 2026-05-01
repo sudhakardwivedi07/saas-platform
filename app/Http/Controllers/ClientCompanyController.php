@@ -449,12 +449,7 @@ class ClientCompanyController extends AccountBaseController
 
     public function assignPlan(Request $request, int $id)
     {
-        $companyId = company()?->id ?? auth()->user()->company_id;
-
-        $company = Company::withoutGlobalScopes()
-            ->where('id', $id)
-            ->where('created_by', $companyId)
-            ->firstOrFail();
+        $company = $this->findEditableCompany($id);
 
         $request->validate([
             'client_package_id' => 'nullable|exists:client_packages,id',

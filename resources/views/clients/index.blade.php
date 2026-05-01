@@ -70,8 +70,10 @@
                     $qbTotal      = $co ? 1 : 0;
                     $plan         = $co ? ($co->clientPackage ?? $co->package) : null;
                     $insightsUsed = $co?->insights_used ?? 0;
-                    $maxInsights  = $plan?->max_documents ?? null;
-                    $remaining    = $maxInsights !== null ? max(0, $maxInsights - $insightsUsed) : null;
+                    $maxInsights  = $plan
+                        ? ($plan->insights_per_month ?? $plan->max_insights_per_month ?? $plan->max_documents ?? null)
+                        : null;
+                    $remaining    = $maxInsights !== null ? max(0, (int) $maxInsights - (int) $insightsUsed) : null;
                     $lastActivity = $co?->last_active_at ?? $client->updated_at ?? $client->created_at;
                 @endphp
                 <tr data-search="{{ strtolower($client->name . ' ' . $client->email . ' ' . $status) }}">
@@ -109,7 +111,7 @@
                     <td style="text-align:center;font-size:13px;font-weight:500;color:var(--text-1)">{{ $insightsUsed }}</td>
                     <td style="text-align:center;font-size:13px;font-weight:500;color:{{ $remaining === 0 ? 'var(--red)' : 'var(--text-1)' }}">
                         @if($remaining === null)
-                            <span style="color:var(--text-3)">∞</span>
+                            <span style="color:var(--text-3)">—</span>
                         @else
                             {{ $remaining }}
                         @endif
@@ -131,10 +133,12 @@
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                                     View Insights
                                 </a>
-                                <a href="javascript:void(0)" class="dm-item" onclick="openAssignClientPlanModal({{ $client->id }}, '{{ addslashes($client->name) }}', {{ $co?->client_package_id ?? 'null' }})">
+                                @if($co)
+                                <a href="javascript:void(0)" class="dm-item" onclick="openAssignClientPlanModal({{ $co->id }}, '{{ addslashes($client->name) }}', {{ $co->client_package_id ?? 'null' }})">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                                     Assign Plan
                                 </a>
+                                @endif
                                 <div class="dm-divider"></div>
                                 <a href="javascript:void(0)" class="dm-item dm-danger" onclick="toggleClientStatus({{ $client->id }}, '{{ addslashes($client->name) }}', '{{ $status }}')">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
@@ -216,9 +220,11 @@
                     $owner        = $company->users->first();
                     $isQB         = $company->quickbooksConnections->where('is_active', true)->isNotEmpty();
                     $plan         = $company->clientPackage ?? $company->package;
-                    $maxDocs      = $plan?->max_documents ?? null;
-                    $insightsUsed = 0; // wire to real insight model when available
-                    $remaining    = $maxDocs !== null ? max(0, $maxDocs - $insightsUsed) : null;
+                    $maxDocs      = $plan
+                        ? ($plan->insights_per_month ?? $plan->max_insights_per_month ?? $plan->max_documents ?? null)
+                        : null;
+                    $insightsUsed = (int) ($company->insights_used ?? 0);
+                    $remaining    = $maxDocs !== null ? max(0, (int) $maxDocs - $insightsUsed) : null;
                     $isQuotaFull  = $maxDocs !== null && $remaining === 0 && ($company->status ?? '') === 'active';
                     $rawStatus    = $company->status ?? 'active';
                     $displayStatus = $isQuotaFull ? 'quota full' : strtolower($rawStatus);
@@ -272,7 +278,11 @@
                         {{ $insightsUsed }}
                     </td>
                     <td style="text-align:center;font-size:13px;font-weight:600;color:{{ ($remaining !== null && $remaining === 0) ? 'var(--red)' : 'var(--text-1)' }}">
-                        {{ $remaining !== null ? $remaining : '∞' }}
+                        @if($remaining === null)
+                            <span style="color:var(--text-3);font-weight:500">—</span>
+                        @else
+                            {{ $remaining }}
+                        @endif
                     </td>
                     <td style="font-size:12.5px;color:{{ $lastInsightOld ? 'var(--red)' : 'var(--text-2)' }}">
                         {{ $lastInsight ? \Carbon\Carbon::parse($lastInsight)->diffForHumans() : '—' }}
@@ -440,7 +450,7 @@
                         <option value="">— No Plan —</option>
                         @foreach($clientPackages ?? [] as $pkg)
                         <option value="{{ $pkg->id }}" {{ old('client_package_id') == $pkg->id ? 'selected' : '' }}>
-                            {{ $pkg->name }}@if($pkg->max_documents) — {{ $pkg->max_documents }} insights / company / month @endif
+                            {{ $pkg->name }}@if(($pkg->insights_per_month ?? $pkg->max_insights_per_month ?? $pkg->max_documents ?? null)) — {{ $pkg->insights_per_month ?? $pkg->max_insights_per_month ?? $pkg->max_documents }} insights / company / month @endif
                         </option>
                         @endforeach
                     </select>
@@ -747,8 +757,8 @@ function toggleClientStatus(id, name, currentStatus) {
     });
 }
 
-function openAssignClientPlanModal(clientId, clientName, currentPlanId) {
-    document.getElementById('assign-client-plan-company-id').value = clientId;
+function openAssignClientPlanModal(companyId, clientName, currentPlanId) {
+    document.getElementById('assign-client-plan-company-id').value = companyId;
     document.getElementById('assign-client-plan-company-name').textContent = 'Assigning plan to: ' + clientName;
     var sel = document.getElementById('assign-client-plan-select');
     sel.value = currentPlanId || '';

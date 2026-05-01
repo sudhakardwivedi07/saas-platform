@@ -10,12 +10,30 @@
         <p>Manage clients and their companies across your partner portfolio</p>
     </div>
     <div class="ph-actions">
-        <button class="btn btn-primary" onclick="document.getElementById('modal-add-client').classList.add('open')">
+        @if($hasActivePlan ?? false)
+        <button type="button" class="btn btn-primary" onclick="document.getElementById('modal-add-client').classList.add('open')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
         </button>
+        @else
+        <button type="button" class="btn btn-primary" disabled title="No plan is assigned to this account. Choose a plan under Subscription &amp; Usage first.">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Client
+        </button>
+        @endif
     </div>
 </div>
+
+@if(!($hasActivePlan ?? false))
+<div class="info-banner" style="margin-bottom: 1rem;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span class="info-banner-txt">
+        No plan is assigned to this account. Select a subscription plan on
+        <a href="{{ route('billing.index') }}" style="color:var(--blue);font-weight:600;text-decoration:none">Subscription &amp; Usage</a>
+        before adding clients or companies.
+    </span>
+</div>
+@endif
 
 {{-- Tab Bar --}}
 <div class="tab-bar">
@@ -195,10 +213,17 @@
                     </div>
                 </div>
             </div>
+            @if($hasActivePlan ?? false)
             <a href="{{ route('my-companies.create') }}" class="btn btn-primary btn-sm">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add Company
             </a>
+            @else
+            <button type="button" class="btn btn-primary btn-sm" disabled title="No plan is assigned. Choose a plan under Subscription &amp; Usage first.">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Company
+            </button>
+            @endif
         </div>
 
         <table id="companies-table" style="width:100%;border-collapse:collapse">
@@ -567,6 +592,19 @@
 <script src="{{ asset(config('assets.jquery')) }}"></script>
 <script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
+@php
+    $billingIndex = route('billing.index');
+    $myCompaniesCreate = route('my-companies.create');
+    $hasPlan = $hasActivePlan ?? false;
+
+    $dtEmptyClientsHtml = $hasPlan
+        ? '<div style="text-align:center;padding:48px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">Your clients will be listed here</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px;max-width:560px;margin-inline:auto">This is where you view and manage all the clients connected to your portal. Add clients individually or import your full list via CSV. Once added, each client appears here with status, assigned plan, and key login details.</div><div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button type="button" onclick="document.getElementById(\'modal-add-client\').classList.add(\'open\'); switchAddClientTab(\'manual\');" class="btn btn-primary btn-sm">+ Add Your First Client</button><button type="button" onclick="document.getElementById(\'modal-add-client\').classList.add(\'open\'); switchAddClientTab(\'bulk\');" class="btn btn-ghost btn-sm">Bulk Import CSV</button></div><div style="font-size:11px;color:#9ca3af;margin-top:10px">Need a template? <a href=\'javascript:void(0)\' onclick=\'downloadSampleCsv()\' style=\'color:var(--blue);text-decoration:none\'>Download the CSV upload template</a> →</div></div>'
+        : '<div style="text-align:center;padding:48px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">An active plan is required</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px;max-width:520px;margin-inline:auto">Subscribe on Subscription &amp; Usage before adding clients or importing CSV.</div><div style="margin-top:14px"><a href="' . e($billingIndex) . '" class="btn btn-primary btn-sm">Go to Subscription &amp; Usage</a></div></div>';
+
+    $dtEmptyCompaniesHtml = $hasPlan
+        ? '<div style="text-align:center;padding:56px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">Your client companies will be listed here</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px;max-width:560px;margin-inline:auto">This is where you view and manage all companies associated with your clients. Companies are added during client onboarding or created later and linked to a client. Each company appears here with its QuickBooks status and insight activity.</div><div style="margin-top:14px"><a href="' . e($myCompaniesCreate) . '" class="btn btn-primary btn-sm">+ Add a Company</a></div><div style="font-size:11px;color:#9ca3af;margin-top:10px">Each company needs a QuickBooks connection to start generating CFO-ready insight reports.</div></div>'
+        : '<div style="text-align:center;padding:56px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">An active plan is required</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px;max-width:520px;margin-inline:auto">Choose a subscription plan before adding companies.</div><div style="margin-top:14px"><a href="' . e($billingIndex) . '" class="btn btn-primary btn-sm">Go to Subscription &amp; Usage</a></div></div>';
+@endphp
 $(document).ready(function() {
     // Reset filters on load (bfcache fix)
     document.getElementById('client-search').value   = '';
@@ -583,7 +621,7 @@ $(document).ready(function() {
             info: 'Showing _START_–_END_ of _TOTAL_ clients',
             infoEmpty: 'No clients added yet',
             paginate: { previous: '‹', next: '›' },
-            emptyTable: '<div style="text-align:center;padding:48px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">Your clients will be listed here</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px;max-width:560px;margin-inline:auto">This is where you view and manage all the clients connected to your portal. Add clients individually or import your full list via CSV. Once added, each client appears here with status, assigned plan, and key login details.</div><div style="margin-top:14px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button type="button" onclick="document.getElementById(\'modal-add-client\').classList.add(\'open\'); switchAddClientTab(\'manual\');" class="btn btn-primary btn-sm">+ Add Your First Client</button><button type="button" onclick="document.getElementById(\'modal-add-client\').classList.add(\'open\'); switchAddClientTab(\'bulk\');" class="btn btn-ghost btn-sm">Bulk Import CSV</button></div><div style="font-size:11px;color:#9ca3af;margin-top:10px">Need a template? <a href=\'javascript:void(0)\' onclick=\'downloadSampleCsv()\' style=\'color:var(--blue);text-decoration:none\'>Download the CSV upload template</a> →</div></div>',
+            emptyTable: {!! json_encode($dtEmptyClientsHtml) !!},
         },
         drawCallback: function() {
             var info = this.api().page.info();
@@ -611,7 +649,11 @@ $(document).ready(function() {
             info: 'Showing _START_–_END_ of _TOTAL_ companies',
             infoEmpty: 'No companies added yet',
             paginate: { previous: '‹', next: '›' },
+<<<<<<< HEAD
+            emptyTable: {!! json_encode($dtEmptyCompaniesHtml) !!},
+=======
             emptyTable: '<div style="text-align:center;padding:56px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">Your client companies will be listed here</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px;max-width:560px;margin-inline:auto">This is where you view and manage all companies associated with your clients. Companies are added during client onboarding or created later and linked to a client. Each company appears here with its QuickBooks status and insight activity.</div><div style="margin-top:14px"><a href="{{ route('my-companies.create') }}" class="btn btn-primary btn-sm">+ Add a Company</a></div><div style="font-size:11px;color:#9ca3af;margin-top:10px">Each company needs a QuickBooks connection to start generating ready insight reports.</div></div>',
+>>>>>>> 2b483a95af53087dab58512a6d977a6d1756aa7e
         }
     });
 

@@ -522,7 +522,7 @@ $(document).ready(function () {
                 +'</div>'
                 +'<div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:12px">You have not raised any tickets yet</div>'
                 +'<div style="font-size:13.5px;color:#6b7280;line-height:1.75;max-width:480px;margin:0 auto 24px">'
-                +'Need help from the Insights team? Raise a ticket here for any platform issue, billing query, branding assistance, or configuration support. Your plan includes priority support with a <strong>4-hour response SLA</strong> on all weekdays.'
+                +'Need help from the CFO Insights team? Raise a ticket here for any platform issue, billing query, branding assistance, or configuration support.'
                 +'</div>'
                 +'<button class="open-new-ticket-btn" style="background:#e8521a;color:#fff;border:none;padding:11px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">+ Raise a Ticket to Insights</button>'
                 +'</div>',

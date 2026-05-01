@@ -57,6 +57,19 @@ class Company extends BaseModel
         'last_active_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        // `company()` (helpers.php) caches Company by id for 5 minutes — invalidate when the row changes
+        // so plan assignment (client_package_id), branding, status, etc. show immediately.
+        static::saved(function (self $company): void {
+            cache()->forget('company_' . $company->id);
+        });
+
+        static::deleted(function (self $company): void {
+            cache()->forget('company_' . $company->id);
+        });
+    }
+
     // ─── Relationships ─────────────────────────────────────────────────────────
 
     public function users(): HasMany

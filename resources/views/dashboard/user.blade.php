@@ -270,7 +270,7 @@
 <div class="user-db-header">
     <h1>Hi <span>{{ auth()->user()->first_name }}</span></h1>
     <p>
-        You're one step away from unlocking your first CFO-level financial insights.
+        You're one step away from unlocking your first financial insights.
         @if(auth()->user()->can('view_quickbooks'))
         <a href="{{ route('quickbooks.index') }}">Connect QuickBooks</a> to proceed.
         @else
@@ -285,7 +285,7 @@
     <div class="plan-card">
         <div class="plan-card-title">What {{ $clientAdminName }} does</div>
         <p class="plan-card-desc">
-            {{ $clientAdminName }} helps founders and finance leaders turn raw financial data into clear, CFO-level intelligence—so you can understand performance, monitor cash flow, and identify risks without manual spreadsheets.
+            {{ $clientAdminName }} helps founders and finance leaders turn raw financial data into clear, intelligence—so you can understand performance, monitor cash flow, and identify risks without manual spreadsheets.
         </p>
         <p class="plan-card-desc"><strong>It provides a structured platform for:</strong></p>
         <ul class="plan-feature-list">

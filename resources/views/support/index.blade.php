@@ -89,7 +89,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 <div class="ph">
     <div class="ph-left">
         <h1>Support</h1>
-        <p>Manage client support tickets and contact the CFO Insights team</p>
+        <p>Manage client support tickets and contact the  Insights team</p>
     </div>
     <div class="ph-actions">
         <button class="btn btn-primary" id="btnNewTicket">
@@ -524,7 +524,7 @@ $(document).ready(function () {
                 +'<div style="font-size:13.5px;color:#6b7280;line-height:1.75;max-width:480px;margin:0 auto 24px">'
                 +'Need help from the CFO Insights team? Raise a ticket here for any platform issue, billing query, branding assistance, or configuration support.'
                 +'</div>'
-                +'<button class="open-new-ticket-btn" style="background:#e8521a;color:#fff;border:none;padding:11px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">+ Raise a Ticket to CFO Insights</button>'
+                +'<button class="open-new-ticket-btn" style="background:#e8521a;color:#fff;border:none;padding:11px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">+ Raise a Ticket to Insights</button>'
                 +'</div>',
         },
         drawCallback:function(){document.querySelectorAll('.dm-popup').forEach(function(p){p.classList.remove('open');})}

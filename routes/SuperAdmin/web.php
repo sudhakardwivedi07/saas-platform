@@ -15,7 +15,7 @@ use App\Http\Controllers\SuperAdmin\SupportController;
 use App\Http\Controllers\SuperAdmin\UserController;
 use App\Http\Controllers\SuperAdmin\WebhookLogController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\SuperAdmin\GeneralLogController;
 // ── SuperAdmin Panel ───────────────────────────────────────────────────────────
 Route::middleware(['auth', 'super-admin'])
     ->prefix('superadmin')
@@ -84,6 +84,11 @@ Route::middleware(['auth', 'super-admin'])
         Route::get('webhook-logs',          [WebhookLogController::class, 'index'])->name('webhook-logs.index');
         Route::post('webhook-logs/clear',   [WebhookLogController::class, 'clear'])->name('webhook-logs.clear');
         Route::get('webhook-logs/download', [WebhookLogController::class, 'download'])->name('webhook-logs.download');
+
+        // General Application Logs
+        Route::get('general-logs',          [GeneralLogController::class, 'index'])->name('general-logs.index');
+        Route::post('general-logs/clear',   [GeneralLogController::class, 'clear'])->name('general-logs.clear');
+        Route::get('general-logs/download', [GeneralLogController::class, 'download'])->name('general-logs.download');
     });
 
 // ── Stop Impersonation (auth only — accessible while impersonating) ───────────

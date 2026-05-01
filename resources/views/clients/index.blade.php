@@ -649,7 +649,11 @@ $(document).ready(function() {
             info: 'Showing _START_–_END_ of _TOTAL_ companies',
             infoEmpty: 'No companies added yet',
             paginate: { previous: '‹', next: '›' },
+<<<<<<< HEAD
             emptyTable: {!! json_encode($dtEmptyCompaniesHtml) !!},
+=======
+            emptyTable: '<div style="text-align:center;padding:56px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">Your client companies will be listed here</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px;max-width:560px;margin-inline:auto">This is where you view and manage all companies associated with your clients. Companies are added during client onboarding or created later and linked to a client. Each company appears here with its QuickBooks status and insight activity.</div><div style="margin-top:14px"><a href="{{ route('my-companies.create') }}" class="btn btn-primary btn-sm">+ Add a Company</a></div><div style="font-size:11px;color:#9ca3af;margin-top:10px">Each company needs a QuickBooks connection to start generating ready insight reports.</div></div>',
+>>>>>>> 2b483a95af53087dab58512a6d977a6d1756aa7e
         }
     });
 

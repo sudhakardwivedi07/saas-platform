@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\EventLog;
 use App\Models\Payment;
 use App\Models\QuickBooksConnection;
+use App\Models\Report;
 use App\Models\SuperAdmin\Package;
 use App\Models\User;
 use Carbon\Carbon;
@@ -203,6 +204,28 @@ class DashboardController extends AccountBaseController
             ->where('company_id', $company->id)
             ->where('is_active', true)
             ->exists();
+
+        $this->insightInProgress = Report::where('user_id', auth()->id())
+            ->whereIn('status', ['Uploading', 'Analyzing'])
+            ->first();
+
+        // Monthly limit for the limit-reached modal
+        $limitValue = $this->currentPlan
+            ? ($this->currentPlan->insights_per_month ?? $this->currentPlan->max_insights_per_month ?? null)
+            : null;
+        $this->monthlyLimit = $limitValue ? (int) $limitValue : null;
+        $this->monthlyUsed  = Report::withTrashed()
+            ->where('user_id', auth()->id())
+            ->where('created_at', '>=', Carbon::now()->startOfMonth())
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->whereNull('deleted_at')->whereNotIn('status', ['Failed']);
+                })->orWhere(function ($q2) {
+                    $q2->whereNotNull('deleted_at')->where('status', 'Analyzed');
+                });
+            })
+            ->count();
+
         $this->clientAdminName  = $parentCompany?->app_name
             ?? $parentCompany?->company_name
             ?? $this->appName;

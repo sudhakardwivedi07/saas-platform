@@ -190,6 +190,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('insights')->name('insights.')->group(function () {
         Route::get('/',                            [InsightsController::class, 'index'])->name('index');
         Route::post('/generate',                   [InsightsController::class, 'generate'])->name('generate');
+        Route::post('/save-business-context',      [InsightsController::class, 'saveBusinessContext'])->name('save-business-context');
         Route::get('/status/{id}',                 [InsightsController::class, 'checkStatus'])->name('status');
         Route::get('/{encryptedId}/view',          [InsightsController::class, 'view'])->name('view');
         Route::get('/{id}/data',                   [InsightsController::class, 'getData'])->name('data');

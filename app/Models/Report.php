@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Models\Company;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Report extends BaseModel
@@ -14,6 +15,7 @@ class Report extends BaseModel
 
     protected $fillable = [
         'user_id',
+        'company_id',
         'report_name',
         'upload_date',
         'total_file_size',
@@ -32,6 +34,11 @@ class Report extends BaseModel
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'company_id');
     }
 
     public function attachments(): HasMany

@@ -257,6 +257,13 @@ tbody tr:hover td{background:#fafcff}
 .back-btn:hover{background:var(--blue-light)}
 .back-btn svg{width:14px;height:14px;stroke:var(--blue)}
 
+/* ── GLOBAL GENERATION BANNER ─────────────────────────── */
+#global-gen-banner{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:3000;display:none;align-items:center;gap:10px;background:#1a6aa8;color:#fff;padding:11px 20px;border-radius:30px;font-size:13px;font-weight:500;box-shadow:0 4px 18px rgba(0,0,0,.18);white-space:nowrap}
+#global-gen-banner svg{width:15px;height:15px;flex-shrink:0;animation:spin 1.4s linear infinite}
+#global-gen-banner a{color:#fff;text-decoration:underline;text-underline-offset:2px;opacity:.9}
+#global-gen-banner a:hover{opacity:1}
+@keyframes spin{to{transform:rotate(360deg)}}
+
 /* ── CHARTS ───────────────────────────────────────────── */
 .charts-row{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;margin-bottom:18px}
 .act-row{display:flex;align-items:center;gap:11px;padding:8px 0;border-bottom:1px solid var(--border)}
@@ -530,6 +537,15 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 {{-- Toast --}}
 <div id="ca-toast" class="toast toast-success"></div>
 
+{{-- Global insight-generation floating banner (shown on non-insights pages while a job runs) --}}
+<div id="global-gen-banner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+    </svg>
+    Generating insights in the background…
+    <a href="{{ route('insights.index') }}">View Progress &rarr;</a>
+</div>
+
 <script>
 const csrf = document.querySelector('meta[name="csrf-token"]').content;
 
@@ -539,6 +555,41 @@ function showToast(msg, type='success') {
     t.className = 'toast toast-' + type + ' show';
     setTimeout(() => t.classList.remove('show'), 3500);
 }
+
+// ── Global insight-generation notification ────────────────────────────────
+(function () {
+    const LS_KEY      = 'insights_processing_ids';
+    const INSIGHTS_URL = '{{ route("insights.index") }}';
+
+    function checkGlobalProgress() {
+        const id = localStorage.getItem(LS_KEY);
+        if (!id) return;
+
+        // Don't show on the insights page itself — it has its own bar
+        if (window.location.pathname.includes('/insights')) return;
+
+        // Show the floating banner
+        const banner = document.getElementById('global-gen-banner');
+        if (banner) banner.style.display = 'flex';
+
+        // Poll to know when to clear it
+        fetch('/insights/status/' + id, { headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status !== 'success') { setTimeout(checkGlobalProgress, 10000); return; }
+            const r = data.report;
+            if (r.has_insights || r.is_failed) {
+                localStorage.removeItem(LS_KEY);
+                if (banner) banner.style.display = 'none';
+            } else {
+                setTimeout(checkGlobalProgress, 8000);
+            }
+        })
+        .catch(() => setTimeout(checkGlobalProgress, 15000));
+    }
+
+    document.addEventListener('DOMContentLoaded', checkGlobalProgress);
+}());
 
 document.addEventListener('DOMContentLoaded', () => {
     // Auto-dismiss alerts

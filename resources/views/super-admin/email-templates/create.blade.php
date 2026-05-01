@@ -41,7 +41,7 @@
         <div class="form-2col">
             <div class="f-group">
                 <label class="f-label">From Name</label>
-                <input name="from_name" class="f-inp" placeholder="CFO Insights">
+                <input name="from_name" class="f-inp" placeholder=" Insights">
             </div>
             <div class="f-group">
                 <label class="f-label">From Email</label>

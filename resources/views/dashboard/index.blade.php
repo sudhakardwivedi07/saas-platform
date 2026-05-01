@@ -650,7 +650,7 @@
             </div>
         </div>
         <div class="db-kpi-val">{{ $insightsGenerated ?? 0 }}</div>
-        <div class="db-kpi-ctx">CFO financial insights generated · {{ $periodLabel }}</div>
+        <div class="db-kpi-ctx">Financial insights generated · {{ $periodLabel }}</div>
     </div>
 
     {{-- Insights Available --}}
@@ -866,7 +866,7 @@
                         </option>
                         @endforeach
                     </select>
-                    <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Plan tiers are managed by the CFO Insights platform.</div>
+                    <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Plan tiers are managed by the Financial Insights platform.</div>
                 </div>
                 <div class="mf-field">
                     <label class="mf-label" style="display:flex;align-items:center;justify-content:space-between">

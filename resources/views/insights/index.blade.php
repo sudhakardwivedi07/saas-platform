@@ -463,7 +463,7 @@
     <div class="insights-welcome-message">
         <div class="welcome-header" style="margin-bottom:30px;">
             <h2>Welcome to Insights</h2>
-            <p>You're one step away from accessing your first <strong>CFO-level financial insights.</strong></p>
+            <p>You're one step away from accessing your first <strong>financial insights.</strong></p>
             @if($qbConnection)
                 <p>Your <span style="color:#f06b25;">QuickBooks</span> is connected. Sync your data to generate insights. Your insights will appear here once the analysis is complete.</p>
             @else

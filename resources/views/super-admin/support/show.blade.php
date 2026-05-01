@@ -130,7 +130,7 @@
         <div>
             <div style="font-size:14px;font-weight:700;color:var(--text-1);margin-bottom:10px">Internal Notes</div>
             <textarea id="notes-area" rows="5"
-                placeholder="Add internal notes or resolution steps visible only to the CFO Insights team..."
+                placeholder="Add internal notes or resolution steps visible only to the  Insights team..."
                 style="width:100%;padding:13px 16px;border:1px solid var(--border);border-radius:10px;font-size:13.5px;color:var(--text-2);font-family:inherit;resize:vertical;box-sizing:border-box;line-height:1.65">{{ $ticket->notes }}</textarea>
         </div>
 

@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>CFO Insights Slides</title>
+    <title> Insights Slides</title>
     <style>
         @page { margin: 0; size: letter; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, Helvetica, sans-serif; }
@@ -45,7 +45,7 @@
 <body>
     <!-- Cover Page -->
     <div class="page cover-page">
-        <h1>CFO Insights Analysis</h1>
+        <h1> Insights Analysis</h1>
         <div class="report-name">{{ $fullTitle }}</div>
         <div class="report-date">{{ $reportDate }}</div>
         <div class="separator"></div>

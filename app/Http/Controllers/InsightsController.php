@@ -505,7 +505,7 @@ class InsightsController extends AccountBaseController
         try {
             $php     = PHP_BINARY;
             $artisan = base_path('artisan');
-            $logFile = storage_path('logs/queue-worker.log');
+            $logFile = storage_path('logs/laravel.log');
 
             if (PHP_OS_FAMILY === 'Windows') {
                 // proc_open is more reliable than popen+start /B in Apache/WAMP context because

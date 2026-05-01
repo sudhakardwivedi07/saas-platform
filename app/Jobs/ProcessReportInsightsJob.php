@@ -213,9 +213,22 @@ class ProcessReportInsightsJob implements ShouldQueue
 
             Log::info('Report analyzed and saved', ['report_id' => $report->id]);
 
+            $this->cleanupTempFiles();
+
         } catch (\Throwable $e) {
             Log::error('ProcessReportInsightsJob unexpected error', ['report_id' => $report->id, 'error' => $e->getMessage()]);
             $report->update(['status' => 'Failed']);
+            $this->cleanupTempFiles();
+        }
+    }
+
+    private function cleanupTempFiles(): void
+    {
+        foreach ($this->uploadedFiles as $fileInfo) {
+            $path = $fileInfo['path'] ?? null;
+            if ($path && file_exists($path)) {
+                @unlink($path);
+            }
         }
     }
 

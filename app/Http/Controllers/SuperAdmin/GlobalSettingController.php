@@ -105,22 +105,6 @@ class GlobalSettingController extends AccountBaseController
 
         EmailSmtpSetting::updateOrCreate(['company_id' => null], $dbData);
 
-        $envUpdates = [
-            'MAIL_MAILER'       => 'smtp',
-            'MAIL_SCHEME'       => $request->smtp_encryption ?: 'null',
-            'MAIL_HOST'         => $request->smtp_host,
-            'MAIL_PORT'         => (string) $request->smtp_port,
-            'MAIL_USERNAME'     => $request->smtp_username,
-            'MAIL_FROM_ADDRESS' => $request->from_address,
-            'MAIL_FROM_NAME'    => $request->from_name,
-        ];
-
-        if ($request->filled('smtp_password')) {
-            $envUpdates['MAIL_PASSWORD'] = $request->smtp_password;
-        }
-
-        $this->updateEnvFile($envUpdates);
-
         return Reply::success('SMTP settings saved successfully.');
     }
 
@@ -149,22 +133,4 @@ class GlobalSettingController extends AccountBaseController
         return Reply::success('SMS settings saved successfully.');
     }
 
-    private function updateEnvFile(array $data): void
-    {
-        $envPath = base_path('.env');
-        $content = file_get_contents($envPath);
-
-        foreach ($data as $key => $value) {
-            $needsQuotes = (bool) preg_match('/[\s#"\'\\\\]/', (string) $value);
-            $formatted   = $needsQuotes ? '"' . addslashes((string) $value) . '"' : (string) $value;
-
-            if (preg_match('/^' . preg_quote($key, '/') . '=/m', $content)) {
-                $content = preg_replace('/^' . preg_quote($key, '/') . '=.*/m', $key . '=' . $formatted, $content);
-            } else {
-                $content .= PHP_EOL . $key . '=' . $formatted;
-            }
-        }
-
-        file_put_contents($envPath, $content);
-    }
 }

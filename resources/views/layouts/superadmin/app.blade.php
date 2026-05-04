@@ -325,23 +325,6 @@ tbody tr:hover td{background:#fafcff}
 
 {{-- Main --}}
 <main class="sa-main">
-    {{-- Flash Messages --}}
-    @foreach(['success','error','info','warning'] as $t)
-        @if(session($t))
-        <div class="sa-alert sa-alert-{{ $t }}">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                @if($t === 'success')
-                    <polyline points="20 6 9 17 4 12"/>
-                @elseif($t === 'error')
-                    <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-                @else
-                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                @endif
-            </svg>
-            {{ session($t) }}
-        </div>
-        @endif
-    @endforeach
 
     @yield('content')
 </main>
@@ -388,14 +371,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Auto-dismiss flash alerts
-    setTimeout(() => {
-        document.querySelectorAll('.sa-alert').forEach(el => {
-            el.style.transition = 'opacity .4s';
-            el.style.opacity = '0';
-            setTimeout(() => el.remove(), 400);
-        });
-    }, 4500);
 });
 
 async function apiCall(url, method='POST', body={}) {
@@ -406,6 +381,23 @@ async function apiCall(url, method='POST', body={}) {
     });
     return r.json();
 }
+</script>
+<script src="{{ asset(config('assets.sweetalert2_js')) }}"></script>
+<script>
+(function() {
+    if (!window.Swal) return;
+    const btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#F06B21';
+    const swalCfg = { confirmButtonText: 'Ok', confirmButtonColor: btnColor, allowOutsideClick: false };
+    @if(session('success'))
+    Swal.fire(Object.assign({}, swalCfg, { icon: 'success', text: @json(session('success')) }));
+    @elseif(session('error'))
+    Swal.fire(Object.assign({}, swalCfg, { icon: 'error', text: @json(session('error')) }));
+    @elseif(session('info'))
+    Swal.fire(Object.assign({}, swalCfg, { icon: 'info', text: @json(session('info')) }));
+    @elseif(session('warning'))
+    Swal.fire(Object.assign({}, swalCfg, { icon: 'warning', text: @json(session('warning')) }));
+    @endif
+}());
 </script>
 @stack('scripts')
 </body>

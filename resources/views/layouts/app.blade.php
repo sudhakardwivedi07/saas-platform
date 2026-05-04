@@ -513,20 +513,6 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 
     {{-- Content --}}
     <div class="ca-content">
-        {{-- Flash messages --}}
-        @foreach(['success','error','info','warning'] as $t)
-            @if(session($t))
-            <div class="ca-alert ca-alert-{{ $t }}">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    @if($t === 'success')<polyline points="20 6 9 17 4 12"/>
-                    @elseif($t === 'error')<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
-                    @else<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
-                    @endif
-                </svg>
-                {{ session($t) }}
-            </div>
-            @endif
-        @endforeach
 
         @yield('content')
     </div>
@@ -592,15 +578,6 @@ function showToast(msg, type='success') {
 }());
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Auto-dismiss alerts
-    setTimeout(() => {
-        document.querySelectorAll('.ca-alert').forEach(el => {
-            el.style.transition = 'opacity .4s';
-            el.style.opacity = '0';
-            setTimeout(() => el.remove(), 400);
-        });
-    }, 4500);
-
     // Tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -682,6 +659,20 @@ SwalToast && SwalToast.fire({ icon: 'warning', title: @json(session('toast_warni
 @if(session('toast_error'))
 SwalToast && SwalToast.fire({ icon: 'error', title: @json(session('toast_error')) });
 @endif
+(function() {
+    if (!window.Swal) return;
+    const btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+    const swalCfg = { confirmButtonText: 'Ok', confirmButtonColor: btnColor, allowOutsideClick: false };
+    @if(session('success'))
+    Swal.fire(Object.assign({}, swalCfg, { icon: 'success', text: @json(session('success')) }));
+    @elseif(session('error'))
+    Swal.fire(Object.assign({}, swalCfg, { icon: 'error', text: @json(session('error')) }));
+    @elseif(session('info'))
+    Swal.fire(Object.assign({}, swalCfg, { icon: 'info', text: @json(session('info')) }));
+    @elseif(session('warning'))
+    Swal.fire(Object.assign({}, swalCfg, { icon: 'warning', text: @json(session('warning')) }));
+    @endif
+}());
 </script>
 @stack('scripts')
 </body>

@@ -154,6 +154,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{id}',   [ClientController::class, 'update'])->name('update');
         Route::delete('/{id}', [ClientController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/toggle-status', [ClientController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{id}/assign-plan',   [ClientController::class, 'assignPlan'])->name('assign-plan');
         Route::post('/bulk-upload',        [ClientController::class, 'bulkUpload'])->name('bulk-upload');
         Route::get('/{id}/dashboard',      [ClientController::class, 'dashboard'])->name('dashboard');
         // Insights sub-pages

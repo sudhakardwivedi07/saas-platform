@@ -276,9 +276,47 @@ class ClientController extends AccountBaseController
         ]);
     }
 
-    public function update($id)
+    public function update(Request $request, $id)
     {
-        return back()->with('info', 'Client update coming soon.');
+        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+
+        $client = User::findOrFail($id);
+
+        $request->validate([
+            'name'  => 'required|string|max:255',
+            'phone' => 'nullable|string|max:30',
+        ]);
+
+        $client->name   = $request->name;
+        $client->mobile = $request->phone;
+        $client->save();
+
+        return redirect()->route('clients.index')
+            ->with('success', 'Client "' . $client->name . '" updated successfully.');
+    }
+
+    public function assignPlan(Request $request, $id)
+    {
+        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+
+        $client  = User::findOrFail($id);
+        $company = $client->company;
+
+        if (!$company) {
+            return response()->json(['status' => 'error', 'message' => 'Client has no associated company.'], 404);
+        }
+
+        $request->validate([
+            'client_package_id' => 'nullable|exists:client_packages,id',
+        ]);
+
+        $company->client_package_id = $request->client_package_id ?: null;
+        $company->save();
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'Plan assigned to ' . $client->name . '.',
+        ]);
     }
 
     public function destroy($id)

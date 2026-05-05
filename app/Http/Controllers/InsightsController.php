@@ -213,26 +213,20 @@ class InsightsController extends AccountBaseController
 
                 $report->update(['total_file_size' => $totalSize]);
 
-                // Increment company insights_used counter
-                Company::withoutGlobalScopes()
-                    ->where('id', $reportCompanyId)
-                    ->increment('insights_used');
-
                 DB::commit();
 
                 $style    = config('dashboard_graph_settings.default_style', 'plain');
                 $industry = $user->business_context ?? 'General Business';
 
-                // Dispatch async — HTTP response returns immediately so the user can navigate freely
-                ProcessReportInsightsJob::dispatch($report->id, $apiFiles, $style, $industry);
+                set_time_limit(1200);
+                ini_set('max_execution_time', 1200);
+                ini_set('memory_limit', '512M');
 
-                // Start a background queue worker on this machine so the job is processed without
-                // needing a separately running worker (WAMP / local dev convenience)
-                $this->startBackgroundQueueWorker();
+                ProcessReportInsightsJob::dispatch($report->id, $apiFiles, $style, $industry)->onConnection('sync');
 
                 return response()->json([
                     'status'      => 'processing',
-                    'message'     => 'Insight generation started in the background.',
+                    'message'     => 'QuickBooks data synced successfully! Insights have been generated.',
                     'report_id'   => $report->id,
                     'report_name' => $report->report_name,
                 ]);
@@ -248,6 +242,7 @@ class InsightsController extends AccountBaseController
                 'user_id' => $user->id,
                 'trace'   => $e->getTraceAsString(),
             ]);
+<<<<<<< HEAD
             $raw       = $e->getMessage();
             $reconnect = stripos($raw, 'invalid_grant') !== false
                 || stripos($raw, 'Re-authentication required') !== false
@@ -262,6 +257,22 @@ class InsightsController extends AccountBaseController
                 'reconnect_required'   => $reconnect,
                 'quickbooks_url'       => $reconnect ? route('quickbooks.index') : null,
             ], $reconnect ? 422 : 500);
+=======
+
+            $needsReconnect = str_contains($e->getMessage(), 'reconnect')
+                           || str_contains($e->getMessage(), 'Re-authentication')
+                           || str_contains($e->getMessage(), 'invalid_grant')
+                           || str_contains($e->getMessage(), 'Refresh OAuth 2');
+
+            return response()->json([
+                'status'             => 'error',
+                'message'            => $needsReconnect
+                    ? 'Your QuickBooks authorization has expired. Please reconnect your QuickBooks account.'
+                    : 'Failed to generate insights: ' . $e->getMessage(),
+                'reconnect_required' => $needsReconnect,
+                'reconnect_url'      => $needsReconnect ? route('quickbooks.user-connect') : null,
+            ], 500);
+>>>>>>> 8cfc356b302eb0cbcd7616a9a099929f3ea44fe4
         }
     }
 
@@ -444,6 +455,28 @@ class InsightsController extends AccountBaseController
         ]);
     }
 
+    public function deleteAllReports()
+    {
+        // Delete physical files from storage
+        ReportAttachment::all()->each(function ($attachment) {
+            Storage::disk('public')->delete('reports/' . $attachment->attachment);
+        });
+
+        // Hard-delete all records from report_attachments table
+        ReportAttachment::query()->delete();
+
+        // Force-delete all reports including soft-deleted ones
+        $reports = Report::withTrashed()->get();
+        $count   = $reports->count();
+        $reports->each(fn($r) => $r->forceDelete());
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'All reports and attachments deleted.',
+            'deleted' => $count,
+        ]);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private function resolveMonthlyLimit(int $companyId): ?int
@@ -485,45 +518,6 @@ class InsightsController extends AccountBaseController
             'redirect_uri'  => $setting->redirect_uri,
             'base_url'      => $setting->base_url,
         ];
-    }
-
-    private function startBackgroundQueueWorker(): void
-    {
-        try {
-            $php     = PHP_BINARY;
-            $artisan = base_path('artisan');
-            $logFile = storage_path('logs/laravel.log');
-
-            if (PHP_OS_FAMILY === 'Windows') {
-                // proc_open is more reliable than popen+start /B in Apache/WAMP context because
-                // it creates a truly independent process with controlled handles, avoiding the
-                // silent-failure mode where popen() returns false without throwing an exception.
-                $descriptors = [
-                    0 => ['pipe', 'r'],
-                    1 => ['file', $logFile, 'a'],
-                    2 => ['file', $logFile, 'a'],
-                ];
-                $process = proc_open(
-                    "\"{$php}\" \"{$artisan}\" queue:work --stop-when-empty --timeout=900 --tries=3",
-                    $descriptors,
-                    $pipes,
-                    base_path()
-                );
-                if (is_resource($process)) {
-                    fclose($pipes[0]);
-                    Log::info('Background queue worker started');
-                    // Intentionally not calling proc_close() — on Windows the child process
-                    // survives independently after the parent HTTP process exits.
-                } else {
-                    Log::warning('startBackgroundQueueWorker: proc_open returned false, worker did not start');
-                }
-            } else {
-                exec("nohup {$php} {$artisan} queue:work --stop-when-empty --timeout=900 > /dev/null 2>&1 &");
-                Log::info('Background queue worker started');
-            }
-        } catch (\Throwable $e) {
-            Log::warning('Could not start background queue worker: ' . $e->getMessage());
-        }
     }
 
     // ── PDF helpers ───────────────────────────────────────────────────────────

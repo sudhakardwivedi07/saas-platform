@@ -17,6 +17,7 @@ class Report extends BaseModel
     protected $fillable = [
         'user_id',
         'company_id',
+        'is_firm_report',
         'report_name',
         'upload_date',
         'total_file_size',
@@ -30,6 +31,7 @@ class Report extends BaseModel
         'upload_date'       => 'date',
         'total_file_size'   => 'integer',
         'insight_json_data' => 'array',
+        'is_firm_report'    => 'boolean',
     ];
 
     public function user(): BelongsTo

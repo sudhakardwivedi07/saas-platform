@@ -46,6 +46,12 @@ class QuickBooksController extends AccountBaseController
             ->get();
         $this->qbConfigured = $this->resolveCredentials($companyId) !== null;
 
+        // Firm's own QB connection — used by "My QuickBook" tab
+        $this->firmConnection = QuickBooksConnection::where('company_id', $companyId)
+            ->where('user_id', auth()->id())
+            ->where('is_active', true)
+            ->first();
+
         return view('quickbooks.index', $this->data);
     }
 
@@ -67,35 +73,36 @@ class QuickBooksController extends AccountBaseController
 
     public function callback(Request $request)
     {
-        $code    = $request->get('code');
-        $realmId = $request->get('realmId');
-        $error   = $request->get('error');
+        $code        = $request->get('code');
+        $realmId     = $request->get('realmId');
+        $error       = $request->get('error');
+        $returnRoute = session('qb_return_route', 'quickbooks.index');
 
         if ($error) {
             Log::error('QuickBooks OAuth Error: ' . $error);
-            return redirect()->route('quickbooks.index')
+            return redirect()->route($returnRoute)
                 ->with('error', 'QuickBooks authorization failed. Please try again.');
         }
 
         if (!$code || !$realmId) {
-            return redirect()->route('quickbooks.index')
+            return redirect()->route($returnRoute)
                 ->with('error', 'Invalid callback from QuickBooks. Missing required parameters.');
         }
 
         $userId    = session('qb_user_id');
         $companyId = session('qb_company_id');
-        session()->forget(['qb_company_id', 'qb_user_id']);
+        session()->forget(['qb_company_id', 'qb_user_id', 'qb_return_route']);
 
         if (!$userId || !$companyId) {
             Log::error('QuickBooks OAuth: Missing session data', compact('userId', 'companyId'));
-            return redirect()->route('quickbooks.index')
+            return redirect()->route($returnRoute)
                 ->with('error', 'Authorization session expired. Please try connecting again.');
         }
 
         $credentials = $this->resolveCredentials($companyId);
 
         if (!$credentials) {
-            return redirect()->route('quickbooks.index')
+            return redirect()->route($returnRoute)
                 ->with('error', 'QuickBooks credentials are not configured for this company.');
         }
 
@@ -135,11 +142,11 @@ class QuickBooksController extends AccountBaseController
                 actorUserId: (int) $userId
             );
 
-            return redirect()->route('quickbooks.index')->with('success', $message);
+            return redirect()->route($returnRoute)->with('success', $message);
 
         } catch (\Throwable $e) {
             Log::error('QuickBooks Callback Error: ' . $e->getMessage(), compact('userId', 'companyId'));
-            return redirect()->route('quickbooks.index')
+            return redirect()->route($returnRoute)
                 ->with('error', 'Failed to connect QuickBooks: ' . $e->getMessage());
         }
     }

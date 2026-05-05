@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\InsightsController;
+use App\Http\Controllers\FirmInsightsController;
 use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\ClientCompanyController;
 use App\Http\Controllers\ClientController;
@@ -14,6 +15,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\FirmQuickBooksController;
 use App\Http\Controllers\QuickBooksController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingsController;
@@ -105,6 +107,15 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{id}/toggle',  [ClientPackageController::class, 'toggleStatus'])->name('toggle');
     });
 
+    // Firm QuickBooks (firm's own QB connect/disconnect — separate from sub-company QB)
+    Route::prefix('firm-quickbooks')->name('firm-quickbooks.')->group(function () {
+        Route::get('/',                   [FirmQuickBooksController::class, 'index'])->name('index');
+        Route::get('/connect',            [FirmQuickBooksController::class, 'connect'])->name('connect');
+        Route::post('/disconnect',        [FirmQuickBooksController::class, 'disconnect'])->name('disconnect');
+        Route::get('/test-connection',    [FirmQuickBooksController::class, 'testConnection'])->name('test-connection');
+        Route::post('/refresh-token',     [FirmQuickBooksController::class, 'refreshToken'])->name('refresh-token');
+    });
+
     // My Companies (multi-company management for client_admin)
     Route::prefix('my-companies')->name('my-companies.')->group(function () {
         Route::get('/',                          [ClientCompanyController::class, 'index'])->name('index');
@@ -157,6 +168,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{id}',   [ClientController::class, 'update'])->name('update');
         Route::delete('/{id}', [ClientController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/toggle-status', [ClientController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{id}/assign-plan',   [ClientController::class, 'assignPlan'])->name('assign-plan');
         Route::post('/bulk-upload',        [ClientController::class, 'bulkUpload'])->name('bulk-upload');
         Route::get('/{id}/dashboard',      [ClientController::class, 'dashboard'])->name('dashboard');
         // KPI Dashboard
@@ -205,5 +217,19 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{id}/export-pdf',             [InsightsController::class, 'exportPdf'])->name('export-pdf');
         Route::get('/{id}/download',               [InsightsController::class, 'download'])->name('download');
         Route::delete('/{id}',                     [InsightsController::class, 'destroy'])->name('destroy');
+        Route::get('/delete-all',                  [InsightsController::class, 'deleteAllReports'])->name('delete-all');
+    });
+
+    // Firm Insights (client_admin / manager — no monthly limit, scoped to firm)
+    Route::prefix('firm-insights')->name('firm-insights.')->group(function () {
+        Route::get('/',                            [FirmInsightsController::class, 'index'])->name('index');
+        Route::post('/generate',                   [FirmInsightsController::class, 'generate'])->name('generate');
+        Route::post('/save-business-context',      [FirmInsightsController::class, 'saveBusinessContext'])->name('save-business-context');
+        Route::get('/status/{id}',                 [FirmInsightsController::class, 'checkStatus'])->name('status');
+        Route::get('/{encryptedId}/view',          [FirmInsightsController::class, 'view'])->name('view');
+        Route::get('/{id}/data',                   [FirmInsightsController::class, 'getData'])->name('data');
+        Route::get('/{id}/export-pdf',             [FirmInsightsController::class, 'exportPdf'])->name('export-pdf');
+        Route::get('/{id}/download',               [FirmInsightsController::class, 'download'])->name('download');
+        Route::delete('/{id}',                     [FirmInsightsController::class, 'destroy'])->name('destroy');
     });
 });

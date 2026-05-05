@@ -151,8 +151,12 @@
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                                     View Insights
                                 </a>
+                                <a href="javascript:void(0)" class="dm-item" onclick="openEditClientModal({{ $client->id }}, '{{ addslashes($client->name) }}', '{{ $client->email }}', '{{ addslashes($client->mobile ?? '') }}')">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    Edit Client
+                                </a>
                                 @if($co)
-                                <a href="javascript:void(0)" class="dm-item" onclick="openAssignClientPlanModal({{ $co->id }}, '{{ addslashes($client->name) }}', {{ $co->client_package_id ?? 'null' }})">
+                                <a href="javascript:void(0)" class="dm-item" onclick="openAssignClientPlanModal({{ $client->id }}, '{{ addslashes($client->name) }}', {{ $co->client_package_id ?? 'null' }})">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                                     Assign Plan
                                 </a>
@@ -369,11 +373,40 @@
                 @endforeach
             </select>
         </div>
-        <input type="hidden" id="assign-client-plan-company-id">
+        <input type="hidden" id="assign-client-plan-client-id">
         <div class="mf-foot">
             <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-assign-client-plan').classList.remove('open')">Cancel</button>
             <button type="button" class="btn btn-primary btn-sm" onclick="submitAssignClientPlan()">Assign Plan</button>
         </div>
+    </div>
+</div>
+
+{{-- ── Edit Client Modal ────────────────────────────────── --}}
+<div class="modal-overlay" id="modal-edit-client" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box" style="width:480px">
+        <button class="modal-close" onclick="document.getElementById('modal-edit-client').classList.remove('open')">&times;</button>
+        <div class="modal-title">Edit Client</div>
+        <form id="edit-client-form" method="POST">
+            @csrf
+            <input type="hidden" id="edit-client-id">
+            <div class="mf-field" style="margin-top:4px">
+                <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
+                <input type="text" name="name" id="edit-client-name" class="mf-inp" required>
+            </div>
+            <div class="mf-field">
+                <label class="mf-label">Email ID</label>
+                <input type="email" id="edit-client-email" class="mf-inp" disabled style="opacity:.6;cursor:not-allowed">
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Email address cannot be changed.</div>
+            </div>
+            <div class="mf-field">
+                <label class="mf-label">Phone Number</label>
+                <input type="tel" name="phone" id="edit-client-phone" class="mf-inp" placeholder="+1 (555) 000-0000">
+            </div>
+            <div class="mf-foot">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-edit-client').classList.remove('open')">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+            </div>
+        </form>
     </div>
 </div>
 
@@ -660,11 +693,7 @@ $(document).ready(function() {
             info: 'Showing _START_–_END_ of _TOTAL_ companies',
             infoEmpty: 'No companies added yet',
             paginate: { previous: '‹', next: '›' },
-<<<<<<< HEAD
             emptyTable: {!! json_encode($dtEmptyCompaniesHtml) !!},
-=======
-            emptyTable: '<div style="text-align:center;padding:56px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">Your client companies will be listed here</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px;max-width:560px;margin-inline:auto">This is where you view and manage all companies associated with your clients. Companies are added during client onboarding or created later and linked to a client. Each company appears here with its QuickBooks status and insight activity.</div><div style="margin-top:14px"><a href="{{ route('my-companies.create') }}" class="btn btn-primary btn-sm">+ Add a Company</a></div><div style="font-size:11px;color:#9ca3af;margin-top:10px">Each company needs a QuickBooks connection to start generating ready insight reports.</div></div>',
->>>>>>> 2b483a95af53087dab58512a6d977a6d1756aa7e
         }
     });
 
@@ -810,8 +839,8 @@ function toggleClientStatus(id, name, currentStatus) {
     });
 }
 
-function openAssignClientPlanModal(companyId, clientName, currentPlanId) {
-    document.getElementById('assign-client-plan-company-id').value = companyId;
+function openAssignClientPlanModal(clientId, clientName, currentPlanId) {
+    document.getElementById('assign-client-plan-client-id').value = clientId;
     document.getElementById('assign-client-plan-company-name').textContent = 'Assigning plan to: ' + clientName;
     var sel = document.getElementById('assign-client-plan-select');
     sel.value = currentPlanId || '';
@@ -819,19 +848,32 @@ function openAssignClientPlanModal(companyId, clientName, currentPlanId) {
 }
 
 function submitAssignClientPlan() {
-    var companyId = document.getElementById('assign-client-plan-company-id').value;
-    var planId    = document.getElementById('assign-client-plan-select').value;
-    var formData  = new FormData();
+    var clientId = document.getElementById('assign-client-plan-client-id').value;
+    var planId   = document.getElementById('assign-client-plan-select').value;
+    var formData = new FormData();
     formData.append('_token', '{{ csrf_token() }}');
     formData.append('client_package_id', planId);
-    fetch('{{ route("my-companies.assign-plan", ":id") }}'.replace(':id', companyId), { method: 'POST', body: formData })
-        .then(r => r.json())
+    fetch('{{ route("clients.assign-plan", ":id") }}'.replace(':id', clientId), { method: 'POST', body: formData })
+        .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.status === 'success') {
                 document.getElementById('modal-assign-client-plan').classList.remove('open');
-                window.location.reload();
+                showToast(data.message || 'Plan assigned.', 'success');
+                setTimeout(function() { location.reload(); }, 800);
+            } else {
+                showToast(data.message || 'Failed to assign plan.', 'error');
             }
-        });
+        })
+        .catch(function() { showToast('Request failed. Please try again.', 'error'); });
+}
+
+function openEditClientModal(clientId, name, email, phone) {
+    document.getElementById('edit-client-id').value = clientId;
+    document.getElementById('edit-client-name').value = name;
+    document.getElementById('edit-client-email').value = email;
+    document.getElementById('edit-client-phone').value = phone || '';
+    document.getElementById('edit-client-form').action = '{{ route("clients.update", ":id") }}'.replace(':id', clientId);
+    document.getElementById('modal-edit-client').classList.add('open');
 }
 
 function confirmDelete(id, name) {

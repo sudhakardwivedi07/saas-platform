@@ -502,37 +502,33 @@ class InsightsController extends AccountBaseController
 
     private function startBackgroundQueueWorker(): void
     {
+        // On Linux/production the server manages its own queue worker (cron/supervisor).
+        // Only spawn one on Windows (WAMP/local dev) where no persistent worker is running.
+        if (PHP_OS_FAMILY !== 'Windows') {
+            return;
+        }
+
         try {
             $php     = PHP_BINARY;
             $artisan = base_path('artisan');
             $logFile = storage_path('logs/laravel.log');
 
-            if (PHP_OS_FAMILY === 'Windows') {
-                // proc_open is more reliable than popen+start /B in Apache/WAMP context because
-                // it creates a truly independent process with controlled handles, avoiding the
-                // silent-failure mode where popen() returns false without throwing an exception.
-                $descriptors = [
-                    0 => ['pipe', 'r'],
-                    1 => ['file', $logFile, 'a'],
-                    2 => ['file', $logFile, 'a'],
-                ];
-                $process = proc_open(
-                    "\"{$php}\" \"{$artisan}\" queue:work --stop-when-empty --timeout=900 --tries=3",
-                    $descriptors,
-                    $pipes,
-                    base_path()
-                );
-                if (is_resource($process)) {
-                    fclose($pipes[0]);
-                    Log::info('Background queue worker started');
-                    // Intentionally not calling proc_close() — on Windows the child process
-                    // survives independently after the parent HTTP process exits.
-                } else {
-                    Log::warning('startBackgroundQueueWorker: proc_open returned false, worker did not start');
-                }
-            } else {
-                exec("nohup {$php} {$artisan} queue:work --stop-when-empty --timeout=900 > /dev/null 2>&1 &");
+            $descriptors = [
+                0 => ['pipe', 'r'],
+                1 => ['file', $logFile, 'a'],
+                2 => ['file', $logFile, 'a'],
+            ];
+            $process = proc_open(
+                "\"{$php}\" \"{$artisan}\" queue:work --stop-when-empty --timeout=900 --tries=3",
+                $descriptors,
+                $pipes,
+                base_path()
+            );
+            if (is_resource($process)) {
+                fclose($pipes[0]);
                 Log::info('Background queue worker started');
+            } else {
+                Log::warning('startBackgroundQueueWorker: proc_open returned false, worker did not start');
             }
         } catch (\Throwable $e) {
             Log::warning('Could not start background queue worker: ' . $e->getMessage());

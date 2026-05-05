@@ -28,8 +28,9 @@ class ProcessReportInsightsJob implements ShouldQueue
     public function __construct(
         public int    $reportId,
         public array  $uploadedFiles,
-        public string $style    = '',
-        public string $industry = ''
+        public string $style     = '',
+        public string $industry  = '',
+        public bool   $keepFiles = false
     ) {
         $this->afterCommit = true;
         if (empty($this->style)) {
@@ -224,6 +225,10 @@ class ProcessReportInsightsJob implements ShouldQueue
 
     private function cleanupTempFiles(): void
     {
+        if ($this->keepFiles) {
+            return;
+        }
+
         foreach ($this->uploadedFiles as $fileInfo) {
             $path = $fileInfo['path'] ?? null;
             if ($path && file_exists($path)) {

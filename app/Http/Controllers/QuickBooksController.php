@@ -46,6 +46,12 @@ class QuickBooksController extends AccountBaseController
             ->get();
         $this->qbConfigured = $this->resolveCredentials($companyId) !== null;
 
+        // Firm's own QB connection — used by "My QuickBook" tab
+        $this->firmConnection = QuickBooksConnection::where('company_id', $companyId)
+            ->where('user_id', auth()->id())
+            ->where('is_active', true)
+            ->first();
+
         return view('quickbooks.index', $this->data);
     }
 

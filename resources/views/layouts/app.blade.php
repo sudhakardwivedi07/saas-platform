@@ -445,26 +445,12 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         </a>
         @endif
 
-        {{-- QuickBooks group: client_admin + manager --}}
+        {{-- QuickBooks: client_admin + manager --}}
         @if(auth()->user()->hasAnyRole(['client_admin', 'manager']))
-        @php $qbOpen = request()->routeIs('quickbooks.*') || request()->routeIs('firm-quickbooks.*'); @endphp
-        <div class="ca-nav-group">
-            <div class="ca-nav-group-hdr {{ $qbOpen ? 'active-group open' : '' }}" onclick="toggleNavGroup(this)">
-                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-                <span class="nav-lbl">QuickBooks</span>
-                <svg class="nav-chv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-            </div>
-            <div class="ca-nav-sub {{ $qbOpen ? 'open' : '' }}">
-                <a href="{{ route('firm-quickbooks.index') }}" class="ca-nav-sub-item {{ request()->routeIs('firm-quickbooks.*') ? 'active' : '' }}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    My QuickBooks
-                </a>
-                <a href="{{ route('quickbooks.index') }}" class="ca-nav-sub-item {{ request()->routeIs('quickbooks.*') ? 'active' : '' }}">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-                    Clients QuickBook
-                </a>
-            </div>
-        </div>
+        <a href="{{ route('quickbooks.index') }}" class="ca-nav-item {{ (request()->routeIs('quickbooks.*') || request()->routeIs('firm-quickbooks.*')) ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+            QuickBooks
+        </a>
         @endif
 
         {{-- QuickBooks: user role (personal connection page) --}}

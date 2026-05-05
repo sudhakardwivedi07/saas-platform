@@ -587,8 +587,8 @@ function showToast(msg, type='success') {
     }
 
     function checkGlobalProgress() {
-        const id = getProcessingId();
-        if (!id) return;
+        const processingId = getProcessingId();
+        if (!processingId) return;
 
         // Don't show on the insights page itself — it has its own bar
         if (window.location.pathname.includes('/insights')) return;
@@ -607,8 +607,8 @@ function showToast(msg, type='success') {
 
         // Prefer showing firm if both are active; show whichever is active
         const isFirm = !!firmId;
-        const id     = firmId || userId;
-        const url    = isFirm ? '/firm-insights/status/' + id : '/insights/status/' + id;
+        const reportId = firmId || userId;
+        const url    = isFirm ? '/firm-insights/status/' + reportId : '/insights/status/' + reportId;
         const viewHref = isFirm ? '{{ route("firm-insights.index") }}' : '{{ route("insights.index") }}';
 
         if (msg) msg.textContent = 'Generating insights in the background…';

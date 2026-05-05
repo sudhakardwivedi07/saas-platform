@@ -170,7 +170,7 @@ class FirmInsightsController extends AccountBaseController
                 $style    = config('dashboard_graph_settings.default_style', 'plain');
                 $industry = $user->business_context ?? 'General Business';
 
-                ProcessReportInsightsJob::dispatch($report->id, $apiFiles, $style, $industry);
+                ProcessReportInsightsJob::dispatch($report->id, $apiFiles, $style, $industry, keepFiles: true);
                 $this->startBackgroundQueueWorker();
 
                 return response()->json([
@@ -182,7 +182,6 @@ class FirmInsightsController extends AccountBaseController
 
             } catch (\Exception $e) {
                 DB::rollBack();
-                QuickBooksCSVExportService::cleanupExportFiles($csvFiles);
                 throw $e;
             }
 
@@ -191,9 +190,14 @@ class FirmInsightsController extends AccountBaseController
                 'company_id' => $companyId,
                 'trace'      => $e->getTraceAsString(),
             ]);
+
+            $needsReconnect = str_contains($e->getMessage(), 'reconnect') || str_contains($e->getMessage(), 'Re-authentication');
+
             return response()->json([
-                'status'  => 'error',
-                'message' => 'Failed to generate insights: ' . $e->getMessage(),
+                'status'             => 'error',
+                'message'            => $needsReconnect ? $e->getMessage() : 'Failed to generate insights: ' . $e->getMessage(),
+                'reconnect_required' => $needsReconnect,
+                'reconnect_url'      => $needsReconnect ? route('firm-quickbooks.connect') : null,
             ], 500);
         }
     }
@@ -418,33 +422,33 @@ class FirmInsightsController extends AccountBaseController
 
     private function startBackgroundQueueWorker(): void
     {
-        // On Linux/production the server manages its own queue worker (cron/supervisor).
-        // Only spawn one on Windows (WAMP/local dev) where no persistent worker is running.
-        if (PHP_OS_FAMILY !== 'Windows') {
-            return;
-        }
-
         try {
             $php     = PHP_BINARY;
             $artisan = base_path('artisan');
             $logFile = storage_path('logs/laravel.log');
 
-            $descriptors = [
-                0 => ['pipe', 'r'],
-                1 => ['file', $logFile, 'a'],
-                2 => ['file', $logFile, 'a'],
-            ];
-            $process = proc_open(
-                "\"{$php}\" \"{$artisan}\" queue:work --stop-when-empty --timeout=900 --tries=3",
-                $descriptors,
-                $pipes,
-                base_path()
-            );
-            if (is_resource($process)) {
-                fclose($pipes[0]);
-                Log::info('Firm: Background queue worker started');
+            if (PHP_OS_FAMILY === 'Windows') {
+                $descriptors = [
+                    0 => ['pipe', 'r'],
+                    1 => ['file', $logFile, 'a'],
+                    2 => ['file', $logFile, 'a'],
+                ];
+                $process = proc_open(
+                    "\"{$php}\" \"{$artisan}\" queue:work --stop-when-empty --timeout=900 --tries=3",
+                    $descriptors,
+                    $pipes,
+                    base_path()
+                );
+                if (is_resource($process)) {
+                    fclose($pipes[0]);
+                    Log::info('Firm: Background queue worker started');
+                } else {
+                    Log::warning('Firm: startBackgroundQueueWorker: proc_open returned false');
+                }
             } else {
-                Log::warning('Firm: startBackgroundQueueWorker: proc_open returned false');
+                $cmd = "nohup {$php} {$artisan} queue:work --stop-when-empty --timeout=900 --tries=3 >> " . escapeshellarg($logFile) . " 2>&1 &";
+                exec($cmd);
+                Log::info('Firm: Background queue worker started (Linux)');
             }
         } catch (\Throwable $e) {
             Log::warning('Firm: Could not start background queue worker: ' . $e->getMessage());

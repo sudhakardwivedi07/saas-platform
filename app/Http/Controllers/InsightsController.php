@@ -253,9 +253,14 @@ class InsightsController extends AccountBaseController
                 'user_id' => $user->id,
                 'trace'   => $e->getTraceAsString(),
             ]);
+
+            $needsReconnect = str_contains($e->getMessage(), 'reconnect') || str_contains($e->getMessage(), 'Re-authentication');
+
             return response()->json([
-                'status'  => 'error',
-                'message' => 'Failed to generate insights: ' . $e->getMessage(),
+                'status'             => 'error',
+                'message'            => $needsReconnect ? $e->getMessage() : 'Failed to generate insights: ' . $e->getMessage(),
+                'reconnect_required' => $needsReconnect,
+                'reconnect_url'      => $needsReconnect ? route('quickbooks.user-connect') : null,
             ], 500);
         }
     }
@@ -502,33 +507,33 @@ class InsightsController extends AccountBaseController
 
     private function startBackgroundQueueWorker(): void
     {
-        // On Linux/production the server manages its own queue worker (cron/supervisor).
-        // Only spawn one on Windows (WAMP/local dev) where no persistent worker is running.
-        if (PHP_OS_FAMILY !== 'Windows') {
-            return;
-        }
-
         try {
             $php     = PHP_BINARY;
             $artisan = base_path('artisan');
             $logFile = storage_path('logs/laravel.log');
 
-            $descriptors = [
-                0 => ['pipe', 'r'],
-                1 => ['file', $logFile, 'a'],
-                2 => ['file', $logFile, 'a'],
-            ];
-            $process = proc_open(
-                "\"{$php}\" \"{$artisan}\" queue:work --stop-when-empty --timeout=900 --tries=3",
-                $descriptors,
-                $pipes,
-                base_path()
-            );
-            if (is_resource($process)) {
-                fclose($pipes[0]);
-                Log::info('Background queue worker started');
+            if (PHP_OS_FAMILY === 'Windows') {
+                $descriptors = [
+                    0 => ['pipe', 'r'],
+                    1 => ['file', $logFile, 'a'],
+                    2 => ['file', $logFile, 'a'],
+                ];
+                $process = proc_open(
+                    "\"{$php}\" \"{$artisan}\" queue:work --stop-when-empty --timeout=900 --tries=3",
+                    $descriptors,
+                    $pipes,
+                    base_path()
+                );
+                if (is_resource($process)) {
+                    fclose($pipes[0]);
+                    Log::info('Background queue worker started');
+                } else {
+                    Log::warning('startBackgroundQueueWorker: proc_open returned false, worker did not start');
+                }
             } else {
-                Log::warning('startBackgroundQueueWorker: proc_open returned false, worker did not start');
+                $cmd = "nohup {$php} {$artisan} queue:work --stop-when-empty --timeout=900 --tries=3 >> " . escapeshellarg($logFile) . " 2>&1 &";
+                exec($cmd);
+                Log::info('Background queue worker started (Linux)');
             }
         } catch (\Throwable $e) {
             Log::warning('Could not start background queue worker: ' . $e->getMessage());

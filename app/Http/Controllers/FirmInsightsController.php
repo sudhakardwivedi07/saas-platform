@@ -194,11 +194,16 @@ class FirmInsightsController extends AccountBaseController
                 'trace'      => $e->getTraceAsString(),
             ]);
 
-            $needsReconnect = str_contains($e->getMessage(), 'reconnect') || str_contains($e->getMessage(), 'Re-authentication');
+            $needsReconnect = str_contains($e->getMessage(), 'reconnect')
+                           || str_contains($e->getMessage(), 'Re-authentication')
+                           || str_contains($e->getMessage(), 'invalid_grant')
+                           || str_contains($e->getMessage(), 'Refresh OAuth 2');
 
             return response()->json([
                 'status'             => 'error',
-                'message'            => $needsReconnect ? $e->getMessage() : 'Failed to generate insights: ' . $e->getMessage(),
+                'message'            => $needsReconnect
+                    ? 'Your QuickBooks authorization has expired. Please reconnect your QuickBooks account.'
+                    : 'Failed to generate insights: ' . $e->getMessage(),
                 'reconnect_required' => $needsReconnect,
                 'reconnect_url'      => $needsReconnect ? route('firm-quickbooks.connect') : null,
             ], 500);

@@ -144,8 +144,8 @@
             <div class="form-2col">
                 <div class="mf-field">
                     <label class="mf-label">Industry Type</label>
-                    <select name="industry_type" class="mf-sel" style="height:38px">
-                        <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select industry</option>
+                    <select name="industry_type" class="mf-sel" style="height:38px" required>
+                        <option value="" disabled {{ old('industry_type') ? '' : 'selected' }}>Select industry</option>
                         @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
                         <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
                         @endforeach
@@ -153,8 +153,8 @@
                 </div>
                 <div class="mf-field">
                     <label class="mf-label">Entity Type</label>
-                    <select name="entity_type" class="mf-sel" style="height:38px">
-                        <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
+                    <select name="entity_type" class="mf-sel" style="height:38px" required>
+                        <option value="" disabled {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
                         @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
                         <option value="{{ $ent }}" {{ old('entity_type') === $ent ? 'selected' : '' }}>{{ $ent }}</option>
                         @endforeach

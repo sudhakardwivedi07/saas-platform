@@ -731,12 +731,16 @@
     const SELECTED_COMPANY  = {{ $selectedCompanyId }};
     const LIMIT_REACHED     = {{ $limitReached ? 'true' : 'false' }};
     const LS_KEY            = 'insights_processing_ids';
+    const DASH_LS_KEY       = 'dash_processing_insight_id';
 
     // ── On load: resume polling for any in-progress reports ─────────────────
     const serverProcessingIds = @json($reports->filter(fn($r) => $r->isProcessing())->pluck('id'));
 
     // Also check localStorage for a report started on another page (e.g. dashboard)
-    let lsId = localStorage.getItem(LS_KEY);
+    let lsId = localStorage.getItem(LS_KEY) || localStorage.getItem(DASH_LS_KEY);
+    if (lsId && !localStorage.getItem(LS_KEY)) {
+        localStorage.setItem(LS_KEY, lsId);
+    }
     let allPollingIds = [...new Set([...serverProcessingIds, ...(lsId ? [parseInt(lsId)] : [])])];
 
     if (allPollingIds.length > 0) {
@@ -850,6 +854,12 @@
                 resetGenerateBtns();
                 if (data.limit_reached) {
                     openLimitModal();
+                } else if (data.reconnect_required && data.quickbooks_url) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Reconnect QuickBooks',
+                        html: (data.message || 'Your QuickBooks link is no longer valid.') + '<br><br><a href="' + data.quickbooks_url + '" style="color:var(--orange);font-weight:600">Open QuickBooks →</a>',
+                    });
                 } else {
                     Swal.fire({ icon: 'error', title: 'Error', text: data.message });
                 }

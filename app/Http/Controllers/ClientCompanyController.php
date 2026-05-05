@@ -88,33 +88,18 @@ class ClientCompanyController extends AccountBaseController
         $authUser = auth()->user();
         $companyId = $authUser->company_id;
 
-        // Companies the user created (via created_by) OR linked via user_companies
-        $ownedCompanies = Company::withoutGlobalScopes()
-            ->where('created_by', $authUser->id)
-            ->with(['package', 'clientPackage', 'subscription'])
-            ->get();
-
-        $linkedCompanies = $authUser->managedCompanies()
-            ->withoutGlobalScopes()
-            ->with(['package', 'clientPackage', 'subscription'])
-            ->get()
-            ->filter(fn ($c) => !$ownedCompanies->contains('id', $c->id));
-
-        $companies = $ownedCompanies->merge($linkedCompanies);
-
-        // Also include their primary company if not already listed
-        $primaryCompany = $authUser->company;
-        if ($primaryCompany && !$companies->contains('id', $primaryCompany->id)) {
-            $companies->prepend($primaryCompany->load(['package', 'clientPackage', 'subscription']));
-        }
-
-        $this->companies = $companies;
+        // Same scope as Insights / KPI company pickers (see User::portfolioCompanies()).
+        $this->companies = $authUser->portfolioCompanies()->load([
+            'package',
+            'clientPackage',
+            'subscription',
+        ]);
 
         // Check if user can add more companies based on their plan
         $ownerCompany = Company::withoutGlobalScopes()->find($companyId);
         $plan = $ownerCompany?->activePlan();
         $maxCompanies = $plan?->max_companies ?? 0;
-        $currentCompaniesCount = $companies->count();
+        $currentCompaniesCount = $this->companies->count();
         $hasActivePlan = (bool) $plan;
         $canAddCompany = $hasActivePlan && ($maxCompanies == 0 || $currentCompaniesCount < $maxCompanies);
 
@@ -249,8 +234,8 @@ class ClientCompanyController extends AccountBaseController
             'subdomain'       => 'required|string|max:63|alpha_dash|unique:companies,subdomain',
             'company_email'   => 'required|email|max:255',
             'package_id'      => 'nullable|exists:client_packages,id',
-            'industry_type'   => 'nullable|string|max:100',
-            'entity_type'     => 'nullable|string|max:100',
+            'industry_type'   => 'required|string|max:100',
+            'entity_type'     => 'required|string|max:100',
             'state'           => 'nullable|string|max:100',
         ];
 
@@ -286,8 +271,10 @@ class ClientCompanyController extends AccountBaseController
             && $package->monthly_price > 0
             && $stripeReady;
 
+        $createdByKey = $this->companyOwnerKeyForCurrentUser();
+
         Log::info('ClientAdmin company creation', [
-            'created_by'       => $authUser->id,
+            'created_by'       => $createdByKey,
             'client_plan'      => $package?->name,
             'stripe_ready'     => $stripeReady,
             'requires_payment' => $requiresPayment,
@@ -295,7 +282,7 @@ class ClientCompanyController extends AccountBaseController
 
         // Create the new company (inactive until payment confirmed)
         $company = Company::create([
-            'created_by'        => $authUser->id,
+            'created_by'        => $createdByKey,
             'company_name'      => $request->company_name,
             'app_name'          => $request->company_name,
             'company_email'     => $request->company_email,
@@ -426,10 +413,15 @@ class ClientCompanyController extends AccountBaseController
 
     public function paymentCancel(\Illuminate\Http\Request $request, int $id)
     {
+        $ownerKey = $this->companyOwnerKeyForCurrentUser();
+
         $company = Company::withoutGlobalScopes()
             ->where('id', $id)
             ->where('status', 'inactive')
-            ->where('created_by', auth()->id())
+            ->where(function ($query) use ($ownerKey) {
+                $query->where('created_by', $ownerKey)
+                    ->orWhere('created_by', auth()->id());
+            })
             ->first();
 
         if ($company) {
@@ -513,8 +505,8 @@ class ClientCompanyController extends AccountBaseController
 
         $data = $request->validate([
             'company_name'  => 'required|string|max:255',
-            'industry_type' => 'nullable|string|max:100',
-            'entity_type'   => 'nullable|string|max:100',
+            'industry_type' => 'required|string|max:100',
+            'entity_type'   => 'required|string|max:100',
             'state'         => 'nullable|string|max:100',
             'client_id'     => 'nullable|exists:users,id',
         ]);
@@ -535,8 +527,8 @@ class ClientCompanyController extends AccountBaseController
             'company_email' => $clientEmail ?? auth()->user()->email,
             'subdomain'     => $subdomain,
             'status'        => 'active',
-            'industry_type' => $data['industry_type'] ?? null,
-            'entity_type'   => $data['entity_type'] ?? null,
+            'industry_type' => $data['industry_type'],
+            'entity_type'   => $data['entity_type'],
             'state'         => $data['state'] ?? null,
         ]);
 

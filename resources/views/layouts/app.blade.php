@@ -578,12 +578,22 @@ function showToast(msg, type='success') {
 
 // ── Global insight-generation notification ────────────────────────────────
 (function () {
-    const LS_USER = 'insights_processing_ids';
-    const LS_FIRM = 'firm_insights_processing_id';
+    const LS_KEY          = 'insights_processing_ids';
+    const DASH_LS_KEY     = 'dash_processing_insight_id';
+    const INSIGHTS_URL    = '{{ route("insights.index") }}';
+
+    function getProcessingId() {
+        return localStorage.getItem(LS_KEY) || localStorage.getItem(DASH_LS_KEY);
+    }
 
     function checkGlobalProgress() {
-        const userId = localStorage.getItem(LS_USER);
-        const firmId = localStorage.getItem(LS_FIRM);
+        const id = getProcessingId();
+        if (!id) return;
+
+        // Don't show on the insights page itself — it has its own bar
+        if (window.location.pathname.includes('/insights')) return;
+
+        // Show the floating banner
         const banner = document.getElementById('global-gen-banner');
         const msg    = document.getElementById('global-gen-msg');
         const lnk    = document.getElementById('global-gen-link');
@@ -629,20 +639,29 @@ function showToast(msg, type='success') {
             if (data.status !== 'success') { setTimeout(checkGlobalProgress, 10000); return; }
             const r = data.report;
             if (r.has_insights || r.is_failed) {
-                if (isFirm) localStorage.removeItem(LS_FIRM);
-                else        localStorage.removeItem(LS_USER);
-                // Re-check in case the other type is still running
-                const stillRunning = isFirm ? localStorage.getItem(LS_USER) : localStorage.getItem(LS_FIRM);
-                if (!stillRunning) banner.style.display = 'none';
-                else setTimeout(checkGlobalProgress, 5000);
+                localStorage.removeItem(LS_KEY);
+                localStorage.removeItem(DASH_LS_KEY);
+                if (banner) banner.style.display = 'none';
+                if (shouldReloadOnInsightComplete() && !window.location.pathname.includes('/insights')) {
+                    window.location.reload();
+                }
             } else {
                 setTimeout(checkGlobalProgress, 8000);
             }
-        })
-        .catch(e => { if (e !== 'not-found') setTimeout(checkGlobalProgress, 15000); });
-    }
+    })
+    .catch(() => setTimeout(checkGlobalProgress, 15000));
+}
 
-    document.addEventListener('DOMContentLoaded', checkGlobalProgress);
+function shouldReloadOnInsightComplete() {
+    return document.getElementById('insights-refresh-target') !== null;
+}
+
+document.addEventListener('DOMContentLoaded', checkGlobalProgress);
+window.addEventListener('storage', function(event) {
+    if ((event.key === LS_KEY || event.key === DASH_LS_KEY) && event.newValue) {
+        checkGlobalProgress();
+    }
+});
 }());
 
 document.addEventListener('DOMContentLoaded', () => {

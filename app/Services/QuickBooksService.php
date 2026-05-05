@@ -91,15 +91,48 @@ class QuickBooksService
                 throw new \RuntimeException('QuickBooks refresh token expired. Re-authentication required.');
             }
 
-            $helper   = $this->dataService->getOAuth2LoginHelper();
-            $newToken = $helper->refreshAccessTokenWithRefreshToken($this->connection->refresh_token);
+            $helper = $this->dataService->getOAuth2LoginHelper();
+            try {
+                $newToken = $helper->refreshAccessTokenWithRefreshToken($this->connection->refresh_token);
+            } catch (\Throwable $e) {
+                $raw = $e->getMessage();
+                if (stripos($raw, 'invalid_grant') !== false) {
+                    Log::warning('QuickBooks refresh failed (invalid_grant); connection deactivated.', [
+                        'connection_id' => $this->connection->id,
+                        'company_id'    => $this->connection->company_id,
+                    ]);
+                    $this->connection->update(['is_active' => false]);
+                    throw new \RuntimeException(
+                        'QuickBooks rejected the stored refresh token (invalid or revoked). Open QuickBooks and connect your company again.',
+                        0,
+                        $e
+                    );
+                }
+                throw $e;
+            }
 
-            $this->connection->update([
+            // Intuit rotates refresh tokens — always persist the latest pair from the refresh response.
+            $updates = [
                 'access_token'            => $newToken->getAccessToken(),
                 'access_token_expires_at' => self::parseExpiry($newToken->getAccessTokenExpiresAt(), 3600),
-            ]);
+            ];
+            try {
+                $newRefresh = $newToken->getRefreshToken();
+                if (is_string($newRefresh) && $newRefresh !== '') {
+                    $updates['refresh_token'] = $newRefresh;
+                }
+            } catch (\Throwable) {
+                // SDK may omit refresh in edge cases; keep existing refresh_token in DB.
+            }
+            try {
+                $updates['refresh_token_expires_at'] = self::parseExpiry($newToken->getRefreshTokenExpiresAt(), 8_640_000);
+            } catch (\Throwable) {
+                // Leave existing refresh_token_expires_at if not returned.
+            }
 
+            $this->connection->update($updates);
             $this->dataService->updateOAuth2Token($newToken);
+            $this->connection->refresh();
         }
     }
 

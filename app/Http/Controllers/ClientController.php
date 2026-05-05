@@ -157,7 +157,8 @@ class ClientController extends AccountBaseController
             'email'             => 'required|email|max:255|unique:users,email',
             'phone'             => 'nullable|string|max:30',
             'company_name'      => 'required|string|max:255',
-            'industry_type'     => 'nullable|string|max:100',
+            'industry_type'     => 'required|string|max:100',
+            'entity_type'       => 'required|string|max:100',
             'client_package_id' => 'nullable|exists:client_packages,id',
             'password'          => 'required|string|min:8',
         ]);
@@ -177,6 +178,7 @@ class ClientController extends AccountBaseController
             'status'            => 'active',
             'package_id'        => $this->resolveFallbackPackageId(),
             'industry_type'     => $request->industry_type,
+            'entity_type'       => $request->entity_type,
             'client_package_id' => $resolvedClientPackageId,
         ]);
 

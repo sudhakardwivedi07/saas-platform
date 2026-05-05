@@ -3,6 +3,8 @@
 
 @section('content')
 
+<div id="insights-refresh-target" data-refresh="1" style="display:none"></div>
+
 <style>
 .user-db-header { margin-bottom: 24px; }
 .user-db-header h1 { font-size: 22px; font-weight: 700; color: var(--text-1); margin: 0 0 6px; }
@@ -256,6 +258,91 @@
     font-size: 15px; font-weight: 500; cursor: pointer; transition: all .2s;
 }
 .qb-modal .btn-modal-cancel:hover { background: #fff4ee; }
+
+/* ── Executive KPI header (replaces plan grid) ─────────────────────────── */
+.kpi-exec-bar {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
+    margin-bottom: 20px; padding: 16px 18px; background: #fff; border: 1px solid var(--border); border-radius: 10px;
+}
+.kpi-exec-bar .kpi-exec-meta h2 { font-size: 18px; font-weight: 700; color: var(--text-1); margin: 0 0 4px; }
+.kpi-exec-bar .kpi-exec-meta p { font-size: 12.5px; color: var(--text-3); margin: 0; }
+.kpi-empty-card {
+    background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 32px; text-align: center; max-width: 560px;
+}
+.kpi-empty-card h3 { font-size: 16px; font-weight: 600; margin: 0 0 8px; color: var(--text-1); }
+.kpi-empty-card p { font-size: 13px; color: var(--text-3); line-height: 1.6; margin: 0 0 16px; }
+
+/* ── Classic three-column dashboard (no KPI data yet) ───────────────────── */
+.classic-dash-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    align-items: stretch;
+}
+@media (max-width: 1100px) {
+    .classic-dash-grid { grid-template-columns: 1fr; }
+}
+.classic-dash-grid--empty-plans {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+}
+@media (max-width: 1100px) {
+    .classic-dash-grid--empty-plans { grid-template-columns: 1fr; }
+}
+.classic-dash-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+.classic-dash-card .classic-lead {
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.65;
+    margin: 0 0 18px;
+}
+.classic-stat-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 16px;
+}
+.classic-stat-box {
+    background: #f4f5f7;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    text-align: center;
+}
+.classic-stat-box .lbl {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    color: var(--text-3);
+    margin-bottom: 4px;
+}
+.classic-stat-box .val {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-1);
+}
+.classic-price-strip {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    color: var(--text-2);
+    margin: 14px 0 0;
+    line-height: 1.45;
+}
+.classic-dash-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 12px;
+}
 </style>
 
 {{-- ── Processing Bar (shows when generation is in progress) ─────────────── --}}
@@ -267,195 +354,77 @@
     </div>
 </div>
 
+@if(!empty($showKpiDashboard))
+<div class="user-kpi-fullbleed">
+<div class="cfo-kpi-exec-bar">
+    <div class="cfo-kpi-exec-left">
+        <h2 class="cfo-kpi-exec-title">Executive Financial Summary</h2>
+        <p class="cfo-kpi-exec-updated">Last updated {{ now()->format('M d, Y h:i A') }}</p>
+    </div>
+    <div class="cfo-kpi-exec-actions">
+        @if(!empty($isQuickbooksConnected))
+            <div class="cfo-kpi-gen-wrap">
+                <button type="button" id="dashGenerateBtn" class="cfo-btn-get-insights"
+                        onclick="dashTriggerGenerate()"
+                        style="{{ !empty($insightInProgress) ? 'display:none;' : '' }}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                    @if($monthlyLimit !== null)
+                        Get Insights {{ (int) ($monthlyUsed ?? 0) }}/{{ (int) $monthlyLimit }} Left
+                    @else
+                        Generate Insights
+                    @endif
+                </button>
+                <div id="dashGeneratingLoader" class="dash-gen-loader cfo-dash-gen-loader"
+                     style="{{ empty($insightInProgress) ? 'display:none;' : '' }}">
+                    <span class="dash-gen-spinner"></span>
+                    <span>Generating insights…</span>
+                </div>
+            </div>
+        @else
+            @if(auth()->user()->can('view_quickbooks'))
+            <a href="{{ route('quickbooks.index') }}" class="cfo-btn-get-insights" style="text-decoration:none">Connect QuickBooks</a>
+            @endif
+        @endif
+        <a href="{{ route('insights.index') }}" class="cfo-btn-view-insights">View Insights</a>
+    </div>
+</div>
+
+@if(($kpiCompanies ?? collect())->isEmpty() || empty($selectedKpiCompanyId))
+    <div class="kpi-empty-card">
+        <h3>No company on file</h3>
+        <p>We could not resolve a company for KPI metrics. Ask your administrator to link your account to a company.</p>
+    </div>
+@else
+    @include('dashboard.partials.kpi-dashboard-embed', [
+        'kpiDataUrl' => $kpiDataUrl,
+        'kpiDetailBaseUrl' => $kpiDetailBaseUrl,
+        'companies' => $kpiCompanies,
+        'selectedCompanyId' => $selectedKpiCompanyId,
+    ])
+@endif
+</div>{{-- .user-kpi-fullbleed --}}
+
+@else
+{{-- Classic three-column dashboard when this tenant has no analyzed insights / KPI source yet --}}
 <div class="user-db-header">
     <h1>Hi <span>{{ auth()->user()->first_name }}</span></h1>
     <p>
-        You're one step away from unlocking your first financial insights.
+        You’re one step away from unlocking your first financial insights.
         @if(auth()->user()->can('view_quickbooks'))
-        <a href="{{ route('quickbooks.index') }}">Connect QuickBooks</a> to proceed.
+            <a href="{{ route('quickbooks.index') }}">Connect QuickBooks</a> to proceed.
         @else
-        Connect QuickBooks to proceed.
+            Ask your administrator to connect QuickBooks to proceed.
         @endif
     </p>
 </div>
 
-<div class="plan-grid">
-
-    {{-- Card 1: What this platform does --}}
-    <div class="plan-card">
-        <div class="plan-card-title">What {{ $clientAdminName }} does</div>
-        <p class="plan-card-desc">
-            {{ $clientAdminName }} helps founders and finance leaders turn raw financial data into clear, intelligence—so you can understand performance, monitor cash flow, and identify risks without manual spreadsheets.
-        </p>
-        <p class="plan-card-desc"><strong>It provides a structured platform for:</strong></p>
-        <ul class="plan-feature-list">
-            <li>
-                <svg class="feat-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                <div>
-                    <div class="feat-title">Flexible data ingestion and visibility</div>
-                    <div class="feat-body">Bring in data via QuickBooks to create a single source of financial truth.</div>
-                </div>
-            </li>
-            <li>
-                <svg class="feat-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                <div>
-                    <div class="feat-title">Live financial dashboards</div>
-                    <div class="feat-body">Automatically generate and track key financial metrics as your data is connected.</div>
-                </div>
-            </li>
-            <li>
-                <svg class="feat-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                <div>
-                    <div class="feat-title">Deeper KPI analysis</div>
-                    <div class="feat-body">Go beyond surface metrics with detailed KPI views that explain what's driving performance.</div>
-                </div>
-            </li>
-            <li>
-                <svg class="feat-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                <div>
-                    <div class="feat-title">Secure financial data management</div>
-                    <div class="feat-body">Your data is handled through a secure, read-only system designed for financial accuracy and trust.</div>
-                </div>
-            </li>
-            <li>
-                <svg class="feat-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                <div>
-                    <div class="feat-title">Ongoing guidance and support</div>
-                    <div class="feat-body">Built to support informed decision-making as your business grows.</div>
-                </div>
-            </li>
-        </ul>
-    </div>
-
-    {{-- Cards 2+: Dynamic plan cards from client_admin --}}
-    @forelse($plans ?? collect() as $plan)
-        @php
-            $isCurrent = $currentPlan && $currentPlan->id === $plan->id;
-            $features  = is_array($plan->features) ? array_filter($plan->features) : [];
-            $isFree    = (bool)($plan->is_free ?? false);
-            $price     = $isFree ? null : '$' . number_format((float)($plan->monthly_price ?? 0), 2);
-            $insightsLimit  = $plan->insights_per_month ?? $plan->max_insights_per_month ?? null;
-            $companiesLimit = $plan->max_companies ?? $plan->max_users ?? null;
-
-            // Tier ordering for CTAs: avoid "Upgrade to Free" when already on a paid (or higher) plan.
-            $tierRank = static function ($p): int {
-                if (!$p) {
-                    return 0;
-                }
-                return ((int) ($p->sort ?? 0) * 1_000_000)
-                    + (int) round((float) ($p->monthly_price ?? 0) * 100)
-                    + (int) ($p->id ?? 0);
-            };
-            $planRank    = $tierRank($plan);
-            $currentRank = $tierRank($currentPlan);
-            $isLowerTierThanCurrent = $currentPlan && !$isCurrent && $planRank < $currentRank;
-            $isHigherTierThanCurrent = $currentPlan && !$isCurrent && $planRank > $currentRank;
-        @endphp
-        <div class="plan-card">
-            <div class="plan-card-title">
-                {{ $plan->name }}
-                @if($isCurrent)
-                    <span class="plan-badge">CURRENT</span>
-                @elseif($plan->is_recommended ?? false)
-                    <span class="plan-star">&#9733;</span>
-                @endif
-            </div>
-            @if($plan->description)
-                <p class="plan-card-desc">{{ $plan->description }}</p>
-            @endif
-
-            @if(count($features))
-                <ul class="plan-feature-list" style="margin-bottom:auto">
-                    @foreach($features as $feature)
-                        <li>
-                            <svg class="feat-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                            {{ $feature }}
-                        </li>
-                    @endforeach
-                </ul>
-            @endif
-
-            @if($isCurrent && $isFree)
-                <div class="entitlement-box">
-                    <div class="entitlement-label">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                        Entitlement
-                    </div>
-                    <div class="entitlement-title">Complimentary access</div>
-                    <div class="entitlement-sub">Get started with your financial dashboard at no cost.</div>
-                </div>
-            @elseif($price)
-                <div class="plan-price-label" style="margin-top:24px">
-                    {{ $price }}/MONTH
-                    @if($insightsLimit)
-                        &bull; INCLUDES {{ $insightsLimit }} ANALYSIS RUNS
-                    @endif
-                </div>
-            @endif
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 16px;">
-                <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--bg)">
-                    <div style="font-size:10.5px;font-weight:700;letter-spacing:.05em;color:var(--text-3);text-transform:uppercase">Insights / Month</div>
-                    <div style="font-size:15px;font-weight:700;color:var(--text-1);margin-top:2px">{{ $insightsLimit ?: '—' }}</div>
-                </div>
-                <div style="border:1px solid var(--border);border-radius:8px;padding:10px 12px;background:var(--bg)">
-                    <div style="font-size:10.5px;font-weight:700;letter-spacing:.05em;color:var(--text-3);text-transform:uppercase">Max Companies</div>
-                    <div style="font-size:15px;font-weight:700;color:var(--text-1);margin-top:2px">{{ $companiesLimit ?: 'Unlimited' }}</div>
-                </div>
-            </div>
-
-            @if($isCurrent)
-                @if(!empty($isQuickbooksConnected))
-                    {{-- Generate Insights button — replaced by loader when processing --}}
-                    <div style="margin-top:auto;">
-                        <button type="button" id="dashGenerateBtn" class="plan-btn btn-orange"
-                                onclick="dashTriggerGenerate()"
-                                style="{{ !empty($insightInProgress) ? 'display:none;' : '' }}">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-                            Generate Insights
-                        </button>
-                        <div id="dashGeneratingLoader" class="dash-gen-loader"
-                             style="{{ empty($insightInProgress) ? 'display:none;' : '' }}">
-                            <span class="dash-gen-spinner"></span>
-                            <span>Generating insights…</span>
-                        </div>
-                    </div>
-                @else
-                    <a href="{{ route('quickbooks.index') }}" class="plan-btn btn-orange-outline" style="margin-top:auto">
-                        Connect QuickBooks
-                    </a>
-                @endif
-            @elseif($isLowerTierThanCurrent)
-                <div style="margin-top:auto;padding-top:8px;">
-                </div>
-            @else
-                <form method="POST" action="{{ route('dashboard.assign-plan') }}" style="margin-top:auto">
-                    @csrf
-                    <input type="hidden" name="client_package_id" value="{{ $plan->id }}">
-                    <button type="submit" class="plan-btn btn-orange-outline">
-                        @if($isHigherTierThanCurrent)
-                            Upgrade to {{ $plan->name }} &rarr;
-                        @elseif($currentPlan)
-                            Switch to {{ $plan->name }} &rarr;
-                        @else
-                            Choose {{ $plan->name }} &rarr;
-                        @endif
-                    </button>
-                </form>
-            @endif
-        </div>
-    @empty
-        {{-- No plans configured by client_admin yet --}}
-        <div class="plan-card" style="grid-column:span 2;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 32px;min-height:220px">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.4" style="margin-bottom:14px"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
-            <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:6px">No plans available yet</div>
-            <div style="font-size:13px;color:var(--text-3);max-width:320px;line-height:1.6">
-                Your account administrator hasn't set up any subscription plans yet. Please contact them for more information.
-            </div>
-        </div>
-    @endforelse
-
-</div>
+@include('dashboard.partials.classic-user-dashboard', [
+    'plans' => $plans ?? collect(),
+    'currentPlan' => $currentPlan ?? null,
+    'isQuickbooksConnected' => !empty($isQuickbooksConnected),
+    'insightInProgress' => $insightInProgress ?? null,
+])
+@endif
 
 {{-- ── Industry Type Selection Modal ─────────────────────────────────────── --}}
 <div id="industryModal" class="ind-modal-overlay">
@@ -651,14 +620,21 @@
         .then(r => r.json())
         .then(data => {
             if (data.status === 'processing') {
-                // Save report ID to localStorage so insights page can pick up polling
+                // Save report ID to localStorage so the dashboard and insights pages can both detect processing
                 localStorage.setItem(LS_KEY, data.report_id);
+                localStorage.setItem('insights_processing_ids', data.report_id);
                 // Navigate to insights page — generation continues in background
                 window.location.href = INSIGHTS_URL;
             } else {
                 if (btn) { btn.disabled = false; btn.textContent = 'Generate Insights'; }
                 if (data.limit_reached) {
                     openDashLimitModal();
+                } else if (data.reconnect_required && data.quickbooks_url) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Reconnect QuickBooks',
+                        html: (data.message || 'Your QuickBooks link is no longer valid.') + '<br><br><a href="' + data.quickbooks_url + '" style="color:var(--orange);font-weight:600">Open QuickBooks →</a>',
+                    });
                 } else {
                     Swal.fire({ icon: 'error', title: 'Error', text: data.message });
                 }

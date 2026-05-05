@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Company;
+use App\Models\QuickBooksConnection;
+use App\Models\Report;
 use App\Scopes\TenantScope;
 use App\Traits\HasTenant;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -98,6 +101,121 @@ class User extends Authenticatable
         return $this->belongsToMany(Company::class, 'user_companies')
             ->withPivot('role')
             ->withTimestamps();
+    }
+
+    /**
+     * Same company list as My Companies (owned + linked + primary when in ownership chain).
+     * Keeps Insights / KPI company pickers aligned with my-companies.
+     */
+    public function portfolioCompanies(): \Illuminate\Support\Collection
+    {
+        $authUser = $this;
+        $ownerKey = $authUser->hasAnyRole(['client_admin', 'manager'])
+            ? (int) $authUser->company_id
+            : (int) $authUser->id;
+
+        $ownedCompanies = Company::withoutGlobalScopes()
+            ->where(function ($query) use ($ownerKey, $authUser) {
+                $query->where('created_by', $ownerKey)
+                    ->orWhere('created_by', $authUser->id);
+            })
+            ->get();
+
+        $linkedCompanies = $authUser->managedCompanies()
+            ->withoutGlobalScopes()
+            ->get()
+            ->filter(fn ($c) => ! $ownedCompanies->contains(fn ($row) => (int) $row->id === (int) $c->id));
+
+        $companies = $ownedCompanies->merge($linkedCompanies);
+
+        $primaryCompany = $authUser->company;
+        if ($primaryCompany && ! $companies->contains(fn ($row) => (int) $row->id === (int) $primaryCompany->id)) {
+            $pb = $primaryCompany->created_by;
+            $includePrimary = $pb === null
+                || (int) $pb === $ownerKey
+                || (int) $pb === (int) $authUser->id;
+            if ($includePrimary) {
+                $companies->prepend($primaryCompany);
+            }
+        }
+
+        return $companies->unique('id')->values();
+    }
+
+    public function companyHasFinancialKpiSource(int $companyId): bool
+    {
+        if (QuickBooksConnection::withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->where('is_active', true)
+            ->exists()) {
+            return true;
+        }
+
+        if (Report::query()
+            ->where('user_id', $this->id)
+            ->where('company_id', $companyId)
+            ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
+            ->exists()) {
+            return true;
+        }
+
+        // Legacy reports with no company_id: treat as belonging to the user's home tenant.
+        if ($this->company_id && (int) $companyId === (int) $this->company_id) {
+            return Report::query()
+                ->where('user_id', $this->id)
+                ->whereNull('company_id')
+                ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
+                ->exists();
+        }
+
+        return false;
+    }
+
+    /**
+     * True when this user has at least one non-deleted Analyzed report for the tenant company
+     * (including legacy null company_id rows only when $tenantCompanyId is the user’s home company).
+     */
+    public function hasAnalyzedInsightsForTenant(int $tenantCompanyId): bool
+    {
+        return Report::query()
+            ->where('user_id', $this->id)
+            ->whereNull('deleted_at')
+            ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
+            ->where(function ($q) use ($tenantCompanyId) {
+                $q->where('company_id', $tenantCompanyId);
+                if ($this->company_id && (int) $tenantCompanyId === (int) $this->company_id) {
+                    $q->orWhereNull('company_id');
+                }
+            })
+            ->exists();
+    }
+
+    /**
+     * Companies that should appear on the KPI dashboard (QB and/or analyzed insights for this user).
+     */
+    public function kpiEligiblePortfolioCompanies(): \Illuminate\Support\Collection
+    {
+        $portfolio = $this->portfolioCompanies();
+        $withSource = $portfolio->filter(fn ($c) => $this->companyHasFinancialKpiSource((int) $c->id));
+
+        if ($withSource->isNotEmpty()) {
+            return $withSource->values();
+        }
+
+        $hasLooseAnalyzed = Report::query()
+            ->where('user_id', $this->id)
+            ->whereNull('company_id')
+            ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
+            ->exists();
+
+        if ($hasLooseAnalyzed && $this->company_id) {
+            $home = Company::withoutGlobalScopes()->find($this->company_id);
+            if ($home) {
+                return collect([$home]);
+            }
+        }
+
+        return collect();
     }
 
     // ─── Scopes ────────────────────────────────────────────────────────────────

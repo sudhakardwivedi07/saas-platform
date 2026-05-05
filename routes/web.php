@@ -54,6 +54,7 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('/',         [DashboardController::class, 'index'])->name('dashboard');
     Route::get('dashboard', [DashboardController::class, 'index']);
+    Route::get('my-financials', [DashboardController::class, 'myFinancials'])->name('my-financials.index');
     Route::post('dashboard/assign-plan', [DashboardController::class, 'assignPlan'])->name('dashboard.assign-plan');
     Route::get('dashboard/kpi-data', [DashboardController::class, 'kpiData'])->name('dashboard.kpi-data');
     Route::get('dashboard/kpi-detail/{kpiType}', [DashboardController::class, 'kpiDetail'])->name('dashboard.kpi-detail');

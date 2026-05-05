@@ -167,6 +167,34 @@ class DashboardController extends AccountBaseController
         return view('dashboard.index', $this->data);
     }
 
+    /**
+     * Client admin "My Financials" page (KPI dashboard view).
+     */
+    public function myFinancials()
+    {
+        $user = auth()->user();
+        abort_unless($user && $user->hasRole('client_admin'), 403);
+
+        $company = company();
+        abort_unless($company, 404);
+
+        $this->pageTitle = 'My Financials';
+        $tenantId = (int) $company->id;
+        // Client admin "My Financials" is tenant-only (no sub-company picker).
+        $this->kpiCompanies = collect([$company]);
+        $this->selectedKpiCompanyId = $tenantId;
+        $this->hasAnalyzedInsights = $user->hasAnalyzedInsightsForTenant($tenantId);
+        $this->showKpiDashboard = $this->hasAnalyzedInsights;
+        $this->isQuickbooksConnected = QuickBooksConnection::withoutGlobalScopes()
+            ->where('company_id', $tenantId)
+            ->where('is_active', true)
+            ->exists();
+        $this->kpiDataUrl = route('dashboard.kpi-data');
+        $this->kpiDetailBaseUrl = url('/dashboard/kpi-detail');
+
+        return view('dashboard.my-financials', $this->data);
+    }
+
     public function assignPlan(Request $request)
     {
         $user = auth()->user();
@@ -239,13 +267,12 @@ class DashboardController extends AccountBaseController
     }
 
     /**
-     * KPI drill-down for end users (client_admin uses clients.* routes).
+     * KPI drill-down page.
      */
     public function kpiDetail(string $kpiType)
     {
         $user = auth()->user();
         abort_unless($user, 403);
-        abort_if($user->hasAnyRole(['client_admin', 'manager']), 403);
 
         if (!preg_match('/^[a-z0-9\-]+$/', $kpiType)) {
             abort(404);

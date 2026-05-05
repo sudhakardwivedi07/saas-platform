@@ -620,8 +620,26 @@ function showToast(msg, type='success') {
         banner.style.display = 'flex';
 
         fetch(url, { headers: { 'Accept': 'application/json' } })
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) {
+                if (isFirm) localStorage.removeItem(LS_FIRM);
+                else        localStorage.removeItem(LS_USER);
+                const stillRunning = isFirm ? localStorage.getItem(LS_USER) : localStorage.getItem(LS_FIRM);
+                if (!stillRunning) banner.style.display = 'none';
+                else setTimeout(checkGlobalProgress, 5000);
+                return Promise.reject('not-found');
+            }
+            return r.json();
+        })
         .then(data => {
+            if (data.status === 'error') {
+                if (isFirm) localStorage.removeItem(LS_FIRM);
+                else        localStorage.removeItem(LS_USER);
+                const stillRunning = isFirm ? localStorage.getItem(LS_USER) : localStorage.getItem(LS_FIRM);
+                if (!stillRunning) banner.style.display = 'none';
+                else setTimeout(checkGlobalProgress, 5000);
+                return;
+            }
             if (data.status !== 'success') { setTimeout(checkGlobalProgress, 10000); return; }
             const r = data.report;
             if (r.has_insights || r.is_failed) {
@@ -635,7 +653,7 @@ function showToast(msg, type='success') {
                 setTimeout(checkGlobalProgress, 8000);
             }
         })
-        .catch(() => setTimeout(checkGlobalProgress, 15000));
+        .catch(e => { if (e !== 'not-found') setTimeout(checkGlobalProgress, 15000); });
     }
 
     document.addEventListener('DOMContentLoaded', checkGlobalProgress);

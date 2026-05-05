@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use App\Models\Company;
@@ -103,5 +104,33 @@ class Report extends BaseModel
         } catch (\Throwable $e) {
             return null;
         }
+    }
+
+    /**
+     * Monthly insight usage for limit UI, scoped like the Insights list:
+     * reports for company_id = $selectedCompanyId, plus legacy rows with null company_id
+     * only when the user’s home company matches $selectedCompanyId.
+     */
+    public static function countMonthlyUsageForUserCompany(int $userId, int $selectedCompanyId, int $userHomeCompanyId): int
+    {
+        return static::withTrashed()
+            ->where('user_id', $userId)
+            ->where('created_at', '>=', Carbon::now()->startOfMonth())
+            ->where(function ($q) use ($selectedCompanyId, $userHomeCompanyId) {
+                $q->where('company_id', $selectedCompanyId);
+                if ($userHomeCompanyId && (int) $selectedCompanyId === (int) $userHomeCompanyId) {
+                    $q->orWhereNull('company_id');
+                }
+            })
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->whereNull('deleted_at')
+                        ->whereNotIn('status', ['Failed', 'Deleted']);
+                })->orWhere(function ($q2) {
+                    $q2->whereNotNull('deleted_at')
+                        ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed']);
+                });
+            })
+            ->count();
     }
 }

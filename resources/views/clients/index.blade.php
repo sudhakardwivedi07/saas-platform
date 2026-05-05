@@ -460,14 +460,25 @@
                         <input type="text" name="company_name" class="mf-inp" placeholder="e.g. TechCorp Inc." value="{{ old('company_name') }}" required>
                     </div>
                 </div>
-                <div class="mf-field">
-                    <label class="mf-label">Industry Type <span style="color:var(--red)">*</span></label>
-                    <select name="industry_type" class="mf-sel" style="height:40px" required>
-                        <option value="" disabled {{ old('industry_type') ? '' : 'selected' }}>Select Industry Type</option>
-                        @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
-                        <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
-                        @endforeach
-                    </select>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                    <div class="mf-field">
+                        <label class="mf-label">Industry Type <span style="color:var(--red)">*</span></label>
+                        <select name="industry_type" class="mf-sel" style="height:40px" required>
+                            <option value="" disabled {{ old('industry_type') ? '' : 'selected' }}>Select Industry Type</option>
+                            @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
+                            <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mf-field">
+                        <label class="mf-label">Entity Type <span style="color:var(--red)">*</span></label>
+                        <select name="entity_type" class="mf-sel" style="height:40px" required>
+                            <option value="" disabled {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
+                            @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
+                            <option value="{{ $ent }}" {{ old('entity_type') === $ent ? 'selected' : '' }}>{{ $ent }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
                 <div class="mf-field">
                     <label class="mf-label">Plan Tier</label>

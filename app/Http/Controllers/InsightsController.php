@@ -37,38 +37,33 @@ class InsightsController extends AccountBaseController
 
         $this->qbConfigured = $this->resolveCredentials($companyId) !== null;
 
-        // Build list of companies the user can view insights for
-        $ownCompany = Company::withoutGlobalScopes()->find($companyId);
-        $managedCompanies = $user->managedCompanies()->withoutGlobalScopes()->get();
-
-        $allCompanies = collect();
-        if ($ownCompany) $allCompanies->push($ownCompany);
-        foreach ($managedCompanies as $mc) {
-            if (!$allCompanies->contains('id', $mc->id)) $allCompanies->push($mc);
-        }
+        // Same company list as My Companies / KPI (portfolio)
+        $allCompanies = $user->portfolioCompanies();
 
         $this->companies = $allCompanies;
 
-        // Determine selected company for filtering
-        $selectedCompanyId = $request->get('company_id', $companyId);
-        if (!$allCompanies->contains('id', (int) $selectedCompanyId)) {
-            $selectedCompanyId = $companyId;
+        $defaultId = (int) ($allCompanies->first()?->id ?: $companyId);
+        $selectedCompanyId = (int) $request->get('company_id', $defaultId);
+        if (! $allCompanies->contains(fn ($c) => (int) $c->id === $selectedCompanyId)) {
+            $selectedCompanyId = $defaultId;
         }
-        $this->selectedCompanyId = (int) $selectedCompanyId;
+        $this->selectedCompanyId = $selectedCompanyId;
         $this->selectedCompany   = $allCompanies->firstWhere('id', $this->selectedCompanyId);
 
         // Load reports — include soft-deleted so deleted records show with "Deleted" status
         $this->reports = Report::withTrashed()
             ->where('user_id', $user->id)
-            ->where(function ($q) use ($selectedCompanyId) {
-                $q->where('company_id', $selectedCompanyId)
-                  ->orWhereNull('company_id');
+            ->where(function ($q) use ($selectedCompanyId, $user) {
+                $q->where('company_id', $selectedCompanyId);
+                if ((int) $selectedCompanyId === (int) $user->company_id) {
+                    $q->orWhereNull('company_id');
+                }
             })
             ->orderByDesc('created_at')
             ->get();
 
-        // Monthly usage for limit enforcement
-        $this->monthlyUsed  = $this->countMonthlyInsights($user->id, (int) $selectedCompanyId);
+        // Monthly usage for limit enforcement (same scope as the reports list above)
+        $this->monthlyUsed  = $this->countMonthlyInsights($user->id, (int) $selectedCompanyId, (int) $user->company_id);
         $this->monthlyLimit = $this->resolveMonthlyLimit($companyId);
 
         // Current plan info for the limit-reached modal
@@ -118,19 +113,6 @@ class InsightsController extends AccountBaseController
             ], 422);
         }
 
-        // Check monthly insight limit from plan
-        $monthlyLimit = $this->resolveMonthlyLimit($companyId);
-        if ($monthlyLimit !== null) {
-            $used = $this->countMonthlyInsights($user->id, $companyId);
-            if ($used >= $monthlyLimit) {
-                return response()->json([
-                    'status'        => 'error',
-                    'limit_reached' => true,
-                    'message'       => "You have reached your monthly insight limit ({$monthlyLimit} insights/month). Please upgrade your plan or wait until next month.",
-                ], 422);
-            }
-        }
-
         // Check for an already-processing report
         $processing = Report::where('user_id', $user->id)
             ->whereIn('status', ['Uploading', 'Analyzing'])
@@ -150,6 +132,19 @@ class InsightsController extends AccountBaseController
         $managedIds      = $user->managedCompanies()->withoutGlobalScopes()->pluck('companies.id')->toArray();
         if ($reportCompanyId !== $companyId && !in_array($reportCompanyId, $managedIds)) {
             $reportCompanyId = $companyId;
+        }
+
+        // Check monthly insight limit from plan (usage scoped to the company receiving this report)
+        $monthlyLimit = $this->resolveMonthlyLimit($companyId);
+        if ($monthlyLimit !== null) {
+            $used = $this->countMonthlyInsights($user->id, $reportCompanyId, (int) $user->company_id);
+            if ($used >= $monthlyLimit) {
+                return response()->json([
+                    'status'        => 'error',
+                    'limit_reached' => true,
+                    'message'       => "You have reached your monthly insight limit ({$monthlyLimit} insights/month). Please upgrade your plan or wait until next month.",
+                ], 422);
+            }
         }
 
         // Build "Company Name (Analysis N)" report name
@@ -253,10 +248,20 @@ class InsightsController extends AccountBaseController
                 'user_id' => $user->id,
                 'trace'   => $e->getTraceAsString(),
             ]);
+            $raw       = $e->getMessage();
+            $reconnect = stripos($raw, 'invalid_grant') !== false
+                || stripos($raw, 'Re-authentication required') !== false
+                || stripos($raw, 'rejected the stored refresh token') !== false
+                || stripos($raw, 'invalid or revoked') !== false;
+
             return response()->json([
-                'status'  => 'error',
-                'message' => 'Failed to generate insights: ' . $e->getMessage(),
-            ], 500);
+                'status'               => 'error',
+                'message'              => $reconnect
+                    ? 'Your QuickBooks session is no longer valid (refresh token expired or revoked). Open QuickBooks, disconnect if needed, then connect again before generating insights.'
+                    : 'Failed to generate insights: ' . $raw,
+                'reconnect_required'   => $reconnect,
+                'quickbooks_url'       => $reconnect ? route('quickbooks.index') : null,
+            ], $reconnect ? 422 : 500);
         }
     }
 
@@ -426,7 +431,8 @@ class InsightsController extends AccountBaseController
         $report->delete();
 
         // Return updated monthly count so the UI can refresh without a page reload
-        $monthlyUsed  = $this->countMonthlyInsights($user->id, $user->company_id);
+        $bucketCompanyId = (int) ($report->company_id ?? $user->company_id);
+        $monthlyUsed  = $this->countMonthlyInsights($user->id, $bucketCompanyId, (int) $user->company_id);
         $monthlyLimit = $this->resolveMonthlyLimit($user->company_id);
 
         return response()->json([
@@ -452,28 +458,9 @@ class InsightsController extends AccountBaseController
         return $limit ? (int) $limit : null;
     }
 
-    private function countMonthlyInsights(int $userId, int $companyId): int
+    private function countMonthlyInsights(int $userId, int $selectedCompanyId, int $userHomeCompanyId): int
     {
-        return Report::withTrashed()
-            ->where('user_id', $userId)
-            ->where(function ($q) use ($companyId) {
-                $q->where('company_id', $companyId)
-                  ->orWhereNull('company_id');
-            })
-            ->where('created_at', '>=', Carbon::now()->startOfMonth())
-            ->where(function ($q) {
-                // Not soft-deleted → count active records except Failed and legacy 'Deleted' status
-                $q->where(function ($q2) {
-                    $q2->whereNull('deleted_at')
-                       ->whereNotIn('status', ['Failed', 'Deleted']);
-                })
-                // Soft-deleted → only count if it was Analyzed (slot was consumed)
-                ->orWhere(function ($q2) {
-                    $q2->whereNotNull('deleted_at')
-                       ->where('status', 'Analyzed');
-                });
-            })
-            ->count();
+        return Report::countMonthlyUsageForUserCompany($userId, $selectedCompanyId, $userHomeCompanyId);
     }
 
     private function resolveCredentials(int $companyId): ?array

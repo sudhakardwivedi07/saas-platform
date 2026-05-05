@@ -374,6 +374,19 @@
 
 @section('content')
 
+<div id="insights-refresh-target" data-refresh="1" style="display:none"></div>
+
+{{-- Trial Banner: only show when trialing and not yet on an active paid plan --}}
+@if($subscription && $subscription->isTrialing() && ($subscription->status ?? '') !== 'active')
+<div class="info-banner" style="background:#fffbeb;border-color:#fde68a;margin-bottom:16px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <div class="info-banner-txt" style="color:#92400e">
+        Free trial active — ends {{ $subscription->trial_ends_at?->diffForHumans() }}.
+        <a href="{{ route('billing.index') }}" style="color:var(--orange);font-weight:600">Upgrade now →</a>
+    </div>
+</div>
+@endif
+
 @php
     $canAddClient = ($brandingDone ?? false) && ($settingsDone ?? false);
     $disabledTip  = 'The Add Client option will be enabled once Step 1: Branding Setup and Step 2: Settings Configuration are completed.';
@@ -397,10 +410,10 @@
             Branding Settings
         </a>
         @if($canAddClient)
-        <button type="button" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px" onclick="openDashboardAddClientModal()">
+        <a href="{{ route('clients.index') }}" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
-        </button>
+        </a>
         @else
         <span class="cta-disabled-wrap">
             <span class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px">
@@ -417,15 +430,15 @@
 <div class="ob-banner">
     <div>
         <div class="ob-badge">{{ strtoupper(company()?->company_name ?? 'YOUR PORTAL') }}</div>
-        <div class="ob-title">Welcome, {{ auth()->user()->first_name }}.</div>
-        <p class="ob-sub">Complete the setup below to configure your partner portal and start onboarding clients.</p>
+        <div class="ob-title">Hi {{ auth()->user()->name }}, welcome to your Partner Portal 👋</div>
+        <p class="ob-sub">Three steps stand between you and delivering AI-powered CFO insights to your clients. Follow the setup guide below to get your portal fully configured.</p>
     </div>
     <div class="ob-banner-btns">
         @if($canAddClient)
-        <button type="button" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap" onclick="openDashboardAddClientModal()">
+        <a href="{{ route('clients.index') }}" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
-        </button>
+        </a>
         @else
         <span class="cta-disabled-wrap" style="width:100%">
             <span class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;width:100%">
@@ -539,10 +552,10 @@
             Last updated: {{ now()->format('M j, Y · g:i A') }}
         </span>
         @if($canAddClient)
-        <button type="button" class="btn btn-primary btn-sm" onclick="openDashboardAddClientModal()">
+        <a href="{{ route('clients.index') }}" class="btn btn-primary btn-sm">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
-        </button>
+        </a>
         @else
         <span class="cta-disabled-wrap">
             <span class="btn btn-primary btn-sm" style="display:inline-flex;align-items:center;gap:6px">
@@ -650,7 +663,7 @@
             </div>
         </div>
         <div class="db-kpi-val">{{ $insightsGenerated ?? 0 }}</div>
-        <div class="db-kpi-ctx">Financial insights generated · {{ $periodLabel }}</div>
+        <div class="db-kpi-ctx">CFO financial insights generated · {{ $periodLabel }}</div>
     </div>
 
     {{-- Insights Available --}}
@@ -759,22 +772,21 @@
 
         @php
             $actItems = collect();
-            foreach(($recentActivities ?? collect()) as $activity) {
-                $eventType = $activity->event_type ?? 'unknown';
-                $color = match(true) {
-                    str_contains($eventType, 'login')  => 'var(--green)',
-                    str_contains($eventType, 'delete') => 'var(--red)',
-                    str_contains($eventType, 'create') => 'var(--blue)',
-                    str_contains($eventType, 'update') => 'var(--orange)',
-                    default                             => 'var(--text-3)',
-                };
-
+            foreach($recentDocs->take(4) as $doc) {
                 $actItems->push([
-                    'color' => $color,
-                    'text'  => $activity->display_event,
-                    'time'  => $activity->created_at?->diffForHumans() ?? '',
+                    'color' => 'var(--blue)',
+                    'text'  => ($doc->name ?? 'Document') . ' uploaded',
+                    'time'  => $doc->created_at->diffForHumans(),
                 ]);
             }
+            foreach($qbConnections->take(2) as $conn) {
+                $actItems->push([
+                    'color' => 'var(--green)',
+                    'text'  => ($conn->company?->company_name ?? $conn->qb_company_name ?? 'Account') . ' connected QuickBooks',
+                    'time'  => $conn->created_at?->diffForHumans() ?? '',
+                ]);
+            }
+            $actItems = $actItems->sortByDesc('time')->values();
         @endphp
 
         @forelse($actItems as $item)
@@ -795,260 +807,12 @@
 
 @endif {{-- end @if($isFreshUser) / @else --}}
 
-{{-- Add Client Modal (Dashboard) --}}
-<div class="modal-overlay {{ $errors->any() ? 'open' : '' }}" id="modal-dashboard-add-client" onclick="if(event.target===this)this.classList.remove('open')">
-    <div class="modal-box" style="width:560px">
-        <button class="modal-close" onclick="document.getElementById('modal-dashboard-add-client').classList.remove('open')">&times;</button>
-        <div class="modal-title">Add New Client</div>
-        <div class="modal-sub">Invite a new client to your partner portal</div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:20px;gap:0">
-            <button type="button" id="dash-tab-manual-btn" onclick="switchDashboardAddClientTab('manual')"
-                style="border:none;border-radius:8px;padding:9px 0;font-size:13px;font-weight:600;cursor:pointer;background:var(--orange);color:#fff;transition:all .15s">
-                Manual Entry
-            </button>
-            <button type="button" id="dash-tab-bulk-btn" onclick="switchDashboardAddClientTab('bulk')"
-                style="border:none;border-radius:8px;padding:9px 0;font-size:13px;font-weight:600;cursor:pointer;background:transparent;color:var(--text-2);transition:all .15s">
-                Bulk Upload
-            </button>
-        </div>
-
-        @if($errors->any())
-        <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 13px;margin-bottom:14px">
-            @foreach($errors->all() as $error)
-            <div style="font-size:12.5px;color:var(--red);display:flex;align-items:center;gap:6px">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                {{ $error }}
-            </div>
-            @endforeach
-        </div>
-        @endif
-
-        <div id="dash-panel-manual">
-            <form method="POST" action="{{ route('clients.store') }}">
-                @csrf
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                    <div class="mf-field" style="margin:0 0 14px">
-                        <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
-                        <input type="text" name="name" class="mf-inp" placeholder="e.g. Sarah Chen" value="{{ old('name') }}" required>
-                    </div>
-                    <div class="mf-field" style="margin:0 0 14px">
-                        <label class="mf-label">Email ID <span style="color:var(--red)">*</span></label>
-                        <input type="email" name="email" class="mf-inp" placeholder="sarah@chen.com" value="{{ old('email') }}" required>
-                    </div>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                    <div class="mf-field" style="margin:0 0 14px">
-                        <label class="mf-label">Phone Number</label>
-                        <input type="tel" name="phone" class="mf-inp" placeholder="+1 (555) 000-0000" value="{{ old('phone') }}">
-                    </div>
-                    <div class="mf-field" style="margin:0 0 14px">
-                        <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
-                        <input type="text" name="company_name" class="mf-inp" placeholder="e.g. TechCorp Inc." value="{{ old('company_name') }}" required>
-                    </div>
-                </div>
-                <div class="mf-field">
-                    <label class="mf-label">Industry Type <span style="color:var(--red)">*</span></label>
-                    <select name="industry_type" class="mf-sel" style="height:40px" required>
-                        <option value="" disabled {{ old('industry_type') ? '' : 'selected' }}>Select Industry Type</option>
-                        @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
-                        <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="mf-field">
-                    <label class="mf-label">Plan Tier</label>
-                    <select name="client_package_id" class="mf-sel" style="height:40px">
-                        <option value="">— No Plan —</option>
-                        @foreach($clientPackages ?? [] as $pkg)
-                        <option value="{{ $pkg->id }}" {{ old('client_package_id') == $pkg->id ? 'selected' : '' }}>
-                            {{ $pkg->name }}@if($pkg->max_documents) — {{ $pkg->max_documents }} insights / company / month @endif
-                        </option>
-                        @endforeach
-                    </select>
-                    <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Plan tiers are managed by the Financial Insights platform.</div>
-                </div>
-                <div class="mf-field">
-                    <label class="mf-label" style="display:flex;align-items:center;justify-content:space-between">
-                        <span>Password <span style="color:var(--red)">*</span></span>
-                    </label>
-                    <div style="position:relative;display:flex;align-items:center">
-                        <input type="password" name="password" id="dash-ac-password" class="mf-inp"
-                            placeholder="Min. 8 characters" style="padding-right:88px" required>
-                        <button type="button" title="Show/hide password"
-                            onclick="toggleDashboardAcPassword()"
-                            style="position:absolute;right:44px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text-3);display:flex;align-items:center">
-                            <svg id="dash-ac-eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        </button>
-                        <button type="button" title="Auto-generate password"
-                            onclick="generateDashboardAcPassword()"
-                            style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--blue);display:flex;align-items:center">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-                        </button>
-                    </div>
-                    <div style="font-size:11px;color:var(--text-3);margin-top:4px">Click <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11" style="vertical-align:middle"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> to auto-generate a secure password.</div>
-                </div>
-                <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:11px 14px;margin-bottom:16px;font-size:12.5px;color:#3b82f6;line-height:1.5">
-                    An email invite will be sent to the client automatically after submission.
-                </div>
-                <div class="mf-foot">
-                    <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-dashboard-add-client').classList.remove('open')">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Add Client</button>
-                </div>
-            </form>
-        </div>
-
-        <div id="dash-panel-bulk" style="display:none">
-            <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:10px">Upload CSV File</div>
-            <div id="dash-csv-drop-zone"
-                style="border:2px dashed #c7d9f0;border-radius:12px;background:rgba(59,130,246,.04);padding:36px 20px;text-align:center;cursor:pointer;transition:border-color .15s"
-                onclick="document.getElementById('dash-csv-file-input').click()"
-                ondragover="event.preventDefault();this.style.borderColor='var(--blue)'"
-                ondragleave="this.style.borderColor='#c7d9f0'"
-                ondrop="handleDashboardCsvDrop(event)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.8" width="32" height="32" style="margin:0 auto 10px;display:block">
-                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-                </svg>
-                <div style="font-size:13.5px;color:var(--text-2)">
-                    Drag &amp; drop your CSV here, or <span style="color:var(--blue);font-weight:500;text-decoration:underline">click to browse</span>
-                </div>
-                <div style="font-size:11.5px;color:var(--text-3);margin-top:6px">.csv files only · Max 5 MB · Up to 200 clients per upload</div>
-                <input type="file" id="dash-csv-file-input" accept=".csv" style="display:none" onchange="handleDashboardCsvFile(this.files[0])">
-            </div>
-            <div id="dash-csv-file-name" style="font-size:12px;color:var(--green);margin-top:8px;display:none"></div>
-
-            <div style="margin-top:18px">
-                <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:10px">CSV Format</div>
-                <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px">
-                    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:10px">Your CSV must include the following columns in order:</div>
-                    <div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 14px;font-family:monospace;font-size:13px;color:var(--text-1)">
-                        client_name, email, plan_tier
-                    </div>
-                    <div style="font-size:12px;color:var(--text-3);margin-top:10px">
-                        Example: <em>TechCorp Inc., info@techcorp.com, Professional</em>
-                    </div>
-                    <a href="javascript:void(0)" onclick="downloadDashboardSampleCsv()" style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--blue);margin-top:10px;text-decoration:none;font-weight:500">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                        Download sample CSV
-                    </a>
-                </div>
-            </div>
-
-            <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:11px 14px;margin-top:16px;margin-bottom:16px;font-size:12.5px;color:#3b82f6;line-height:1.5">
-                All clients in the CSV will receive an email invite automatically after upload.
-            </div>
-
-            <div id="dash-bulk-error" style="display:none;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 13px;margin-bottom:14px;font-size:12.5px;color:var(--red)"></div>
-
-            <div class="mf-foot">
-                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-dashboard-add-client').classList.remove('open')">Cancel</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="submitDashboardBulkUpload()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    Upload &amp; Invite
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
 @endsection
 
 @push('scripts')
 <script src="{{ asset(config('assets.chartjs')) }}"></script>
 <script>
 const CURRENT_PERIOD = '{{ $period }}';
-const HAS_DASHBOARD_CLIENT_FORM_ERRORS = {{ $errors->any() ? 'true' : 'false' }};
-
-function openDashboardAddClientModal() {
-    const modal = document.getElementById('modal-dashboard-add-client');
-    if (modal) modal.classList.add('open');
-}
-
-function switchDashboardAddClientTab(tab) {
-    var isManual = tab === 'manual';
-    document.getElementById('dash-panel-manual').style.display = isManual ? '' : 'none';
-    document.getElementById('dash-panel-bulk').style.display   = isManual ? 'none' : '';
-    var manualBtn = document.getElementById('dash-tab-manual-btn');
-    var bulkBtn   = document.getElementById('dash-tab-bulk-btn');
-    manualBtn.style.background = isManual ? 'var(--orange)' : 'transparent';
-    manualBtn.style.color      = isManual ? '#fff' : 'var(--text-2)';
-    bulkBtn.style.background   = isManual ? 'transparent' : 'var(--orange)';
-    bulkBtn.style.color        = isManual ? 'var(--text-2)' : '#fff';
-}
-
-function toggleDashboardAcPassword() {
-    var inp  = document.getElementById('dash-ac-password');
-    var icon = document.getElementById('dash-ac-eye-icon');
-    if (inp.type === 'password') {
-        inp.type = 'text';
-        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
-    } else {
-        inp.type = 'password';
-        icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-    }
-}
-
-function generateDashboardAcPassword() {
-    var chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
-    var pwd = '';
-    for (var i = 0; i < 12; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
-    var inp = document.getElementById('dash-ac-password');
-    inp.type  = 'text';
-    inp.value = pwd;
-    document.getElementById('dash-ac-eye-icon').innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
-}
-
-var _dashboardCsvFile = null;
-function handleDashboardCsvFile(file) {
-    if (!file) return;
-    _dashboardCsvFile = file;
-    var el = document.getElementById('dash-csv-file-name');
-    el.textContent = '✓ ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
-    el.style.display = 'block';
-    document.getElementById('dash-csv-drop-zone').style.borderColor = 'var(--green)';
-}
-
-function handleDashboardCsvDrop(e) {
-    e.preventDefault();
-    document.getElementById('dash-csv-drop-zone').style.borderColor = '#c7d9f0';
-    var file = e.dataTransfer.files[0];
-    if (file && file.name.endsWith('.csv')) handleDashboardCsvFile(file);
-}
-
-function downloadDashboardSampleCsv() {
-    var csv = 'client_name,email,plan_tier\nTechCorp Inc.,info@techcorp.com,Professional\nAcme Corp,hello@acme.com,Starter\n';
-    var a = document.createElement('a');
-    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-    a.download = 'sample_clients.csv';
-    a.click();
-}
-
-function submitDashboardBulkUpload() {
-    var errBox = document.getElementById('dash-bulk-error');
-    errBox.style.display = 'none';
-    if (!_dashboardCsvFile) {
-        errBox.textContent = 'Please select a CSV file first.';
-        errBox.style.display = 'block';
-        return;
-    }
-    var formData = new FormData();
-    formData.append('_token', '{{ csrf_token() }}');
-    formData.append('csv_file', _dashboardCsvFile);
-    fetch('{{ route("clients.bulk-upload") }}', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(function(data) {
-            if (data.status === 'success') {
-                window.location.href = '{{ route("clients.index") }}';
-            } else {
-                errBox.textContent = data.message || 'Upload failed.';
-                errBox.style.display = 'block';
-            }
-        })
-        .catch(function() {
-            errBox.textContent = 'Network error. Please try again.';
-            errBox.style.display = 'block';
-        });
-}
 
 function setTP(el, period) {
     if (period === 'custom') {
@@ -1077,10 +841,6 @@ function applyCustomRange() {
 // Show custom range row if currently active
 if (CURRENT_PERIOD === 'custom') {
     document.getElementById('customRangeRow').classList.add('visible');
-}
-
-if (HAS_DASHBOARD_CLIENT_FORM_ERRORS) {
-    openDashboardAddClientModal();
 }
 
 // Chart

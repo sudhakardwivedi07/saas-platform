@@ -7,6 +7,7 @@ use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\ClientCompanyController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ClientKPIController;
 use App\Http\Controllers\ClientPackageController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
@@ -52,6 +53,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/',         [DashboardController::class, 'index'])->name('dashboard');
     Route::get('dashboard', [DashboardController::class, 'index']);
     Route::post('dashboard/assign-plan', [DashboardController::class, 'assignPlan'])->name('dashboard.assign-plan');
+    Route::get('dashboard/kpi-data', [DashboardController::class, 'kpiData'])->name('dashboard.kpi-data');
+    Route::get('dashboard/kpi-detail/{kpiType}', [DashboardController::class, 'kpiDetail'])->name('dashboard.kpi-detail');
 
     // Profile
     Route::get('profile',               [ProfileController::class, 'index'])->name('profile');
@@ -156,6 +159,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{id}/toggle-status', [ClientController::class, 'toggleStatus'])->name('toggle-status');
         Route::post('/bulk-upload',        [ClientController::class, 'bulkUpload'])->name('bulk-upload');
         Route::get('/{id}/dashboard',      [ClientController::class, 'dashboard'])->name('dashboard');
+        // KPI Dashboard
+        Route::get('/{id}/kpi-dashboard', [ClientKPIController::class, 'index'])->name('kpi-dashboard');
+        Route::get('/{id}/kpi-detail/{kpiType}', [ClientKPIController::class, 'showKpiDetail'])->name('kpi-detail');
+        Route::get('/{id}/kpi-data',      [ClientKPIController::class, 'getKpiData'])->name('kpi-data');
         // Insights sub-pages
         Route::get('/{id}/insights',        [ClientController::class, 'insights'])->name('insights');
         Route::get('/{clientId}/insights/{insightId}', [ClientController::class, 'insightDetail'])->name('insight.detail');

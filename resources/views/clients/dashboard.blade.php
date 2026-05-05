@@ -4,6 +4,8 @@
 
 @section('content')
 
+<div id="insights-refresh-target" data-refresh="1" style="display:none"></div>
+
 @php
     $co   = $clientUser->company;
     $plan = $co?->clientPackage ?? $co?->package;
@@ -32,7 +34,8 @@
     </div>
     <div class="ph-actions">
         <a href="{{ route('clients.show', $clientUser->id) }}" class="btn btn-ghost btn-sm">View Profile</a>
-        <a href="{{ route('clients.insights', $clientUser->id) }}" class="btn btn-primary btn-sm">View Insights</a>
+        <a href="{{ route('clients.kpi-dashboard', $clientUser->id) }}" class="btn btn-primary btn-sm">KPI Dashboard</a>
+        <a href="{{ route('clients.insights', $clientUser->id) }}" class="btn btn-ghost btn-sm">View Insights</a>
     </div>
 </div>
 

@@ -558,11 +558,16 @@ function showToast(msg, type='success') {
 
 // ── Global insight-generation notification ────────────────────────────────
 (function () {
-    const LS_KEY      = 'insights_processing_ids';
-    const INSIGHTS_URL = '{{ route("insights.index") }}';
+    const LS_KEY          = 'insights_processing_ids';
+    const DASH_LS_KEY     = 'dash_processing_insight_id';
+    const INSIGHTS_URL    = '{{ route("insights.index") }}';
+
+    function getProcessingId() {
+        return localStorage.getItem(LS_KEY) || localStorage.getItem(DASH_LS_KEY);
+    }
 
     function checkGlobalProgress() {
-        const id = localStorage.getItem(LS_KEY);
+        const id = getProcessingId();
         if (!id) return;
 
         // Don't show on the insights page itself — it has its own bar
@@ -580,15 +585,28 @@ function showToast(msg, type='success') {
             const r = data.report;
             if (r.has_insights || r.is_failed) {
                 localStorage.removeItem(LS_KEY);
+                localStorage.removeItem(DASH_LS_KEY);
                 if (banner) banner.style.display = 'none';
+                if (shouldReloadOnInsightComplete() && !window.location.pathname.includes('/insights')) {
+                    window.location.reload();
+                }
             } else {
                 setTimeout(checkGlobalProgress, 8000);
             }
-        })
-        .catch(() => setTimeout(checkGlobalProgress, 15000));
-    }
+    })
+    .catch(() => setTimeout(checkGlobalProgress, 15000));
+}
 
-    document.addEventListener('DOMContentLoaded', checkGlobalProgress);
+function shouldReloadOnInsightComplete() {
+    return document.getElementById('insights-refresh-target') !== null;
+}
+
+document.addEventListener('DOMContentLoaded', checkGlobalProgress);
+window.addEventListener('storage', function(event) {
+    if ((event.key === LS_KEY || event.key === DASH_LS_KEY) && event.newValue) {
+        checkGlobalProgress();
+    }
+});
 }());
 
 document.addEventListener('DOMContentLoaded', () => {

@@ -46,7 +46,11 @@ class QuickBooksConnection extends BaseModel
 
     public function isAccessTokenExpired(): bool
     {
-        return $this->access_token_expires_at->subMinutes(10)->isPast();
+        if (! $this->access_token_expires_at) {
+            return true;
+        }
+
+        return $this->access_token_expires_at->copy()->subMinutes(10)->isPast();
     }
 
     public function isRefreshTokenExpired(): bool

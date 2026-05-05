@@ -4,14 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\ClientPackage;
 use App\Models\Company;
+use App\Models\Document;
 use App\Models\EventLog;
 use App\Models\Payment;
 use App\Models\QuickBooksConnection;
 use App\Models\Report;
 use App\Models\SuperAdmin\Package;
 use App\Models\User;
+use App\Services\Kpis\KpiFormattedDataService;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\View;
 
 class DashboardController extends AccountBaseController
 {
@@ -132,6 +136,24 @@ class DashboardController extends AccountBaseController
             ->limit(6)
             ->get();
 
+        // Dashboard "Recent Activity" cards — documents & QB connections across client companies
+        if ($subCompanyIds->isNotEmpty()) {
+            $this->recentDocs = Document::withoutGlobalScopes()
+                ->whereIn('company_id', $subCompanyIds)
+                ->orderByDesc('created_at')
+                ->limit(24)
+                ->get();
+            $this->qbConnections = QuickBooksConnection::withoutGlobalScopes()
+                ->whereIn('company_id', $subCompanyIds)
+                ->with('company')
+                ->orderByDesc('created_at')
+                ->limit(24)
+                ->get();
+        } else {
+            $this->recentDocs = collect();
+            $this->qbConnections = collect();
+        }
+
         // Onboarding state (fresh user = no sub-companies yet)
         $this->isFreshUser  = $allCompanies->isEmpty();
         $this->brandingDone = $company->branding?->logo !== null;
@@ -183,6 +205,71 @@ class DashboardController extends AccountBaseController
         return back()->with('success', "Plan '{$plan->name}' assigned successfully.");
     }
 
+    /**
+     * JSON KPI payloads for the logged-in end-user dashboard (and detail pages).
+     */
+    public function kpiData(Request $request)
+    {
+        $user = auth()->user();
+        abort_unless($user, 403);
+
+        $companyId = (int) $request->query('company_id', 0);
+        $kpiType   = (string) $request->query('kpi', '');
+        abort_if($companyId <= 0 || $kpiType === '', 422);
+
+        $this->assertUserCanAccessKpiCompany($user, $companyId);
+
+        if (! $user->companyHasFinancialKpiSource($companyId)) {
+            return response()->json([
+                'success' => true,
+                'kpis_unavailable' => true,
+                'data' => [],
+            ]);
+        }
+
+        try {
+            $data = KpiFormattedDataService::get($companyId, $kpiType);
+
+            return response()->json(['success' => true, 'data' => $data]);
+        } catch (\InvalidArgumentException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to load KPI data'], 500);
+        }
+    }
+
+    /**
+     * KPI drill-down for end users (client_admin uses clients.* routes).
+     */
+    public function kpiDetail(string $kpiType)
+    {
+        $user = auth()->user();
+        abort_unless($user, 403);
+        abort_if($user->hasAnyRole(['client_admin', 'manager']), 403);
+
+        if (!preg_match('/^[a-z0-9\-]+$/', $kpiType)) {
+            abort(404);
+        }
+
+        $specific = "dashboard.kpis.{$kpiType}.detail";
+        $viewPath = View::exists($specific) ? $specific : 'dashboard.kpis.generic-detail';
+
+        [$companies, $selectedCompanyId] = $this->kpiCompanyContext($user);
+
+        $this->data = array_merge($this->data, [
+            'companies'           => $companies,
+            'selectedCompanyId' => $selectedCompanyId,
+            'kpiType'             => $kpiType,
+            'clientId'            => $user->id,
+            'kpiDataUrl'          => route('dashboard.kpi-data'),
+            'kpiListBackUrl'      => route('dashboard'),
+            'kpiPageTitle'        => $this->kpiPageTitle($kpiType),
+        ]);
+        $this->pageTitle = $this->kpiPageTitle($kpiType) . ' Details';
+
+        return view($viewPath, $this->data);
+    }
+
     private function loadUserPlanData(Company $company): void
     {
         $parentId = $company->created_by;
@@ -205,6 +292,21 @@ class DashboardController extends AccountBaseController
             ->where('is_active', true)
             ->exists();
 
+        $user = auth()->user();
+        $this->kpiCompanies = $this->collectKpiCompaniesForUser($user);
+        $this->selectedKpiCompanyId = $this->resolveDefaultKpiCompanyId($user, $this->kpiCompanies);
+        $tenantId = (int) $company->id;
+        $this->hasAnalyzedInsights = $user->hasAnalyzedInsightsForTenant($tenantId);
+        // Executive KPI layout only after at least one analyzed insight for this tenant (QB alone → classic dashboard).
+        $this->showKpiDashboard = $this->hasAnalyzedInsights;
+
+        if ($this->showKpiDashboard) {
+            $this->plans = collect();
+        }
+
+        $this->kpiDataUrl       = route('dashboard.kpi-data');
+        $this->kpiDetailBaseUrl = url('/dashboard/kpi-detail');
+
         $this->insightInProgress = Report::where('user_id', auth()->id())
             ->whereIn('status', ['Uploading', 'Analyzing'])
             ->first();
@@ -214,21 +316,90 @@ class DashboardController extends AccountBaseController
             ? ($this->currentPlan->insights_per_month ?? $this->currentPlan->max_insights_per_month ?? null)
             : null;
         $this->monthlyLimit = $limitValue ? (int) $limitValue : null;
-        $this->monthlyUsed  = Report::withTrashed()
-            ->where('user_id', auth()->id())
-            ->where('created_at', '>=', Carbon::now()->startOfMonth())
-            ->where(function ($q) {
-                $q->where(function ($q2) {
-                    $q2->whereNull('deleted_at')->whereNotIn('status', ['Failed']);
-                })->orWhere(function ($q2) {
-                    $q2->whereNotNull('deleted_at')->where('status', 'Analyzed');
-                });
-            })
-            ->count();
+        $this->monthlyUsed  = Report::countMonthlyUsageForUserCompany(
+            (int) $user->id,
+            (int) $company->id,
+            (int) $user->company_id
+        );
 
         $this->clientAdminName  = $parentCompany?->app_name
             ?? $parentCompany?->company_name
             ?? $this->appName;
+    }
+
+    /**
+     * Same company list as My Companies / Insights (portfolio). KPI cards still respect
+     * QuickBooks / analyzed data per company via kpiData → kpis_unavailable.
+     */
+    private function collectKpiCompaniesForUser(User $user): EloquentCollection
+    {
+        return EloquentCollection::make($user->portfolioCompanies()->all())->load([
+            'package',
+            'clientPackage',
+            'subscription',
+        ]);
+    }
+
+    private function resolveDefaultKpiCompanyId(User $user, \Illuminate\Support\Collection $companies): ?int
+    {
+        if ($companies->isEmpty()) {
+            return null;
+        }
+        $req = request()->query('company_id');
+        if ($req !== null && $req !== '' && $companies->contains(fn (Company $c) => (int) $c->id === (int) $req)) {
+            return (int) $req;
+        }
+        $tenantId = (int) (company()?->id ?? 0);
+        if ($tenantId && $companies->contains(fn (Company $c) => (int) $c->id === $tenantId)) {
+            return $tenantId;
+        }
+        $withQb = $companies->first(fn (Company $c) => $this->companyHasActiveQuickBooks((int) $c->id));
+
+        return $withQb?->id ?? $companies->first()->id;
+    }
+
+    private function companyHasActiveQuickBooks(int $companyId): bool
+    {
+        return QuickBooksConnection::withoutGlobalScopes()
+            ->where('company_id', $companyId)
+            ->where('is_active', true)
+            ->exists();
+    }
+
+    private function assertUserCanAccessKpiCompany(User $user, int $companyId): void
+    {
+        if ($user->portfolioCompanies()->contains(fn ($c) => (int) $c->id === $companyId)) {
+            return;
+        }
+        $tenantId = (int) (company()?->id ?? 0);
+        if ($tenantId && (int) $companyId === $tenantId && $user->companyHasFinancialKpiSource($companyId)) {
+            return;
+        }
+        abort(403);
+    }
+
+    private function kpiCompanyContext(User $user): array
+    {
+        $companies = $this->collectKpiCompaniesForUser($user);
+        $defaultId = $this->resolveDefaultKpiCompanyId($user, $companies);
+
+        return [$companies, $defaultId];
+    }
+
+    private function kpiPageTitle(string $kpiType): string
+    {
+        return match ($kpiType) {
+            'runway-burn' => 'Runway & Burn Details',
+            'working-capital' => 'Working Capital Details',
+            'operating-cashflow' => 'Operating Cash Flow Details',
+            'revenue' => 'Revenue Details',
+            'ebitda' => 'EBITDA Details',
+            'margin-trends' => 'Margin Trends Details',
+            'ar-aging' => 'AR Aging Details',
+            'ap-leverage' => 'AP Leverage Details',
+            'revenue-concentration' => 'Revenue Concentration Details',
+            default => 'KPI Details',
+        };
     }
 
     private function resolvePeriod(string $period, Request $request): array

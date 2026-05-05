@@ -429,6 +429,14 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         </a>
         @endif
 
+        {{-- My Financials: client_admin only --}}
+        @if(auth()->user()->hasRole('client_admin'))
+        <a href="{{ route('my-financials.index') }}" class="ca-nav-item {{ request()->routeIs('my-financials.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            My Financials
+        </a>
+        @endif
+
         {{-- Insights: firm (client_admin + manager) --}}
         @if(auth()->user()->hasAnyRole(['client_admin','manager']))
         <a href="{{ route('firm-insights.index') }}" class="ca-nav-item {{ request()->routeIs('firm-insights.*') ? 'active' : '' }}">
@@ -603,13 +611,9 @@ function showToast(msg, type='success') {
         // Don't show on any insights page — they have their own progress bars
         if (path.includes('/insights')) return;
 
-        if (!userId && !firmId) { banner.style.display = 'none'; return; }
-
-        // Prefer showing firm if both are active; show whichever is active
-        const isFirm = !!firmId;
-        const reportId = firmId || userId;
-        const url    = isFirm ? '/firm-insights/status/' + reportId : '/insights/status/' + reportId;
-        const viewHref = isFirm ? '{{ route("firm-insights.index") }}' : '{{ route("insights.index") }}';
+        const reportId = processingId;
+        const url      = '/insights/status/' + reportId;
+        const viewHref = '{{ route("insights.index") }}';
 
         if (msg) msg.textContent = 'Generating insights in the background…';
         if (lnk) lnk.href = viewHref;
@@ -618,9 +622,9 @@ function showToast(msg, type='success') {
         fetch(url, { headers: { 'Accept': 'application/json' } })
         .then(r => {
             if (!r.ok) {
-                if (isFirm) localStorage.removeItem(LS_FIRM);
-                else        localStorage.removeItem(LS_USER);
-                const stillRunning = isFirm ? localStorage.getItem(LS_USER) : localStorage.getItem(LS_FIRM);
+                localStorage.removeItem(LS_KEY);
+                localStorage.removeItem(DASH_LS_KEY);
+                const stillRunning = getProcessingId();
                 if (!stillRunning) banner.style.display = 'none';
                 else setTimeout(checkGlobalProgress, 5000);
                 return Promise.reject('not-found');
@@ -629,9 +633,9 @@ function showToast(msg, type='success') {
         })
         .then(data => {
             if (data.status === 'error') {
-                if (isFirm) localStorage.removeItem(LS_FIRM);
-                else        localStorage.removeItem(LS_USER);
-                const stillRunning = isFirm ? localStorage.getItem(LS_USER) : localStorage.getItem(LS_FIRM);
+                localStorage.removeItem(LS_KEY);
+                localStorage.removeItem(DASH_LS_KEY);
+                const stillRunning = getProcessingId();
                 if (!stillRunning) banner.style.display = 'none';
                 else setTimeout(checkGlobalProgress, 5000);
                 return;

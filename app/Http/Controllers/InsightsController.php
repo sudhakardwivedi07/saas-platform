@@ -439,20 +439,23 @@ class InsightsController extends AccountBaseController
 
     public function deleteAllReports()
     {
-        $reports = Report::withTrashed()->get();
+        // Delete physical files from storage
+        ReportAttachment::all()->each(function ($attachment) {
+            Storage::disk('public')->delete('reports/' . $attachment->attachment);
+        });
 
-        foreach ($reports as $report) {
-            foreach ($report->attachments as $attachment) {
-                Storage::disk('public')->delete('reports/' . $attachment->attachment);
-                $attachment->delete();
-            }
-            $report->forceDelete();
-        }
+        // Hard-delete all records from report_attachments table
+        ReportAttachment::query()->delete();
+
+        // Force-delete all reports including soft-deleted ones
+        $reports = Report::withTrashed()->get();
+        $count   = $reports->count();
+        $reports->each(fn($r) => $r->forceDelete());
 
         return response()->json([
             'status'  => 'success',
             'message' => 'All reports and attachments deleted.',
-            'deleted' => $reports->count(),
+            'deleted' => $count,
         ]);
     }
 

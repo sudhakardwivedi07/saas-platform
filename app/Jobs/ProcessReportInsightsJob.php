@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Report;
 use GuzzleHttp\Client;
+use Illuminate\Support\Facades\DB;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Bus\Queueable;
@@ -107,13 +108,26 @@ class ProcessReportInsightsJob implements ShouldQueue
         ini_set('max_execution_time', 1200);
         ini_set('memory_limit', '512M');
 
+        // Atomically grab the report — skip if another process already claimed it
+        $grabbed = DB::table('reports')
+            ->where('id', $this->reportId)
+            ->where('status', 'Uploading')
+            ->update(['status' => 'Analyzing']);
+
+        if (!$grabbed) {
+            $existing = Report::find($this->reportId);
+            if ($existing && $existing->status !== 'Uploading') {
+                Log::info('ProcessReportInsightsJob: report already claimed, skipping', ['report_id' => $this->reportId, 'status' => $existing->status]);
+                return;
+            }
+        }
+
         $report = Report::find($this->reportId);
         if (!$report) {
             Log::error("ProcessReportInsightsJob: report {$this->reportId} not found");
             return;
         }
 
-        $report->update(['status' => 'Analyzing']);
         Log::info('ProcessReportInsightsJob started', ['report_id' => $report->id, 'files' => array_keys($this->uploadedFiles)]);
 
         try {

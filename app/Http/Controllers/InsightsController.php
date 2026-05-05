@@ -228,12 +228,8 @@ class InsightsController extends AccountBaseController
                 $style    = config('dashboard_graph_settings.default_style', 'plain');
                 $industry = $user->business_context ?? 'General Business';
 
-                // Dispatch async — HTTP response returns immediately so the user can navigate freely
                 ProcessReportInsightsJob::dispatch($report->id, $apiFiles, $style, $industry);
-
-                // Start a background queue worker on this machine so the job is processed without
-                // needing a separately running worker (WAMP / local dev convenience)
-                $this->startBackgroundQueueWorker();
+                $this->startBackgroundProcessor($report->id);
 
                 return response()->json([
                     'status'      => 'processing',
@@ -505,39 +501,51 @@ class InsightsController extends AccountBaseController
         ];
     }
 
-    private function startBackgroundQueueWorker(): void
+    private function startBackgroundProcessor(int $reportId): void
     {
         try {
-            $php     = PHP_BINARY;
             $artisan = base_path('artisan');
             $logFile = storage_path('logs/laravel.log');
 
             if (PHP_OS_FAMILY === 'Windows') {
+                $php         = PHP_BINARY;
                 $descriptors = [
                     0 => ['pipe', 'r'],
                     1 => ['file', $logFile, 'a'],
                     2 => ['file', $logFile, 'a'],
                 ];
                 $process = proc_open(
-                    "\"{$php}\" \"{$artisan}\" queue:work --stop-when-empty --timeout=900 --tries=3",
+                    "\"{$php}\" \"{$artisan}\" insights:process {$reportId}",
                     $descriptors,
                     $pipes,
                     base_path()
                 );
                 if (is_resource($process)) {
                     fclose($pipes[0]);
-                    Log::info('Background queue worker started');
+                    Log::info('Background insight processor started', ['report_id' => $reportId]);
                 } else {
-                    Log::warning('startBackgroundQueueWorker: proc_open returned false, worker did not start');
+                    Log::warning('startBackgroundProcessor: proc_open returned false');
                 }
             } else {
-                $cmd = "nohup {$php} {$artisan} queue:work --stop-when-empty --timeout=900 --tries=3 >> " . escapeshellarg($logFile) . " 2>&1 &";
+                $php = $this->findPhpBinary();
+                $cmd = "nohup {$php} " . escapeshellarg($artisan) . " insights:process {$reportId} >> " . escapeshellarg($logFile) . " 2>&1 &";
                 exec($cmd);
-                Log::info('Background queue worker started (Linux)');
+                Log::info('Background insight processor started (Linux)', ['report_id' => $reportId, 'php' => $php]);
             }
         } catch (\Throwable $e) {
-            Log::warning('Could not start background queue worker: ' . $e->getMessage());
+            Log::warning('Could not start background processor: ' . $e->getMessage());
         }
+    }
+
+    private function findPhpBinary(): string
+    {
+        $candidates = ['/usr/bin/php', '/usr/local/bin/php', '/usr/bin/php8', '/usr/bin/php8.2', '/usr/bin/php8.1', '/usr/bin/php8.0', PHP_BINARY];
+        foreach ($candidates as $bin) {
+            if (file_exists($bin) && is_executable($bin)) {
+                return $bin;
+            }
+        }
+        return PHP_BINARY;
     }
 
     // ── PDF helpers ───────────────────────────────────────────────────────────

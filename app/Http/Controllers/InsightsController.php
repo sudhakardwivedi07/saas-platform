@@ -242,7 +242,6 @@ class InsightsController extends AccountBaseController
                 'user_id' => $user->id,
                 'trace'   => $e->getTraceAsString(),
             ]);
-<<<<<<< HEAD
             $raw       = $e->getMessage();
             $reconnect = stripos($raw, 'invalid_grant') !== false
                 || stripos($raw, 'Re-authentication required') !== false
@@ -257,22 +256,6 @@ class InsightsController extends AccountBaseController
                 'reconnect_required'   => $reconnect,
                 'quickbooks_url'       => $reconnect ? route('quickbooks.index') : null,
             ], $reconnect ? 422 : 500);
-=======
-
-            $needsReconnect = str_contains($e->getMessage(), 'reconnect')
-                           || str_contains($e->getMessage(), 'Re-authentication')
-                           || str_contains($e->getMessage(), 'invalid_grant')
-                           || str_contains($e->getMessage(), 'Refresh OAuth 2');
-
-            return response()->json([
-                'status'             => 'error',
-                'message'            => $needsReconnect
-                    ? 'Your QuickBooks authorization has expired. Please reconnect your QuickBooks account.'
-                    : 'Failed to generate insights: ' . $e->getMessage(),
-                'reconnect_required' => $needsReconnect,
-                'reconnect_url'      => $needsReconnect ? route('quickbooks.user-connect') : null,
-            ], 500);
->>>>>>> 8cfc356b302eb0cbcd7616a9a099929f3ea44fe4
         }
     }
 

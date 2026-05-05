@@ -170,12 +170,15 @@ class FirmInsightsController extends AccountBaseController
                 $style    = config('dashboard_graph_settings.default_style', 'plain');
                 $industry = $user->business_context ?? 'General Business';
 
-                ProcessReportInsightsJob::dispatch($report->id, $apiFiles, $style, $industry, keepFiles: true);
-                $this->startBackgroundProcessor($report->id);
+                set_time_limit(1200);
+                ini_set('max_execution_time', 1200);
+                ini_set('memory_limit', '512M');
+
+                ProcessReportInsightsJob::dispatch($report->id, $apiFiles, $style, $industry, keepFiles: true)->onConnection('sync');
 
                 return response()->json([
                     'status'      => 'processing',
-                    'message'     => 'Insight generation started in the background.',
+                    'message'     => 'QuickBooks data synced successfully! Insights have been generated.',
                     'report_id'   => $report->id,
                     'report_name' => $report->report_name,
                 ]);
@@ -418,53 +421,6 @@ class FirmInsightsController extends AccountBaseController
             'redirect_uri'  => $setting->redirect_uri,
             'base_url'      => $setting->base_url,
         ];
-    }
-
-    private function startBackgroundProcessor(int $reportId): void
-    {
-        try {
-            $artisan = base_path('artisan');
-            $logFile = storage_path('logs/laravel.log');
-
-            if (PHP_OS_FAMILY === 'Windows') {
-                $php         = PHP_BINARY;
-                $descriptors = [
-                    0 => ['pipe', 'r'],
-                    1 => ['file', $logFile, 'a'],
-                    2 => ['file', $logFile, 'a'],
-                ];
-                $process = proc_open(
-                    "\"{$php}\" \"{$artisan}\" insights:process {$reportId}",
-                    $descriptors,
-                    $pipes,
-                    base_path()
-                );
-                if (is_resource($process)) {
-                    fclose($pipes[0]);
-                    Log::info('Firm: Background insight processor started', ['report_id' => $reportId]);
-                } else {
-                    Log::warning('Firm: startBackgroundProcessor: proc_open returned false');
-                }
-            } else {
-                $php = $this->findPhpBinary();
-                $cmd = "nohup {$php} " . escapeshellarg($artisan) . " insights:process {$reportId} >> " . escapeshellarg($logFile) . " 2>&1 &";
-                exec($cmd);
-                Log::info('Firm: Background insight processor started (Linux)', ['report_id' => $reportId, 'php' => $php]);
-            }
-        } catch (\Throwable $e) {
-            Log::warning('Firm: Could not start background processor: ' . $e->getMessage());
-        }
-    }
-
-    private function findPhpBinary(): string
-    {
-        $candidates = ['/usr/bin/php', '/usr/local/bin/php', '/usr/bin/php8', '/usr/bin/php8.2', '/usr/bin/php8.1', '/usr/bin/php8.0', PHP_BINARY];
-        foreach ($candidates as $bin) {
-            if (file_exists($bin) && is_executable($bin)) {
-                return $bin;
-            }
-        }
-        return PHP_BINARY;
     }
 
     // ── PDF helpers (identical to InsightsController) ─────────────────────────

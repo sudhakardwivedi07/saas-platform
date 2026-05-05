@@ -439,6 +439,25 @@ class InsightsController extends AccountBaseController
         ]);
     }
 
+    public function deleteAllReports()
+    {
+        $reports = Report::withTrashed()->where('is_firm_report', false)->get();
+
+        foreach ($reports as $report) {
+            foreach ($report->attachments as $attachment) {
+                Storage::disk('public')->delete('reports/' . $attachment->attachment);
+                $attachment->delete();
+            }
+            $report->forceDelete();
+        }
+
+        return response()->json([
+            'status'  => 'success',
+            'message' => 'All reports and attachments deleted.',
+            'deleted' => $reports->count(),
+        ]);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private function resolveMonthlyLimit(int $companyId): ?int

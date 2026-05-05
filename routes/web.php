@@ -210,6 +210,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{id}/export-pdf',             [InsightsController::class, 'exportPdf'])->name('export-pdf');
         Route::get('/{id}/download',               [InsightsController::class, 'download'])->name('download');
         Route::delete('/{id}',                     [InsightsController::class, 'destroy'])->name('destroy');
+        Route::get('/delete-all',                  [InsightsController::class, 'deleteAllReports'])->name('delete-all');
     });
 
     // Firm Insights (client_admin / manager — no monthly limit, scoped to firm)

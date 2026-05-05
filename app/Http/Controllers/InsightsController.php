@@ -218,11 +218,6 @@ class InsightsController extends AccountBaseController
 
                 $report->update(['total_file_size' => $totalSize]);
 
-                // Increment company insights_used counter
-                Company::withoutGlobalScopes()
-                    ->where('id', $reportCompanyId)
-                    ->increment('insights_used');
-
                 DB::commit();
 
                 $style    = config('dashboard_graph_settings.default_style', 'plain');
@@ -441,7 +436,7 @@ class InsightsController extends AccountBaseController
 
     public function deleteAllReports()
     {
-        $reports = Report::withTrashed()->where('is_firm_report', false)->get();
+        $reports = Report::withTrashed()->get();
 
         foreach ($reports as $report) {
             foreach ($report->attachments as $attachment) {

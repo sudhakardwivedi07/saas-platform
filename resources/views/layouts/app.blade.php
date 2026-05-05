@@ -62,6 +62,24 @@ button{cursor:pointer}
 .ca-nav-item svg{width:15px;height:15px;flex-shrink:0;stroke-width:1.8;stroke:var(--text-3)}
 .ca-nav-item.active svg{stroke:var(--orange)}
 .ca-nav-item:hover svg{stroke:var(--text-1)}
+.ca-nav-group{position:relative}
+.ca-nav-group-hdr{display:flex;align-items:center;gap:10px;padding:10px 18px 10px 16px;color:var(--text-2);font-size:13px;font-weight:400;cursor:pointer;border-left:3px solid transparent;transition:all .14s ease;user-select:none}
+.ca-nav-group-hdr:hover{background:#f8fafc;color:var(--text-1)}
+.ca-nav-group-hdr.open,.ca-nav-group-hdr.active-group{background:var(--orange-light);color:var(--orange);border-left-color:var(--orange);font-weight:500}
+.ca-nav-group-hdr .nav-icon{width:15px;height:15px;flex-shrink:0;stroke-width:1.8;stroke:var(--text-3)}
+.ca-nav-group-hdr.open .nav-icon,.ca-nav-group-hdr.active-group .nav-icon{stroke:var(--orange)}
+.ca-nav-group-hdr:hover .nav-icon{stroke:var(--text-1)}
+.ca-nav-group-hdr .nav-lbl{flex:1}
+.ca-nav-group-hdr .nav-chv{width:12px;height:12px;stroke:var(--text-3);transition:transform .2s;flex-shrink:0}
+.ca-nav-group-hdr.open .nav-chv{transform:rotate(90deg)}
+.ca-nav-sub{overflow:hidden;max-height:0;transition:max-height .22s ease}
+.ca-nav-sub.open{max-height:200px}
+.ca-nav-sub-item{display:flex;align-items:center;gap:8px;padding:7px 14px 7px 34px;color:var(--text-2);text-decoration:none;font-size:12.5px;font-weight:400;transition:all .14s ease}
+.ca-nav-sub-item:hover{background:#f1f5f9;color:var(--text-1)}
+.ca-nav-sub-item.active{color:var(--orange);font-weight:500;background:rgba(240,107,33,.07)}
+.ca-nav-sub-item svg{width:13px;height:13px;flex-shrink:0;stroke-width:1.8;stroke:var(--text-3)}
+.ca-nav-sub-item.active svg{stroke:var(--orange)}
+.ca-nav-sub-item:hover svg{stroke:var(--text-1)}
 .ca-sidebar-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
 .ca-sfoot-av{width:32px;height:32px;border-radius:8px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;flex-shrink:0}
 .ca-sfoot-name{font-size:12.5px;color:var(--text-1);font-weight:500;line-height:1.2}
@@ -411,6 +429,14 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         </a>
         @endif
 
+        {{-- Insights: firm (client_admin + manager) --}}
+        @if(auth()->user()->hasAnyRole(['client_admin','manager']))
+        <a href="{{ route('firm-insights.index') }}" class="ca-nav-item {{ request()->routeIs('firm-insights.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Insights
+        </a>
+        @endif
+
         {{-- Insights: basic user role only --}}
         @if(!auth()->user()->hasAnyRole(['client_admin','manager']))
         <a href="{{ route('insights.index') }}" class="ca-nav-item {{ request()->routeIs('insights.*') ? 'active' : '' }}">
@@ -419,8 +445,30 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         </a>
         @endif
 
-        {{-- QuickBooks: anyone with view_quickbooks --}}
-        @if(auth()->user()->can('view_quickbooks'))
+        {{-- QuickBooks group: client_admin + manager --}}
+        @if(auth()->user()->hasAnyRole(['client_admin', 'manager']))
+        @php $qbOpen = request()->routeIs('quickbooks.*') || request()->routeIs('firm-quickbooks.*'); @endphp
+        <div class="ca-nav-group">
+            <div class="ca-nav-group-hdr {{ $qbOpen ? 'active-group open' : '' }}" onclick="toggleNavGroup(this)">
+                <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+                <span class="nav-lbl">QuickBooks</span>
+                <svg class="nav-chv" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+            <div class="ca-nav-sub {{ $qbOpen ? 'open' : '' }}">
+                <a href="{{ route('firm-quickbooks.index') }}" class="ca-nav-sub-item {{ request()->routeIs('firm-quickbooks.*') ? 'active' : '' }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    My QuickBooks
+                </a>
+                <a href="{{ route('quickbooks.index') }}" class="ca-nav-sub-item {{ request()->routeIs('quickbooks.*') ? 'active' : '' }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+                    Clients QuickBook
+                </a>
+            </div>
+        </div>
+        @endif
+
+        {{-- QuickBooks: user role (personal connection page) --}}
+        @if(!auth()->user()->hasAnyRole(['client_admin', 'manager']) && auth()->user()->can('view_quickbooks'))
         <a href="{{ route('quickbooks.index') }}" class="ca-nav-item {{ request()->routeIs('quickbooks.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
             QuickBooks
@@ -528,8 +576,8 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
     </svg>
-    Generating insights in the background…
-    <a href="{{ route('insights.index') }}">View Progress &rarr;</a>
+    <span id="global-gen-msg">Generating insights in the background…</span>
+    <a id="global-gen-link" href="{{ route('insights.index') }}">View Progress &rarr;</a>
 </div>
 
 <script>
@@ -544,29 +592,45 @@ function showToast(msg, type='success') {
 
 // ── Global insight-generation notification ────────────────────────────────
 (function () {
-    const LS_KEY      = 'insights_processing_ids';
-    const INSIGHTS_URL = '{{ route("insights.index") }}';
+    const LS_USER = 'insights_processing_ids';
+    const LS_FIRM = 'firm_insights_processing_id';
 
     function checkGlobalProgress() {
-        const id = localStorage.getItem(LS_KEY);
-        if (!id) return;
-
-        // Don't show on the insights page itself — it has its own bar
-        if (window.location.pathname.includes('/insights')) return;
-
-        // Show the floating banner
+        const userId = localStorage.getItem(LS_USER);
+        const firmId = localStorage.getItem(LS_FIRM);
         const banner = document.getElementById('global-gen-banner');
-        if (banner) banner.style.display = 'flex';
+        const msg    = document.getElementById('global-gen-msg');
+        const lnk    = document.getElementById('global-gen-link');
+        if (!banner) return;
 
-        // Poll to know when to clear it
-        fetch('/insights/status/' + id, { headers: { 'Accept': 'application/json' } })
+        const path = window.location.pathname;
+        // Don't show on any insights page — they have their own progress bars
+        if (path.includes('/insights')) return;
+
+        if (!userId && !firmId) { banner.style.display = 'none'; return; }
+
+        // Prefer showing firm if both are active; show whichever is active
+        const isFirm = !!firmId;
+        const id     = firmId || userId;
+        const url    = isFirm ? '/firm-insights/status/' + id : '/insights/status/' + id;
+        const viewHref = isFirm ? '{{ route("firm-insights.index") }}' : '{{ route("insights.index") }}';
+
+        if (msg) msg.textContent = 'Generating insights in the background…';
+        if (lnk) lnk.href = viewHref;
+        banner.style.display = 'flex';
+
+        fetch(url, { headers: { 'Accept': 'application/json' } })
         .then(r => r.json())
         .then(data => {
             if (data.status !== 'success') { setTimeout(checkGlobalProgress, 10000); return; }
             const r = data.report;
             if (r.has_insights || r.is_failed) {
-                localStorage.removeItem(LS_KEY);
-                if (banner) banner.style.display = 'none';
+                if (isFirm) localStorage.removeItem(LS_FIRM);
+                else        localStorage.removeItem(LS_USER);
+                // Re-check in case the other type is still running
+                const stillRunning = isFirm ? localStorage.getItem(LS_USER) : localStorage.getItem(LS_FIRM);
+                if (!stillRunning) banner.style.display = 'none';
+                else setTimeout(checkGlobalProgress, 5000);
             } else {
                 setTimeout(checkGlobalProgress, 8000);
             }
@@ -673,6 +737,13 @@ SwalToast && SwalToast.fire({ icon: 'error', title: @json(session('toast_error')
     Swal.fire(Object.assign({}, swalCfg, { icon: 'warning', text: @json(session('warning')) }));
     @endif
 }());
+</script>
+<script>
+function toggleNavGroup(hdr) {
+    var sub = hdr.nextElementSibling;
+    hdr.classList.toggle('open');
+    sub.classList.toggle('open');
+}
 </script>
 @stack('scripts')
 </body>

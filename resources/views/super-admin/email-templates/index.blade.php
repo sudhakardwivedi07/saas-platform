@@ -26,7 +26,7 @@
         <tbody>
             @forelse($templates as $tpl)
             <tr>
-                <td style="font-weight:600">{{ ucwords(str_replace('_',' ',$tpl->slug)) }}</td>
+                <td style="font-weight:600">{{ $tpl->name }}</td>
                 <td style="color:var(--text-2)">{{ $tpl->subject }}</td>
                 <td><code style="font-size:11.5px;background:var(--bg);padding:2px 7px;border-radius:5px;color:var(--blue)">{{ $tpl->slug }}</code></td>
                 <td>

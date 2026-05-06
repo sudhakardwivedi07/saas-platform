@@ -129,6 +129,10 @@
         var res  = await apiCall('{{ route("superadmin.email-templates.update", $template->slug) }}', 'POST', body);
 
         showToast(res.message, res.status === 'success' ? 'success' : 'error');
+        if (res.status === 'success' && res.redirect) {
+            window.location.href = res.redirect;
+            return;
+        }
         btn.disabled = false;
     });
 }());

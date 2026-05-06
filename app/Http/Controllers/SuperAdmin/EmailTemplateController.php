@@ -81,8 +81,15 @@ class EmailTemplateController extends AccountBaseController
         ]);
 
         $template = EmailTemplate::whereNull('company_id')->where('slug', $slug)->firstOrFail();
+
+        $newSlug = Str::slug($request->name, '_');
+        if (EmailTemplate::whereNull('company_id')->where('slug', $newSlug)->where('id', '!=', $template->id)->exists()) {
+            $newSlug = $newSlug . '_' . time();
+        }
+
         $template->update([
             'name'          => $request->name,
+            'slug'          => $newSlug,
             'trigger_event' => $request->trigger_event,
             'subject'       => $request->subject,
             'body'          => $request->body,
@@ -91,7 +98,9 @@ class EmailTemplateController extends AccountBaseController
             'is_active'     => $request->boolean('is_active', true),
         ]);
 
-        return Reply::success('Template updated.');
+        return Reply::successWithData('Template updated.', [
+            'redirect' => route('superadmin.email-templates.index'),
+        ]);
     }
 
     public function destroy(string $slug)

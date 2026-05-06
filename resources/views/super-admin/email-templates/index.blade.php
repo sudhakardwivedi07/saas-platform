@@ -8,6 +8,9 @@
         <h1>Email Templates</h1>
         <p>System-wide templates used when no tenant-specific override exists</p>
     </div>
+    <div class="ph-actions">
+        <a href="{{ route('superadmin.email-templates.create') }}" class="btn btn-primary btn-sm">+ Add Email Template</a>
+    </div>
 </div>
 
 <div class="tc">

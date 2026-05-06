@@ -10,7 +10,7 @@ class EmailTemplate extends BaseModel
     // HasTenant is intentionally NOT used — resolution uses resolveFor() fallback logic.
 
     protected $fillable = [
-        'company_id', 'name', 'slug', 'trigger_event', 'subject', 'body',
+        'company_id', 'name', 'slug', 'subject', 'body',
         'from_name', 'from_email', 'cc', 'bcc', 'is_active',
     ];
 

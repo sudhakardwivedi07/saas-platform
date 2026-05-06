@@ -25,11 +25,6 @@
         </div>
 
         <div class="f-group">
-            <label class="f-label">Trigger Event</label>
-            <input name="trigger_event" class="f-inp" placeholder="e.g. New firm created">
-        </div>
-
-        <div class="f-group">
             <label class="f-label">Subject <span style="color:red">*</span></label>
             <input name="subject" class="f-inp" placeholder="e.g. Welcome to @{{app_name}}!">
             <div class="f-error" id="err-subject"></div>

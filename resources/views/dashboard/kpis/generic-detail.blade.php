@@ -35,13 +35,15 @@
     const companyId = @json($selectedCompanyId ?? null);
     const mount = document.getElementById('kpiStandaloneDetail');
     if (!mount || !kpiType || !kpiDataUrl) return;
-    mount.innerHTML = '<div class="kpi-detail-loading">Loading…</div>';
+    mount.innerHTML = '';
+    if (window.showAppLoading) window.showAppLoading('Loading KPI details', 'Fetching the latest metric data...');
     const u = new URL(kpiDataUrl, window.location.origin);
     u.searchParams.set('company_id', String(companyId || ''));
     u.searchParams.set('kpi', kpiType);
     fetch(u.toString(), { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
         .then(function (r) { return r.json(); })
         .then(function (response) {
+            if (window.hideAppLoading) window.hideAppLoading();
             if (response.success && response.kpis_unavailable) {
                 mount.innerHTML = '<p class="kpi-detail-fallback">No QuickBooks connection or analyzed insights for this company yet.</p>';
                 return;
@@ -53,6 +55,7 @@
             }
         })
         .catch(function () {
+            if (window.hideAppLoading) window.hideAppLoading();
             mount.innerHTML = '<div class="alert alert-danger">Could not load KPI details.</div>';
         });
 })();

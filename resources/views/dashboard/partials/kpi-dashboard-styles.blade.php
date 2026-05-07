@@ -346,9 +346,6 @@
     .insight-box { background: #fff; border: 1px solid #e8ecf1; border-left: 4px solid var(--cfo-blue, #007bff); border-radius: 10px; padding: 18px 20px; margin-top: 8px; }
     .insight-box .insight-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; color: #64748b; }
     .insight-box .insight-text { font-size: 13px; line-height: 1.6; color: #475569; }
-    .loading-spinner { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; color: #6b7280; }
-    .loading-spinner .spinner-border { width: 40px; height: 40px; margin-bottom: 16px; border: 3px solid #e5e7eb; border-top-color: var(--cfo-orange, #f27121); border-radius: 50%; animation: kpiSpin .75s linear infinite; }
-    @keyframes kpiSpin { to { transform: rotate(360deg); } }
     .tier3-tier4-container { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; width: 100%; align-items: stretch; }
     @media (max-width: 1200px) { .tier3-tier4-container { grid-template-columns: 1fr 1fr; } }
     @media (max-width: 768px) { .tier3-tier4-container { grid-template-columns: 1fr; } }
@@ -366,15 +363,32 @@
     }
     .kpi-efficiency-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr;
         gap: 20px;
         align-items: stretch;
         width: 100%;
     }
     .kpi-efficiency-grid > .kpi-card { height: 100%; }
     @media (max-width: 900px) { .kpi-efficiency-grid { grid-template-columns: 1fr; } }
-    .kpi-risk-grid { display: grid; grid-template-columns: 1fr; gap: 20px; width: 100%; }
-    .kpi-risk-grid > .kpi-card { height: 100%; }
+    /* Single risk KPI: keep card readable width (not full-bleed strip like a whole row) */
+    .kpi-risk-grid {
+        /* display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 20px;
+        width: 100%; */
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 20px;
+        align-items: stretch;
+        width: 100%;
+    }
+    .kpi-risk-grid > .kpi-card {
+        height: 100%;
+        width: 100%;
+        max-width: min(100%, 680px);
+        box-sizing: border-box;
+    }
 
     .kpi-card.kpi-counter-card { min-height: 0; }
     .kpi-counter-card-inner {
@@ -469,6 +483,43 @@
         text-align: center;
         line-height: 1.25;
         word-break: break-word;
+    }
+
+    /* Revenue concentration: Y-axis + bars row must span full card width */
+    .kpi-hbar-chart.kpi-rc-concentration {
+        display: block;
+        width: 100%;
+    }
+    .kpi-rc-chart-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        width: 100%;
+        min-height: 118px;
+        box-sizing: border-box;
+    }
+    .kpi-rc-axis {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 118px;
+        width: 40px;
+        flex-shrink: 0;
+        font-size: 10px;
+        color: #9ca3af;
+        text-align: right;
+        line-height: 1.1;
+    }
+    .kpi-rc-bars {
+        display: flex;
+        gap: 8px;
+        align-items: flex-end;
+        flex: 1;
+        min-width: 0;
+        height: 118px;
+    }
+    .kpi-rc-concentration .kpi-hbar-bar {
+        max-width: min(80px, 100%);
     }
 
     .kpi-rc-title {
@@ -643,5 +694,4 @@
     .kpi-detail-table td { text-align: left; padding: 9px 10px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
     .kpi-detail-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; background: #fafafa; }
     .kpi-detail-fallback { font-size: 14px; color: #64748b; line-height: 1.55; }
-    .kpi-detail-loading { padding: 40px; text-align: center; color: #64748b; font-size: 14px; }
 </style>

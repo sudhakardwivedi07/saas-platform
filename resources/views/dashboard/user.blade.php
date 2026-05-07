@@ -129,27 +129,6 @@
 }
 @keyframes dashSpin { to { transform: rotate(360deg); } }
 
-/* ── Processing bar ──────────────────────────────────────────────── */
-.db-thinking-bar {
-    display: flex; align-items: center; gap: 10px;
-    padding: 14px 18px;
-    background: linear-gradient(135deg,#f0f7ff 0%,#f5f0ff 100%);
-    border: 1px solid #dde8ff; border-radius: 10px;
-    font-size: .875rem; color: #3b5bdb; font-weight: 500;
-    margin-bottom: 24px;
-}
-.db-thinking-dots span {
-    display: inline-block; width: 7px; height: 7px;
-    border-radius: 50%; background: #3b5bdb; margin: 0 2px;
-    animation: dbBounce 1.2s infinite ease-in-out;
-}
-.db-thinking-dots span:nth-child(2) { animation-delay: .2s; }
-.db-thinking-dots span:nth-child(3) { animation-delay: .4s; }
-@keyframes dbBounce {
-    0%,80%,100% { transform: scale(.6); opacity: .5; }
-    40%         { transform: scale(1); opacity: 1; }
-}
-
 /* ── Industry Modal ─────────────────────────────────────────────── */
 .ind-modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.45);
@@ -345,15 +324,6 @@
 }
 </style>
 
-{{-- ── Processing Bar (shows when generation is in progress) ─────────────── --}}
-<div id="dbProcessingBar" style="display:none;">
-    <div class="db-thinking-bar">
-        <div class="db-thinking-dots"><span></span><span></span><span></span></div>
-        <span id="dbProcessingMsg">Syncing your QuickBooks data and generating AI insights… This may take a few minutes.</span>
-        <a href="{{ route('insights.index') }}" style="margin-left:auto;white-space:nowrap;font-size:13px;color:var(--orange);text-decoration:none;font-weight:600;">View Progress →</a>
-    </div>
-</div>
-
 @if(!empty($showKpiDashboard))
 <div class="user-kpi-fullbleed">
 <div class="cfo-kpi-exec-bar">
@@ -529,6 +499,7 @@
     const HAS_BUSINESS_CTX = {{ auth()->user()->business_context ? 'true' : 'false' }};
     const DB_LIMIT_REACHED = {{ ($monthlyLimit !== null && ($monthlyUsed ?? 0) >= $monthlyLimit) ? 'true' : 'false' }};
     const LS_KEY           = 'dash_processing_insight_id';
+    let dashboardProcessingSwalOpen = false;
 
     // ── On load: if generation is running, show a non-blocking notice only ──────
     const serverInProgress = {{ !empty($insightInProgress) ? 'true' : 'false' }};
@@ -657,15 +628,23 @@
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     function showProcessingBar(msg) {
-        const bar = document.getElementById('dbProcessingBar');
-        const msgEl = document.getElementById('dbProcessingMsg');
-        if (bar) bar.style.display = '';
-        if (msgEl && msg) msgEl.textContent = msg;
+        dashboardProcessingSwalOpen = true;
+        Swal.fire({
+            title: 'Generating insights',
+            html: '<p style="margin:0 0 12px;color:#64748b;">' + (msg || 'Syncing your QuickBooks data and generating AI insights. This may take a few minutes.') + '</p>' +
+                '<a href="' + INSIGHTS_URL + '" style="color:var(--orange);font-weight:600;text-decoration:none;">View Progress →</a>',
+            allowOutsideClick: true,
+            allowEscapeKey: true,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
+        });
     }
 
     function hideProcessingBar() {
-        const bar = document.getElementById('dbProcessingBar');
-        if (bar) bar.style.display = 'none';
+        if (dashboardProcessingSwalOpen && Swal.isVisible()) {
+            Swal.close();
+        }
+        dashboardProcessingSwalOpen = false;
     }
 
     function showGeneratingLoader() {

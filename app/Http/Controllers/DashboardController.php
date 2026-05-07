@@ -329,11 +329,23 @@ class DashboardController extends AccountBaseController
             ->exists();
 
         $user = auth()->user();
-        $this->kpiCompanies = $this->collectKpiCompaniesForUser($user);
-        $this->selectedKpiCompanyId = $this->resolveDefaultKpiCompanyId($user, $this->kpiCompanies);
         $tenantId = (int) $company->id;
-        $this->hasAnalyzedInsights = $user->hasAnalyzedInsightsForTenant($tenantId);
-        // Executive KPI layout only after at least one analyzed insight for this tenant (QB alone → classic dashboard).
+        $latestAnalyzedReport = $this->latestAnalyzedKpiReportForUser($user, $tenantId);
+        $eligibleCompanies = $user->kpiEligiblePortfolioCompanies();
+
+        if ($latestAnalyzedReport?->company_id && ! $eligibleCompanies->contains(fn ($c) => (int) $c->id === (int) $latestAnalyzedReport->company_id)) {
+            $reportCompany = Company::withoutGlobalScopes()->find((int) $latestAnalyzedReport->company_id);
+            if ($reportCompany) {
+                $eligibleCompanies->push($reportCompany);
+            }
+        }
+
+        // End-user dashboard should switch to KPI counters after an analyzed insight,
+        // using the company that produced the latest analyzed report.
+        $this->kpiCompanies = $eligibleCompanies->isNotEmpty() ? $eligibleCompanies->unique('id')->values() : collect([$company]);
+        $this->selectedKpiCompanyId = (int) ($latestAnalyzedReport?->company_id ?: $tenantId);
+        $this->hasAnalyzedInsights = (bool) $latestAnalyzedReport;
+        // Executive KPI layout only after at least one analyzed insight (QB alone → classic dashboard).
         $this->showKpiDashboard = $this->hasAnalyzedInsights;
 
         if ($this->showKpiDashboard) {
@@ -361,6 +373,31 @@ class DashboardController extends AccountBaseController
         $this->clientAdminName  = $parentCompany?->app_name
             ?? $parentCompany?->company_name
             ?? $this->appName;
+    }
+
+    private function latestAnalyzedKpiReportForUser(User $user, int $tenantCompanyId): ?Report
+    {
+        $portfolioIds = $user->portfolioCompanies()
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if (! in_array($tenantCompanyId, $portfolioIds, true)) {
+            $portfolioIds[] = $tenantCompanyId;
+        }
+
+        return Report::query()
+            ->where('user_id', $user->id)
+            ->whereNull('deleted_at')
+            ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
+            ->where(function ($q) use ($portfolioIds, $tenantCompanyId, $user) {
+                $q->whereIn('company_id', $portfolioIds);
+                if ($user->company_id && (int) $tenantCompanyId === (int) $user->company_id) {
+                    $q->orWhereNull('company_id');
+                }
+            })
+            ->orderByDesc('created_at')
+            ->first();
     }
 
     /**

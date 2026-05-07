@@ -12,37 +12,63 @@ class EbitdaKpiService
     public static function calculate(int $companyId): array
     {
         return KpiService::getCachedKpiData($companyId, 'ebitda', function () use ($companyId) {
-            // TODO: Implement actual data fetching
-            $fo = KpiService::companyDemoFactor($companyId, 'ebit_oi');
-            $fd = KpiService::companyDemoFactor($companyId, 'ebit_dep');
-            $fa = KpiService::companyDemoFactor($companyId, 'ebit_am');
-            $fr = KpiService::companyDemoFactor($companyId, 'ebit_rev');
-
-            $operatingIncome = (int) round(125000 * $fo);
-            $depreciation = (int) round(15000 * $fd);
-            $amortization = (int) round(8000 * $fa);
-            $ebitda = $operatingIncome + $depreciation + $amortization;
-
-            $revenue = (int) round(500000 * $fr);
-            $ebitdaMargin = $revenue != 0 ? ($ebitda / $revenue) * 100 : 0;
-
-            $monthlyBars = [];
-            for ($i = 0; $i < 12; $i++) {
-                $wave = 0.82 + (($i + $companyId) % 5) * 0.06;
-                $monthlyBars[] = (int) max(0, round(($ebitda / 12) * $wave));
+            $dataset = QuickBooksKpiDataService::dataset($companyId) ?? QuickBooksKpiDataService::emptyDatasetShape();
+            $pl = array_values($dataset['profit_loss_monthly'] ?? []);
+            if (empty($pl)) {
+                return [
+                    'ebitda' => null,
+                    'operating_income' => null,
+                    'depreciation' => 0,
+                    'amortization' => 0,
+                    'revenue' => null,
+                    'margin' => null,
+                    'monthly_bars_raw' => [],
+                    'last_updated' => now(),
+                ];
             }
+            $pl = self::activeProfitLossRows($pl);
+
+            $recent = array_slice($pl, -12);
+            $monthlyBars = [];
+            $revenueLtm = 0.0;
+            foreach ($recent as $row) {
+                $rev = (float) ($row['revenue'] ?? 0);
+                $cogs = (float) ($row['cogs'] ?? 0);
+                $opex = (float) ($row['misc'] ?? 0);
+                $revenueLtm += $rev;
+                $monthlyBars[] = $rev - $cogs - $opex;
+            }
+            $ebitda = array_sum($monthlyBars);
+            $latest = end($recent) ?: [];
+            $revenue = (float) ($latest['revenue'] ?? 0);
+            $ebitdaMargin = abs($revenueLtm) > 0.00001 ? ($ebitda / $revenueLtm) * 100 : null;
 
             return [
                 'ebitda' => $ebitda,
-                'operating_income' => $operatingIncome,
-                'depreciation' => $depreciation,
-                'amortization' => $amortization,
+                'operating_income' => (float) ($latest['operating_income'] ?? 0),
+                'depreciation' => 0,
+                'amortization' => 0,
                 'revenue' => $revenue,
                 'margin' => $ebitdaMargin,
                 'monthly_bars_raw' => $monthlyBars,
                 'last_updated' => now(),
             ];
         });
+    }
+
+    private static function activeProfitLossRows(array $rows): array
+    {
+        $active = array_values(array_filter($rows, static function (array $row) {
+            foreach (['revenue', 'cogs', 'gross_profit', 'operating_income', 'net_income'] as $key) {
+                if (abs((float) ($row[$key] ?? 0)) > 0.00001) {
+                    return true;
+                }
+            }
+
+            return false;
+        }));
+
+        return $active ?: $rows;
     }
 
     /**

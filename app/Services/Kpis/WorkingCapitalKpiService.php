@@ -12,17 +12,33 @@ class WorkingCapitalKpiService
     public static function calculate(int $companyId): array
     {
         return KpiService::getCachedKpiData($companyId, 'working-capital', function () use ($companyId) {
-            // TODO: Implement actual data fetching
-            $fa = KpiService::companyDemoFactor($companyId, 'wc_ca');
-            $fb = KpiService::companyDemoFactor($companyId, 'wc_cl');
-            $currentAssets = (int) round(750000 * $fa);
-            $currentLiabilities = (int) round(450000 * $fb);
-            $workingCapital = $currentAssets - $currentLiabilities;
+            $dataset = QuickBooksKpiDataService::dataset($companyId) ?? QuickBooksKpiDataService::emptyDatasetShape();
+            $bs = array_values($dataset['balance_sheet_monthly'] ?? []);
+            if (empty($bs)) {
+                return [
+                    'current_assets' => null,
+                    'current_liabilities' => null,
+                    'working_capital' => null,
+                    'mom_change' => null,
+                    'mom_percent' => null,
+                    'last_updated' => now(),
+                ];
+            }
 
-            $fp = KpiService::companyDemoFactor($companyId, 'wc_prev');
-            $previousWorkingCapital = (int) round(680000 * $fp);
-            $momChange = $workingCapital - $previousWorkingCapital;
-            $momPercent = $previousWorkingCapital != 0 ? ($momChange / $previousWorkingCapital) * 100 : 0;
+            $latest = end($bs) ?: [];
+            $prev = count($bs) > 1 ? $bs[count($bs) - 2] : null;
+            $currentAssets = (float) ($latest['current_assets'] ?? 0);
+            $currentLiabilities = abs((float) ($latest['current_liabilities'] ?? 0));
+            $workingCapital = $currentAssets - $currentLiabilities;
+            $momChange = null;
+            $momPercent = null;
+            if ($prev) {
+                $prevWc = (float) ($prev['current_assets'] ?? 0) - abs((float) ($prev['current_liabilities'] ?? 0));
+                $momChange = $workingCapital - $prevWc;
+                if (abs($prevWc) > 0.00001) {
+                    $momPercent = ($momChange / abs($prevWc)) * 100;
+                }
+            }
 
             return [
                 'current_assets' => $currentAssets,
@@ -44,7 +60,7 @@ class WorkingCapitalKpiService
 
         $ca = (float) $data['current_assets'];
         $cl = (float) $data['current_liabilities'];
-        $sum = $ca + $cl;
+        $den = max($ca, $cl, 0);
 
         return [
             'working_capital' => KpiService::formatCurrency($data['working_capital']),
@@ -52,9 +68,9 @@ class WorkingCapitalKpiService
             'current_liabilities' => KpiService::formatCurrency($data['current_liabilities']),
             'mom_change' => KpiService::formatCurrency($data['mom_change']),
             'mom_percent' => KpiService::formatPercentage($data['mom_percent']),
-            'mom_class' => $data['mom_change'] >= 0 ? 'positive' : 'negative',
-            'assets_share_pct' => $sum > 0 ? min(100, max(8, round($ca / $sum * 100, 1))) : 50,
-            'liabilities_share_pct' => $sum > 0 ? min(100, max(8, round($cl / $sum * 100, 1))) : 50,
+            'mom_class' => $data['mom_change'] === null ? null : ($data['mom_change'] >= 0 ? 'positive' : 'negative'),
+            'assets_share_pct' => $den > 0 ? round(($ca / $den) * 100, 1) : 0,
+            'liabilities_share_pct' => $den > 0 ? round(($cl / $den) * 100, 1) : 0,
         ];
     }
 }

@@ -12,22 +12,26 @@ class ApLeverageKpiService
     public static function calculate(int $companyId): array
     {
         return KpiService::getCachedKpiData($companyId, 'ap-leverage', function () use ($companyId) {
-            // TODO: Replace with QuickBooks / GL AP aging when wired.
-            $f = KpiService::companyDemoFactor($companyId, 'ap_amt');
-            $raw = [
-                ['label' => 'Current', 'amount' => 400.0],
-                ['label' => '1-30', 'amount' => 350.0],
-                ['label' => '31-60', 'amount' => 280.0],
-                ['label' => '61-90', 'amount' => 220.0],
-                ['label' => '90+', 'amount' => 353.0],
-            ];
-            $agingBuckets = [];
-            foreach ($raw as $row) {
-                $agingBuckets[] = [
-                    'label' => $row['label'],
-                    'amount' => round((float) $row['amount'] * $f, 2),
+            $dataset = QuickBooksKpiDataService::dataset($companyId) ?? QuickBooksKpiDataService::emptyDatasetShape();
+            $rows = $dataset['ap_rows'] ?? [];
+            $pl = $dataset['profit_loss_monthly'] ?? [];
+            $bs = $dataset['balance_sheet_monthly'] ?? [];
+            if (empty($rows)) {
+                return [
+                    'total_ap' => null,
+                    'dpo' => null,
+                    'aging_buckets' => [],
+                    'monthly_trend' => [],
+                    'last_updated' => now(),
                 ];
             }
+            $agingBuckets = [
+                ['label' => 'Current', 'amount' => (float) array_sum(array_column($rows, 'current'))],
+                ['label' => '1-30', 'amount' => (float) array_sum(array_column($rows, '1_30'))],
+                ['label' => '31-60', 'amount' => (float) array_sum(array_column($rows, '31_60'))],
+                ['label' => '61-90', 'amount' => (float) array_sum(array_column($rows, '61_90'))],
+                ['label' => '90+', 'amount' => (float) array_sum(array_column($rows, 'over_90'))],
+            ];
             $totalAp = (float) array_sum(array_column($agingBuckets, 'amount'));
             foreach ($agingBuckets as $i => $row) {
                 $amt = (float) $agingBuckets[$i]['amount'];
@@ -35,22 +39,19 @@ class ApLeverageKpiService
                     ? round($amt / $totalAp * 100, 1)
                     : 0.0;
             }
-            $dpo = null; // Unknown until vendor terms / purchases are modeled
+            $cogsT12 = 0.0;
+            foreach (array_slice(array_values($pl), -12) as $m) {
+                $cogsT12 += (float) ($m['cogs'] ?? 0);
+            }
+            $avgDailyCogs = $cogsT12 / 365;
+            $dpo = $avgDailyCogs > 0 ? ($totalAp / $avgDailyCogs) : null;
 
-            $ft = KpiService::companyDemoFactor($companyId, 'ap_tr');
-            $trendRaw = [
-                ['month' => '2024-01', 'amount' => 1520],
-                ['month' => '2024-02', 'amount' => 1580],
-                ['month' => '2024-03', 'amount' => 1603],
-                ['month' => '2024-04', 'amount' => 1590],
-                ['month' => '2024-05', 'amount' => 1610],
-                ['month' => '2024-06', 'amount' => 1603],
-            ];
-            $monthlyTrend = array_map(static function (array $row) use ($ft) {
-                $row['amount'] = (int) round((float) $row['amount'] * $ft);
-
-                return $row;
-            }, $trendRaw);
+            $monthlyTrend = array_map(static function (array $row) {
+                return [
+                    'month' => $row['month'] ?? '',
+                    'amount' => abs((float) ($row['ap'] ?? 0)),
+                ];
+            }, array_slice(array_values($bs), -12));
 
             return [
                 'total_ap' => $totalAp,

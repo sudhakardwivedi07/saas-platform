@@ -11,6 +11,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ClientKPIController;
 use App\Http\Controllers\ClientPackageController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DashboardKPIController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\FinanceController;
@@ -58,6 +59,27 @@ Route::middleware(['auth'])->group(function () {
     Route::post('dashboard/assign-plan', [DashboardController::class, 'assignPlan'])->name('dashboard.assign-plan');
     Route::get('dashboard/kpi-data', [DashboardController::class, 'kpiData'])->name('dashboard.kpi-data');
     Route::get('dashboard/kpi-detail/{kpiType}', [DashboardController::class, 'kpiDetail'])->name('dashboard.kpi-detail');
+    Route::prefix('dashboard-kpi')->name('dashboard-kpi.')->group(function () {
+        Route::get('/runway-burn-details', [DashboardKPIController::class, 'runwayBurnDetails'])->name('runway-burn-details');
+        Route::get('/working-capital-details', [DashboardKPIController::class, 'workingCapitalDetails'])->name('working-capital-details');
+        Route::get('/operating-cash-flow-details', [DashboardKPIController::class, 'operatingCashFlowDetails'])->name('operating-cash-flow-details');
+        Route::get('/revenue-details', [DashboardKPIController::class, 'revenueDetails'])->name('revenue-details');
+        Route::get('/ebitda-details', [DashboardKPIController::class, 'ebitdaDetails'])->name('ebitda-details');
+        Route::get('/margin-trends-details', [DashboardKPIController::class, 'marginTrendsDetails'])->name('margin-trends-details');
+        Route::get('/ar-aging-details', [DashboardKPIController::class, 'arAgingDetails'])->name('ar-aging-details');
+        Route::get('/ap-aging-details', [DashboardKPIController::class, 'apAgingDetails'])->name('ap-aging-details');
+        Route::get('/revenue-concentration-details', [DashboardKPIController::class, 'revenueConcentrationDetails'])->name('revenue-concentration-details');
+
+        Route::get('/cash-burn-runway', [DashboardKPIController::class, 'cashBurnRunway'])->name('cash-burn-runway');
+        Route::get('/working-capital', [DashboardKPIController::class, 'workingCapital'])->name('working-capital');
+        Route::get('/operating-cash-flow', [DashboardKPIController::class, 'operatingCashFlow'])->name('operating-cash-flow');
+        Route::get('/revenue-trend', [DashboardKPIController::class, 'revenueTrend'])->name('revenue-trend');
+        Route::get('/ebitda', [DashboardKPIController::class, 'ebitda'])->name('ebitda');
+        Route::get('/margin-trends', [DashboardKPIController::class, 'marginTrends'])->name('margin-trends');
+        Route::get('/ar-aging', [DashboardKPIController::class, 'arAging'])->name('ar-aging');
+        Route::get('/ap-aging', [DashboardKPIController::class, 'apAging'])->name('ap-aging');
+        Route::get('/revenue-concentration', [DashboardKPIController::class, 'revenueConcentration'])->name('revenue-concentration');
+    });
 
     // Profile
     Route::get('profile',               [ProfileController::class, 'index'])->name('profile');

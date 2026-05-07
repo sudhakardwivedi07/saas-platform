@@ -92,10 +92,7 @@
 
     @if($report->insight_json_data)
         <div id="insightAccordionContainer">
-            <div id="insightLoaderShow" style="text-align:center;padding:60px;">
-                <div style="display:inline-block;width:3rem;height:3rem;border:4px solid #e2e8f0;border-top-color:#1a6aa8;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-                <p style="margin-top:15px;color:#718096;">Loading insights...</p>
-            </div>
+            <div id="insightLoaderShow" style="display:none;"></div>
             <div id="insightAccordionContentShow" style="display:none;"></div>
         </div>
     @else
@@ -119,11 +116,13 @@
 (function(){
     if (!document.getElementById('insightLoaderShow')) return;
 
+    if (window.showAppLoading) window.showAppLoading('Loading insights', 'Preparing your report insights...');
     fetch('/firm-insights/{{ $report->id }}/data', {
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(r => r.json())
     .then(response => {
+        if (window.hideAppLoading) window.hideAppLoading();
         if (response.status === 'success' && response.data) {
             displayInsightSlider(response.data);
         } else {
@@ -134,6 +133,7 @@
         }
     })
     .catch(() => {
+        if (window.hideAppLoading) window.hideAppLoading();
         document.getElementById('insightLoaderShow').style.display = 'none';
         document.getElementById('insightAccordionContentShow').innerHTML =
             '<div style="padding:40px;text-align:center;color:#e53e3e;font-size:16px;">Failed to load insights. Please refresh the page.</div>';

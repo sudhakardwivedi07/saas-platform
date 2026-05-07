@@ -32,7 +32,6 @@ class EmailTemplateController extends AccountBaseController
     {
         $request->validate([
             'name'          => 'required|string|max:255',
-            'trigger_event' => 'nullable|string|max:255',
             'subject'       => 'required|string|max:255',
             'body'          => 'required|string',
             'from_name'     => 'nullable|string|max:255',
@@ -49,7 +48,6 @@ class EmailTemplateController extends AccountBaseController
             'company_id'    => null,
             'name'          => $request->name,
             'slug'          => $slug,
-            'trigger_event' => $request->trigger_event,
             'subject'       => $request->subject,
             'body'          => $request->body,
             'from_name'     => $request->from_name,
@@ -72,7 +70,6 @@ class EmailTemplateController extends AccountBaseController
     {
         $request->validate([
             'name'          => 'required|string|max:255',
-            'trigger_event' => 'nullable|string|max:255',
             'subject'       => 'required|string|max:255',
             'body'          => 'required|string',
             'from_name'     => 'nullable|string|max:255',
@@ -81,9 +78,15 @@ class EmailTemplateController extends AccountBaseController
         ]);
 
         $template = EmailTemplate::whereNull('company_id')->where('slug', $slug)->firstOrFail();
+
+        $newSlug = Str::slug($request->name, '_');
+        if (EmailTemplate::whereNull('company_id')->where('slug', $newSlug)->where('id', '!=', $template->id)->exists()) {
+            $newSlug = $newSlug . '_' . time();
+        }
+
         $template->update([
             'name'          => $request->name,
-            'trigger_event' => $request->trigger_event,
+            'slug'          => $newSlug,
             'subject'       => $request->subject,
             'body'          => $request->body,
             'from_name'     => $request->from_name,
@@ -91,7 +94,9 @@ class EmailTemplateController extends AccountBaseController
             'is_active'     => $request->boolean('is_active', true),
         ]);
 
-        return Reply::success('Template updated.');
+        return Reply::successWithData('Template updated.', [
+            'redirect' => route('superadmin.email-templates.index'),
+        ]);
     }
 
     public function destroy(string $slug)

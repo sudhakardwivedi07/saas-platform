@@ -25,11 +25,6 @@
         </div>
 
         <div class="f-group">
-            <label class="f-label">Trigger Event</label>
-            <input name="trigger_event" value="{{ $template->trigger_event }}" class="f-inp" placeholder="e.g. New firm created">
-        </div>
-
-        <div class="f-group">
             <label class="f-label">Subject <span style="color:red">*</span></label>
             <input name="subject" value="{{ $template->subject }}" class="f-inp">
             <div class="f-error" id="err-subject"></div>
@@ -129,6 +124,10 @@
         var res  = await apiCall('{{ route("superadmin.email-templates.update", $template->slug) }}', 'POST', body);
 
         showToast(res.message, res.status === 'success' ? 'success' : 'error');
+        if (res.status === 'success' && res.redirect) {
+            window.location.href = res.redirect;
+            return;
+        }
         btn.disabled = false;
     });
 }());

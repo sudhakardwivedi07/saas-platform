@@ -8,6 +8,9 @@
         <h1>Email Templates</h1>
         <p>System-wide templates used when no tenant-specific override exists</p>
     </div>
+    <div class="ph-actions">
+        <a href="{{ route('superadmin.email-templates.create') }}" class="btn btn-primary btn-sm">+ Add Email Template</a>
+    </div>
 </div>
 
 <div class="tc">
@@ -26,7 +29,7 @@
         <tbody>
             @forelse($templates as $tpl)
             <tr>
-                <td style="font-weight:600">{{ ucwords(str_replace('_',' ',$tpl->slug)) }}</td>
+                <td style="font-weight:600">{{ $tpl->name }}</td>
                 <td style="color:var(--text-2)">{{ $tpl->subject }}</td>
                 <td><code style="font-size:11.5px;background:var(--bg);padding:2px 7px;border-radius:5px;color:var(--blue)">{{ $tpl->slug }}</code></td>
                 <td>

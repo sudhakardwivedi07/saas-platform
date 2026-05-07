@@ -164,6 +164,15 @@ class DashboardController extends AccountBaseController
             ->orderBy('monthly_price')
             ->get();
 
+        // Clients list for "View Client Dashboard / Insights" modal
+        $this->modalClients = $subCompanyIds->isNotEmpty()
+            ? User::withoutGlobalScopes()
+                ->whereIn('company_id', $subCompanyIds)
+                ->with('company:id,company_name')
+                ->orderBy('name')
+                ->get(['id', 'name', 'company_id'])
+            : collect();
+
         return view('dashboard.index', $this->data);
     }
 

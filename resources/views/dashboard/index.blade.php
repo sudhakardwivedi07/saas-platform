@@ -551,6 +551,16 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="display:inline-block;vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             Last updated: {{ now()->format('M j, Y · g:i A') }}
         </span>
+        @if($modalClients->isNotEmpty())
+        <button class="btn btn-secondary btn-sm" onclick="openViewClientModal('dashboard')" style="display:inline-flex;align-items:center;gap:6px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            View Client Dashboard
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="openViewClientModal('insights')" style="display:inline-flex;align-items:center;gap:6px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            View Client Insights
+        </button>
+        @endif
         @if($canAddClient)
         <a href="{{ route('clients.index') }}" class="btn btn-primary btn-sm">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -807,6 +817,43 @@
 
 @endif {{-- end @if($isFreshUser) / @else --}}
 
+{{-- View Client Modal --}}
+<div id="viewClientModal" style="display:none;position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:440px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px;border-bottom:1px solid var(--border)">
+            <div>
+                <div id="vcmTitle" style="font-size:15px;font-weight:700;color:var(--text-1)">View Client Dashboard</div>
+                <div style="font-size:12.5px;color:var(--text-3);margin-top:2px">Select a client to open their portal</div>
+            </div>
+            <button onclick="closeViewClientModal()" style="border:none;background:none;cursor:pointer;color:var(--text-3);padding:4px;line-height:1;border-radius:6px" title="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div style="padding:22px">
+            <label style="font-size:12.5px;font-weight:600;color:var(--text-2);display:block;margin-bottom:7px">Client</label>
+            <select id="vcmClientSelect" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;color:var(--text-1);outline:none;appearance:none;background:#fff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\") no-repeat right 10px center;padding-right:32px">
+                <option value="">— Select a client —</option>
+                @foreach($modalClients as $mc)
+                <option value="{{ $mc->id }}" data-company="{{ addslashes($mc->company?->company_name ?? 'No Company') }}">
+                    {{ $mc->name }}@if($mc->company) &nbsp;·&nbsp; {{ $mc->company->company_name }}@endif
+                </option>
+                @endforeach
+            </select>
+            <div id="vcmCompanyHint" style="display:none;margin-top:8px;padding:9px 12px;background:var(--bg);border-radius:7px;font-size:12.5px;color:var(--text-2)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+                Company: <strong id="vcmCompanyName"></strong>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;padding:0 22px 20px;justify-content:flex-end">
+            <button onclick="closeViewClientModal()" class="btn btn-secondary btn-sm">Cancel</button>
+            <button id="vcmGoBtn" onclick="goToClientPage()" class="btn btn-primary btn-sm" disabled>
+                <svg id="vcmBtnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                <span id="vcmBtnLabel">Open Dashboard</span>
+            </button>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -842,6 +889,63 @@ function applyCustomRange() {
 if (CURRENT_PERIOD === 'custom') {
     document.getElementById('customRangeRow').classList.add('visible');
 }
+
+// View Client Modal
+const vcmRoutes = {
+    dashboard: {!! json_encode(collect($modalClients)->mapWithKeys(fn($c) => [$c->id => route('clients.dashboard', $c->id)])) !!},
+    insights:  {!! json_encode(collect($modalClients)->mapWithKeys(fn($c) => [$c->id => route('clients.insights', $c->id)])) !!},
+};
+let vcmMode = 'dashboard';
+
+function openViewClientModal(mode) {
+    vcmMode = mode;
+    const modal  = document.getElementById('viewClientModal');
+    const title  = document.getElementById('vcmTitle');
+    const icon   = document.getElementById('vcmBtnIcon');
+    const label  = document.getElementById('vcmBtnLabel');
+    if (mode === 'insights') {
+        title.textContent = 'View Client Insights';
+        label.textContent = 'Open Insights';
+        icon.innerHTML    = '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>';
+    } else {
+        title.textContent = 'View Client Dashboard';
+        label.textContent = 'Open Dashboard';
+        icon.innerHTML    = '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>';
+    }
+    document.getElementById('vcmClientSelect').value = '';
+    document.getElementById('vcmCompanyHint').style.display = 'none';
+    document.getElementById('vcmGoBtn').disabled = true;
+    modal.style.display = 'flex';
+}
+
+function closeViewClientModal() {
+    document.getElementById('viewClientModal').style.display = 'none';
+}
+
+document.getElementById('vcmClientSelect')?.addEventListener('change', function () {
+    const id   = this.value;
+    const name = this.options[this.selectedIndex]?.dataset?.company ?? '';
+    const hint = document.getElementById('vcmCompanyHint');
+    if (id) {
+        document.getElementById('vcmCompanyName').textContent = name;
+        hint.style.display = 'block';
+        document.getElementById('vcmGoBtn').disabled = false;
+    } else {
+        hint.style.display = 'none';
+        document.getElementById('vcmGoBtn').disabled = true;
+    }
+});
+
+function goToClientPage() {
+    const id = document.getElementById('vcmClientSelect').value;
+    if (!id) return;
+    const url = vcmRoutes[vcmMode]?.[id];
+    if (url) window.location.href = url;
+}
+
+document.getElementById('viewClientModal')?.addEventListener('click', function (e) {
+    if (e.target === this) closeViewClientModal();
+});
 
 // Chart
 const ctx = document.getElementById('usageChart')?.getContext('2d');

@@ -18,9 +18,9 @@
 .insight-slider-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;margin-top:4px;padding:0 4px; }
 .insight-slider-counter { color:#64748b;font-size:15px;font-weight:500; }
 .insight-slider-nav { display:flex;align-items:center;gap:20px; }
-.insight-slider-nav-section-btn-container { display:flex;align-items:center;gap:10px;border:1px solid #DBDBDB;border-radius:30px;padding:5px;cursor:pointer;transition:all .3s ease; }
-.insight-slider-nav-btn { width:40px;height:40px;border-radius:50%;background:linear-gradient(124.07deg,#EF6A24 19.79%,#F99D3C 88.53%);color:white;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .3s ease;font-size:14px;flex-shrink:0; }
-.insight-slider-nav-btn:disabled { background:#fff;color:#94a3b8;border:1px solid #e2e8f0;cursor:not-allowed; }
+.insight-slider-nav-section-btn-container { display:flex;align-items:center;gap:10px;border:1px solid #DBDBDB;border-radius:30px;padding:5px;cursor:pointer;transition:all .3s ease;background:none;font-family:inherit;outline:none; }
+.insight-slider-nav-section-btn-container:hover { border-color:#EF6A24; }
+.insight-slider-nav-btn { width:40px;height:40px;border-radius:50%;background:linear-gradient(124.07deg,#EF6A24 19.79%,#F99D3C 88.53%);color:white;border:none;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;pointer-events:none; }
 .insight-slider-nav-section-btn { font-size:14px;color:#474747;padding:0 10px 0 0;font-weight:400; }
 .insight-slider-nav-section-btn.last-child-btn { padding:0 0 0 10px; }
 .insight-slider-nav-section-btn:disabled { color:#94a3b8;cursor:not-allowed; }
@@ -162,8 +162,8 @@
         html += '<div class="insight-slider-header">';
         html += '<div class="insight-slider-counter"><span id="slider-current">1</span> of <span id="slider-total">' + sections.length + '</span></div>';
         html += '<div class="insight-slider-nav">';
-        html += '<div class="insight-slider-nav-section-btn-container" id="slider-prev-container"><button type="button" class="insight-slider-nav-btn" id="slider-prev" onclick="changeSlide(-1)"><i class="fas fa-chevron-left"></i></button><p class="insight-slider-nav-section-btn" id="slider-prev-label">—</p></div>';
-        html += '<div class="insight-slider-nav-section-btn-container" id="slider-next-container"><p class="insight-slider-nav-section-btn last-child-btn" id="slider-next-label">—</p><button type="button" class="insight-slider-nav-btn" id="slider-next" onclick="changeSlide(1)"><i class="fas fa-chevron-right"></i></button></div>';
+        html += '<button type="button" class="insight-slider-nav-section-btn-container" id="slider-prev-container" onclick="changeSlide(-1)" aria-label="Previous"><span class="insight-slider-nav-btn" id="slider-prev"><i class="fas fa-chevron-left"></i></span><p class="insight-slider-nav-section-btn" id="slider-prev-label">—</p></button>';
+        html += '<button type="button" class="insight-slider-nav-section-btn-container" id="slider-next-container" onclick="changeSlide(1)" aria-label="Next"><p class="insight-slider-nav-section-btn last-child-btn" id="slider-next-label">—</p><span class="insight-slider-nav-btn" id="slider-next"><i class="fas fa-chevron-right"></i></span></button>';
         html += '</div></div><div class="insight-slider-slides">';
         sections.forEach((section, i) => {
             html += `<div class="insight-slider-slide ${i===0?'active':''}" data-slide-index="${i}"><div class="insight-slider-card"><div class="insight-slider-title"><div class="insight-slider-title-icon"><i class="fas fa-${getSectionIcon(section.title)}"></i></div><h2>${section.title}</h2></div><div class="insight-slider-content">${section.content}</div></div></div>`;

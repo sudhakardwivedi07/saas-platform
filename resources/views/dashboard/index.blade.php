@@ -552,11 +552,11 @@
             Last updated: {{ now()->format('M j, Y · g:i A') }}
         </span>
         @if($modalClients->isNotEmpty())
-        <button class="btn btn-secondary btn-sm" onclick="openViewClientModal('dashboard')" style="display:inline-flex;align-items:center;gap:6px">
+        <button class="btn btn-primary btn-sm" onclick="openViewClientModal('dashboard')" style="display:inline-flex;align-items:center;gap:6px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
             View Client Dashboard
         </button>
-        <button class="btn btn-secondary btn-sm" onclick="openViewClientModal('insights')" style="display:inline-flex;align-items:center;gap:6px">
+        <button class="btn btn-primary btn-sm" onclick="openViewClientModal('insights')" style="display:inline-flex;align-items:center;gap:6px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             View Client Insights
         </button>
@@ -831,7 +831,7 @@
         </div>
         <div style="padding:22px">
             <label style="font-size:12.5px;font-weight:600;color:var(--text-2);display:block;margin-bottom:7px">Client</label>
-            <select id="vcmClientSelect" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;color:var(--text-1);outline:none;appearance:none;background:#fff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\") no-repeat right 10px center;padding-right:32px">
+            <select id="vcmClientSelect" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;color:var(--text-1);outline:none;appearance:none;background:#fff url(\"data:image/svg+xml,%3Csvg xmlns='' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\") no-repeat right 10px center;padding-right:32px">
                 <option value="">— Select a client —</option>
                 @foreach($modalClients as $mc)
                 <option value="{{ $mc->id }}" data-company="{{ addslashes($mc->company?->company_name ?? 'No Company') }}">

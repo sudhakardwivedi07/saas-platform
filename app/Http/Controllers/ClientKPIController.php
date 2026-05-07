@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Company;
 use App\Models\User;
 use App\Services\Kpis\KpiFormattedDataService;
+use App\Services\Kpis\QuickBooksKpiDataService;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
@@ -113,7 +114,9 @@ class ClientKPIController extends AccountBaseController
         }
 
         try {
-            $data = KpiFormattedDataService::get($companyId, $kpiType);
+            $data = QuickBooksKpiDataService::usingReportOwner((int) $clientUser->id, function () use ($companyId, $kpiType) {
+                return KpiFormattedDataService::get($companyId, $kpiType);
+            });
             return response()->json([
                 'success' => true,
                 'data' => $data

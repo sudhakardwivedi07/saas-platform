@@ -12,22 +12,24 @@ class ArAgingKpiService
     public static function calculate(int $companyId): array
     {
         return KpiService::getCachedKpiData($companyId, 'ar-aging', function () use ($companyId) {
-            // TODO: Replace with QuickBooks / GL AR aging when wired.
-            $f = KpiService::companyDemoFactor($companyId, 'ar_amt');
-            $raw = [
-                ['label' => 'Current', 'amount' => 12000.0],
-                ['label' => '1-30', 'amount' => 18000.0],
-                ['label' => '31-60', 'amount' => 15000.0],
-                ['label' => '61-90', 'amount' => 22000.0],
-                ['label' => '90+', 'amount' => 75343.0],
-            ];
-            $agingBuckets = [];
-            foreach ($raw as $row) {
-                $agingBuckets[] = [
-                    'label' => $row['label'],
-                    'amount' => round((float) $row['amount'] * $f, 2),
+            $dataset = QuickBooksKpiDataService::dataset($companyId) ?? QuickBooksKpiDataService::emptyDatasetShape();
+            $rows = $dataset['ar_rows'] ?? [];
+            $pl = $dataset['profit_loss_monthly'] ?? [];
+            if (empty($rows)) {
+                return [
+                    'aging_buckets' => [],
+                    'total_ar' => null,
+                    'dso' => null,
+                    'last_updated' => now(),
                 ];
             }
+            $agingBuckets = [
+                ['label' => 'Current', 'amount' => (float) array_sum(array_column($rows, 'current'))],
+                ['label' => '1-30', 'amount' => (float) array_sum(array_column($rows, '1_30'))],
+                ['label' => '31-60', 'amount' => (float) array_sum(array_column($rows, '31_60'))],
+                ['label' => '61-90', 'amount' => (float) array_sum(array_column($rows, '61_90'))],
+                ['label' => '90+', 'amount' => (float) array_sum(array_column($rows, 'over_90'))],
+            ];
             $totalAr = (float) array_sum(array_column($agingBuckets, 'amount'));
             foreach ($agingBuckets as $i => $row) {
                 $amt = (float) $agingBuckets[$i]['amount'];
@@ -35,9 +37,12 @@ class ArAgingKpiService
                     ? round($amt / $totalAr * 100, 1)
                     : 0.0;
             }
-            $dsoBase = 320.0;
-            $dsoJitter = (crc32((string) $companyId . 'dso') % 81);
-            $dso = $dsoBase + $dsoJitter;
+            $revenueT12 = 0.0;
+            foreach (array_slice(array_values($pl), -12) as $m) {
+                $revenueT12 += (float) ($m['revenue'] ?? 0);
+            }
+            $avgDailySales = $revenueT12 / 365;
+            $dso = $avgDailySales > 0 ? ($totalAr / $avgDailySales) : null;
 
             return [
                 'aging_buckets' => $agingBuckets,

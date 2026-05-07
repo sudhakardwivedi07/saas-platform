@@ -12,29 +12,50 @@ class MarginTrendsKpiService
     public static function calculate(int $companyId): array
     {
         return KpiService::getCachedKpiData($companyId, 'margin-trends', function () use ($companyId) {
-            // TODO: Implement actual data fetching
-            $gOff = (crc32((string) $companyId . 'g') % 11) - 5; // -5 .. +5
-            $nOff = (crc32((string) $companyId . 'n') % 9) - 4;
-            $base = [
-                ['month' => '2024-01', 'gross_margin' => 65.5, 'net_margin' => 18.2],
-                ['month' => '2024-02', 'gross_margin' => 67.1, 'net_margin' => 19.8],
-                ['month' => '2024-03', 'gross_margin' => 66.8, 'net_margin' => 17.9],
-                ['month' => '2024-04', 'gross_margin' => 68.2, 'net_margin' => 20.1],
-                ['month' => '2024-05', 'gross_margin' => 67.9, 'net_margin' => 18.7],
-                ['month' => '2024-06', 'gross_margin' => 69.1, 'net_margin' => 21.3],
-            ];
-            $monthlyData = array_map(static function (array $row) use ($gOff, $nOff) {
-                $row['gross_margin'] = round(max(0, min(95, $row['gross_margin'] + $gOff * 0.15)), 1);
-                $row['net_margin'] = round(max(0, min(40, $row['net_margin'] + $nOff * 0.12)), 1);
-
-                return $row;
-            }, $base);
+            $dataset = QuickBooksKpiDataService::dataset($companyId) ?? QuickBooksKpiDataService::emptyDatasetShape();
+            $pl = array_values($dataset['profit_loss_monthly'] ?? []);
+            $pl = self::completedPeriodRows($pl);
+            $summaryRows = self::revenueRows($pl);
+            $summaryRevenue = array_sum(array_map(static fn (array $row) => (float) ($row['revenue'] ?? 0), $summaryRows));
+            $summaryCogs = array_sum(array_map(static fn (array $row) => (float) ($row['cogs'] ?? 0), $summaryRows));
+            $summaryNetIncome = array_sum(array_map(static fn (array $row) => (float) ($row['net_income'] ?? 0), $summaryRows));
+            $recent = array_slice($pl, -12);
+            $monthlyData = array_map(static function (array $row) {
+                $rev = (float) ($row['revenue'] ?? 0);
+                $cogs = (float) ($row['cogs'] ?? 0);
+                $ni = (float) ($row['net_income'] ?? 0);
+                return [
+                    'month' => $row['month'] ?? '',
+                    'gross_margin' => $rev > 0 ? round((($rev - $cogs) / $rev) * 100, 1) : null,
+                    'net_margin' => $rev > 0 ? round(($ni / $rev) * 100, 1) : null,
+                ];
+            }, $recent);
 
             return [
                 'monthly_data' => $monthlyData,
+                'gross_margin_ltm' => $summaryRevenue > 0 ? round((($summaryRevenue - $summaryCogs) / $summaryRevenue) * 100, 1) : null,
+                'net_margin_ltm' => $summaryRevenue > 0 ? round(($summaryNetIncome / $summaryRevenue) * 100, 1) : null,
                 'last_updated' => now(),
             ];
         });
+    }
+
+    private static function completedPeriodRows(array $rows): array
+    {
+        $active = array_values(array_filter($rows, static function (array $row) {
+            $month = (string) ($row['month'] ?? '');
+
+            return ! preg_match('/^\d{4}-\d{2}$/', $month) || $month < now()->format('Y-m');
+        }));
+
+        return $active ?: $rows;
+    }
+
+    private static function revenueRows(array $rows): array
+    {
+        return array_values(array_filter($rows, static function (array $row) {
+            return abs((float) ($row['revenue'] ?? 0)) > 0.00001;
+        }));
     }
 
     /**
@@ -46,6 +67,8 @@ class MarginTrendsKpiService
 
         return [
             'monthly_data' => $data['monthly_data'],
+            'gross_margin_ltm' => $data['gross_margin_ltm'],
+            'net_margin_ltm' => $data['net_margin_ltm'],
         ];
     }
 }

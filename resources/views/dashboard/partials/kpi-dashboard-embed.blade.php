@@ -30,12 +30,7 @@
     </div>
     @endif
 
-    <div id="kpiDashboard">
-        <div class="loading-spinner">
-            <div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>
-            <p>Loading KPI dashboard...</p>
-        </div>
-    </div>
+    <div id="kpiDashboard"></div>
 
     <div id="kpiDetailDrawer" class="kpi-detail-drawer-root" hidden aria-hidden="true">
         <div class="kpi-detail-drawer-backdrop" data-kpi-drawer-close tabindex="-1"></div>
@@ -59,6 +54,17 @@
 (function () {
     const KPI_DATA_URL = @json($kpiDataUrl);
     const KPI_DETAIL_BASE = @json(rtrim($kpiDetailBaseUrl, '/'));
+    const KPI_DETAIL_ROUTES = {
+        'runway-burn': @json(route('dashboard-kpi.runway-burn-details')),
+        'working-capital': @json(route('dashboard-kpi.working-capital-details')),
+        'operating-cashflow': @json(route('dashboard-kpi.operating-cash-flow-details')),
+        'revenue': @json(route('dashboard-kpi.revenue-details')),
+        'ebitda': @json(route('dashboard-kpi.ebitda-details')),
+        'margin-trends': @json(route('dashboard-kpi.margin-trends-details')),
+        'ar-aging': @json(route('dashboard-kpi.ar-aging-details')),
+        'ap-leverage': @json(route('dashboard-kpi.ap-aging-details')),
+        'revenue-concentration': @json(route('dashboard-kpi.revenue-concentration-details')),
+    };
     let selectedCompanyId = @json($__sel);
 
     const KPI_DETAIL_TITLES = {
@@ -126,11 +132,12 @@
         const title = document.getElementById('kpiDetailDrawerTitle');
         if (!root || !body || !title) return;
         title.textContent = KPI_DETAIL_TITLES[kpiType] || kpiType;
-        body.innerHTML = '<div class="kpi-detail-loading">Loading…</div>';
+        body.innerHTML = '';
         root.hidden = false;
         root.setAttribute('aria-hidden', 'false');
         requestAnimationFrame(function () { root.classList.add('is-open'); });
         document.body.style.overflow = 'hidden';
+        if (window.showAppLoading) window.showAppLoading('Loading KPI details', 'Fetching the latest metric data...');
 
         const u = new URL(KPI_DATA_URL, window.location.origin);
         u.searchParams.set('company_id', String(selectedCompanyId ?? ''));
@@ -138,6 +145,7 @@
         fetch(u.toString(), { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) { return r.json(); })
             .then(function (response) {
+                if (window.hideAppLoading) window.hideAppLoading();
                 if (response.success && response.kpis_unavailable) {
                     body.innerHTML = '<p class="kpi-detail-fallback">No QuickBooks connection or analyzed insights for this company yet.</p>';
                     return;
@@ -149,6 +157,7 @@
                 }
             })
             .catch(function () {
+                if (window.hideAppLoading) window.hideAppLoading();
                 body.innerHTML = '<div class="alert alert-danger">Could not load KPI details.</div>';
             });
     }
@@ -174,7 +183,8 @@
         const params = new URLSearchParams(window.location.search);
         if (selectedCompanyId) params.set('company_id', selectedCompanyId);
         const q = params.toString();
-        window.location.href = KPI_DETAIL_BASE + '/' + encodeURIComponent(currentDetailKpi) + (q ? '?' + q : '');
+        const detailRoute = KPI_DETAIL_ROUTES[currentDetailKpi] || (KPI_DETAIL_BASE + '/' + encodeURIComponent(currentDetailKpi));
+        window.location.href = detailRoute + (q ? '?' + q : '');
     };
 
     window.__kpiEmbedChangeCompany = function (companyId) {
@@ -375,7 +385,7 @@
                         </div>
                     </div>
                     <div class="kpi-card-footer kpi-counter-footer">
-                        <div class="kpi-hbar-chart" data-rc-chart></div>
+                        <div class="kpi-hbar-chart kpi-rc-concentration" data-rc-chart></div>
                         <div class="kpi-rc-static-legend" aria-hidden="true">
                             <span><i class="sw-top5"></i> Top 5</span>
                             <span><i class="sw-oth"></i> Others</span>
@@ -389,7 +399,10 @@
         </div>`;
 
         bindKpiCardNav();
-        loadTier1Metrics();
+        if (window.showAppLoading) window.showAppLoading('Loading KPI dashboard', 'Fetching the latest metrics...');
+        loadTier1Metrics().finally(function () {
+            if (window.hideAppLoading) window.hideAppLoading();
+        });
     }
 
     function setMini(card, key, val) {
@@ -456,14 +469,7 @@
         if (maxShare <= 0) maxShare = 1;
         const axisMax = Math.min(100, Math.max(10, Math.ceil(maxShare / 10) * 10));
         const axis = document.createElement('div');
-        axis.style.display = 'flex';
-        axis.style.flexDirection = 'column';
-        axis.style.justifyContent = 'space-between';
-        axis.style.height = '118px';
-        axis.style.width = '30px';
-        axis.style.fontSize = '10px';
-        axis.style.color = '#9ca3af';
-        axis.style.textAlign = 'right';
+        axis.className = 'kpi-rc-axis';
         [axisMax, Math.round(axisMax * 0.66), Math.round(axisMax * 0.33), 0].forEach(function (v) {
             const s = document.createElement('span');
             s.textContent = v + '%';
@@ -471,11 +477,7 @@
         });
 
         const barsWrap = document.createElement('div');
-        barsWrap.style.display = 'flex';
-        barsWrap.style.gap = '8px';
-        barsWrap.style.alignItems = 'flex-end';
-        barsWrap.style.flex = '1';
-        barsWrap.style.height = '118px';
+        barsWrap.className = 'kpi-rc-bars';
 
         rows.forEach(function (r, idx) {
             const c = r.c;
@@ -505,9 +507,7 @@
         });
 
         const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.alignItems = 'flex-end';
-        row.style.gap = '8px';
+        row.className = 'kpi-rc-chart-row';
         row.appendChild(axis);
         row.appendChild(barsWrap);
         container.appendChild(row);
@@ -655,7 +655,7 @@
     }
 
     function loadTier1Metrics() {
-        Promise.all([
+        return Promise.all([
             loadKpiData('runway-burn'),
             loadKpiData('working-capital'),
             loadKpiData('operating-cashflow')
@@ -663,7 +663,7 @@
     }
 
     function loadTier2Metrics() {
-        Promise.all([
+        return Promise.all([
             loadKpiData('revenue'),
             loadKpiData('ebitda'),
             loadKpiData('margin-trends')
@@ -671,7 +671,7 @@
     }
 
     function loadTier3Metrics() {
-        Promise.all([
+        return Promise.all([
             loadKpiData('ar-aging'),
             loadKpiData('ap-leverage'),
             loadKpiData('revenue-concentration')
@@ -917,17 +917,19 @@
         if (!card) return;
         const md = data.monthly_data || [];
         const latest = md.length ? md[md.length - 1] : null;
-        const gross = latest && latest.gross_margin != null ? latest.gross_margin + '%' : '—%';
+        const grossVal = data.gross_margin_ltm != null ? data.gross_margin_ltm : (latest ? latest.gross_margin : null);
+        const netVal = data.net_margin_ltm != null ? data.net_margin_ltm : (latest ? latest.net_margin : null);
+        const gross = grossVal != null ? grossVal + '%' : '—%';
         setHeroPlain(card, gross);
-        const net = latest && latest.net_margin != null ? latest.net_margin + '%' : '—';
+        const net = netVal != null ? netVal + '%' : '—';
         setMini(card, 'mt-net', net);
         setMini(card, 'mt-n', String(md.length || 0));
         const pill = card.querySelector('[data-mt-pill]');
-        if (pill) pill.textContent = latest && latest.gross_margin != null ? ('Gross ' + latest.gross_margin + '%') : '—';
+        if (pill) pill.textContent = grossVal != null ? ('Gross ' + grossVal + '%') : '—';
         const lg = card.querySelector('[data-mt-lg-gross]');
         const ln = card.querySelector('[data-mt-lg-net]');
-        if (lg) lg.textContent = latest && latest.gross_margin != null ? (latest.gross_margin + '%') : '—';
-        if (ln) ln.textContent = latest && latest.net_margin != null ? (latest.net_margin + '%') : '—';
+        if (lg) lg.textContent = grossVal != null ? (grossVal + '%') : '—';
+        if (ln) ln.textContent = netVal != null ? (netVal + '%') : '—';
         renderMarginDots(card.querySelector('[data-mt-chart]'), md);
     }
 

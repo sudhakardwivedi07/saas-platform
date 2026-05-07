@@ -7,6 +7,8 @@ use App\Models\QuickBooksConnection;
 use App\Models\Report;
 use App\Models\SuperAdmin\Subscription;
 use App\Services\EmailService;
+use App\Services\Kpis\QuickBooksKpiDataService;
+use App\Services\KpiService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
@@ -516,6 +518,7 @@ class ProcessReportInsightsJob implements ShouldQueue
             $companyId = $report->company_id ?? $user?->company_id;
             if ($companyId) {
                 Company::withoutGlobalScopes()->where('id', $companyId)->increment('insights_used');
+                $this->invalidateKpiCaches((int) $companyId, (int) $report->user_id);
             }
 
             Log::info('Report analyzed and saved', [
@@ -641,6 +644,23 @@ class ProcessReportInsightsJob implements ShouldQueue
             if ($path && file_exists($path)) {
                 @unlink($path);
             }
+        }
+    }
+
+    private function invalidateKpiCaches(int $companyId, int $reportUserId): void
+    {
+        try {
+            KpiService::clearKpiCache($companyId);
+            QuickBooksKpiDataService::forgetDatasetCache($companyId, $reportUserId);
+            Log::info('ProcessReportInsightsJob: KPI caches invalidated', [
+                'company_id' => $companyId,
+                'user_id'    => $reportUserId,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('ProcessReportInsightsJob: cache invalidation failed', [
+                'company_id' => $companyId,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

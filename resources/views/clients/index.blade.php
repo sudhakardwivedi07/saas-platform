@@ -70,11 +70,9 @@
                 <tr>
                     <th>Client</th>
                     <th style="text-align:center">Companies</th>
-                    <th>Status</th>
                     <th style="text-align:center">QB Coverage</th>
                     <th style="text-align:center">Insights Used</th>
                     <th style="text-align:center">Remaining</th>
-                    <th>Last Activity</th>
                     <th style="width:48px"></th>
                 </tr>
             </thead>
@@ -94,7 +92,7 @@
                     $remaining    = $maxInsights !== null ? max(0, (int) $maxInsights - (int) $insightsUsed) : null;
                     $lastActivity = $co?->last_active_at ?? $client->updated_at ?? $client->created_at;
                 @endphp
-                <tr data-search="{{ strtolower($client->name . ' ' . $client->email . ' ' . $status) }}">
+                <tr data-search="{{ strtolower($client->name . ' ' . $client->email . ' ' . $status) }}" data-status="{{ $status }}">
                     <td>
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:34px;height:34px;border-radius:9px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:-.2px">{{ $initials }}</div>
@@ -105,15 +103,6 @@
                         </div>
                     </td>
                     <td style="text-align:center;font-size:13px;color:var(--text-2)">{{ $qbTotal }}</td>
-                    <td data-search="{{ $status }}">
-                        @if($status === 'active')
-                            <span class="badge b-green"><span class="badge-dot" style="background:var(--green)"></span>Active</span>
-                        @elseif($status === 'suspended')
-                            <span class="badge b-red"><span class="badge-dot" style="background:var(--red)"></span>Suspended</span>
-                        @else
-                            <span class="badge b-gray"><span class="badge-dot" style="background:var(--text-3)"></span>Inactive</span>
-                        @endif
-                    </td>
                     <td style="text-align:center">
                         @if($qbTotal > 0)
                             <span style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500;color:{{ $qbConnected === $qbTotal ? 'var(--green)' : ($qbConnected > 0 ? '#f59e0b' : 'var(--red)') }}">
@@ -134,7 +123,6 @@
                             {{ $remaining }}
                         @endif
                     </td>
-                    <td style="font-size:12.5px;color:var(--text-2)">{{ $lastActivity?->diffForHumans() ?? '—' }}</td>
                     <td>
                         <div class="dm-wrap">
                             <button class="dot-menu" data-menu="dm-cl-{{ $client->id }}" title="Actions">•••</button>
@@ -235,11 +223,9 @@
                 <tr>
                     <th>Company</th>
                     <th>Client</th>
-                    <th>Status</th>
                     <th style="text-align:center">QB</th>
                     <th style="text-align:center">Insights Used</th>
                     <th style="text-align:center">Remaining</th>
-                    <th>Last Insight</th>
                     <th style="width:48px"></th>
                 </tr>
             </thead>
@@ -264,7 +250,7 @@
                     $initials = strtoupper(substr($company->company_name, 0, 1))
                               . strtoupper(substr(strstr($company->company_name, ' ') ?: '  ', 1, 1));
                 @endphp
-                <tr data-created="{{ $company->created_at->format('Y-m-d') }}">
+                <tr data-created="{{ $company->created_at->format('Y-m-d') }}" data-status="{{ $displayStatus }}">
                     <td>
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:34px;height:34px;border-radius:9px;background:{{ $avatarColor }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">{{ $initials }}</div>
@@ -283,19 +269,6 @@
                         <span style="color:var(--text-3)">—</span>
                         @endif
                     </td>
-                    <td data-search="{{ $displayStatus }}">
-                        @if($isQuotaFull)
-                            <span class="badge b-red" style="font-size:11.5px"><span class="badge-dot" style="background:var(--red)"></span>Quota Full</span>
-                        @elseif($rawStatus === 'active')
-                            <span class="badge b-green" style="font-size:11.5px"><span class="badge-dot" style="background:var(--green)"></span>Active</span>
-                        @elseif($rawStatus === 'trial')
-                            <span class="badge b-amber" style="font-size:11.5px"><span class="badge-dot" style="background:var(--amber)"></span>Trial</span>
-                        @elseif($rawStatus === 'suspended')
-                            <span class="badge b-red" style="font-size:11.5px"><span class="badge-dot" style="background:var(--red)"></span>Suspended</span>
-                        @else
-                            <span class="badge b-gray" style="font-size:11.5px"><span class="badge-dot" style="background:var(--text-3)"></span>Inactive</span>
-                        @endif
-                    </td>
                     <td style="text-align:center" data-search="{{ $isQB ? 'connected' : 'not connected' }}">
                         @if($isQB)
                             <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="17" height="17"><polyline points="20 6 9 17 4 12"/></svg>
@@ -312,9 +285,6 @@
                         @else
                             {{ $remaining }}
                         @endif
-                    </td>
-                    <td style="font-size:12.5px;color:{{ $lastInsightOld ? 'var(--red)' : 'var(--text-2)' }}">
-                        {{ $lastInsight ? \Carbon\Carbon::parse($lastInsight)->diffForHumans() : '—' }}
                     </td>
                     <td>
                         <div class="dm-wrap">
@@ -660,7 +630,7 @@ $(document).ready(function() {
     var clientTable = $('#clients-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
-        columnDefs: [{ orderable: false, targets: [3, 7] }],
+        columnDefs: [{ orderable: false, targets: [2, 5] }],
         language: {
             info: 'Showing _START_–_END_ of _TOTAL_ clients',
             infoEmpty: 'No clients added yet',
@@ -676,9 +646,6 @@ $(document).ready(function() {
     document.getElementById('client-search').addEventListener('keyup', function() {
         clientTable.search(this.value).draw();
     });
-    document.getElementById('client-status-filter').addEventListener('change', function() {
-        clientTable.column(2).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
-    });
 
     // Reset company filters
     document.getElementById('company-client-filter').value = '';
@@ -688,7 +655,7 @@ $(document).ready(function() {
     var coTable = $('#companies-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
-        columnDefs: [{ orderable: false, targets: [7] }],
+        columnDefs: [{ orderable: false, targets: [5] }],
         language: {
             info: 'Showing _START_–_END_ of _TOTAL_ companies',
             infoEmpty: 'No companies added yet',
@@ -700,14 +667,36 @@ $(document).ready(function() {
     document.getElementById('company-search').addEventListener('keyup', function() {
         coTable.search(this.value).draw();
     });
-    document.getElementById('company-status-filter').addEventListener('change', function() {
-        coTable.column(2).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
-    });
     document.getElementById('company-qb-filter').addEventListener('change', function() {
-        coTable.column(3).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+        coTable.column(2).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
     });
     document.getElementById('company-client-filter').addEventListener('change', function() {
         coTable.column(1).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+    });
+
+    // Status filters via data-status row attribute (status column removed from display)
+    var clientStatusFilter = '';
+    var companyStatusFilter = '';
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (settings.nTable.id === 'clients-table') {
+            if (!clientStatusFilter) return true;
+            var row = clientTable.row(dataIndex).node();
+            return row ? row.getAttribute('data-status') === clientStatusFilter : true;
+        }
+        if (settings.nTable.id === 'companies-table') {
+            if (!companyStatusFilter) return true;
+            var row = coTable.row(dataIndex).node();
+            return row ? row.getAttribute('data-status') === companyStatusFilter : true;
+        }
+        return true;
+    });
+    document.getElementById('client-status-filter').addEventListener('change', function() {
+        clientStatusFilter = this.value;
+        clientTable.draw();
+    });
+    document.getElementById('company-status-filter').addEventListener('change', function() {
+        companyStatusFilter = this.value;
+        coTable.draw();
     });
 
     // Date range filter — filter by data-created on tr

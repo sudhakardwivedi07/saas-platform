@@ -38,7 +38,7 @@ return [
     'stripe' => [
         'key'           => env('STRIPE_KEY'),
         'secret'        => env('STRIPE_SECRET'),
-        'dashboard_url' => env('STRIPE_DASHBOARD_URL', 'https://dashboard.stripe.com/invoices/'),
+        'dashboard_url' => env('STRIPE_DASHBOARD_URL'),
     ],
 
 ];

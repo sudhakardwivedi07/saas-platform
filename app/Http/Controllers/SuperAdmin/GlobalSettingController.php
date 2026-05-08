@@ -28,6 +28,7 @@ class GlobalSettingController extends AccountBaseController
         $this->credentials = GlobalPaymentGatewayCredentials::first();
         $this->templates   = EmailTemplate::whereNull('company_id')->orderBy('name')->get();
         $this->smsSetting  = SmsSetting::whereNull('company_id')->first();
+        $this->smtpSetting = EmailSmtpSetting::whereNull('company_id')->first();
         return view('super-admin.settings.index', $this->data);
     }
 

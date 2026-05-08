@@ -140,19 +140,19 @@
                     <div class="f-group">
                         <label class="f-label">SMTP Host <span style="color:red;">*</span></label>
                         <input type="text" name="smtp_host" id="smtp-host" class="f-inp"
-                               placeholder="smtp.mailgun.org" value="{{ config('mail.mailers.smtp.host') }}">
+                               placeholder="smtp.mailgun.org" value="{{ $smtpSetting?->host }}">
                         <div id="error-smtp_host" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">SMTP Port <span style="color:red;">*</span></label>
                         <input type="number" name="smtp_port" id="smtp-port" class="f-inp"
-                               placeholder="587" value="{{ config('mail.mailers.smtp.port') }}">
+                               placeholder="587" value="{{ $smtpSetting?->port }}">
                         <div id="error-smtp_port" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Username <span style="color:red;">*</span></label>
                         <input type="text" name="smtp_username" id="smtp-username" class="f-inp"
-                               placeholder="your@email.com" value="{{ config('mail.mailers.smtp.username') }}">
+                               placeholder="your@email.com" value="{{ $smtpSetting?->username }}">
                         <div id="error-smtp_username" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
                     </div>
                     <div class="f-group">
@@ -163,27 +163,27 @@
                     <div class="f-group">
                         <label class="f-label">Encryption</label>
                         <select name="smtp_encryption" class="f-sel">
-                            <option value="tls" {{ config('mail.mailers.smtp.encryption') === 'tls' ? 'selected' : '' }}>TLS</option>
-                            <option value="ssl" {{ config('mail.mailers.smtp.encryption') === 'ssl' ? 'selected' : '' }}>SSL</option>
-                            <option value="">None</option>
+                            <option value="tls" {{ ($smtpSetting?->encryption ?? '') === 'tls' ? 'selected' : '' }}>TLS</option>
+                            <option value="ssl" {{ ($smtpSetting?->encryption ?? '') === 'ssl' ? 'selected' : '' }}>SSL</option>
+                            <option value="" {{ ($smtpSetting?->encryption ?? '') === '' || $smtpSetting?->encryption === null ? 'selected' : '' }}>None</option>
                         </select>
                     </div>
                     <div class="f-group">
                         <label class="f-label">From Address <span style="color:red;">*</span></label>
                         <input type="email" name="from_address" id="smtp-from_address" class="f-inp"
-                               placeholder="noreply@yourdomain.com" value="{{ config('mail.from.address') }}">
+                               placeholder="noreply@yourdomain.com" value="{{ $smtpSetting?->from_email }}">
                         <div id="error-from_address" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
                     </div>
                 </div>
                 <div class="f-group">
                     <label class="f-label">From Name <span style="color:red;">*</span></label>
                     <input type="text" name="from_name" id="smtp-from_name" class="f-inp" style="max-width:320px"
-                           placeholder="CFO Insights" value="{{ config('mail.from.name') }}">
+                           placeholder="CFO Insights" value="{{ $smtpSetting?->from_name }}">
                     <div id="error-from_name" style="color:red;font-size:0.75rem;margin-top:4px;"></div>
                 </div>
                 <div class="info-banner" style="margin-bottom:16px">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    <div class="info-banner-txt">SMTP settings are stored in your <code style="background:rgba(12,132,188,.1);padding:1px 5px;border-radius:4px">.env</code> file. Changes made here require a server restart to take effect.</div>
+                    <div class="info-banner-txt">SMTP settings are stored in the database and applied at runtime when sending emails.</div>
                 </div>
                 <button type="button" onclick="saveSmtpSettings()" class="btn btn-primary">Save SMTP Settings</button>
             </form>

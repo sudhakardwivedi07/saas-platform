@@ -5,6 +5,7 @@ namespace App\Http\Controllers\SuperAdmin;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendEmailJob;
 use App\Models\Company;
+use App\Models\EmailSmtpSetting;
 use App\Models\SuperAdmin\Package;
 use App\Models\SuperAdmin\Subscription;
 use App\Services\StripeService;
@@ -150,12 +151,14 @@ class StripeWebhookController extends Controller
             'plan'        => $planName,
         ]);
 
-        $firmName   = $company->company_name ?? $company->app_name;
-        $appName    = $company->app_name ?? $company->company_name;
-        $amountPaid = '$' . number_format(($session['amount_total'] ?? 0) / 100, 2);
-        $invoiceId  = $session['payment_intent'] ?? $session['id'] ?? 'N/A';
-        $startDate  = now()->format('M d, Y');
-        $renewDate  = now()->addMonth()->format('M d, Y');
+        $firmName    = $company->company_name ?? $company->app_name;
+        $appName     = $company->app_name ?? $company->company_name;
+        $amountPaid  = '$' . number_format(($session['amount_total'] ?? 0) / 100, 2);
+        $invoiceId   = $session['payment_intent'] ?? $session['id'] ?? 'N/A';
+        $startDate   = now()->format('M d, Y');
+        $renewDate   = now()->addMonth()->format('M d, Y');
+        $globalSmtp  = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
+        $supportEmail = $globalSmtp?->from_email ?? config('mail.from.address');
 
         SendEmailJob::dispatch(
             toEmail:      $company->company_email,
@@ -170,7 +173,7 @@ class StripeWebhookController extends Controller
                 '{{subscription_start}}' => $startDate,
                 '{{period_end}}'         => $renewDate,
                 '{{login_url}}'          => tenant_url($company->subdomain, 'login'),
-                '{{support_email}}'      => config('mail.from.address', 'support@' . ($company->subdomain ?? 'example.com')),
+                '{{support_email}}'      => $supportEmail,
             ],
             companyId: (int) $companyId
         )->onQueue('emails');

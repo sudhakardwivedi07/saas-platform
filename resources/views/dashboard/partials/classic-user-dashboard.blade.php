@@ -2,10 +2,9 @@
     $tenant = company();
     $tenantName = $tenant?->company_name ?? $tenant?->app_name ?? 'Your firm';
     $allPlans = ($plans ?? collect())->values();
-    $topPlans = $allPlans->take(2);
 @endphp
 
-<div class="classic-dash-grid @if($allPlans->isEmpty()) classic-dash-grid--empty-plans @endif">
+<div class="classic-dash-grid @if($allPlans->isEmpty()) classic-dash-grid--empty-plans @elseif($allPlans->count() === 1) classic-dash-grid--single-plan @endif">
     {{-- Column 1: What your company does --}}
     <div class="classic-dash-card plan-card">
         <h2 class="plan-card-title" style="margin-bottom:10px">What {{ $tenantName }} does</h2>
@@ -50,15 +49,15 @@
             <a href="{{ route('billing.index') }}" class="plan-btn btn-orange-outline" style="text-decoration:none">Billing &amp; plan</a>
         </div>
     @else
-        @foreach($topPlans as $plan)
+        @foreach($allPlans as $plan)
             @php
-                $isCurrent = $currentPlan && (int) $currentPlan->id === (int) $plan->id;
+                $isCurrent = $tenant?->client_package_id && (int) $tenant->client_package_id === (int) $plan->id;
                 $featList = is_array($plan->features ?? null) ? array_values(array_filter($plan->features)) : [];
                 $monthlyInsights = $plan->insights_per_month ?? null;
                 $maxCo = $plan->max_companies ?? null;
                 $isFree = !empty($plan->is_free) || (float) ($plan->monthly_price ?? 0) <= 0;
             @endphp
-            <div class="classic-dash-card plan-card">
+            <div class="classic-dash-card plan-card {{ $isCurrent ? 'plan-card--current' : 'plan-card--available' }}">
                 <div class="plan-card-title">
                     {{ $plan->name }}
                     @if($isCurrent)
@@ -131,27 +130,5 @@
                 </div>
             </div>
         @endforeach
-
-        @if($topPlans->count() < 2)
-            <div class="classic-dash-card plan-card" style="justify-content:center">
-                <h2 class="plan-card-title">More options</h2>
-                <p class="classic-lead" style="margin-bottom:16px">
-                    @if($allPlans->count() > 2)
-                        Your firm offers additional plans. Compare tiers and manage payment methods anytime.
-                    @else
-                        Connect QuickBooks to generate your first insight, or open Billing to review your subscription.
-                    @endif
-                </p>
-                @if(auth()->user()->can('view_quickbooks'))
-                    <a href="{{ route('quickbooks.index') }}" class="plan-btn btn-orange" style="text-decoration:none;margin-bottom:10px">QuickBooks</a>
-                @endif
-                <a href="{{ route('billing.index') }}" class="plan-btn btn-orange-outline" style="text-decoration:none">Billing &amp; plan</a>
-                @if($allPlans->count() > 2)
-                    <p class="plan-card-desc" style="margin-top:16px;margin-bottom:0;font-size:12px">
-                        {{ $allPlans->count() - 2 }} more plan{{ $allPlans->count() - 2 === 1 ? '' : 's' }} available under Billing.
-                    </p>
-                @endif
-            </div>
-        @endif
     @endif
 </div>

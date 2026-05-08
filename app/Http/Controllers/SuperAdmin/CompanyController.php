@@ -125,8 +125,15 @@ class CompanyController extends AccountBaseController
                 ]);
                 $user->assignRole($role);
 
-                app(EmailService::class)->sendToUser($user, 'user_welcome', [
-                    '{{password}}' => $plainPass,
+                app(EmailService::class)->sendToUser($user, 'firm_welcome_email', [
+                    '{{first_name}}'    => explode(' ', $user->name)[0],
+                    '{{firm_name}}'     => $company->company_name,
+                    '{{portal_url}}'    => url('/login'),
+                    '{{password}}'      => $plainPass,
+                    '{{company_name}}' => $company->company_name,
+                    '{{subdomain}}'    => $company->subdomain,
+                    '{{plan_name}}'    => $package?->name ?? 'No plan assigned',
+                    '{{trial_ends_at}}' => $company->trial_ends_at?->format('M d, Y') ?? 'N/A',
                 ]);
 
                 $results['success']++;
@@ -232,8 +239,15 @@ class CompanyController extends AccountBaseController
         ]);
         $user->assignRole($role);
 
-        app(EmailService::class)->sendToUser($user, 'user_welcome', [
-            '{{password}}' => $request->admin_password,
+        app(EmailService::class)->sendToUser($user, 'firm_welcome_email', [
+            '{{first_name}}'    => explode(' ', $user->name)[0],
+            '{{firm_name}}'     => $company->company_name,
+            '{{portal_url}}'    => url('/login'),
+            '{{password}}'      => $request->admin_password,
+            '{{company_name}}' => $company->company_name,
+            '{{subdomain}}'    => $company->subdomain,
+            '{{plan_name}}'    => $package?->name ?? 'No plan assigned',
+            '{{trial_ends_at}}' => $company->trial_ends_at?->format('M d, Y') ?? 'N/A',
         ]);
 
         // If a paid plan is selected, redirect to Stripe checkout

@@ -12,16 +12,37 @@ class RevenueConcentrationKpiService
     public static function calculate(int $companyId): array
     {
         return KpiService::getCachedKpiData($companyId, 'revenue-concentration', function () use ($companyId) {
-            // TODO: Implement actual data fetching
-            $f = KpiService::companyDemoFactor($companyId, 'rc');
-            $customers = [
-                ['name' => 'Client Alpha', 'revenue' => (int) round(252500 * $f), 'percentage' => 0.0],
-                ['name' => 'Client Beta', 'revenue' => (int) round(156000 * $f), 'percentage' => 0.0],
-                ['name' => 'Client Gamma', 'revenue' => (int) round(45000 * $f), 'percentage' => 0.0],
-                ['name' => 'Client Delta', 'revenue' => (int) round(28000 * $f), 'percentage' => 0.0],
-                ['name' => 'Client Epsilon', 'revenue' => (int) round(18500 * $f), 'percentage' => 0.0],
-                ['name' => 'Others', 'revenue' => (int) round(195000 * $f), 'percentage' => 0.0],
-            ];
+            $dataset = QuickBooksKpiDataService::dataset($companyId) ?? QuickBooksKpiDataService::emptyDatasetShape();
+            $arRows = $dataset['ar_rows'] ?? [];
+            if (empty($arRows)) {
+                return [
+                    'customers' => [],
+                    'total_revenue' => 0,
+                    'top5_percentage' => 0,
+                    'last_updated' => now(),
+                ];
+            }
+            $customers = [];
+            foreach ($arRows as $row) {
+                $name = trim((string) ($row['customer'] ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+                $rev = (float) ($row['total'] ?? 0);
+                if ($rev <= 0) {
+                    continue;
+                }
+                $customers[] = ['name' => $name, 'revenue' => $rev, 'percentage' => 0.0];
+            }
+            usort($customers, static fn($a, $b) => $b['revenue'] <=> $a['revenue']);
+            if (count($customers) > 5) {
+                $top = array_slice($customers, 0, 5);
+                $othersRev = array_sum(array_column(array_slice($customers, 5), 'revenue'));
+                $customers = $top;
+                if ($othersRev > 0) {
+                    $customers[] = ['name' => 'Others', 'revenue' => $othersRev, 'percentage' => 0.0];
+                }
+            }
 
             $totalRevenue = (float) array_sum(array_column($customers, 'revenue'));
             foreach ($customers as $i => $c) {

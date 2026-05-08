@@ -589,20 +589,60 @@ function showToast(msg, type='success') {
     const LS_KEY          = 'insights_processing_ids';
     const DASH_LS_KEY     = 'dash_processing_insight_id';
     const INSIGHTS_URL    = '{{ route("insights.index") }}';
+    const RELOAD_ONCE_KEY = 'insights_reload_done_for';
+    let pollTimer         = null;
+    let pollInFlight      = false;
 
-    function getProcessingId() {
-        return localStorage.getItem(LS_KEY) || localStorage.getItem(DASH_LS_KEY);
+    function parseStoredIds(raw) {
+        if (!raw) return [];
+        try {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+                return parsed.map(v => parseInt(String(v), 10)).filter(v => Number.isFinite(v) && v > 0);
+            }
+            const n = parseInt(String(parsed), 10);
+            return Number.isFinite(n) && n > 0 ? [n] : [];
+        } catch (_) {
+            const n = parseInt(String(raw), 10);
+            return Number.isFinite(n) && n > 0 ? [n] : [];
+        }
+    }
+
+    function getProcessingIds() {
+        const ids = [
+            ...parseStoredIds(localStorage.getItem(LS_KEY)),
+            ...parseStoredIds(localStorage.getItem(DASH_LS_KEY)),
+        ];
+        return Array.from(new Set(ids));
+    }
+
+    function getPrimaryProcessingId() {
+        return getProcessingIds()[0] ?? null;
+    }
+
+    function clearProcessingIds() {
+        localStorage.removeItem(LS_KEY);
+        localStorage.removeItem(DASH_LS_KEY);
+    }
+
+    function scheduleNext(ms) {
+        if (pollTimer) clearTimeout(pollTimer);
+        pollTimer = setTimeout(checkGlobalProgress, ms);
     }
 
     function checkGlobalProgress() {
-        const processingId = getProcessingId();
-        if (!processingId) return;
+        if (pollInFlight) return;
+        const processingId = getPrimaryProcessingId();
+        const banner = document.getElementById('global-gen-banner');
+        if (!processingId) {
+            if (banner) banner.style.display = 'none';
+            return;
+        }
 
         // Don't show on the insights page itself — it has its own bar
         if (window.location.pathname.includes('/insights')) return;
 
         // Show the floating banner
-        const banner = document.getElementById('global-gen-banner');
         const msg    = document.getElementById('global-gen-msg');
         const lnk    = document.getElementById('global-gen-link');
         if (!banner) return;
@@ -619,41 +659,46 @@ function showToast(msg, type='success') {
         if (lnk) lnk.href = viewHref;
         banner.style.display = 'flex';
 
+        pollInFlight = true;
         fetch(url, { headers: { 'Accept': 'application/json' } })
         .then(r => {
             if (!r.ok) {
-                localStorage.removeItem(LS_KEY);
-                localStorage.removeItem(DASH_LS_KEY);
-                const stillRunning = getProcessingId();
+                clearProcessingIds();
+                const stillRunning = getPrimaryProcessingId();
                 if (!stillRunning) banner.style.display = 'none';
-                else setTimeout(checkGlobalProgress, 5000);
+                else scheduleNext(5000);
                 return Promise.reject('not-found');
             }
             return r.json();
         })
         .then(data => {
             if (data.status === 'error') {
-                localStorage.removeItem(LS_KEY);
-                localStorage.removeItem(DASH_LS_KEY);
-                const stillRunning = getProcessingId();
+                clearProcessingIds();
+                const stillRunning = getPrimaryProcessingId();
                 if (!stillRunning) banner.style.display = 'none';
-                else setTimeout(checkGlobalProgress, 5000);
+                else scheduleNext(5000);
                 return;
             }
-            if (data.status !== 'success') { setTimeout(checkGlobalProgress, 10000); return; }
+            if (data.status !== 'success') { scheduleNext(10000); return; }
             const r = data.report;
             if (r.has_insights || r.is_failed) {
-                localStorage.removeItem(LS_KEY);
-                localStorage.removeItem(DASH_LS_KEY);
+                clearProcessingIds();
                 if (banner) banner.style.display = 'none';
-                if (shouldReloadOnInsightComplete() && !window.location.pathname.includes('/insights')) {
+                const alreadyReloadedFor = sessionStorage.getItem(RELOAD_ONCE_KEY);
+                if (
+                    shouldReloadOnInsightComplete() &&
+                    !window.location.pathname.includes('/insights') &&
+                    String(alreadyReloadedFor || '') !== String(r.id)
+                ) {
+                    sessionStorage.setItem(RELOAD_ONCE_KEY, String(r.id));
                     window.location.reload();
                 }
             } else {
-                setTimeout(checkGlobalProgress, 8000);
+                scheduleNext(8000);
             }
-    })
-    .catch(() => setTimeout(checkGlobalProgress, 15000));
+        })
+        .catch(() => scheduleNext(15000))
+        .finally(() => { pollInFlight = false; });
 }
 
 function shouldReloadOnInsightComplete() {
@@ -663,6 +708,10 @@ function shouldReloadOnInsightComplete() {
 document.addEventListener('DOMContentLoaded', checkGlobalProgress);
 window.addEventListener('storage', function(event) {
     if ((event.key === LS_KEY || event.key === DASH_LS_KEY) && event.newValue) {
+        if (pollTimer) {
+            clearTimeout(pollTimer);
+            pollTimer = null;
+        }
         checkGlobalProgress();
     }
 });
@@ -729,6 +778,24 @@ async function apiCall(url, method='POST', body={}) {
 <script src="{{ asset(config('assets.sweetalert2_js')) }}"></script>
 <script>
 window.Swal = window.Swal || window.Sweetalert2 || null;
+window.showAppLoading = function(title, text) {
+    if (!window.Swal) return;
+    window.Swal.fire({
+        title: title || 'Loading',
+        text: text || 'Please wait...',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        didOpen: function() {
+            window.Swal.showLoading();
+        }
+    });
+};
+window.hideAppLoading = function() {
+    if (window.Swal && window.Swal.isVisible && window.Swal.isVisible()) {
+        window.Swal.close();
+    }
+};
 const SwalToast = window.Swal ? window.Swal.mixin({
     toast: true,
     position: 'top-end',

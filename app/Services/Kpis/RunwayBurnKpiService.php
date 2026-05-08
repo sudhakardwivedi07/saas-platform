@@ -13,24 +13,74 @@ class RunwayBurnKpiService
     public static function calculate(int $companyId): array
     {
         return KpiService::getCachedKpiData($companyId, 'runway-burn', function () use ($companyId) {
-            // TODO: Implement actual data fetching from QuickBooks or financial data
-            $fc = KpiService::companyDemoFactor($companyId, 'rb_cash');
-            $fb = KpiService::companyDemoFactor($companyId, 'rb_burn');
-            $cashBalance = (int) round(500000 * $fc);
-            $monthlyBurn = max(5000, (int) round(45000 * $fb));
+            $dataset = QuickBooksKpiDataService::dataset($companyId) ?? QuickBooksKpiDataService::emptyDatasetShape();
+            $bs = array_values($dataset['balance_sheet_monthly'] ?? []);
+            $cf = array_values($dataset['cash_flow_monthly'] ?? []);
 
-            // Calculate runway
-            $runwayMonths = $monthlyBurn > 0 ? $cashBalance / $monthlyBurn : null;
+            if (empty($bs) || empty($cf)) {
+                return [
+                    'cash_balance' => null,
+                    'monthly_burn' => null,
+                    'runway_months' => null,
+                    'status' => self::determineRunwayStatus(null),
+                    'burn_type' => null,
+                    'runway_percent' => 0,
+                    'monthly_data' => [],
+                    'last_updated' => now(),
+                ];
+            }
 
-            // Determine status
+            $latestBs = end($bs) ?: [];
+            $cashBalance = (float) ($latestBs['cash'] ?? 0);
+
+            $monthlySeries = array_map(static function (array $m) {
+                $operating = (float) ($m['operating'] ?? 0);
+                $netIncome = (float) ($m['net_income'] ?? 0);
+                $net = (float) ($m['net_change'] ?? 0);
+                if (abs($net) < 0.00001) {
+                    $net = abs($operating) > 0.00001 ? $operating : $netIncome;
+                }
+
+                return [
+                    'month' => $m['month'] ?? '',
+                    'net_change' => $net,
+                    'operating' => (float) ($m['operating'] ?? 0),
+                    'investing' => (float) ($m['investing'] ?? 0),
+                    'financing' => (float) ($m['financing'] ?? 0),
+                ];
+            }, $cf);
+            $activeMonthlySeries = array_values(array_filter($monthlySeries, static function (array $m) {
+                return abs((float) ($m['net_change'] ?? 0)) > 0.00001
+                    || abs((float) ($m['operating'] ?? 0)) > 0.00001;
+            }));
+            if (! empty($activeMonthlySeries)) {
+                $monthlySeries = $activeMonthlySeries;
+            }
+
+            $last12 = array_slice($monthlySeries, -12);
+            $burnValues = array_values(array_filter(
+                array_map(static fn(array $x) => (float) $x['net_change'], $last12),
+                static fn(float $value) => $value < -0.00001
+            ));
+
+            $avg = ! empty($burnValues) ? array_sum($burnValues) / count($burnValues) : null;
+
+            $runwayMonths = null;
+            if ($avg !== null) {
+                $runwayMonths = $cashBalance / abs($avg);
+            }
+
             $status = self::determineRunwayStatus($runwayMonths);
+            $burnType = $avg === null ? null : ($avg < 0 ? 'burn' : ($avg > 0 ? 'build' : 'stable'));
 
             return [
                 'cash_balance' => $cashBalance,
-                'monthly_burn' => $monthlyBurn,
+                'monthly_burn' => $avg,
                 'runway_months' => $runwayMonths,
                 'status' => $status,
-                'burn_type' => $monthlyBurn > 0 ? 'burn' : 'build',
+                'burn_type' => $burnType,
+                'runway_percent' => $runwayMonths !== null ? min(100, max(0, ($runwayMonths / 24) * 100)) : 0,
+                'monthly_data' => $last12,
                 'last_updated' => now(),
             ];
         });
@@ -81,13 +131,35 @@ class RunwayBurnKpiService
     {
         $data = self::calculate($companyId);
 
+        $avg = $data['monthly_burn'];
+        $avgFormatted = '—';
+        if ($avg !== null) {
+            $avgFormatted = ($avg > 0 ? '+' : ($avg < 0 ? '-' : '')) . KpiService::formatCurrency(abs($avg)) . '/mo';
+        }
+
+        $runwayDisplay = '—';
+        if ($data['runway_months'] !== null) {
+            $runwayDisplay = ($data['runway_months'] > 0 && $data['runway_months'] < 1)
+                ? '< 1'
+                : number_format((float) $data['runway_months'], 1);
+        }
+
         return [
-            'runway_months' => $data['runway_months'] ? number_format($data['runway_months'], 1) : '—',
+            'runway_months' => $runwayDisplay,
             'cash_balance' => KpiService::formatCurrency($data['cash_balance']),
-            'monthly_burn' => KpiService::formatCurrency(abs($data['monthly_burn'])) . '/mo',
-            'burn_class' => $data['monthly_burn'] >= 0 ? 'negative' : 'positive',
+            'monthly_burn' => $avgFormatted,
+            'burn_class' => $avg !== null ? ($avg < 0 ? 'negative' : 'positive') : null,
             'status' => $data['status'],
-            'runway_percent' => min(100, max(0, ($data['runway_months'] ?? 0) / 24 * 100)),
+            'runway_percent' => (float) ($data['runway_percent'] ?? 0),
+            'burn_type' => $data['burn_type'],
+            'monthly_data' => array_map(static function (array $m) {
+                return [
+                    'month' => $m['month'] ?? '',
+                    'amount' => KpiService::formatCurrency($m['net_change'] ?? 0),
+                    'raw_amount' => (float) ($m['net_change'] ?? 0),
+                ];
+            }, $data['monthly_data'] ?? []),
         ];
     }
+
 }

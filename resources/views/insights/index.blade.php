@@ -355,26 +355,6 @@
     font-size: 14.5px; font-weight: 500; cursor: pointer; transition: all .2s;
 }
 .limit-btn-later:hover { background: #fff4ee; }
-/* ── Processing bar ─────────────────────────────────────────── */
-.thinking-bar {
-    display: flex; align-items: center; gap: 10px;
-    padding: 14px 18px;
-    background: linear-gradient(135deg,#f0f7ff 0%,#f5f0ff 100%);
-    border: 1px solid #dde8ff; border-radius: 10px;
-    font-size: .875rem; color: #3b5bdb; font-weight: 500;
-    margin-bottom: 1.25rem;
-}
-.thinking-dots span {
-    display: inline-block; width: 7px; height: 7px;
-    border-radius: 50%; background: #3b5bdb; margin: 0 2px;
-    animation: bounce 1.2s infinite ease-in-out;
-}
-.thinking-dots span:nth-child(2) { animation-delay: .2s; }
-.thinking-dots span:nth-child(3) { animation-delay: .4s; }
-@keyframes bounce {
-    0%,80%,100% { transform: scale(.6); opacity: .5; }
-    40%         { transform: scale(1); opacity: 1; }
-}
 </style>
 @endpush
 
@@ -391,30 +371,22 @@
     $planName        = $currentPlan?->name ?? null;
 @endphp
 
-{{-- ── Processing bar ──────────────────────────────────────────────────── --}}
-<div id="processingBar" style="display:none;">
-    <div class="thinking-bar">
-        <div class="thinking-dots"><span></span><span></span><span></span></div>
-        <span id="processingMsg">Syncing your QuickBooks data and generating AI insights… This may take 2–5 minutes.</span>
-    </div>
-</div>
-
 {{-- ── Company Selector Bar ─────────────────────────────────────────────── --}}
 {{-- ── Filter / Company Bar ─────────────────────────────────────────────── --}}
 <div class="insights-company-bar">
     {{-- Left: company context --}}
-    <div class="viewing-label">
+    <!-- <div class="viewing-label">
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path d="M3 7a2 2 0 012-2h14a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/>
             <path d="M16 3v4M8 3v4"/>
         </svg>
         Viewing Insights For
-    </div>
-    <div class="viewing-company">{{ $selectedCompany?->company_name ?? 'Your Company' }}</div>
+    </div> -->
+    <!-- <div class="viewing-company">{{ $selectedCompany?->company_name ?? 'Your Company' }}</div> -->
 
     {{-- Company selector (always visible when there are companies) --}}
     @if($companies->count() > 0)
-    <div class="company-selector-wrap">
+    <!-- <div class="company-selector-wrap">
         <select class="bar-select" onchange="switchCompany(this.value)">
             @foreach($companies as $co)
                 <option value="{{ $co->id }}" {{ $co->id == $selectedCompanyId ? 'selected' : '' }}>
@@ -422,7 +394,7 @@
                 </option>
             @endforeach
         </select>
-    </div>
+    </div> -->
     @endif
 
     {{-- Right: usage bar + status filter + search --}}
@@ -732,6 +704,12 @@
     const LIMIT_REACHED     = {{ $limitReached ? 'true' : 'false' }};
     const LS_KEY            = 'insights_processing_ids';
     const DASH_LS_KEY       = 'dash_processing_insight_id';
+    let processingSwalOpen  = false;
+
+    function clearProcessingStorage() {
+        localStorage.removeItem(LS_KEY);
+        localStorage.removeItem(DASH_LS_KEY);
+    }
 
     // ── On load: resume polling for any in-progress reports ─────────────────
     const serverProcessingIds = @json($reports->filter(fn($r) => $r->isProcessing())->pluck('id'));
@@ -880,14 +858,14 @@
             if (data.status !== 'success') { setTimeout(() => pollStatus(reportId), 10000); return; }
             const r = data.report;
             if (r.has_insights) {
-                localStorage.removeItem(LS_KEY);
+                clearProcessingStorage();
                 hideProcessingBar();
                 resetGenerateBtns();
                 markRowReady(r.id, r.encrypted_id);
                 return;
             }
             if (r.is_failed) {
-                localStorage.removeItem(LS_KEY);
+                clearProcessingStorage();
                 hideProcessingBar();
                 resetGenerateBtns();
                 markRowFailed(r.id);
@@ -909,7 +887,7 @@
 
     function prependPlaceholderRow(id, reportName) {
         const tbody = document.getElementById('reportsTableBody');
-        if (!tbody) { location.reload(); return; }
+        if (!tbody) { return; }
         const displayName = reportName || 'Generating…';
         const tr = document.createElement('tr');
         tr.id = 'insight-row-' + id;
@@ -949,7 +927,7 @@
     function markRowReady(id, encryptedId) {
         const row   = document.getElementById('insight-row-' + id);
         const badge = document.getElementById('status-badge-' + id);
-        if (!row) { location.reload(); return; }
+        if (!row) { return; }
         if (badge) { badge.className = 'badge success'; badge.textContent = 'Analyzed'; }
         const viewUrl = encryptedId ? `/insights/${encryptedId}/view` : `/insights/${id}/view`;
         const actions = row.querySelector('.action-buttons');
@@ -988,15 +966,22 @@
     }
 
     function showProcessingBar(msg) {
-        const bar   = document.getElementById('processingBar');
-        const msgEl = document.getElementById('processingMsg');
-        if (bar)   bar.style.display = '';
-        if (msgEl && msg) msgEl.textContent = msg;
+        processingSwalOpen = true;
+        Swal.fire({
+            title: 'Generating insights',
+            html: '<p style="margin:0;color:#64748b;">' + (msg || 'Syncing your QuickBooks data and generating AI insights. This may take 2-5 minutes.') + '</p>',
+            allowOutsideClick: true,
+            allowEscapeKey: true,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
+        });
     }
 
     function hideProcessingBar() {
-        const bar = document.getElementById('processingBar');
-        if (bar) bar.style.display = 'none';
+        if (processingSwalOpen && Swal.isVisible()) {
+            Swal.close();
+        }
+        processingSwalOpen = false;
     }
 
     function resetGenerateBtns() {

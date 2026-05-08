@@ -7,6 +7,8 @@ use App\Models\QuickBooksConnection;
 use App\Models\Report;
 use App\Models\SuperAdmin\Subscription;
 use App\Services\EmailService;
+use App\Services\Kpis\QuickBooksKpiDataService;
+use App\Services\KpiService;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
@@ -190,6 +192,61 @@ class ProcessReportInsightsJob implements ShouldQueue
                     'error'     => $e->getMessage(),
                 ]);
             }
+
+            $this->sendFirstFirmInsightEmail($report, $user);
+        }
+    }
+
+    private function sendFirstFirmInsightEmail(Report $report, $user): void
+    {
+        if (!$user || !$report->is_firm_report) return;
+
+        // Only fire for reports on the partner's own firm (company_id matches user's company)
+        $ownCompanyId = $user->company_id;
+        $reportCompanyId = $report->company_id ?? $ownCompanyId;
+
+        if ($reportCompanyId !== $ownCompanyId) return;
+
+        try {
+            $totalFirmAnalyzed = Report::withTrashed()
+                ->where('is_firm_report', true)
+                ->where('company_id', $ownCompanyId)
+                ->where('status', 'Analyzed')
+                ->count();
+
+            if ($totalFirmAnalyzed !== 1) return;
+
+            $company   = Company::withoutGlobalScopes()->find($ownCompanyId);
+            $firmEmail = $company?->company_email ?? $user->email;
+
+            app(EmailService::class)->send(
+                toEmail:      $firmEmail,
+                templateSlug: 'first_insight_generated_partners_own_firm',
+                placeholders: [
+                    '{{name}}'          => $user->name,
+                    '{{first_name}}'    => strtok($user->name, ' '),
+                    '{{firm_name}}'     => $company?->company_name ?? '',
+                    '{{app_name}}'      => $company?->app_name ?? config('app.name'),
+                    '{{report_name}}'   => $report->report_name ?? 'Your First Insight',
+                    '{{insight_url}}'   => env('APP_URL') . '/firm-insights',
+                    '{{portal_url}}'    => url('/login'),
+                    '{{login_url}}'     => url('/login'),
+                    '{{support_email}}' => $company?->company_email ?? config('mail.from.address'),
+                ],
+                companyId: $ownCompanyId
+            );
+
+            Log::info('ProcessReportInsightsJob: First firm insight email sent', [
+                'user_id'    => $user->id,
+                'company_id' => $ownCompanyId,
+                'report_id'  => $report->id,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('ProcessReportInsightsJob: First firm insight email failed', [
+                'user_id'   => $user->id,
+                'report_id' => $report->id,
+                'error'     => $e->getMessage(),
+            ]);
         }
     }
 
@@ -516,6 +573,7 @@ class ProcessReportInsightsJob implements ShouldQueue
             $companyId = $report->company_id ?? $user?->company_id;
             if ($companyId) {
                 Company::withoutGlobalScopes()->where('id', $companyId)->increment('insights_used');
+                $this->invalidateKpiCaches((int) $companyId, (int) $report->user_id);
             }
 
             Log::info('Report analyzed and saved', [
@@ -605,9 +663,53 @@ class ProcessReportInsightsJob implements ShouldQueue
                     'insights_used'   => $company->insights_used,
                     'limit'           => $monthlyLimit,
                 ]);
+
+                $this->sendQuotaExhaustedEmail($user, $company, (int) $company->insights_used, (int) $monthlyLimit);
             }
         } catch (\Throwable $e) {
             Log::error('checkAndDeactivateSubscription error', ['error' => $e->getMessage()]);
+        }
+    }
+
+    private function sendQuotaExhaustedEmail($user, Company $company, int $quotaUsed, int $quotaTotal): void
+    {
+        try {
+            $firmEmail      = $company->company_email ?? $user->email;
+            $quotaResetDate = now()->startOfMonth()->addMonth()->format('M d, Y');
+
+            app(EmailService::class)->send(
+                toEmail:      $firmEmail,
+                templateSlug: 'insight_quota_exhausted_partners_own_firm',
+                placeholders: [
+                    '{{name}}'              => $user->name,
+                    '{{first_name}}'        => strtok($user->name, ' '),
+                    '{{firm_name}}'         => $company->company_name,
+                    '{{app_name}}'          => $company->app_name ?? config('app.name'),
+                    '{{quota_used}}'        => $quotaUsed,
+                    '{{Quota_Used}}'        => $quotaUsed,
+                    '{{quota_total}}'       => $quotaTotal,
+                    '{{Quota_Total}}'       => $quotaTotal,
+                    '{{quota_reset_date}}'  => $quotaResetDate,
+                    '{{upgrade_url}}'       => url('/billing'),
+                    '{{billing_url}}'       => url('/billing'),
+                    '{{portal_url}}'        => url('/login'),
+                    '{{login_url}}'         => url('/login'),
+                    '{{support_email}}'     => $company->company_email ?? config('mail.from.address'),
+                ],
+                companyId: $company->id
+            );
+
+            Log::info('ProcessReportInsightsJob: Quota exhausted email sent', [
+                'user_id'    => $user->id,
+                'company_id' => $company->id,
+                'used'       => $quotaUsed,
+                'total'      => $quotaTotal,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('ProcessReportInsightsJob: Quota exhausted email failed', [
+                'user_id' => $user->id,
+                'error'   => $e->getMessage(),
+            ]);
         }
     }
 
@@ -641,6 +743,23 @@ class ProcessReportInsightsJob implements ShouldQueue
             if ($path && file_exists($path)) {
                 @unlink($path);
             }
+        }
+    }
+
+    private function invalidateKpiCaches(int $companyId, int $reportUserId): void
+    {
+        try {
+            KpiService::clearKpiCache($companyId);
+            QuickBooksKpiDataService::forgetDatasetCache($companyId, $reportUserId);
+            Log::info('ProcessReportInsightsJob: KPI caches invalidated', [
+                'company_id' => $companyId,
+                'user_id'    => $reportUserId,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('ProcessReportInsightsJob: cache invalidation failed', [
+                'company_id' => $companyId,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

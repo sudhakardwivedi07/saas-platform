@@ -12,29 +12,40 @@ class RevenueKpiService
     public static function calculate(int $companyId): array
     {
         return KpiService::getCachedKpiData($companyId, 'revenue', function () use ($companyId) {
-            // TODO: Implement actual data fetching
-            $f = KpiService::companyDemoFactor($companyId, 'rev');
-            $currentMonthRevenue = (int) round(285000 * $f);
-            $previousMonthRevenue = (int) round(265000 * $f);
-            $lastYearSameMonth = (int) round(245000 * $f);
+            $dataset = QuickBooksKpiDataService::dataset($companyId) ?? QuickBooksKpiDataService::emptyDatasetShape();
+            $pl = array_values($dataset['profit_loss_monthly'] ?? []);
+            if (empty($pl)) {
+                return [
+                    'current_month_revenue' => null,
+                    'mom_growth' => null,
+                    'yoy_growth' => null,
+                    'monthly_trend' => [],
+                    'last_updated' => now(),
+                ];
+            }
+            $pl = self::completedPeriodRows($pl);
 
-            $momGrowth = $previousMonthRevenue != 0 ? (($currentMonthRevenue - $previousMonthRevenue) / $previousMonthRevenue) * 100 : 0;
-            $yoyGrowth = $lastYearSameMonth != 0 ? (($currentMonthRevenue - $lastYearSameMonth) / $lastYearSameMonth) * 100 : 0;
+            $n = count($pl);
+            $latest = $pl[$n - 1];
+            $prev = $n > 1 ? $pl[$n - 2] : null;
+            $ly = $n > 12 ? $pl[$n - 13] : null;
 
-            $trendBase = [
-                ['month' => '2023-01', 'current_year' => 220000, 'last_year' => 200000],
-                ['month' => '2023-02', 'current_year' => 235000, 'last_year' => 210000],
-                ['month' => '2023-03', 'current_year' => 250000, 'last_year' => 225000],
-                ['month' => '2023-04', 'current_year' => 265000, 'last_year' => 240000],
-                ['month' => '2023-05', 'current_year' => 280000, 'last_year' => 255000],
-                ['month' => '2023-06', 'current_year' => 285000, 'last_year' => 245000],
-            ];
-            $monthlyTrend = array_map(static function (array $row) use ($f) {
-                $row['current_year'] = (int) round($row['current_year'] * $f);
-                $row['last_year'] = (int) round($row['last_year'] * $f);
+            $currentMonthRevenue = max(0, (float) ($latest['revenue'] ?? 0));
+            $previousMonthRevenue = $prev ? max(0, (float) ($prev['revenue'] ?? 0)) : 0;
+            $lastYearSameMonth = $ly ? max(0, (float) ($ly['revenue'] ?? 0)) : 0;
 
-                return $row;
-            }, $trendBase);
+            $momGrowth = $previousMonthRevenue > 0 ? (($currentMonthRevenue - $previousMonthRevenue) / $previousMonthRevenue) * 100 : null;
+            $yoyGrowth = $lastYearSameMonth > 0 ? (($currentMonthRevenue - $lastYearSameMonth) / $lastYearSameMonth) * 100 : null;
+
+            $recent = array_slice($pl, -12);
+            $monthlyTrend = [];
+            foreach ($recent as $i => $row) {
+                $monthlyTrend[] = [
+                    'month' => $row['month'] ?? '',
+                    'current_year' => max(0, (float) ($row['revenue'] ?? 0)),
+                    'last_year' => ($n - 12 + $i - 12) >= 0 ? max(0, (float) ($pl[$n - 12 + $i - 12]['revenue'] ?? 0)) : 0,
+                ];
+            }
 
             return [
                 'current_month_revenue' => $currentMonthRevenue,
@@ -44,6 +55,17 @@ class RevenueKpiService
                 'last_updated' => now(),
             ];
         });
+    }
+
+    private static function completedPeriodRows(array $rows): array
+    {
+        $active = array_values(array_filter($rows, static function (array $row) {
+            $month = (string) ($row['month'] ?? '');
+
+            return ! preg_match('/^\d{4}-\d{2}$/', $month) || $month < now()->format('Y-m');
+        }));
+
+        return $active ?: $rows;
     }
 
     /**
@@ -56,7 +78,7 @@ class RevenueKpiService
         return [
             'current_month_revenue' => KpiService::formatCurrency($data['current_month_revenue']),
             'yoy_growth' => KpiService::formatPercentage($data['yoy_growth']),
-            'yoy_class' => $data['yoy_growth'] >= 0 ? 'positive' : 'negative',
+            'yoy_class' => $data['yoy_growth'] === null ? null : ($data['yoy_growth'] >= 0 ? 'positive' : 'negative'),
             'monthly_trend' => $data['monthly_trend'],
         ];
     }

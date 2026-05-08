@@ -77,11 +77,6 @@
 .ind-btn-confirm:disabled { opacity:.6;cursor:not-allowed; }
 .ind-btn-cancel { flex:1;background:transparent;color:#f06b25;border:1.5px solid #f06b25;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s; }
 .ind-btn-cancel:hover { background:#fff4ee; }
-.thinking-bar { display:flex;align-items:center;gap:10px;padding:14px 18px;background:linear-gradient(135deg,#f0f7ff 0%,#f5f0ff 100%);border:1px solid #dde8ff;border-radius:10px;font-size:.875rem;color:#3b5bdb;font-weight:500;margin-bottom:1.25rem; }
-.thinking-dots span { display:inline-block;width:7px;height:7px;border-radius:50%;background:#3b5bdb;margin:0 2px;animation:bounce 1.2s infinite ease-in-out; }
-.thinking-dots span:nth-child(2) { animation-delay:.2s; }
-.thinking-dots span:nth-child(3) { animation-delay:.4s; }
-@keyframes bounce { 0%,80%,100%{transform:scale(.6);opacity:.5} 40%{transform:scale(1);opacity:1} }
 </style>
 @endpush
 
@@ -90,14 +85,6 @@
 @php
     $hasCtx = !empty(auth()->user()->business_context);
 @endphp
-
-{{-- Processing bar --}}
-<div id="fiFiProcessingBar" style="display:none;">
-    <div class="thinking-bar">
-        <div class="thinking-dots"><span></span><span></span><span></span></div>
-        <span id="fiFiProcessingMsg">Syncing your QuickBooks data and generating AI insights… This may take 2–5 minutes.</span>
-    </div>
-</div>
 
 {{-- Filter bar --}}
 <div class="fi-bar">
@@ -327,6 +314,15 @@
     const CSRF         = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     const SAVE_CTX_URL = '{{ route("firm-insights.save-business-context") }}';
     const LS_KEY       = 'firm_insights_processing_id';
+    const DASH_LS_KEY  = 'dash_processing_insight_id';
+    const GLOBAL_LS_KEY = 'insights_processing_ids';
+    let processingSwalOpen = false;
+
+    function clearProcessingStorage() {
+        localStorage.removeItem(LS_KEY);
+        localStorage.removeItem(DASH_LS_KEY);
+        localStorage.removeItem(GLOBAL_LS_KEY);
+    }
 
     // Resume polling on page load for any in-progress reports
     const serverIds = @json($reports->filter(fn($r) => $r->isProcessing())->pluck('id'));
@@ -429,13 +425,13 @@
             if (data.status !== 'success') { setTimeout(() => pollStatus(id), 10000); return; }
             const r = data.report;
             if (r.has_insights) {
-                localStorage.removeItem(LS_KEY);
+                clearProcessingStorage();
                 hideBar(); resetBtns();
                 markReady(r.id, r.encrypted_id);
                 return;
             }
             if (r.is_failed) {
-                localStorage.removeItem(LS_KEY);
+                clearProcessingStorage();
                 hideBar(); resetBtns();
                 markFailed(r.id);
                 Swal.fire({ icon: 'error', title: 'Generation Failed', text: 'Insight generation failed. Please try again.' });
@@ -456,7 +452,7 @@
 
     function prependRow(id, name) {
         const tbody = document.getElementById('fiFiTableBody');
-        if (!tbody) { location.reload(); return; }
+        if (!tbody) { return; }
         const label = name || 'Generating…';
         const tr = document.createElement('tr');
         tr.id = 'fi-row-' + id;
@@ -492,7 +488,7 @@
     function markReady(id, encId) {
         const row   = document.getElementById('fi-row-' + id);
         const badge = document.getElementById('fi-status-' + id);
-        if (!row) { location.reload(); return; }
+        if (!row) { return; }
         if (badge) { badge.className = 'badge success'; badge.textContent = 'Analyzed'; }
         const viewUrl = encId ? `/firm-insights/${encId}/view` : `/firm-insights/${id}/view`;
         const actions = row.querySelector('.action-buttons');
@@ -531,15 +527,22 @@
     }
 
     function showBar(msg) {
-        const b = document.getElementById('fiFiProcessingBar');
-        const m = document.getElementById('fiFiProcessingMsg');
-        if (b) b.style.display = '';
-        if (m && msg) m.textContent = msg;
+        processingSwalOpen = true;
+        Swal.fire({
+            title: 'Generating insights',
+            html: '<p style="margin:0;color:#64748b;">' + (msg || 'Syncing your QuickBooks data and generating AI insights. This may take 2-5 minutes.') + '</p>',
+            allowOutsideClick: true,
+            allowEscapeKey: true,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
+        });
     }
 
     function hideBar() {
-        const b = document.getElementById('fiFiProcessingBar');
-        if (b) b.style.display = 'none';
+        if (processingSwalOpen && Swal.isVisible()) {
+            Swal.close();
+        }
+        processingSwalOpen = false;
     }
 
     function resetBtns() {

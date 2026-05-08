@@ -127,9 +127,7 @@ class EmailService
 </head>
 <body>
   <div class="wrapper">
-    <div class="header"><h1>{$appName}</h1></div>
     <div class="body">{$body}</div>
-    <div class="footer">&copy; {$appName} · All rights reserved</div>
   </div>
 </body>
 </html>

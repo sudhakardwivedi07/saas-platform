@@ -83,16 +83,15 @@
     display: flex; align-items: center; gap: 10px;
     border: 1px solid #DBDBDB; border-radius: 30px; padding: 5px;
     cursor: pointer; transition: all .3s ease;
+    background: none; font-family: inherit; outline: none;
 }
+.insight-slider-nav-section-btn-container:hover { border-color: #EF6A24; }
 .insight-slider-nav-btn {
     width: 40px; height: 40px; border-radius: 50%;
     background: linear-gradient(124.07deg, #EF6A24 19.79%, #F99D3C 88.53%);
     color: white; border: none;
     display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: all .3s ease; font-size: 14px; flex-shrink: 0;
-}
-.insight-slider-nav-btn:disabled {
-    background: #fff; color: #94a3b8; border: 1px solid #e2e8f0; cursor: not-allowed;
+    font-size: 14px; flex-shrink: 0; pointer-events: none;
 }
 .insight-slider-nav-section-btn { font-size: 14px; color: #474747; padding: 0 10px 0 0; font-weight: 400; }
 .insight-slider-nav-section-btn.last-child-btn { padding: 0 0 0 10px; }
@@ -206,10 +205,7 @@
     {{-- ── Slider Content ──────────────────────────────────────────────────── --}}
     @if($report->insight_json_data)
         <div id="insightAccordionContainer">
-            <div id="insightLoaderShow" style="text-align:center;padding:60px;">
-                <div style="display:inline-block;width:3rem;height:3rem;border:4px solid #e2e8f0;border-top-color:#1a6aa8;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-                <p style="margin-top:15px;color:#718096;">Loading insights...</p>
-            </div>
+            <div id="insightLoaderShow" style="display:none;"></div>
             <div id="insightAccordionContentShow" style="display:none;"></div>
         </div>
     @else
@@ -238,11 +234,13 @@
     if (!document.getElementById('insightLoaderShow')) return;
 
     // Fetch insight data via AJAX
+    if (window.showAppLoading) window.showAppLoading('Loading insights', 'Preparing your report insights...');
     fetch('/insights/{{ $report->id }}/data', {
         headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(r => r.json())
     .then(response => {
+        if (window.hideAppLoading) window.hideAppLoading();
         if (response.status === 'success' && response.data) {
             displayInsightSlider(response.data);
         } else {
@@ -253,6 +251,7 @@
         }
     })
     .catch(() => {
+        if (window.hideAppLoading) window.hideAppLoading();
         document.getElementById('insightLoaderShow').style.display = 'none';
         document.getElementById('insightAccordionContentShow').innerHTML =
             '<div style="padding:40px;text-align:center;color:#e53e3e;font-size:16px;">Failed to load insights. Please refresh the page.</div>';
@@ -295,14 +294,14 @@
         html += '<div class="insight-slider-header">';
         html += '<div class="insight-slider-counter"><span id="slider-current">1</span> of <span id="slider-total">' + sections.length + '</span></div>';
         html += '<div class="insight-slider-nav">';
-        html += '<div class="insight-slider-nav-section-btn-container" id="slider-prev-container">';
-        html += '<button type="button" class="insight-slider-nav-btn" id="slider-prev" onclick="changeSlide(-1)" aria-label="Previous"><i class="fas fa-chevron-left"></i></button>';
+        html += '<button type="button" class="insight-slider-nav-section-btn-container" id="slider-prev-container" onclick="changeSlide(-1)" aria-label="Previous">';
+        html += '<span class="insight-slider-nav-btn" id="slider-prev"><i class="fas fa-chevron-left"></i></span>';
         html += '<p class="insight-slider-nav-section-btn" id="slider-prev-label">—</p>';
-        html += '</div>';
-        html += '<div class="insight-slider-nav-section-btn-container" id="slider-next-container">';
+        html += '</button>';
+        html += '<button type="button" class="insight-slider-nav-section-btn-container" id="slider-next-container" onclick="changeSlide(1)" aria-label="Next">';
         html += '<p class="insight-slider-nav-section-btn last-child-btn" id="slider-next-label">—</p>';
-        html += '<button type="button" class="insight-slider-nav-btn" id="slider-next" onclick="changeSlide(1)" aria-label="Next"><i class="fas fa-chevron-right"></i></button>';
-        html += '</div>';
+        html += '<span class="insight-slider-nav-btn" id="slider-next"><i class="fas fa-chevron-right"></i></span>';
+        html += '</button>';
         html += '</div></div>';
 
         html += '<div class="insight-slider-slides">';

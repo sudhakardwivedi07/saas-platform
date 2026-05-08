@@ -133,9 +133,8 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        $admin = $company->users()->first();
-        if (!$admin) {
-            $this->slog('warning', 'checkout.session.completed — no admin user found for company', [
+        if (!$company->company_email) {
+            $this->slog('warning', 'checkout.session.completed — no company_email found, skipping email', [
                 'event_id'   => $eventId,
                 'company_id' => $companyId,
             ]);
@@ -144,23 +143,34 @@ class StripeWebhookController extends Controller
 
         $planName = Package::find($packageId)?->name ?? 'Unknown';
 
-        $this->slog('info', 'checkout.session.completed — dispatching payment_success email', [
-            'event_id'   => $eventId,
-            'company_id' => $companyId,
-            'admin'      => $admin->email,
-            'plan'       => $planName,
+        $this->slog('info', 'checkout.session.completed — dispatching payment_successful_subscription_activated email', [
+            'event_id'    => $eventId,
+            'company_id'  => $companyId,
+            'firm_email'  => $company->company_email,
+            'plan'        => $planName,
         ]);
 
+        $firmName   = $company->company_name ?? $company->app_name;
+        $appName    = $company->app_name ?? $company->company_name;
+        $amountPaid = '$' . number_format(($session['amount_total'] ?? 0) / 100, 2);
+        $invoiceId  = $session['payment_intent'] ?? $session['id'] ?? 'N/A';
+        $startDate  = now()->format('M d, Y');
+        $renewDate  = now()->addMonth()->format('M d, Y');
+
         SendEmailJob::dispatch(
-            toEmail:      $admin->email,
-            templateSlug: 'payment_success',
+            toEmail:      $company->company_email,
+            templateSlug: 'payment_successful_subscription_activated',
             placeholders: [
-                '{{name}}'       => $admin->name,
-                '{{app_name}}'   => $company->app_name ?? $company->company_name,
-                '{{amount}}'     => '$' . number_format(($session['amount_total'] ?? 0) / 100, 2),
-                '{{plan_name}}'  => $planName,
-                '{{period_end}}' => now()->addMonth()->format('Y-m-d'),
-                '{{login_url}}'  => tenant_url($company->subdomain, 'login'),
+                '{{name}}'               => $firmName,
+                '{{firm_name}}'          => $firmName,
+                '{{app_name}}'           => $appName,
+                '{{plan_name}}'          => $planName,
+                '{{amount}}'             => $amountPaid,
+                '{{invoice_id}}'         => $invoiceId,
+                '{{subscription_start}}' => $startDate,
+                '{{period_end}}'         => $renewDate,
+                '{{login_url}}'          => tenant_url($company->subdomain, 'login'),
+                '{{support_email}}'      => config('mail.from.address', 'support@' . ($company->subdomain ?? 'example.com')),
             ],
             companyId: (int) $companyId
         )->onQueue('emails');
@@ -215,20 +225,22 @@ class StripeWebhookController extends Controller
         }
 
         $company = Company::withoutGlobalScopes()->find($sub->company_id);
-        $admin   = $company?->users()->first();
 
-        if ($admin) {
+        if ($company && $company->company_email) {
+            $firmName = $company->company_name ?? $company->app_name;
+
             $this->slog('warning', 'invoice.payment_failed — dispatching payment_failed email', [
                 'event_id'   => $eventId,
                 'company_id' => $sub->company_id,
-                'admin'      => $admin->email,
+                'firm_email' => $company->company_email,
             ]);
 
             SendEmailJob::dispatch(
-                toEmail:      $admin->email,
+                toEmail:      $company->company_email,
                 templateSlug: 'payment_failed',
                 placeholders: [
-                    '{{name}}'        => $admin->name,
+                    '{{name}}'        => $firmName,
+                    '{{firm_name}}'   => $firmName,
                     '{{app_name}}'    => $company->app_name ?? $company->company_name,
                     '{{plan_name}}'   => $sub->package?->name ?? '',
                     '{{billing_url}}' => tenant_url($company->subdomain, 'billing'),

@@ -4,11 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Company;
 use App\Models\Payment;
+use App\Services\StripeDashboardService;
 use Illuminate\Support\Collection;
 
 class FinanceController extends AccountBaseController
 {
-    public function __construct()
+    public function __construct(private StripeDashboardService $stripeDashboard)
     {
         parent::__construct();
         $this->middleware('auth');
@@ -107,8 +108,6 @@ class FinanceController extends AccountBaseController
                 ->with('error', 'No Stripe invoice ID is stored for this payment.');
         }
 
-        return redirect()->away(
-            'https://dashboard.stripe.com/invoices/' . $payment->stripe_invoice_id
-        );
+        return redirect()->away($this->stripeDashboard->invoiceUrl($payment->stripe_invoice_id));
     }
 }

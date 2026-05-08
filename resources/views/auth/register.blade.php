@@ -258,7 +258,7 @@ body {
                            maxlength="253"
                            oninput="this.value=this.value.toLowerCase().replace(/\s/g,'')">
                     @error('custom_domain') <div class="f-err">{{ $message }}</div> @enderror
-                    <div class="f-hint">Enter the exact domain visitors will use (no https://).</div>
+                    <div class="f-hint">Enter the exact domain visitors will use (no https).</div>
                 </div>
             </div>
 

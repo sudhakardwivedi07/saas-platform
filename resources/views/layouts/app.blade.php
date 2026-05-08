@@ -17,7 +17,7 @@
     <link href="{{ asset(config('assets.font_dm_sans')) }}" rel="stylesheet">
 
     {{-- FontAwesome 5 --}}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <link rel="stylesheet" href="{{ asset(config('assets.font_awesome')) }}">
 
     {{-- DataTables (used on multiple pages) --}}
     <link rel="stylesheet" href="{{ asset(config('assets.datatables_css')) }}">

@@ -23,6 +23,8 @@ return [
 
     // ── CSS ───────────────────────────────────────────────────────────────────
 
+    'font_awesome'       => 'vendor/fontawesome/css/all.min.css',
+
     'datatables_css'     => 'vendor/datatables/jquery.dataTables.min.css',
     'datatables_bs5_css' => 'vendor/datatables/dataTables.bootstrap5.min.css',
     'sweetalert2_css'    => 'vendor/sweetalert2/sweetalert2.min.css',

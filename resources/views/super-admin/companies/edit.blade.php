@@ -120,7 +120,7 @@
                                placeholder="app.acmecorp.com" maxlength="253"
                                oninput="this.value=this.value.toLowerCase().replace(/\s/g,'');updatePreview()">
                         <div class="field-error-msg" id="err-custom_domain"></div>
-                        <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Enter the exact domain visitors will use (no https://).</div>
+                        <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Enter the exact domain visitors will use (no https).</div>
                     </div>
 
                     <div class="f-group">

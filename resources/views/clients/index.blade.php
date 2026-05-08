@@ -11,10 +11,18 @@
     </div>
     <div class="ph-actions">
         @if($hasActivePlan ?? false)
-        <button type="button" class="btn btn-primary" onclick="document.getElementById('modal-add-client').classList.add('open')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Add Client
-        </button>
+            @if($maxClientsReached ?? false)
+            <button type="button" class="btn btn-primary"
+                onclick="Swal.fire({ icon:'warning', title:'Client Limit Reached', text:'You have reached the maximum of {{ $planMaxClients ?? 0 }} client(s) allowed on your current plan. Please upgrade your plan to add more clients.' })">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Client
+            </button>
+            @else
+            <button type="button" class="btn btn-primary" onclick="openAddClientModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Client
+            </button>
+            @endif
         @else
         <button type="button" class="btn btn-primary" disabled title="No plan is assigned to this account. Choose a plan under Subscription &amp; Usage first.">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -479,8 +487,9 @@
                     </div>
                     <div class="mf-field" style="margin:0 0 14px">
                         <label class="mf-label">Email ID <span style="color:var(--red)">*</span></label>
-                        <input type="email" name="email" class="mf-inp"
-                            placeholder="sarah@chen.com" value="{{ old('email') }}" required>
+                        <input type="email" name="email" id="ac-email" class="mf-inp"
+                            placeholder="sarah@chen.com" value="{{ old('email') }}"
+                            autocomplete="off" required>
                     </div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
@@ -531,7 +540,8 @@
                     </label>
                     <div style="position:relative;display:flex;align-items:center">
                         <input type="password" name="password" id="ac-password" class="mf-inp"
-                            placeholder="Min. 8 characters" style="padding-right:88px" required>
+                            placeholder="Min. 8 characters" style="padding-right:88px"
+                            autocomplete="new-password" required>
                         {{-- Show/hide toggle --}}
                         <button type="button" title="Show/hide password"
                             onclick="toggleAcPassword()"
@@ -731,6 +741,19 @@ $(document).ready(function() {
 });
 
 // ── Add Client password helpers ──────────────────────────────
+function openAddClientModal() {
+    // Clear email and password so browser autofill does not pre-populate them
+    var emailField    = document.getElementById('ac-email');
+    var passwordField = document.getElementById('ac-password');
+    if (emailField)    { emailField.value    = ''; emailField.removeAttribute('readonly'); }
+    if (passwordField) { passwordField.value = ''; passwordField.removeAttribute('readonly'); }
+    document.getElementById('modal-add-client').classList.add('open');
+    // Focus the name field, not email/password, so the browser has no reason to autofill
+    setTimeout(function() {
+        var nameField = document.querySelector('#modal-add-client input[name="name"]');
+        if (nameField) nameField.focus();
+    }, 80);
+}
 function toggleAcPassword() {
     var inp  = document.getElementById('ac-password');
     var icon = document.getElementById('ac-eye-icon');

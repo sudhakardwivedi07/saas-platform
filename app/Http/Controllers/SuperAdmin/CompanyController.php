@@ -112,7 +112,7 @@ class CompanyController extends AccountBaseController
                     ]);
                 }
 
-                $role      = Role::firstOrCreate(['name' => 'client_admin', 'guard_name' => 'web']);
+                $role      = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
                 $plainPass = Str::random(16);
                 $user      = User::create([
                     'company_id'        => $company->id,
@@ -147,47 +147,63 @@ class CompanyController extends AccountBaseController
 
     public function store(Request $request)
     {
+        $domainType = $request->input('domain_type', 'subdomain');
+
         $request->validate([
             'company_name'  => ['required','string','min:2','max:100','regex:/^[a-zA-Z0-9 .&\-_]+$/'],
-            'subdomain'     => ['required','string','min:3','max:50','regex:/^[a-z0-9-]+$/','unique:companies,subdomain'],
+            'domain_type'   => ['required','in:subdomain,domain'],
+            'subdomain'     => $domainType === 'subdomain'
+                                ? ['required','string','min:3','max:50','regex:/^[a-z0-9-]+$/','unique:companies,subdomain']
+                                : ['nullable'],
+            'custom_domain' => $domainType === 'domain'
+                                ? ['required','string','max:253','regex:/^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/','unique:companies,custom_domain']
+                                : ['nullable'],
             'company_email' => ['required','string','min:5','max:100','regex:/^[a-zA-Z0-9@._-]+$/','email','unique:companies,company_email'],
             'company_phone' => 'required|digits:10',
             'package_id'    => 'nullable|exists:packages,id',
-            'status'        => 'required|in:active,inactive,suspended',
+            'status'        => 'required|in:active,trial,inactive,suspended',
             'admin_name'    => 'required|string|max:255',
             'admin_email'   => 'required|email|max:255',
             'admin_password'=> 'required|string|min:8',
         ], [
-            'company_name.required'  => 'Firm Name is required.',
-            'company_name.min'       => 'Please enter a valid Firm Name.',
-            'company_name.max'       => 'Please enter a valid Firm Name.',
-            'company_name.regex'     => 'Please enter a valid Firm Name.',
-            'subdomain.required'     => 'Subdomain is required.',
-            'subdomain.min'          => 'Only lowercase letters, numbers, and hyphens are allowed.',
-            'subdomain.max'          => 'Only lowercase letters, numbers, and hyphens are allowed.',
-            'subdomain.regex'        => 'Only lowercase letters, numbers, and hyphens are allowed.',
-            'subdomain.unique'       => 'This subdomain is already taken.',
-            'company_email.required' => 'Email is required.',
-            'company_email.min'      => 'Please enter a valid email address.',
-            'company_email.max'      => 'Please enter a valid email address.',
-            'company_email.regex'    => 'Please enter a valid email address.',
-            'company_email.email'    => 'Please enter a valid email address.',
-            'company_email.unique'   => 'This email is already in use.',
-            'company_phone.required' => 'Phone number is required.',
-            'company_phone.digits'   => 'Phone number must be 10 digits.',
+            'company_name.required'   => 'Firm Name is required.',
+            'company_name.min'        => 'Please enter a valid Firm Name.',
+            'company_name.max'        => 'Please enter a valid Firm Name.',
+            'company_name.regex'      => 'Please enter a valid Firm Name.',
+            'subdomain.required'      => 'Subdomain is required.',
+            'subdomain.min'           => 'Only lowercase letters, numbers, and hyphens are allowed.',
+            'subdomain.max'           => 'Only lowercase letters, numbers, and hyphens are allowed.',
+            'subdomain.regex'         => 'Only lowercase letters, numbers, and hyphens are allowed.',
+            'subdomain.unique'        => 'This subdomain is already taken.',
+            'custom_domain.required'  => 'Custom domain is required.',
+            'custom_domain.regex'     => 'Please enter a valid domain (e.g. app.acmecorp.com).',
+            'custom_domain.unique'    => 'This domain is already in use.',
+            'company_email.required'  => 'Email is required.',
+            'company_email.min'       => 'Please enter a valid email address.',
+            'company_email.max'       => 'Please enter a valid email address.',
+            'company_email.regex'     => 'Please enter a valid email address.',
+            'company_email.email'     => 'Please enter a valid email address.',
+            'company_email.unique'    => 'This email is already in use.',
+            'company_phone.required'  => 'Phone number is required.',
+            'company_phone.digits'    => 'Phone number must be 10 digits.',
         ]);
 
         $package = $request->package_id ? Package::find($request->package_id) : null;
 
+        $verificationToken = $domainType === 'domain' ? Str::random(40) : null;
+
         $company = Company::create([
-            'company_name'  => $request->company_name,
-            'app_name'      => $request->app_name ?? $request->company_name,
-            'company_email' => $request->company_email,
-            'company_phone' => $request->company_phone,
-            'subdomain'     => Str::slug($request->subdomain),
-            'status'        => $request->status,
-            'package_id'    => $package?->id,
-            'trial_ends_at' => $package?->is_trial_allowed ? now()->addDays($package->trial_days) : null,
+            'company_name'              => $request->company_name,
+            'app_name'                  => $request->app_name ?? $request->company_name,
+            'company_email'             => $request->company_email,
+            'company_phone'             => $request->company_phone,
+            'domain_type'               => $domainType,
+            'subdomain'                 => $domainType === 'subdomain' ? Str::slug($request->subdomain) : null,
+            'custom_domain'             => $domainType === 'domain' ? strtolower(trim($request->custom_domain)) : null,
+            'domain_verification_token' => $verificationToken,
+            'status'                    => $request->status,
+            'package_id'                => $package?->id,
+            'trial_ends_at'             => $package?->is_trial_allowed ? now()->addDays($package->trial_days) : null,
         ]);
 
         CompanyBranding::create(['company_id' => $company->id]);
@@ -204,7 +220,7 @@ class CompanyController extends AccountBaseController
             ]);
         }
 
-        $role = Role::firstOrCreate(['name' => 'client_admin', 'guard_name' => 'web']);
+        $role = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $user = User::create([
             'company_id'        => $company->id,
             'name'              => $request->admin_name,
@@ -242,6 +258,50 @@ class CompanyController extends AccountBaseController
         return Reply::successWithData('Firm created successfully.', ['redirect' => route('superadmin.companies.index')]);
     }
 
+    /**
+     * Check the DNS TXT record for a custom-domain company and mark it verified.
+     *
+     * The customer must add:  _saas-verify.{custom_domain}  TXT  "saas-verify={token}"
+     */
+    public function verifyDomain(int $id)
+    {
+        $company = Company::withoutGlobalScopes()->findOrFail($id);
+
+        if ($company->domain_type !== 'domain' || !$company->custom_domain) {
+            return Reply::error('This firm does not use a custom domain.');
+        }
+
+        if ($company->domain_verified_at) {
+            return Reply::success('Domain is already verified.');
+        }
+
+        $lookupHost = '_saas-verify.' . $company->custom_domain;
+        $token      = 'saas-verify=' . $company->domain_verification_token;
+        $verified   = false;
+
+        try {
+            $records = @dns_get_record($lookupHost, DNS_TXT);
+            if (is_array($records)) {
+                foreach ($records as $rec) {
+                    if (isset($rec['txt']) && $rec['txt'] === $token) {
+                        $verified = true;
+                        break;
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            return Reply::error('DNS lookup failed. Please try again later.');
+        }
+
+        if (!$verified) {
+            return Reply::error('Verification TXT record not found. Please add the record and try again.');
+        }
+
+        $company->update(['domain_verified_at' => now()]);
+
+        return Reply::success('Domain verified successfully!');
+    }
+
     public function initiateCheckout(Request $request, int $id)
     {
         $request->validate([
@@ -274,7 +334,7 @@ class CompanyController extends AccountBaseController
                 'users',
                 'payments as complete_payments_count' => fn($q) => $q->where('status', 'complete'),
             ])
-            ->whereHas('users', fn($q) => $q->whereHas('roles', fn($r) => $r->where('name', 'client_admin')))
+            ->whereHas('users', fn($q) => $q->whereHas('roles', fn($r) => $r->where('name', 'admin')))
             ->orderByDesc('created_at')
             ->get();
 
@@ -305,13 +365,18 @@ class CompanyController extends AccountBaseController
 
     public function update(Request $request, int $id)
     {
-        $company = Company::withoutGlobalScopes()->findOrFail($id);
+        $company    = Company::withoutGlobalScopes()->findOrFail($id);
+        $domainType = $request->input('domain_type', $company->domain_type ?? 'subdomain');
 
         $request->validate([
             'company_name'  => ['required','string','min:2','max:100','regex:/^[a-zA-Z0-9 .&\-_]+$/'],
             'company_email' => ['required','string','min:5','max:100','regex:/^[a-zA-Z0-9@._-]+$/','email', Rule::unique('companies','company_email')->ignore($id)],
             'company_phone' => 'required|digits:10',
-            'status'        => 'nullable|in:active,inactive,suspended',
+            'domain_type'   => 'nullable|in:subdomain,domain',
+            'custom_domain' => $domainType === 'domain'
+                                ? ['required','string','max:253','regex:/^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/', Rule::unique('companies','custom_domain')->ignore($id)]
+                                : ['nullable'],
+            'status'        => 'nullable|in:active,trial,inactive,suspended',
             'package_id'    => 'nullable|exists:packages,id',
         ], [
             'company_name.required'  => 'Firm Name is required.',
@@ -326,12 +391,39 @@ class CompanyController extends AccountBaseController
             'company_email.unique'   => 'This email is already in use.',
             'company_phone.required' => 'Phone number is required.',
             'company_phone.digits'   => 'Phone number must be 10 digits.',
+            'custom_domain.required' => 'Custom domain is required.',
+            'custom_domain.regex'    => 'Please enter a valid domain (e.g. app.acmecorp.com).',
+            'custom_domain.unique'   => 'This domain is already in use.',
         ]);
 
         $data = $request->only('company_name', 'app_name', 'package_id', 'company_email', 'company_phone');
+
         if ($request->filled('status')) {
             $data['status'] = $request->status;
         }
+
+        $data['domain_type'] = $domainType;
+
+        if ($domainType === 'domain') {
+            $newDomain = strtolower(trim($request->custom_domain));
+            $data['custom_domain'] = $newDomain;
+
+            // Reset verification if the domain has changed
+            if ($newDomain !== $company->custom_domain) {
+                $data['domain_verified_at']        = null;
+                $data['domain_verification_token'] = Str::random(40);
+            }
+            // Ensure a token exists even if the domain hasn't changed
+            if (empty($company->domain_verification_token)) {
+                $data['domain_verification_token'] = Str::random(40);
+            }
+        } else {
+            // Switching back to subdomain — clear custom domain data
+            $data['custom_domain']             = null;
+            $data['domain_verified_at']        = null;
+            $data['domain_verification_token'] = null;
+        }
+
         $company->update($data);
 
         return Reply::successWithData('Company updated successfully.', []);
@@ -352,10 +444,10 @@ class CompanyController extends AccountBaseController
         $company = Company::withoutGlobalScopes()->findOrFail($id);
 
         $admin = User::where('company_id', $id)
-            ->whereHas('roles', fn ($q) => $q->where('name', 'client_admin'))
+            ->whereHas('roles', fn ($q) => $q->where('name', 'admin'))
             ->first();
 
-        // Fall back to any user in that company if no client_admin yet
+        // Fall back to any user in that company if no admin yet
         if (!$admin) {
             $admin = User::where('company_id', $id)->firstOrFail();
         }

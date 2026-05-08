@@ -17,7 +17,7 @@ class FinanceController extends AccountBaseController
 
     public function index()
     {
-        abort_403(!auth()->user()->hasRole('client_admin'));
+        abort_403(!auth()->user()->hasRole('admin'));
 
         $ownerCompanyId = (int) (company()?->id ?? auth()->user()->company_id);
 
@@ -93,7 +93,7 @@ class FinanceController extends AccountBaseController
      */
     public function invoice(Payment $payment)
     {
-        abort_403(!auth()->user()->hasRole('client_admin'));
+        abort_403(!auth()->user()->hasRole('admin'));
 
         $ownerCompanyId = (int) (company()?->id ?? auth()->user()->company_id);
         $portfolioIds = Company::withoutGlobalScopes()

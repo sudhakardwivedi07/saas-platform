@@ -19,7 +19,7 @@ class ActivityController extends AccountBaseController
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $allowed = $user->roles()->whereIn('name', ['client_admin', 'manager'])->exists();
+        $allowed = $user->roles()->whereIn('name', ['admin', 'manager'])->exists();
         abort_403(!$allowed);
 
         $activities = EventLog::query()

@@ -9,7 +9,7 @@ use Spatie\Permission\Models\Permission;
 
 class RoleController extends AccountBaseController
 {
-    protected array $systemRoles = ['client_admin', 'super_admin'];
+    protected array $systemRoles = ['admin', 'super_admin'];
 
     public function __construct()
     {

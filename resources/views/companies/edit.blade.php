@@ -92,7 +92,7 @@
 
 <form method="POST" action="{{ route('my-companies.update', $company->id) }}">
 @csrf
-@php $isClientUserFlow = $isClientUserFlow ?? auth()->user()->hasRole('user'); @endphp
+@php $isClientUserFlow = $isClientUserFlow ?? auth()->user()->hasRole('client'); @endphp
 @php $adminUser = $companyAdminUser ?? $company->adminUser; @endphp
 @php
     $industryOptions = ['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'];

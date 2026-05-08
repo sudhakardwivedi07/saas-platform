@@ -119,7 +119,7 @@ class SubscriptionController extends AccountBaseController
         try {
             // StripeService constructor sets the API key from SuperAdmin's
             // GlobalPaymentGatewayCredentials — always used regardless of who
-            // triggers the cancellation (client_admin, superadmin, etc.)
+            // triggers the cancellation (admin, superadmin, etc.)
             new StripeService();
 
             // Cancel at period end — user keeps access until billing cycle ends

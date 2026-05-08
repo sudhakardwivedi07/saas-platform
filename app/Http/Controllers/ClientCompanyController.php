@@ -22,7 +22,7 @@ class ClientCompanyController extends AccountBaseController
     private function companyOwnerKeyForCurrentUser(): int
     {
         $user = auth()->user();
-        return $user->hasAnyRole(['client_admin', 'manager'])
+        return $user->hasAnyRole(['admin', 'manager'])
             ? (int) $user->company_id
             : (int) $user->id;
     }
@@ -38,13 +38,13 @@ class ClientCompanyController extends AccountBaseController
     private function canManageCompanies(): bool
     {
         $user = auth()->user();
-        return $user->can('manage_company') || $user->hasRole('user');
+        return $user->can('manage_company') || $user->hasRole('client');
     }
 
     private function canAddCompanies(): bool
     {
         $user = auth()->user();
-        return $user->can('add_company') || $user->hasRole('user');
+        return $user->can('add_company') || $user->hasRole('client');
     }
 
     private function enforceMaxCompaniesLimit(int $ownerCompanyId): void
@@ -120,7 +120,7 @@ class ClientCompanyController extends AccountBaseController
         $companyId = auth()->user()->company_id;
         $this->enforceMaxCompaniesLimit($companyId);
 
-        // Load only THIS client_admin's own plans (not SuperAdmin packages)
+        // Load only THIS admin's own plans (not SuperAdmin packages)
         $this->packages = ClientPackage::forCompany($companyId)
             ->active()
             ->orderBy('sort')
@@ -141,12 +141,12 @@ class ClientCompanyController extends AccountBaseController
             'users' => fn ($query) => $query->orderBy('id'),
         ]);
 
-        // Some companies may not have a dedicated client_admin user.
+        // Some companies may not have a dedicated admin user.
         // Fall back to the first linked user so details still render.
         $this->companyAdminUser = $this->company->adminUser ?: $this->company->users->first();
 
         $authUser = auth()->user();
-        $this->isClientUserFlow = $authUser->hasRole('user');
+        $this->isClientUserFlow = $authUser->hasRole('client');
 
         if (!$this->isClientUserFlow) {
             $this->packages = ClientPackage::forCompany($authUser->company_id)
@@ -227,7 +227,7 @@ class ClientCompanyController extends AccountBaseController
         $companyId = auth()->user()->company_id;
         $this->enforceMaxCompaniesLimit($companyId);
         $authUser = auth()->user();
-        $isClientUserFlow = $authUser->hasRole('user');
+        $isClientUserFlow = $authUser->hasRole('client');
 
         $rules = [
             'company_name'    => 'required|string|max:255',
@@ -317,7 +317,7 @@ class ClientCompanyController extends AccountBaseController
         $newUser = null;
         if (!$isClientUserFlow) {
             // Create the new company's admin user
-            $role    = Role::firstOrCreate(['name' => 'client_admin', 'guard_name' => 'web']);
+            $role    = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
             $newUser = User::create([
                 'company_id'        => $company->id,
                 'name'              => $request->admin_name,
@@ -332,7 +332,7 @@ class ClientCompanyController extends AccountBaseController
 
         // Link the CREATING admin to the new company via user_companies
         $authUser->managedCompanies()->syncWithoutDetaching([
-            $company->id => ['role' => 'client_admin'],
+            $company->id => ['role' => 'admin'],
         ]);
 
         // ── Path A: Stripe checkout ─────────────────────────────────────────
@@ -394,7 +394,7 @@ class ClientCompanyController extends AccountBaseController
             ? User::withoutGlobalScopes()->find($userId)
             : User::withoutGlobalScopes()
                 ->where('company_id', $company->id)
-                ->whereHas('roles', fn ($q) => $q->where('name', 'client_admin'))
+                ->whereHas('roles', fn ($q) => $q->where('name', 'admin'))
                 ->first();
 
         $package = $company->client_package_id
@@ -498,7 +498,7 @@ class ClientCompanyController extends AccountBaseController
 
     public function quickStore(Request $request)
     {
-        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
 
         $companyId = company()?->id ?? auth()->user()->company_id;
         $this->enforceMaxCompaniesLimit($companyId);

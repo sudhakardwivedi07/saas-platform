@@ -4,11 +4,11 @@
 
 @push('styles')
 <style>
-.role-badge-client_admin { background:rgba(26,106,168,.1); color:#1a6aa8; }
-.role-badge-manager      { background:rgba(240,107,33,.1);  color:#f06b21; }
-.role-badge-analyst      { background:rgba(124,58,237,.1);  color:#7c3aed; }
-.role-badge-viewer       { background:rgba(156,163,175,.15);color:#6b7280; }
-.role-badge-user         { background:rgba(156,163,175,.15);color:#6b7280; }
+.role-badge-admin   { background:rgba(26,106,168,.1);  color:#1a6aa8; }
+.role-badge-manager { background:rgba(240,107,33,.1);  color:#f06b21; }
+.role-badge-analyst { background:rgba(124,58,237,.1);  color:#7c3aed; }
+.role-badge-viewer  { background:rgba(156,163,175,.15);color:#6b7280; }
+.role-badge-client  { background:rgba(156,163,175,.15);color:#6b7280; }
 .role-badge              { display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600; }
 .u-perm-text             { font-size:12.5px;color:var(--text-2); }
 .u-last-login            { font-size:12.5px;color:var(--text-2); }
@@ -82,7 +82,7 @@
             @foreach($users as $user)
             @php
                 $initials  = strtoupper(substr($user->name,0,1)) . strtoupper(substr(strstr($user->name,' ') ?: ' ',1,1));
-                $roleName  = $user->roles->first()?->name ?? 'user';
+                $roleName  = $user->roles->first()?->name ?? 'client';
                 $roleLabel = ucwords(str_replace('_',' ',$roleName));
                 $status    = $user->status ?? 'active';
                 $isActive  = $status === 'active';
@@ -92,19 +92,20 @@
                 // Permission summary
                 $perms = $user->roles->first()?->permissions->pluck('name') ?? collect();
                 $permSummary = match($roleName) {
-                    'client_admin' => 'Full access',
-                    'manager'      => 'Clients, Insights, Support',
-                    'analyst'      => 'Insights, Reports only',
-                    'viewer'       => 'Read-only access',
-                    default        => $perms->isEmpty() ? '—' : ucwords(str_replace('_',' ',$perms->first())) . ($perms->count() > 1 ? ', +'.($perms->count()-1).' more' : ''),
+                    'admin'   => 'Full access',
+                    'manager' => 'Clients, Insights, Support',
+                    'analyst' => 'Insights, Reports only',
+                    'viewer'  => 'Read-only access',
+                    'client'  => 'Read-only access',
+                    default   => $perms->isEmpty() ? '—' : ucwords(str_replace('_',' ',$perms->first())) . ($perms->count() > 1 ? ', +'.($perms->count()-1).' more' : ''),
                 };
 
                 // Avatar colour per role
                 $avatarColor = match($roleName) {
-                    'client_admin' => 'var(--blue)',
-                    'manager'      => 'var(--orange)',
-                    'analyst'      => 'var(--purple)',
-                    default        => '#64748b',
+                    'admin'   => 'var(--blue)',
+                    'manager' => 'var(--orange)',
+                    'analyst' => 'var(--purple)',
+                    default   => '#64748b',
                 };
             @endphp
             <tr data-user-id="{{ $user->id }}">

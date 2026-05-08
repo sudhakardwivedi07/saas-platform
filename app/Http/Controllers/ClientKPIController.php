@@ -17,7 +17,7 @@ class ClientKPIController extends AccountBaseController
      */
     public function index($clientId): ViewContract
     {
-        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
 
         $this->clientUser = User::with(['managedCompanies'])->findOrFail($clientId);
         $this->pageTitle = $this->clientUser->name . "'s KPI Dashboard";
@@ -42,7 +42,7 @@ class ClientKPIController extends AccountBaseController
      */
     public function showKpiDetail($clientId, $kpiType): ViewContract
     {
-        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
 
         $this->clientUser = User::with(['managedCompanies'])->findOrFail($clientId);
         $this->pageTitle = $this->getKpiTitle($kpiType) . ' Details';
@@ -95,7 +95,7 @@ class ClientKPIController extends AccountBaseController
      */
     public function getKpiData($clientId, Request $request)
     {
-        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
 
         $companyId = (int) $request->get('company_id');
         $kpiType = $request->get('kpi');

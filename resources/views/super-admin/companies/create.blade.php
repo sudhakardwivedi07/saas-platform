@@ -78,14 +78,42 @@
                                oninput="this.value=this.value.replace(/[^0-9]/g,'')">
                         <div class="field-error-msg" id="err-company_phone"></div>
                     </div>
-                    <div class="f-group">
+                </div>
+
+                {{-- ── Access Method (Domain Type) ───────────────────────── --}}
+                <div style="margin-bottom:14px">
+                    <label class="f-label" style="margin-bottom:8px;display:block">
+                        Access Method <span style="color:var(--red)">*</span>
+                    </label>
+                    <input type="hidden" name="domain_type" id="domain_type" value="subdomain">
+                    <div style="display:flex;gap:10px">
+                        <label class="domain-type-opt selected" id="dt-subdomain-label" onclick="domainTypeChanged('subdomain')" style="cursor:pointer">
+                            <input type="radio" name="_domain_type_radio" value="subdomain" checked style="accent-color:var(--orange);flex-shrink:0">
+                            <div>
+                                <div style="font-size:13px;font-weight:600;margin-bottom:2px">Subdomain</div>
+                                <div style="font-size:11.5px;color:var(--text-3)">acme.{{ config('tenancy.root_domain','yourdomain.com') }}</div>
+                            </div>
+                        </label>
+                        <label class="domain-type-opt" id="dt-domain-label" onclick="domainTypeChanged('domain')" style="cursor:pointer">
+                            <input type="radio" name="_domain_type_radio" value="domain" style="accent-color:var(--orange);flex-shrink:0">
+                            <div>
+                                <div style="font-size:13px;font-weight:600;margin-bottom:2px">Custom Domain</div>
+                                <div style="font-size:11.5px;color:var(--text-3)">app.acmecorp.com</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-2col">
+                    {{-- Subdomain field (shown when domain_type = subdomain) --}}
+                    <div class="f-group" id="subdomain-group">
                         <label class="f-label">Subdomain <span style="color:var(--red)">*</span></label>
                         <div style="display:flex;align-items:stretch;border:1.5px solid var(--border);border-radius:8px;overflow:hidden;background:#fff">
                             <input name="subdomain" id="subdomain" class="f-inp"
-                                   placeholder="acme" required
+                                   placeholder="acme"
                                    maxlength="50"
                                    style="border:none;border-radius:0;flex:1;outline:none"
-                                   oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'');this.dataset.manual='1'">
+                                   oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9-]/g,'');this.dataset.manual='1';updatePreview()">
                             <span style="padding:0 12px;display:flex;align-items:center;background:var(--bg);border-left:1.5px solid var(--border);font-size:12px;color:var(--text-3);white-space:nowrap;flex-shrink:0">
                                 .{{ config('tenancy.root_domain','yourdomain.com') }}
                             </span>
@@ -93,6 +121,18 @@
                         <div class="field-error-msg" id="err-subdomain"></div>
                         <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Letters, numbers and hyphens only. Cannot be changed later.</div>
                     </div>
+
+                    {{-- Custom domain field (shown when domain_type = domain) --}}
+                    <div class="f-group" id="custom-domain-group" style="display:none">
+                        <label class="f-label">Custom Domain <span style="color:var(--red)">*</span></label>
+                        <input name="custom_domain" id="custom_domain" class="f-inp"
+                               placeholder="app.acmecorp.com"
+                               maxlength="253"
+                               oninput="this.value=this.value.toLowerCase().replace(/\s/g,'');updatePreview()">
+                        <div class="field-error-msg" id="err-custom_domain"></div>
+                        <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Enter the exact domain visitors will use (no https://).</div>
+                    </div>
+
                     <div class="f-group">
                         <label class="f-label">Status <span style="color:var(--red)">*</span></label>
                         <select name="status" id="status" class="f-sel">
@@ -103,6 +143,56 @@
                             <option value="suspended">Suspended</option>
                         </select>
                         <div class="field-error-msg" id="err-status"></div>
+                    </div>
+                </div>
+
+                {{-- DNS Setup Instructions (shown when domain_type = domain) --}}
+                <div id="dns-instructions-group" style="display:none;margin-bottom:4px">
+                    <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:10px;padding:16px 18px">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span style="font-size:13px;font-weight:600;color:#92400e">DNS Configuration Required</span>
+                        </div>
+                        <p style="font-size:12.5px;color:#78350f;margin-bottom:12px;line-height:1.6">
+                            After creating the firm, the client must add these DNS records at their domain registrar to point their domain to this server. The domain will only work once both records are in place.
+                        </p>
+                        <div style="display:flex;flex-direction:column;gap:8px">
+                            {{-- A Record --}}
+                            <div style="background:#fff;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px">
+                                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+                                    <div style="display:flex;align-items:center;gap:8px">
+                                        <span style="font-size:10px;font-weight:700;text-transform:uppercase;background:#f59e0b;color:#fff;padding:2px 7px;border-radius:4px">A Record</span>
+                                        <span style="font-size:12.5px;font-weight:500;color:#1e293b">Point domain to this server</span>
+                                    </div>
+                                </div>
+                                <div style="margin-top:8px;display:grid;grid-template-columns:70px 1fr;gap:4px 10px;font-size:12px">
+                                    <span style="color:#64748b;font-weight:600">Name:</span>
+                                    <code id="dns-a-name" style="background:#f8fafc;padding:2px 7px;border-radius:4px;font-size:12px;color:#0f172a">@</code>
+                                    <span style="color:#64748b;font-weight:600">Type:</span>
+                                    <code style="background:#f8fafc;padding:2px 7px;border-radius:4px;font-size:12px;color:#0f172a">A</code>
+                                    <span style="color:#64748b;font-weight:600">Value:</span>
+                                    <code style="background:#f8fafc;padding:2px 7px;border-radius:4px;font-size:12px;color:#0f172a">{{ env('SERVER_IP', request()->server('SERVER_ADDR', 'YOUR_SERVER_IP')) }}</code>
+                                </div>
+                            </div>
+                            {{-- TXT Verification Record --}}
+                            <div style="background:#fff;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px">
+                                <div style="display:flex;align-items:center;gap:8px">
+                                    <span style="font-size:10px;font-weight:700;text-transform:uppercase;background:#8b5cf6;color:#fff;padding:2px 7px;border-radius:4px">TXT Record</span>
+                                    <span style="font-size:12.5px;font-weight:500;color:#1e293b">Domain ownership verification</span>
+                                </div>
+                                <div style="margin-top:8px;display:grid;grid-template-columns:70px 1fr;gap:4px 10px;font-size:12px">
+                                    <span style="color:#64748b;font-weight:600">Name:</span>
+                                    <code id="dns-txt-name" style="background:#f8fafc;padding:2px 7px;border-radius:4px;font-size:12px;color:#0f172a">_saas-verify</code>
+                                    <span style="color:#64748b;font-weight:600">Type:</span>
+                                    <code style="background:#f8fafc;padding:2px 7px;border-radius:4px;font-size:12px;color:#0f172a">TXT</code>
+                                    <span style="color:#64748b;font-weight:600">Value:</span>
+                                    <code style="background:#f8fafc;padding:2px 7px;border-radius:4px;font-size:12px;color:#0f172a">Generated after firm is created</code>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top:10px;font-size:11.5px;color:#92400e;line-height:1.5">
+                            <strong>Note:</strong> DNS changes can take up to 48 hours to propagate. You can trigger domain verification from the firm's detail page once the records are live. SSL/HTTPS must be configured separately on your web server (e.g. Let's Encrypt via Certbot).
+                        </div>
                     </div>
                 </div>
             </div>
@@ -231,9 +321,12 @@
                 <div style="font-size:13px;font-weight:600;margin-bottom:14px">Firm Preview</div>
                 <div style="display:flex;align-items:center;gap:12px;padding:14px;background:var(--bg);border-radius:10px;margin-bottom:12px">
                     <div id="preview-av" style="width:42px;height:42px;border-radius:10px;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:700;flex-shrink:0">??</div>
-                    <div>
+                    <div style="min-width:0">
                         <div id="preview-name" style="font-size:14px;font-weight:600;color:var(--text-1)">Firm Name</div>
-                        <div id="preview-sub" style="font-size:11.5px;color:var(--text-3)">subdomain.{{ config('tenancy.root_domain','yourdomain.com') }}</div>
+                        <div id="preview-sub" style="font-size:11.5px;color:var(--text-3);word-break:break-all">subdomain.{{ config('tenancy.root_domain','yourdomain.com') }}</div>
+                        <div id="preview-domain-badge" style="display:none;margin-top:3px">
+                            <span style="font-size:10px;font-weight:600;background:#f5f3ff;color:#7c3aed;padding:1px 7px;border-radius:4px">Custom Domain</span>
+                        </div>
                     </div>
                 </div>
                 <div style="display:flex;flex-direction:column;gap:8px">
@@ -251,12 +344,25 @@
             {{-- Tips --}}
             <div class="acc-card" style="margin-bottom:0">
                 <div style="font-size:13px;font-weight:600;margin-bottom:12px">Onboarding Tips</div>
-                <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;flex-direction:column;gap:10px" id="tips-subdomain">
                     @foreach([
-                        ['var(--blue)', 'Subdomain is permanent — choose carefully.'],
-                        ['var(--green)', 'A trial plan lets the firm explore before paying.'],
+                        ['var(--blue)',   'Subdomain is permanent — choose carefully.'],
+                        ['var(--green)',  'A trial plan lets the firm explore before paying.'],
                         ['var(--orange)', 'The admin email is used for all notifications.'],
                         ['var(--purple)', 'You can always edit details after creation.'],
+                    ] as [$color, $tip])
+                    <div style="display:flex;align-items:flex-start;gap:9px">
+                        <div style="width:7px;height:7px;border-radius:50%;background:{{ $color }};flex-shrink:0;margin-top:5px"></div>
+                        <div style="font-size:12.5px;color:var(--text-2);line-height:1.5">{{ $tip }}</div>
+                    </div>
+                    @endforeach
+                </div>
+                <div style="display:none;flex-direction:column;gap:10px" id="tips-domain">
+                    @foreach([
+                        ['var(--purple)', 'Custom domain must be owned by the firm.'],
+                        ['var(--orange)', 'Add the A and TXT records shown in the form.'],
+                        ['var(--blue)',   'Domain verification can be triggered after creation.'],
+                        ['var(--green)',  'SSL must be configured on the server (Let\'s Encrypt).'],
                     ] as [$color, $tip])
                     <div style="display:flex;align-items:flex-start;gap:9px">
                         <div style="width:7px;height:7px;border-radius:50%;background:{{ $color }};flex-shrink:0;margin-top:5px"></div>
@@ -269,8 +375,16 @@
             {{-- What happens next --}}
             <div class="acc-card" style="margin-bottom:0;background:linear-gradient(135deg,#0a2540 0%,var(--blue) 100%);border:none">
                 <div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:10px">What happens next?</div>
-                <div style="display:flex;flex-direction:column;gap:9px">
+                <div style="display:flex;flex-direction:column;gap:9px" id="next-subdomain">
                     @foreach(['Firm dashboard is created','Admin user receives login email','Subdomain goes live immediately','Billing cycle starts after trial'] as $i => $step)
+                    <div style="display:flex;align-items:flex-start;gap:9px">
+                        <div style="width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ $i+1 }}</div>
+                        <div style="font-size:12px;color:rgba(255,255,255,.8);line-height:1.5;margin-top:2px">{{ $step }}</div>
+                    </div>
+                    @endforeach
+                </div>
+                <div style="display:none;flex-direction:column;gap:9px" id="next-domain">
+                    @foreach(['Firm record created in the system','Admin user receives login email','Client adds DNS A + TXT records','You verify ownership from the firm detail page','Custom domain goes live after DNS propagates'] as $i => $step)
                     <div style="display:flex;align-items:flex-start;gap:9px">
                         <div style="width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.15);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ $i+1 }}</div>
                         <div style="font-size:12px;color:rgba(255,255,255,.8);line-height:1.5;margin-top:2px">{{ $step }}</div>
@@ -511,6 +625,14 @@
 .f-sel.is-invalid {
     border-color:#dc2626 !important;
 }
+.domain-type-opt {
+    flex:1; display:flex; align-items:flex-start; gap:10px;
+    border:2px solid var(--border); border-radius:10px;
+    padding:12px 14px; cursor:pointer; transition:all .13s;
+    background:#fff;
+}
+.domain-type-opt:hover { border-color:var(--orange); }
+.domain-type-opt.selected { border-color:var(--orange); background:#fff9f6; }
 </style>
 @endpush
 
@@ -524,12 +646,37 @@ function switchTab(tab) {
     document.getElementById('tab-bulk-btn').classList.toggle('active', tab === 'bulk');
 }
 
+// ── Domain type toggle ───────────────────────────────────────────────────
+function domainTypeChanged(type) {
+    document.getElementById('domain_type').value = type;
+    const isSubdomain = type === 'subdomain';
+
+    // Toggle fields
+    document.getElementById('subdomain-group').style.display        = isSubdomain ? '' : 'none';
+    document.getElementById('custom-domain-group').style.display    = isSubdomain ? 'none' : '';
+    document.getElementById('dns-instructions-group').style.display = isSubdomain ? 'none' : '';
+
+    // Toggle sidebar tips & next steps
+    document.getElementById('tips-subdomain').style.display = isSubdomain ? 'flex' : 'none';
+    document.getElementById('tips-domain').style.display    = isSubdomain ? 'none' : 'flex';
+    document.getElementById('next-subdomain').style.display = isSubdomain ? 'flex' : 'none';
+    document.getElementById('next-domain').style.display    = isSubdomain ? 'none' : 'flex';
+
+    // Style option cards
+    document.getElementById('dt-subdomain-label').classList.toggle('selected', isSubdomain);
+    document.getElementById('dt-domain-label').classList.toggle('selected', !isSubdomain);
+
+    // Sync radio buttons
+    document.querySelectorAll('[name=_domain_type_radio]').forEach(r => { r.checked = r.value === type; });
+
+    updatePreview();
+}
+
 // ── Individual form ──────────────────────────────────────────────────────
 function autoFillSubdomain(val) {
     const sub = document.getElementById('subdomain');
     if (!sub.dataset.manual) {
         sub.value = val.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-        updatePreview();
     }
     updatePreview();
 }
@@ -571,19 +718,26 @@ document.querySelector('[name=status]').addEventListener('change', function() {
 });
 
 function updatePreview() {
-    const name = document.getElementById('company_name').value || 'Company Name';
-    const sub  = document.getElementById('subdomain').value   || 'subdomain';
+    const name     = document.getElementById('company_name').value || 'Company Name';
     const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) || '??';
-    const colors = ['#0C84BC','#10b981','#F06B21','#7c3aed','#0d9488','#e11d48'];
-    const color  = colors[name.charCodeAt(0) % colors.length] || '#0C84BC';
+    const colors   = ['#0C84BC','#10b981','#F06B21','#7c3aed','#0d9488','#e11d48'];
+    const color    = colors[name.charCodeAt(0) % colors.length] || '#0C84BC';
+    const isCustom = document.getElementById('domain_type').value === 'domain';
 
-    document.getElementById('preview-av').textContent = initials;
-    document.getElementById('preview-av').style.background = color;
-    document.getElementById('preview-name').textContent = name;
-    document.getElementById('preview-sub').textContent = sub + '.{{ config('tenancy.root_domain','yourdomain.com') }}';
+    document.getElementById('preview-av').textContent       = initials;
+    document.getElementById('preview-av').style.background  = color;
+    document.getElementById('preview-name').textContent     = name;
+
+    if (isCustom) {
+        const cd = document.getElementById('custom_domain').value || 'yourdomain.com';
+        document.getElementById('preview-sub').textContent              = cd;
+        document.getElementById('preview-domain-badge').style.display  = 'block';
+    } else {
+        const sub = document.getElementById('subdomain').value || 'subdomain';
+        document.getElementById('preview-sub').textContent              = sub + '.{{ config('tenancy.root_domain','yourdomain.com') }}';
+        document.getElementById('preview-domain-badge').style.display  = 'none';
+    }
 }
-
-document.getElementById('subdomain').addEventListener('input', updatePreview);
 
 function togglePw() {
     const inp = document.getElementById('admin_password');
@@ -645,11 +799,22 @@ function validateCreateForm() {
         showErr('err-company_phone', 'company_phone', 'Phone number must be 10 digits.');
     }
 
-    const subdomain = (document.getElementById('subdomain').value || '').trim();
-    if (!subdomain) {
-        showErr('err-subdomain', 'subdomain', 'Subdomain is required.');
-    } else if (subdomain.length < 3 || subdomain.length > 50 || !/^[a-z0-9-]+$/.test(subdomain)) {
-        showErr('err-subdomain', 'subdomain', 'Only lowercase letters, numbers, and hyphens are allowed.');
+    const domainType = document.getElementById('domain_type').value;
+    if (domainType === 'subdomain') {
+        const subdomain = (document.getElementById('subdomain').value || '').trim();
+        if (!subdomain) {
+            showErr('err-subdomain', 'subdomain', 'Subdomain is required.');
+        } else if (subdomain.length < 3 || subdomain.length > 50 || !/^[a-z0-9-]+$/.test(subdomain)) {
+            showErr('err-subdomain', 'subdomain', 'Only lowercase letters, numbers, and hyphens are allowed.');
+        }
+    } else {
+        const customDomain = (document.getElementById('custom_domain').value || '').trim();
+        const domainRe = /^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+        if (!customDomain) {
+            showErr('err-custom_domain', 'custom_domain', 'Custom domain is required.');
+        } else if (!domainRe.test(customDomain)) {
+            showErr('err-custom_domain', 'custom_domain', 'Please enter a valid domain (e.g. app.acmecorp.com).');
+        }
     }
 
     const status = (document.getElementById('status').value || '').trim();
@@ -674,11 +839,11 @@ function validateCreateForm() {
 }
 
 // Clear error on input
-['company_name','company_email','company_phone','subdomain','admin_name','admin_email','admin_password','admin_pw_confirm'].forEach(function(id) {
+['company_name','company_email','company_phone','subdomain','custom_domain','admin_name','admin_email','admin_password','admin_pw_confirm'].forEach(function(id) {
     const el = document.getElementById(id);
     if (el) el.addEventListener('input', function() {
         this.classList.remove('is-invalid');
-        const errMap = { admin_pw_confirm: 'err-admin_password_confirmation' };
+        const errMap = { admin_pw_confirm: 'err-admin_password_confirmation', custom_domain: 'err-custom_domain' };
         const errId = errMap[id] || ('err-' + id);
         const errEl = document.getElementById(errId);
         if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }

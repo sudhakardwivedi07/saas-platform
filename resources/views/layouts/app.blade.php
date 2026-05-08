@@ -395,8 +395,8 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
             Dashboard
         </a>
 
-        {{-- Clients: client_admin + manager only --}}
-        @if(auth()->user()->hasAnyRole(['client_admin','manager']))
+        {{-- Clients: admin + manager only --}}
+        @if(auth()->user()->hasAnyRole(['admin','manager']))
         <a href="{{ route('clients.index') }}" class="ca-nav-item {{ request()->routeIs('clients.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
             Clients
@@ -404,8 +404,8 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         @endif
 
 
-        {{-- My Companies:  user --}}
-        @if(auth()->user()->hasAnyRole(['user']))
+        {{-- My Companies: client --}}
+        @if(auth()->user()->hasAnyRole(['client']))
         <a href="{{ route('my-companies.index') }}" class="ca-nav-item {{ request()->routeIs('my-companies.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
             My Companies
@@ -413,7 +413,7 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         @endif
 
 
-        {{-- Subscription & Usage: client_admin only (billing) --}}
+        {{-- Subscription & Usage: admin only (billing) --}}
         @if(auth()->user()->can('view_billing'))
         <a href="{{ route('billing.index') }}" class="ca-nav-item {{ request()->routeIs('billing.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
@@ -429,40 +429,40 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         </a>
         @endif
 
-        {{-- My Financials: client_admin only --}}
-        @if(auth()->user()->hasRole('client_admin'))
+        {{-- My Financials: admin only --}}
+        @if(auth()->user()->hasRole('admin'))
         <a href="{{ route('my-financials.index') }}" class="ca-nav-item {{ request()->routeIs('my-financials.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             My Financials
         </a>
         @endif
 
-        {{-- Insights: firm (client_admin + manager) --}}
-        @if(auth()->user()->hasAnyRole(['client_admin','manager']))
+        {{-- Insights: firm (admin + manager) --}}
+        @if(auth()->user()->hasAnyRole(['admin','manager']))
         <a href="{{ route('firm-insights.index') }}" class="ca-nav-item {{ request()->routeIs('firm-insights.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             Insights
         </a>
         @endif
 
-        {{-- Insights: basic user role only --}}
-        @if(!auth()->user()->hasAnyRole(['client_admin','manager']))
+        {{-- Insights: client role only --}}
+        @if(!auth()->user()->hasAnyRole(['admin','manager']))
         <a href="{{ route('insights.index') }}" class="ca-nav-item {{ request()->routeIs('insights.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             Insights
         </a>
         @endif
 
-        {{-- QuickBooks: client_admin + manager --}}
-        @if(auth()->user()->hasAnyRole(['client_admin', 'manager']))
+        {{-- QuickBooks: admin + manager --}}
+        @if(auth()->user()->hasAnyRole(['admin', 'manager']))
         <a href="{{ route('quickbooks.index') }}" class="ca-nav-item {{ (request()->routeIs('quickbooks.*') || request()->routeIs('firm-quickbooks.*')) ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
             QuickBooks
         </a>
         @endif
 
-        {{-- QuickBooks: user role (personal connection page) --}}
-        @if(!auth()->user()->hasAnyRole(['client_admin', 'manager']) && auth()->user()->can('view_quickbooks'))
+        {{-- QuickBooks: client role (personal connection page) --}}
+        @if(!auth()->user()->hasAnyRole(['admin', 'manager']) && auth()->user()->can('view_quickbooks'))
         <a href="{{ route('quickbooks.index') }}" class="ca-nav-item {{ request()->routeIs('quickbooks.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
             QuickBooks
@@ -477,8 +477,8 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         </a>
         @endif
 
-        {{-- Finance: client_admin only (view_reports) --}}
-        @if(auth()->user()->hasRole('client_admin'))
+        {{-- Finance: admin only (view_reports) --}}
+        @if(auth()->user()->hasRole('admin'))
         <a href="{{ route('finance.index') }}" class="ca-nav-item {{ request()->routeIs('finance.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
             Finance
@@ -486,7 +486,7 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         @endif
 
         {{-- Support: admin/manager roles only --}}
-        @if(auth()->user()->hasAnyRole(['client_admin','manager']))
+        @if(auth()->user()->hasAnyRole(['admin','manager']))
         <a href="{{ route('support.index') }}" class="ca-nav-item {{ request()->routeIs('support.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             Support
@@ -499,8 +499,8 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
             My Account
         </a>
 
-        {{-- Activity Log: client_admin + manager --}}
-        @if(auth()->user()->hasAnyRole(['client_admin','manager']))
+        {{-- Activity Log: admin + manager --}}
+        @if(auth()->user()->hasAnyRole(['admin','manager']))
         <a href="{{ route('activity.index') }}" class="ca-nav-item {{ request()->routeIs('activity.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Activity Log

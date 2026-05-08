@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * ClientPackage — subscription plan defined by a client_admin for their sub-companies.
+ * ClientPackage — subscription plan defined by an admin for their sub-companies.
  * Mirrors the SuperAdmin Package model but scoped to a company_id.
  *
  * Properties match SuperAdmin\Package column-for-column so either model can be passed

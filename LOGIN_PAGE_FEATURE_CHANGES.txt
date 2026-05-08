@@ -1,0 +1,218 @@
+================================================================================
+CUSTOM LOGIN PAGE FEATURE
+Project: SaaS Platform
+Date:    2026-05-08
+================================================================================
+
+OVERVIEW
+--------
+Each firm (admin company) now has a fully customisable login page.  When a
+client or team member navigates to the firm's domain or subdomain, they see
+the firm's branded login page instead of a generic one.
+
+The admin can customise the login page from Settings → Login Page:
+  • Heading text
+  • Subheading text
+  • Background type: gradient, solid colour, or custom image
+  • Background colour(s) (start + end for gradient; one colour for solid)
+  • Card background colour
+  • Sign-In button colour
+  • Logo (same logo used in the sidebar — shared with Branding)
+  • Background image (only uploaded/shown when bg type = image)
+
+A live preview on the right-hand side of the form updates instantly as the
+admin changes any setting.
+
+================================================================================
+HOW IT WORKS — ROUTING TO THE CORRECT LOGIN PAGE
+================================================================================
+
+The existing IdentifyTenant middleware (app/Http/Middleware/IdentifyTenant.php)
+already resolves the current tenant (Company) from:
+  1. A matching custom_domain column on the companies table
+  2. The first subdomain segment of the request host
+
+Once a tenant is identified, the company() helper and the branding()
+relationship provide the firm's CompanyBranding record to every view.
+
+AuthController::showLogin() already passes:
+  $branding = company()?->branding;
+
+to the login view.  The view (resources/views/auth/login.blade.php) uses
+that $branding record to apply all customisations at render time.
+
+Result: every firm's login URL automatically shows its own branded page with
+zero extra routing logic.
+
+================================================================================
+DATABASE CHANGES
+================================================================================
+
+Migration: database/migrations/2026_05_08_000002_add_login_page_fields_to_company_brandings.php
+
+Five new columns added to the company_brandings table:
+
+  Column              Type              Default
+  ──────────────────  ────────────────  ──────────────
+  login_bg_type       ENUM              'gradient'
+                      (gradient|solid|image)
+  login_bg_color      VARCHAR(25)       '#0d3d66'
+  login_bg_color_to   VARCHAR(25)       '#f06b21'
+  login_card_bg       VARCHAR(25)       '#ffffff'
+  login_btn_color     VARCHAR(25)       '#f06b21'
+
+Pre-existing columns already in the table (unchanged):
+  login_heading       VARCHAR(255)      NULL
+  login_subheading    VARCHAR(255)      NULL
+  login_background    VARCHAR(255)      NULL  ← path to uploaded image
+
+================================================================================
+FILES MODIFIED
+================================================================================
+
+1. database/migrations/2026_05_08_000002_add_login_page_fields_to_company_brandings.php
+   ─────────────────────────────────────────────────────────────────────────────
+   NEW FILE — adds the five columns described above.
+
+2. app/Models/CompanyBranding.php
+   ─────────────────────────────────────────────────────────────────────────────
+   CHANGE: Added the five new field names to the $fillable array:
+     'login_bg_type', 'login_bg_color', 'login_bg_color_to',
+     'login_card_bg', 'login_btn_color'
+
+3. resources/views/auth/login.blade.php
+   ─────────────────────────────────────────────────────────────────────────────
+   REWRITTEN to be fully dynamic from CompanyBranding:
+
+   @php block at top resolves:
+     $bgType     — gradient | solid | image   (falls back to 'gradient')
+     $bgColor    — start/solid colour          (falls back to '#0d3d66')
+     $bgColorTo  — gradient end colour         (falls back to '#f06b21')
+     $cardBg     — card background             (falls back to '#ffffff')
+     $btnColor   — button colour               (falls back to accent_color or '#f06b21')
+     $heading    — heading text                (falls back to 'Welcome back')
+     $subheading — subheading text             (falls back to 'Sign in to <app_name>')
+     $bodyBg     — computed CSS background property string
+
+   CSS uses --btn-color and --card-bg CSS variables so colours cascade to
+   all descendant elements automatically.
+
+   The login page is otherwise identical in structure to the previous version.
+
+4. app/Http/Controllers/SettingsController.php
+   ─────────────────────────────────────────────────────────────────────────────
+   ADDED method: updateLoginPage(Request $request)
+
+   - Requires 'edit_branding' permission.
+   - Validates all seven fields + two file uploads.
+   - Saves logo and login_background files to:
+       storage/app/public/companies/{id}/branding/
+     (same path as BrandingController)
+   - Uses CompanyBranding::firstOrNew so it works for firms that never saved
+     branding before.
+   - Busts the branding cache key 'branding_parent_{id}' after saving.
+   - Returns Reply::success JSON so the page can show a toast without reload.
+
+5. routes/web.php
+   ─────────────────────────────────────────────────────────────────────────────
+   ADDED inside the settings route group:
+     Route::post('/login-page', [SettingsController::class, 'updateLoginPage'])
+           ->name('login-page.update');
+
+6. resources/views/settings/index.blade.php
+   ─────────────────────────────────────────────────────────────────────────────
+   CHANGE A — Tab bar: added "Login Page" button:
+     <button class="tab-btn" data-tab="tab-login-page">Login Page</button>
+
+   CHANGE B — New tab panel #tab-login-page containing:
+     Left column — Form with:
+       • Heading input
+       • Subheading input
+       • Background type radio (gradient / solid / image)
+       • Background colour pickers (colour wheel + hex text, synced)
+       • Gradient end colour picker (hidden unless gradient selected)
+       • Background image file input (shown only when type = image)
+       • Card background colour picker
+       • Button colour picker
+       • Logo file input
+       • "Save Login Page" button (submits via AJAX)
+
+     Right column — Live preview:
+       • Miniature login card that mirrors the real login page
+       • Background, card colour, button colour, heading, subheading
+         all update in real-time as the user types / picks colours
+       • Logo updates immediately when a new file is selected
+       • Background image updates immediately when a file is selected
+
+   CHANGE C — JavaScript functions added:
+     syncColor(colorInputId, textInputId)   — keeps colour wheel + hex in sync
+     updateBgTypeVisibility()               — shows/hides gradient/solid/image fields
+     updatePreview()                        — re-renders the live preview
+     previewBgImage(input)                  — FileReader → preview bg image
+     previewLogoImage(input)               — FileReader → preview logo
+     submitLoginPageForm(e)                 — AJAX POST with FormData
+
+   CHANGE D — URL hash handler extended: '#login-page' now triggers the
+     Login Page tab and initialises the live preview.
+
+================================================================================
+NO OTHER FILES WERE MODIFIED
+================================================================================
+
+The following existing files required NO changes:
+  - app/Http/Controllers/Auth/AuthController.php
+    (already passes $branding = company()?->branding to login view)
+  - app/Http/Middleware/IdentifyTenant.php
+    (already resolves tenant from domain/subdomain)
+  - app/Models/Company.php — branding() relation already exists
+
+================================================================================
+HOW TO TEST
+================================================================================
+
+Test 1 — Default login page (no branding set)
+  1. Create a new firm as Super Admin.
+  2. Log out.
+  3. Navigate to the login page.
+     Expected: Default gradient background (dark blue → orange),
+               white card, orange Sign-In button, "Welcome back" heading.
+
+Test 2 — Customise login page
+  1. Log in as Admin.
+  2. Go to Settings → Login Page tab.
+  3. Change heading to "Hello, welcome!".
+  4. Change background type to "Solid Color"; pick green (#2d6a4f).
+  5. Change button colour to purple (#7c3aed).
+  6. Upload a logo.
+  7. Click "Save Login Page".
+     Expected: Toast "Login page settings saved." appears.
+
+  8. Log out and navigate to the login page.
+     Expected: Green solid background, purple button, custom heading,
+               new logo displayed on the card.
+
+Test 3 — Gradient background
+  1. In Settings → Login Page, set type to "Gradient".
+  2. Set start colour to #1e3a5f, end to #e94560.
+  3. Save and visit login page.
+     Expected: Diagonal gradient from deep navy to red/pink.
+
+Test 4 — Image background
+  1. In Settings → Login Page, set type to "Image".
+  2. Upload a landscape photo.
+  3. Save and visit login page.
+     Expected: Uploaded photo fills the entire background; card remains white.
+
+Test 5 — Live preview
+  1. Open Settings → Login Page tab.
+  2. Without saving, change the heading text.
+     Expected: Preview heading updates instantly.
+  3. Change button colour.
+     Expected: Preview button colour changes instantly.
+  4. Switch background type between options.
+     Expected: Preview background type updates; form fields for
+               gradient/solid/image toggle correctly.
+
+================================================================================
+END OF DOCUMENT
+================================================================================

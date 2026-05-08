@@ -10,7 +10,7 @@
         <p>Create and manage multiple companies from one account</p>
     </div>
     <div class="ph-actions">
-        @if(auth()->user()->can('add_company') || auth()->user()->hasRole('user'))
+        @if(auth()->user()->can('add_company') || auth()->user()->hasRole('client'))
         @if($canAddCompany)
         <a href="{{ route('my-companies.create') }}" class="btn btn-primary">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>

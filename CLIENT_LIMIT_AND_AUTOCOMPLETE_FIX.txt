@@ -1,0 +1,221 @@
+================================================================================
+CLIENT LIMIT ENFORCEMENT (Clients Page) + AUTOCOMPLETE FIX
+Project: SaaS Platform
+Date:    2026-05-08
+================================================================================
+
+OVERVIEW
+--------
+Two independent fixes were applied to the Client Management page (/clients):
+
+  Fix 1 — Max Clients enforcement on the Clients page
+    When an Admin tries to add a new client via the "+ Add Client" button,
+    the system now checks whether the firm's active plan allows any more
+    clients (based on the plan's "Max Clients" / max_users value).
+    If the limit has been reached, the user sees a SweetAlert warning
+    immediately — before they even open the form.  A server-side guard is
+    also in place so the limit cannot be bypassed by a direct POST.
+
+  Fix 2 — Autocomplete on email/password fields in the Add Client modal
+    The browser was auto-filling the Email and Password fields in the
+    "Add New Client" popup with the logged-in admin's saved credentials.
+    This was confusing and incorrect.  The fields are now always blank
+    when the modal opens.
+
+================================================================================
+FIX 1 — MAX CLIENTS ENFORCEMENT (Clients Page)
+================================================================================
+
+Background
+----------
+The plan's "Max Clients" field is stored as max_users on both the Package
+(SuperAdmin plan) and ClientPackage (admin-defined plan) tables.
+Company::activePlan() returns the active plan regardless of which type it is.
+
+The same limit was previously enforced in TenantUserController (Users page).
+This fix brings the same enforcement to the Clients page (ClientController).
+
+How the limit is counted
+------------------------
+Each "Add Client" operation creates one sub-company (created_by = admin's
+company_id).  The count of those sub-companies equals the number of clients.
+
+  $currentClientCount = Company::withoutGlobalScopes()
+      ->where('created_by', $parentCompanyId)
+      ->count();
+
+This is compared against $plan->max_users.
+
+USER EXPERIENCE
+---------------
+Case A — Limit NOT reached:
+  Button shows normally.  Clicking opens the Add Client modal.
+
+Case B — Limit IS reached (frontend guard):
+  Clicking "+ Add Client" triggers a SweetAlert immediately:
+    Title:  "Client Limit Reached"
+    Text:   "You have reached the maximum of N client(s) allowed on your
+             current plan. Please upgrade your plan to add more clients."
+  The modal never opens, so the user doesn't waste time filling the form.
+
+Case C — Server-side guard (safety net):
+  If the frontend guard is bypassed (e.g. direct POST), the store() method
+  also checks the limit and redirects to clients.index with:
+    session('error') = "Maximum client limit reached. Please upgrade your
+                        plan to add more clients."
+  The existing SweetAlert handler in layouts/app.blade.php picks this up and
+  shows the error popup automatically.
+
+================================================================================
+FILES MODIFIED — FIX 1
+================================================================================
+
+1. app/Http/Controllers/ClientController.php
+   ─────────────────────────────────────────
+   METHOD: index()
+
+   ADDED (after existing $tenant / $hasActivePlan lines):
+     $plan = $tenant?->activePlan();          // already resolved
+     $planMaxClients = (int) ($plan?->max_users ?? 0);
+     $currentClientCount = $this->companies->count(); // already loaded
+     $this->planMaxClients    = $planMaxClients;
+     $this->currentClientCount = $currentClientCount;
+     $this->maxClientsReached  = $planMaxClients > 0
+                                  && $currentClientCount >= $planMaxClients;
+
+   These three new variables are passed to the view.
+
+   METHOD: store()
+
+   ADDED (after $this->enforceMaxCompaniesLimit call):
+     $ownerCompany = Company::withoutGlobalScopes()->find($parentCompanyId);
+     $plan = $ownerCompany?->activePlan();
+     if ($plan && isset($plan->max_users) && (int) $plan->max_users > 0) {
+         $currentClientCount = Company::withoutGlobalScopes()
+             ->where('created_by', $parentCompanyId)
+             ->count();
+         if ($currentClientCount >= (int) $plan->max_users) {
+             return redirect()->route('clients.index')
+                 ->with('error', 'Maximum client limit reached. Please
+                                  upgrade your plan to add more clients.');
+         }
+     }
+
+   WHY both index() and store():
+   - index() feeds the frontend guard (immediate SweetAlert on button click).
+   - store() is the server-side safety net, in case the frontend is bypassed.
+
+2. resources/views/clients/index.blade.php
+   ─────────────────────────────────────────
+   SECTION: "+ Add Client" button (top-right of page header)
+
+   BEFORE:
+     The button always opened the modal when a plan was active.
+
+   AFTER:
+     @if($maxClientsReached)
+       Button fires Swal.fire({ icon:'warning', title:'Client Limit Reached',
+         text:'You have reached the maximum of N client(s)...' })
+     @else
+       Button calls openAddClientModal() (new JS function — see Fix 2)
+     @endif
+
+================================================================================
+FIX 2 — AUTOCOMPLETE ON EMAIL / PASSWORD FIELDS
+================================================================================
+
+Root cause
+----------
+Browsers detect any form that contains an <input type="email"> or
+<input type="password"> as a potential login form and pre-fill both fields
+with the user's saved credentials.  The Add Client modal matched this
+pattern, causing the admin's own email and password to be inserted into the
+new client's fields as soon as the modal opened.
+
+Solution
+--------
+Three layers of protection were applied:
+
+  Layer 1 — HTML attribute on email input:
+    autocomplete="off"
+    This hints to most browsers not to autofill this specific field.
+
+  Layer 2 — HTML attribute on password input:
+    autocomplete="new-password"
+    This tells browsers explicitly that this is a NEW password being created,
+    not a login password to fill from saved credentials.  Chrome, Firefox,
+    and Edge all respect this attribute.
+
+  Layer 3 — JavaScript: openAddClientModal() function
+    Programmatically clears both fields every time the modal opens, and then
+    focuses the "Full Name" field (a non-credential field) so the browser has
+    no reason to trigger autofill behaviour:
+
+      function openAddClientModal() {
+          document.getElementById('ac-email').value    = '';
+          document.getElementById('ac-password').value = '';
+          document.getElementById('modal-add-client').classList.add('open');
+          setTimeout(function() {
+              document.querySelector('#modal-add-client input[name="name"]')
+                  .focus();
+          }, 80);
+      }
+
+================================================================================
+FILES MODIFIED — FIX 2
+================================================================================
+
+1. resources/views/clients/index.blade.php
+   ─────────────────────────────────────────
+   CHANGE A — Email input (inside Add Client modal):
+     Added id="ac-email"
+     Added autocomplete="off"
+
+   CHANGE B — Password input (inside Add Client modal):
+     autocomplete="new-password" added  (was missing entirely)
+
+   CHANGE C — "+ Add Client" button onclick:
+     Changed from:  onclick="document.getElementById('modal-add-client')
+                               .classList.add('open')"
+     Changed to:    onclick="openAddClientModal()"
+
+   CHANGE D — New JS function openAddClientModal() added before
+     toggleAcPassword() in the page's <script> block.
+
+================================================================================
+NO OTHER FILES WERE MODIFIED
+================================================================================
+
+WHY NO OTHER FILES NEEDED CHANGES:
+  - The SweetAlert session error handler already exists in layouts/app.blade.php.
+  - The plan's max_users field already exists on Package and ClientPackage models.
+  - Company::activePlan() already returns the correct plan regardless of type.
+  - No migration is needed — no schema changes were required.
+
+================================================================================
+HOW TO TEST
+================================================================================
+
+Test 1 — Limit enforcement
+  1. Log in as Super Admin → Plan Management → Edit a plan.
+  2. Set "Max Clients" to 2.
+  3. Log in as Admin on a firm using that plan.
+  4. Add 2 clients via Clients → + Add Client.
+  5. Click "+ Add Client" again.
+     Expected: SweetAlert popup "Client Limit Reached" appears immediately.
+               The Add Client modal does NOT open.
+  6. Attempt a direct POST to /clients (bypassing the button).
+     Expected: Redirect to /clients with SweetAlert error popup.
+
+Test 2 — Autocomplete fix
+  1. Log in as Admin.
+  2. Go to Clients page.
+  3. Click "+ Add Client".
+  4. Observe the Email ID and Password fields.
+     Expected: Both fields are empty. The cursor is in the Full Name field.
+  5. Close and re-open the modal several times.
+     Expected: Fields remain empty every time.
+
+================================================================================
+END OF DOCUMENT
+================================================================================

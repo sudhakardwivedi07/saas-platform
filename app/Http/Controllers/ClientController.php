@@ -100,7 +100,7 @@ class ClientController extends AccountBaseController
 
     public function index()
     {
-        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
 
         $companyId = company()?->id ?? auth()->user()->company_id;
 
@@ -136,7 +136,15 @@ class ClientController extends AccountBaseController
             ->get();
 
         $tenant = Company::withoutGlobalScopes()->find($companyId);
-        $this->hasActivePlan = (bool) $tenant?->activePlan();
+        $plan   = $tenant?->activePlan();
+        $this->hasActivePlan = (bool) $plan;
+
+        // Plan's Max Clients limit (max_users field on the plan)
+        $planMaxClients = (int) ($plan?->max_users ?? 0);
+        $currentClientCount = $this->companies->count();
+        $this->planMaxClients    = $planMaxClients;
+        $this->currentClientCount = $currentClientCount;
+        $this->maxClientsReached  = $planMaxClients > 0 && $currentClientCount >= $planMaxClients;
 
         return view('clients.index', $this->data);
     }
@@ -166,6 +174,19 @@ class ClientController extends AccountBaseController
         $parentCompanyId = company()->id;
         $this->enforceMaxCompaniesLimit($parentCompanyId);
 
+        // Enforce plan's Max Clients limit (max_users on the plan)
+        $ownerCompany = Company::withoutGlobalScopes()->find($parentCompanyId);
+        $plan = $ownerCompany?->activePlan();
+        if ($plan && isset($plan->max_users) && (int) $plan->max_users > 0) {
+            $currentClientCount = Company::withoutGlobalScopes()
+                ->where('created_by', $parentCompanyId)
+                ->count();
+            if ($currentClientCount >= (int) $plan->max_users) {
+                return redirect()->route('clients.index')
+                    ->with('error', 'Maximum client limit reached. Please upgrade your plan to add more clients.');
+            }
+        }
+
         $resolvedClientPackageId = $this->resolveClientPackageId(
             $parentCompanyId,
             $request->filled('client_package_id') ? (int) $request->client_package_id : null
@@ -190,7 +211,7 @@ class ClientController extends AccountBaseController
             'password'   => Hash::make($request->password),
         ]);
 
-        $user->assignRole('user');
+        $user->assignRole('client');
 
         return redirect()->route('clients.index')
             ->with('success', 'Client "' . $user->name . '" added successfully.');
@@ -198,7 +219,7 @@ class ClientController extends AccountBaseController
 
     public function bulkUpload(\Illuminate\Http\Request $request)
     {
-        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
 
         $request->validate(['csv_file' => 'required|file|mimes:csv,txt|max:5120']);
 
@@ -266,7 +287,7 @@ class ClientController extends AccountBaseController
                 'email'      => $email,
                 'password'   => Hash::make(\Illuminate\Support\Str::random(12)),
             ]);
-            $user->assignRole('user');
+            $user->assignRole('client');
             $created++;
         }
 
@@ -280,7 +301,7 @@ class ClientController extends AccountBaseController
 
     public function update(Request $request, $id)
     {
-        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
 
         $client = User::findOrFail($id);
 
@@ -299,7 +320,7 @@ class ClientController extends AccountBaseController
 
     public function assignPlan(Request $request, $id)
     {
-        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
 
         $client  = User::findOrFail($id);
         $company = $client->company;
@@ -328,7 +349,7 @@ class ClientController extends AccountBaseController
 
     public function toggleStatus($id)
     {
-        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
         $client = User::findOrFail($id);
         $client->status = $client->status === 'active' ? 'inactive' : 'active';
         $client->save();
@@ -341,7 +362,7 @@ class ClientController extends AccountBaseController
 
     public function dashboard($id)
     {
-        abort_403(!auth()->user()->hasAnyRole(['client_admin', 'manager']));
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
         $this->clientUser  = User::with(['company.quickbooksConnections', 'company.clientPackage'])->findOrFail($id);
         $this->pageTitle   = $this->clientUser->name . "'s Dashboard";
         return view('clients.dashboard', $this->data);

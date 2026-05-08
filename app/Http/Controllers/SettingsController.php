@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helper\Reply;
 use App\Models\Company;
+use App\Models\CompanyBranding;
 use App\Models\CompanyQuickbooksSetting;
 use App\Models\EmailSmtpSetting;
 use App\Models\SmsSetting;
@@ -35,7 +36,7 @@ class SettingsController extends AccountBaseController
         $this->clientPackages = ClientPackage::forCompany($companyId)->orderBy('sort')->get();
         $this->branding       = company()?->branding;
 
-        // Roles & Permissions — count only users within this client_admin's company hierarchy
+        // Roles & Permissions — count only users within this admin's company hierarchy
         $subCompanyIds = Company::withoutGlobalScopes()
             ->where('created_by', $companyId)
             ->pluck('id')
@@ -68,6 +69,46 @@ class SettingsController extends AccountBaseController
         });
 
         return view('settings.index', $this->data);
+    }
+
+    public function updateLoginPage(Request $request)
+    {
+        abort_403(!auth()->user()->can('edit_branding'));
+
+        $request->validate([
+            'login_heading'    => 'nullable|string|max:255',
+            'login_subheading' => 'nullable|string|max:255',
+            'login_bg_type'    => 'nullable|in:gradient,solid,image',
+            'login_bg_color'   => ['nullable', 'regex:/^#[0-9a-fA-F]{3,6}$/'],
+            'login_bg_color_to'=> ['nullable', 'regex:/^#[0-9a-fA-F]{3,6}$/'],
+            'login_card_bg'    => ['nullable', 'regex:/^#[0-9a-fA-F]{3,6}$/'],
+            'login_btn_color'  => ['nullable', 'regex:/^#[0-9a-fA-F]{3,6}$/'],
+            'logo'             => 'nullable|image|max:2048',
+            'login_background' => 'nullable|image|max:4096',
+        ]);
+
+        $branding = CompanyBranding::firstOrNew(['company_id' => company()->id]);
+
+        foreach (['logo', 'login_background'] as $field) {
+            if ($request->hasFile($field)) {
+                $path = $request->file($field)->store(
+                    'companies/' . company()->id . '/branding',
+                    'public'
+                );
+                $branding->{$field} = $path;
+            }
+        }
+
+        $branding->fill($request->only(
+            'login_heading', 'login_subheading',
+            'login_bg_type', 'login_bg_color', 'login_bg_color_to',
+            'login_card_bg', 'login_btn_color'
+        ));
+        $branding->save();
+
+        cache()->forget('branding_parent_' . company()->id);
+
+        return Reply::success('Login page settings saved.');
     }
 
     public function updateQuickbooksSettings(Request $request)

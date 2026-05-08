@@ -22,7 +22,7 @@ class SupportController extends AccountBaseController
 
         $subCompanyIds = Company::where('created_by', $companyId)->pluck('id')->toArray();
 
-        // Tickets submitted by this client_admin user
+        // Tickets submitted by this admin user
         $this->myTickets = SupportTicket::where('user_id', $userId)
             ->with('user', 'company')
             ->orderByDesc('created_at')

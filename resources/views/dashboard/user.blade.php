@@ -25,6 +25,13 @@
     flex-direction: column;
     height: 100%;
 }
+.plan-card--current {
+    border-color: rgba(240, 107, 33, .45);
+    box-shadow: 0 10px 28px rgba(240, 107, 33, .08);
+}
+.plan-card--available {
+    border-color: #e5e7eb;
+}
 
 .plan-card-title { font-size: 16px; font-weight: 700; color: var(--text-1); margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
 .plan-card-title .plan-badge {
@@ -264,8 +271,12 @@
 .classic-dash-grid--empty-plans {
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
 }
+.classic-dash-grid--single-plan {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
 @media (max-width: 1100px) {
-    .classic-dash-grid--empty-plans { grid-template-columns: 1fr; }
+    .classic-dash-grid--empty-plans,
+    .classic-dash-grid--single-plan { grid-template-columns: 1fr; }
 }
 .classic-dash-card {
     background: #fff;

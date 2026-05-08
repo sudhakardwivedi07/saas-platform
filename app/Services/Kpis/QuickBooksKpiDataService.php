@@ -35,8 +35,9 @@ class QuickBooksKpiDataService
     }
 
     /**
-     * Financial dataset for KPI calculations: live QuickBooks export when possible,
-     * otherwise the same CSVs stored on the latest analyzed insight (matches downloaded Excel/CSV).
+     * Financial dataset for KPI calculations: prefer the same CSVs stored on the
+     * latest analyzed insight, then use live QuickBooks only when no analyzed
+     * report data exists. This keeps dashboard KPIs aligned with generated Excel files.
      */
     public static function dataset(int $companyId): ?array
     {
@@ -48,13 +49,6 @@ class QuickBooksKpiDataService
             return $cached;
         }
 
-        $live = self::fetchLiveDataset($companyId, $userId ? (int) $userId : null);
-        if ($live !== null) {
-            Cache::put($cacheKey, $live, 900);
-
-            return $live;
-        }
-
         if ($userId) {
             $fromReport = self::datasetFromLatestAnalyzedReportCsvs((int) $companyId, (int) $userId);
             if ($fromReport !== null) {
@@ -62,6 +56,13 @@ class QuickBooksKpiDataService
 
                 return $fromReport;
             }
+        }
+
+        $live = self::fetchLiveDataset($companyId, $userId ? (int) $userId : null);
+        if ($live !== null) {
+            Cache::put($cacheKey, $live, 900);
+
+            return $live;
         }
 
         // Do not cache misses — avoids locking in empty state after new insights are saved.

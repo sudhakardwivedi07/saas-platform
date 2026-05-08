@@ -72,7 +72,7 @@ class RoleController extends AccountBaseController
     public function destroy(int $id)
     {
         $role = Role::findOrFail($id);
-        abort_403(in_array($role->name, ['super_admin', 'client_admin']));
+        abort_403(in_array($role->name, ['super_admin', 'admin']));
         $role->delete();
         return Reply::success('Role deleted.');
     }

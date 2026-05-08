@@ -44,7 +44,7 @@ class AccountBaseController extends Controller
             ? \App\Models\CompanyBranding::where('company_id', $company->id)->first()
             : null;
 
-        // Client users belong to sub-companies (created_by = client_admin company_id).
+        // Client users belong to sub-companies (created_by = admin company_id).
         // withoutGlobalScopes() is required: TenantScope silently appends
         // "AND company_id = {current_company_id}" to every CompanyBranding query,
         // which would make a cross-company lookup always return null.

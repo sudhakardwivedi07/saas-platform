@@ -39,7 +39,10 @@ class Company extends BaseModel
         'entity_type',
         'state',
         'subdomain',
+        'domain_type',
         'custom_domain',
+        'domain_verification_token',
+        'domain_verified_at',
         'status',
         'package_id',
         'client_package_id',
@@ -53,8 +56,9 @@ class Company extends BaseModel
     ];
 
     protected $casts = [
-        'trial_ends_at'  => 'datetime',
-        'last_active_at' => 'datetime',
+        'trial_ends_at'       => 'datetime',
+        'last_active_at'      => 'datetime',
+        'domain_verified_at'  => 'datetime',
     ];
 
     protected static function booted(): void
@@ -136,10 +140,10 @@ class Company extends BaseModel
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    /** Primary admin user for this company (client_admin role). */
+    /** Primary admin user for this company (admin role). */
     public function adminUser(): HasOne
     {
-        return $this->hasOne(User::class)->whereHas('roles', fn ($q) => $q->where('name', 'client_admin'))->latestOfMany();
+        return $this->hasOne(User::class)->whereHas('roles', fn ($q) => $q->where('name', 'admin'))->latestOfMany();
     }
 
     // ─── Computed Properties ───────────────────────────────────────────────────

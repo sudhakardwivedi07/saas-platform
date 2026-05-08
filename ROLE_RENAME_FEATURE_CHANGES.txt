@@ -1,0 +1,228 @@
+================================================================================
+ROLE RENAME: client_admin → admin  |  user → client
+Project: SaaS Platform
+Date:    2026-05-08
+================================================================================
+
+OVERVIEW
+--------
+Two role renames were applied across the entire project:
+
+  1. 'client_admin'  →  'admin'
+     The role assigned to the firm administrator created by the Super Admin
+     when onboarding a new firm is now named 'admin' instead of 'client_admin'.
+
+  2. 'user'  →  'client'
+     A new 'client' role was created with identical permissions to the
+     previous 'user' role.  All existing users who held the 'user' role
+     have been migrated to 'client'.  The old 'user' role has been deleted.
+
+================================================================================
+WHY THESE CHANGES WERE MADE
+================================================================================
+
+  client_admin → admin
+    The old name was redundant.  Every administrator in the tenant panel is
+    already scoped to their own firm, so the 'client_' prefix added no
+    information and made role-check code verbose.  'admin' is shorter,
+    clearer, and consistent with common SaaS conventions.
+
+  user → client
+    Users created by an admin inside a firm represent that firm's end-clients.
+    The generic name 'user' was ambiguous — every person in the system is a
+    user.  'client' precisely describes what this role represents: a client
+    of the firm.
+
+================================================================================
+DATABASE CHANGES
+================================================================================
+
+Migration file:
+  database/migrations/2026_05_08_000001_rename_client_admin_to_admin_and_add_client_role.php
+
+What the migration does (up):
+  1. UPDATE roles SET name='admin'  WHERE name='client_admin'
+  2. UPDATE user_companies SET role='admin'  WHERE role='client_admin'
+     (pivot table that tracks which admin manages which sub-company)
+  3. INSERT new role 'client' (guard_name='web')
+  4. Copy all permission rows from role_has_permissions for 'user' → 'client'
+  5. UPDATE model_has_roles: reassign all 'user'-role users to 'client'
+  6. DELETE the old 'user' role (permissions + role row)
+  7. Clear Spatie permission cache
+
+What the migration does (down — rollback):
+  1. Rename 'admin' back to 'client_admin'
+  2. Revert user_companies pivot back to 'client_admin'
+  3. Rename 'client' back to 'user'
+     (permissions stay attached; model_has_roles stays as-is)
+
+Run migration:    php artisan migrate
+Rollback:         php artisan migrate:rollback
+
+================================================================================
+FILES MODIFIED
+================================================================================
+
+1. database/migrations/2026_05_08_000001_... (NEW)
+   — Described above.
+
+2. database/seeders/PermissionSeeder.php
+   — Renamed role variables: $clientAdmin → $adminRole, $userRole → $clientRole
+   — Role::firstOrCreate names changed to 'admin' and 'client'
+   — syncPermissions comments updated
+   — Comment strings referencing 'client_admin' updated
+
+3. app/Models/Company.php
+   — adminUser() relation: where('name','client_admin') → where('name','admin')
+   — Comment on the relation updated
+
+4. app/Models/User.php
+   — portfolioCompanies(): hasAnyRole(['client_admin','manager'])
+     → hasAnyRole(['admin','manager'])
+
+5. app/Models/ClientPackage.php
+   — Doc-block comment only: 'client_admin' → 'admin'
+
+6. app/Http/Controllers/TenantUserController.php
+   — store(): role check 'user' → 'client' (max-clients enforcement)
+   — store(): whereHas roles query 'user' → 'client'
+   — toggleStatus(): hasRole('client_admin') → hasRole('admin')
+   — Comment updated
+
+7. app/Http/Controllers/SuperAdmin/DashboardController.php
+   — index(): firmBase whereHas roles 'client_admin' → 'admin'
+   — index(): total_users whereHas roles 'user' → 'client'
+   — Comments updated
+
+8. app/Http/Controllers/SuperAdmin/CompanyController.php
+   — store() bulk import (line ~115): Role::firstOrCreate 'client_admin' → 'admin'
+   — store() single create (line ~223): Role::firstOrCreate 'client_admin' → 'admin'
+   — index() (line ~337): whereHas roles 'client_admin' → 'admin'
+   — impersonate() (line ~447): whereHas roles 'client_admin' → 'admin'
+   — Comment on fallback updated
+
+9. app/Http/Controllers/SuperAdmin/RoleController.php
+   — destroy(): system-role protection list 'client_admin' → 'admin'
+
+10. app/Http/Controllers/DashboardController.php
+    — index(): hasAnyRole(['client_admin','manager']) → ['admin','manager']
+    — myFinancials(): hasRole('client_admin') → hasRole('admin')
+    — assignPlan(): hasAnyRole(['client_admin','manager']) → ['admin','manager']
+    — Comments updated
+
+11. app/Http/Controllers/FinanceController.php
+    — index() and show(): hasRole('client_admin') → hasRole('admin')
+
+12. app/Http/Controllers/ClientKPIController.php
+    — All three abort_403 guards: ['client_admin','manager'] → ['admin','manager']
+
+13. app/Http/Controllers/ClientController.php
+    — All abort_403 guards: ['client_admin','manager'] → ['admin','manager']
+    — store() and update() sub-client creation:
+      assignRole('user') → assignRole('client')
+
+14. app/Http/Controllers/ClientCompanyController.php
+    — companyOwnerKeyForCurrentUser(): ['client_admin','manager'] → ['admin','manager']
+    — canManageCompanies(): hasRole('user') → hasRole('client')
+    — canAddCompanies(): hasRole('user') → hasRole('client')
+    — show(): isClientUserFlow = hasRole('user') → hasRole('client')
+    — store(): isClientUserFlow check (line ~230): hasRole('user') → hasRole('client')
+    — store(): new sub-company admin: Role::firstOrCreate 'client_admin' → 'admin'
+    — store(): pivot sync: ['role'=>'client_admin'] → ['role'=>'admin']
+    — store(): whereHas roles 'client_admin' → 'admin'
+    — abort_403 guard: ['client_admin','manager'] → ['admin','manager']
+    — Comments updated
+
+15. app/Http/Controllers/Auth/AuthController.php
+    — register(): Role::firstOrCreate 'client_admin' → 'admin'
+    — confirmPayment(): whereHas roles 'client_admin' → 'admin'
+
+16. app/Http/Controllers/QuickBooksController.php
+    — index(): hasRole('user') → hasRole('client')
+    — Comment updated
+
+17. app/Http/Controllers/ActivityController.php
+    — index(): whereIn roles ['client_admin','manager'] → ['admin','manager']
+
+18. app/Http/Controllers/AccountController.php
+    — index(): hasAnyRole(['client_admin','manager']) → ['admin','manager']
+
+19. app/Http/Controllers/RoleController.php
+    — $systemRoles array: 'client_admin' → 'admin'
+
+20. app/Http/Controllers/AccountBaseController.php
+    — Comment only updated
+
+21. app/Http/Controllers/SettingsController.php
+    — Comment only updated
+
+22. app/Http/Controllers/SubscriptionController.php
+    — Comment only updated
+
+23. app/Http/Controllers/SupportController.php
+    — Comment only updated
+
+24. resources/views/layouts/app.blade.php
+    — All hasRole('client_admin') → hasRole('admin')
+    — All hasAnyRole(['client_admin','manager']) → ['admin','manager']
+    — hasAnyRole(['user']) → hasAnyRole(['client'])  (My Companies nav item)
+    — All comment strings updated
+
+25. resources/views/users/index.blade.php
+    — CSS class .role-badge-client_admin → .role-badge-admin
+    — CSS class .role-badge-user → .role-badge-client
+    — $roleName default fallback 'user' → 'client'
+    — match() key 'client_admin' → 'admin'  (permission summary)
+    — match() added 'client' → 'Read-only access'  (permission summary)
+    — match() key 'client_admin' → 'admin'  (avatar colour)
+
+26. resources/views/super-admin/roles/index.blade.php
+    — @unless system role protection: 'client_admin' → 'admin'
+
+27. resources/views/companies/create.blade.php
+    — $isClientUserFlow: hasRole('user') → hasRole('client')
+
+28. resources/views/companies/index.blade.php
+    — @if add-company button: hasRole('user') → hasRole('client')
+
+29. resources/views/companies/edit.blade.php
+    — $isClientUserFlow: hasRole('user') → hasRole('client')
+
+30. resources/views/settings/index.blade.php
+    — $systemRoles PHP block: 'client_admin' → 'admin'
+
+31. routes/web.php
+    — Comment strings only updated
+
+================================================================================
+ROLE PERMISSIONS — UNCHANGED
+================================================================================
+
+  admin   (was client_admin):  ALL permissions (unchanged)
+  manager:                      Same as before (unchanged)
+  client  (was user):           view_documents, download_documents,
+                                 view_quickbooks, view_reports (unchanged)
+
+The 'client' role was created as an exact copy of the 'user' role.
+No permissions were added or removed from any role.
+
+================================================================================
+EXISTING DATA MIGRATION SUMMARY
+================================================================================
+
+  Roles table:
+    'client_admin' row → renamed to 'admin'
+    'user' row       → deleted (replaced by new 'client' row)
+
+  role_has_permissions:
+    All permission links from 'user' role → copied to 'client' role
+
+  model_has_roles:
+    All users that had role_id pointing to 'user' → updated to 'client' role_id
+
+  user_companies pivot:
+    All rows where role='client_admin' → updated to role='admin'
+
+================================================================================
+END OF DOCUMENT
+================================================================================

@@ -37,6 +37,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
         Roles &amp; Permissions
     </button>
+    <button class="tab-btn" data-tab="tab-login-page">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
+        Login Page
+    </button>
 </div>
 
 {{-- Tab 1: Payment --}}
@@ -392,7 +396,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @php $systemRoles = ['client_admin', 'super_admin']; @endphp
+                    @php $systemRoles = ['admin', 'super_admin']; @endphp
                     @foreach($roles as $role)
                     @php
                         $isSystem  = in_array($role->name, $systemRoles);
@@ -551,6 +555,188 @@
                 <button type="submit" class="btn btn-primary btn-sm" id="er-submit">Save Changes</button>
             </div>
         </form>
+    </div>
+</div>
+
+{{-- Tab 7: Login Page --}}
+<div class="tab-panel" id="tab-login-page">
+    <div class="acc-card" style="max-width:1200px">
+        <div class="acc-section-title" style="margin-bottom:24px">
+            <h3 style="font-size:16px;font-weight:700;color:#1a202c;margin:0 0 4px">Login Page</h3>
+            <p style="font-size:13px;color:#6b7280;margin:0">Customise the login page your clients and team members see when signing in.</p>
+        </div>
+
+        <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap">
+
+            {{-- ── LEFT: Form ── --}}
+            <div style="flex:1;min-width:320px;max-width:520px">
+                <form id="login-page-form" enctype="multipart/form-data" onsubmit="submitLoginPageForm(event)">
+                    @csrf
+
+                    {{-- Heading --}}
+                    <div style="margin-bottom:16px">
+                        <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Heading</label>
+                        <input type="text" name="login_heading" id="lp-heading"
+                               value="{{ $branding?->login_heading ?? 'Welcome back' }}"
+                               placeholder="Welcome back"
+                               oninput="updatePreview()"
+                               style="width:100%;height:40px;border:1.5px solid #e2e8f0;border-radius:8px;padding:0 12px;font-size:14px;outline:none">
+                    </div>
+
+                    {{-- Subheading --}}
+                    <div style="margin-bottom:16px">
+                        <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Subheading</label>
+                        <input type="text" name="login_subheading" id="lp-subheading"
+                               value="{{ $branding?->login_subheading ?? 'Sign in to ' . ($branding?->app_name ?? config('app.name')) }}"
+                               placeholder="Sign in to your account"
+                               oninput="updatePreview()"
+                               style="width:100%;height:40px;border:1.5px solid #e2e8f0;border-radius:8px;padding:0 12px;font-size:14px;outline:none">
+                    </div>
+
+                    {{-- Background Type --}}
+                    <div style="margin-bottom:16px">
+                        <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:8px">Background Type</label>
+                        <div style="display:flex;gap:12px;flex-wrap:wrap">
+                            @foreach(['gradient' => 'Gradient', 'solid' => 'Solid Color', 'image' => 'Image'] as $val => $lbl)
+                            <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:#374151;cursor:pointer">
+                                <input type="radio" name="login_bg_type" value="{{ $val }}"
+                                       {{ ($branding?->login_bg_type ?? 'gradient') === $val ? 'checked' : '' }}
+                                       onchange="updateBgTypeVisibility();updatePreview()">
+                                {{ $lbl }}
+                            </label>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    {{-- Color pickers row --}}
+                    <div id="lp-colors-wrap" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+                        <div id="lp-bg-color-wrap" style="flex:1;min-width:120px">
+                            <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px" id="lp-bg-color-label">Background Color</label>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <input type="color" name="login_bg_color" id="lp-bg-color"
+                                       value="{{ $branding?->login_bg_color ?? '#0d3d66' }}"
+                                       oninput="updatePreview()"
+                                       style="width:40px;height:34px;border:1.5px solid #e2e8f0;border-radius:6px;padding:2px;cursor:pointer">
+                                <input type="text" id="lp-bg-color-text"
+                                       value="{{ $branding?->login_bg_color ?? '#0d3d66' }}"
+                                       oninput="syncColor('lp-bg-color','lp-bg-color-text');updatePreview()"
+                                       maxlength="7"
+                                       style="width:80px;height:34px;border:1.5px solid #e2e8f0;border-radius:6px;padding:0 8px;font-size:13px;font-family:monospace">
+                            </div>
+                        </div>
+                        <div id="lp-bg-color-to-wrap" style="flex:1;min-width:120px">
+                            <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Gradient End Color</label>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <input type="color" name="login_bg_color_to" id="lp-bg-color-to"
+                                       value="{{ $branding?->login_bg_color_to ?? '#f06b21' }}"
+                                       oninput="updatePreview()"
+                                       style="width:40px;height:34px;border:1.5px solid #e2e8f0;border-radius:6px;padding:2px;cursor:pointer">
+                                <input type="text" id="lp-bg-color-to-text"
+                                       value="{{ $branding?->login_bg_color_to ?? '#f06b21' }}"
+                                       oninput="syncColor('lp-bg-color-to','lp-bg-color-to-text');updatePreview()"
+                                       maxlength="7"
+                                       style="width:80px;height:34px;border:1.5px solid #e2e8f0;border-radius:6px;padding:0 8px;font-size:13px;font-family:monospace">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Background Image upload --}}
+                    <div id="lp-bg-image-wrap" style="margin-bottom:16px;display:none">
+                        <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Background Image</label>
+                        <input type="file" name="login_background" id="lp-bg-image" accept="image/*"
+                               onchange="previewBgImage(this)"
+                               style="font-size:13px">
+                        @if($branding?->login_background)
+                            <p style="font-size:12px;color:#6b7280;margin-top:4px">Current: <a href="{{ asset('storage/'.$branding->login_background) }}" target="_blank" style="color:#1a6aa8">view image</a></p>
+                        @endif
+                    </div>
+
+                    {{-- Card & Button colors --}}
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">
+                        <div style="flex:1;min-width:120px">
+                            <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Card Background</label>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <input type="color" name="login_card_bg" id="lp-card-bg"
+                                       value="{{ $branding?->login_card_bg ?? '#ffffff' }}"
+                                       oninput="updatePreview()"
+                                       style="width:40px;height:34px;border:1.5px solid #e2e8f0;border-radius:6px;padding:2px;cursor:pointer">
+                                <input type="text" id="lp-card-bg-text"
+                                       value="{{ $branding?->login_card_bg ?? '#ffffff' }}"
+                                       oninput="syncColor('lp-card-bg','lp-card-bg-text');updatePreview()"
+                                       maxlength="7"
+                                       style="width:80px;height:34px;border:1.5px solid #e2e8f0;border-radius:6px;padding:0 8px;font-size:13px;font-family:monospace">
+                            </div>
+                        </div>
+                        <div style="flex:1;min-width:120px">
+                            <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Button Color</label>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <input type="color" name="login_btn_color" id="lp-btn-color"
+                                       value="{{ $branding?->login_btn_color ?? ($branding?->accent_color ?? '#f06b21') }}"
+                                       oninput="updatePreview()"
+                                       style="width:40px;height:34px;border:1.5px solid #e2e8f0;border-radius:6px;padding:2px;cursor:pointer">
+                                <input type="text" id="lp-btn-color-text"
+                                       value="{{ $branding?->login_btn_color ?? ($branding?->accent_color ?? '#f06b21') }}"
+                                       oninput="syncColor('lp-btn-color','lp-btn-color-text');updatePreview()"
+                                       maxlength="7"
+                                       style="width:80px;height:34px;border:1.5px solid #e2e8f0;border-radius:6px;padding:0 8px;font-size:13px;font-family:monospace">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Logo upload --}}
+                    <div style="margin-bottom:24px">
+                        <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Logo (shown on login card)</label>
+                        <input type="file" name="logo" id="lp-logo" accept="image/*"
+                               onchange="previewLogoImage(this)"
+                               style="font-size:13px">
+                        @if($branding?->logo)
+                            <p style="font-size:12px;color:#6b7280;margin-top:4px">Current: <a href="{{ asset('storage/'.$branding->logo) }}" target="_blank" style="color:#1a6aa8">view logo</a></p>
+                        @endif
+                    </div>
+
+                    <button type="submit" id="lp-submit" class="btn btn-primary">Save Login Page</button>
+                </form>
+            </div>
+
+            {{-- ── RIGHT: Live Preview ── --}}
+            <div style="flex:1;min-width:280px;max-width:440px">
+                <div style="position:sticky;top:80px">
+                    <p style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Live Preview</p>
+                    <div style="border-radius:14px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.18);aspect-ratio:4/3;position:relative" id="lp-preview-outer">
+                        <div id="lp-preview-bg" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;transition:background .25s">
+                            <div id="lp-preview-card" style="border-radius:14px;padding:28px 28px 22px;width:100%;max-width:320px;box-shadow:0 12px 40px rgba(0,0,0,.2);transition:background .25s">
+                                {{-- Logo zone --}}
+                                <div style="text-align:center;margin-bottom:16px">
+                                    <div id="lp-preview-logo-wrap">
+                                        @if($branding?->logo)
+                                            <img id="lp-preview-logo-img" src="{{ asset('storage/'.$branding->logo) }}" alt="Logo" style="max-height:36px;max-width:140px;object-fit:contain;display:block;margin:0 auto">
+                                        @else
+                                            <div id="lp-preview-logo-placeholder" style="display:inline-flex;align-items:center;justify-content:center;height:32px;min-width:120px;border:2px dashed #e2e8f0;border-radius:8px;padding:0 12px;color:#9ca3af;font-size:11px;font-weight:500">
+                                                {{ $branding?->app_name ?? config('app.name') }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                                {{-- Heading --}}
+                                <div id="lp-preview-heading" style="font-size:15px;font-weight:700;color:#1a202c;text-align:center;margin-bottom:3px">
+                                    {{ $branding?->login_heading ?? 'Welcome back' }}
+                                </div>
+                                {{-- Subheading --}}
+                                <div id="lp-preview-subheading" style="font-size:11px;color:#6b7280;text-align:center;margin-bottom:14px">
+                                    {{ $branding?->login_subheading ?? 'Sign in to ' . ($branding?->app_name ?? config('app.name')) }}
+                                </div>
+                                {{-- Fields --}}
+                                <div style="height:30px;border:1.5px solid #e2e8f0;border-radius:7px;margin-bottom:8px;background:#fff"></div>
+                                <div style="height:30px;border:1.5px solid #e2e8f0;border-radius:7px;margin-bottom:12px;background:#fff"></div>
+                                {{-- Button --}}
+                                <div id="lp-preview-btn" style="height:34px;border-radius:8px;transition:background .25s"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <p style="font-size:11.5px;color:#9ca3af;margin-top:8px;text-align:center">Changes are reflected instantly in the preview above.</p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -801,13 +987,153 @@ function submitQbSettings(e) {
     .catch(function() { btn.disabled = false; showToast('Request failed.', 'error'); });
 }
 
-// Auto-switch tab based on URL hash (#payment, #plans, #email, #sms, #roles, #quickbooks)
+// Auto-switch tab based on URL hash (#payment, #plans, #email, #sms, #roles, #quickbooks, #login-page)
 // Must be DOMContentLoaded so it runs AFTER the layout registers tab click handlers
 document.addEventListener('DOMContentLoaded', function () {
     var hash = window.location.hash.replace('#', '');
     if (!hash) return;
     var btn = document.querySelector('[data-tab="tab-' + hash + '"]');
     if (btn) btn.click();
+
+    // Init login page preview when that tab is opened
+    if (hash === 'login-page') {
+        updateBgTypeVisibility();
+        updatePreview();
+    }
 });
+
+// ── Login Page Preview ──────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    // Init on first load of the tab
+    document.querySelector('[data-tab="tab-login-page"]').addEventListener('click', function() {
+        setTimeout(function() { updateBgTypeVisibility(); updatePreview(); }, 50);
+    });
+    updateBgTypeVisibility();
+    updatePreview();
+});
+
+function syncColor(colorInputId, textInputId) {
+    var ci = document.getElementById(colorInputId);
+    var ti = document.getElementById(textInputId);
+    if (!ci || !ti) return;
+    if (/^#[0-9a-fA-F]{6}$/.test(ti.value)) {
+        ci.value = ti.value;
+    }
+}
+
+function updateBgTypeVisibility() {
+    var type = document.querySelector('input[name="login_bg_type"]:checked');
+    if (!type) return;
+    var isGradient = type.value === 'gradient';
+    var isSolid    = type.value === 'solid';
+    var isImage    = type.value === 'image';
+
+    var colorWrap   = document.getElementById('lp-colors-wrap');
+    var colorToWrap = document.getElementById('lp-bg-color-to-wrap');
+    var imageWrap   = document.getElementById('lp-bg-image-wrap');
+    var bgLabel     = document.getElementById('lp-bg-color-label');
+
+    colorWrap.style.display  = isImage ? 'none' : 'flex';
+    colorToWrap.style.display = isGradient ? '' : 'none';
+    imageWrap.style.display  = isImage ? 'block' : 'none';
+
+    if (bgLabel) {
+        bgLabel.textContent = isGradient ? 'Gradient Start Color' : 'Background Color';
+    }
+}
+
+function updatePreview() {
+    var type       = document.querySelector('input[name="login_bg_type"]:checked');
+    var bgColor    = document.getElementById('lp-bg-color')?.value    || '#0d3d66';
+    var bgColorTo  = document.getElementById('lp-bg-color-to')?.value || '#f06b21';
+    var cardBg     = document.getElementById('lp-card-bg')?.value     || '#ffffff';
+    var btnColor   = document.getElementById('lp-btn-color')?.value   || '#f06b21';
+    var heading    = document.getElementById('lp-heading')?.value     || 'Welcome back';
+    var subheading = document.getElementById('lp-subheading')?.value  || 'Sign in to your account';
+
+    var bg = document.getElementById('lp-preview-bg');
+    var card = document.getElementById('lp-preview-card');
+    var btn  = document.getElementById('lp-preview-btn');
+    var h    = document.getElementById('lp-preview-heading');
+    var sub  = document.getElementById('lp-preview-subheading');
+
+    if (!bg || !card) return;
+
+    // Background
+    var bgStyle = '';
+    if (type) {
+        if (type.value === 'solid') {
+            bgStyle = 'background:' + bgColor;
+        } else if (type.value === 'image') {
+            var bgImg = document.getElementById('lp-preview-bg');
+            if (bgImg && bgImg.dataset.bgImgUrl) {
+                bgStyle = "background:url('" + bgImg.dataset.bgImgUrl + "') center/cover no-repeat";
+            } else {
+                bgStyle = 'background:linear-gradient(135deg,' + bgColor + ' 0%,' + bgColorTo + ' 130%)';
+            }
+        } else {
+            bgStyle = 'background:linear-gradient(135deg,' + bgColor + ' 0%,' + bgColorTo + ' 130%)';
+        }
+    } else {
+        bgStyle = 'background:linear-gradient(135deg,' + bgColor + ' 0%,' + bgColorTo + ' 130%)';
+    }
+
+    bg.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;transition:background .25s;' + bgStyle;
+    card.style.background = cardBg;
+    if (btn) btn.style.background = btnColor;
+    if (h)   h.textContent   = heading   || 'Welcome back';
+    if (sub) sub.textContent = subheading || '';
+}
+
+function previewBgImage(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var bg = document.getElementById('lp-preview-bg');
+            if (bg) {
+                bg.dataset.bgImgUrl = e.target.result;
+                updatePreview();
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function previewLogoImage(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var wrap = document.getElementById('lp-preview-logo-wrap');
+            if (wrap) {
+                wrap.innerHTML = '<img src="' + e.target.result + '" alt="Logo" style="max-height:36px;max-width:140px;object-fit:contain;display:block;margin:0 auto">';
+            }
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function submitLoginPageForm(e) {
+    e.preventDefault();
+    var form = document.getElementById('login-page-form');
+    var btn  = document.getElementById('lp-submit');
+    var data = new FormData(form);
+    btn.disabled = true;
+
+    fetch('{{ route("settings.login-page.update") }}', {
+        method: 'POST',
+        headers: {'X-Requested-With': 'XMLHttpRequest'},
+        body: data,
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+        btn.disabled = false;
+        if (res.status === 'success') {
+            showToast(res.message || 'Login page saved.', 'success');
+        } else {
+            showToast(res.message || 'Something went wrong.', 'error');
+        }
+    })
+    .catch(function() { btn.disabled = false; showToast('Request failed.', 'error'); });
+}
 </script>
 @endpush

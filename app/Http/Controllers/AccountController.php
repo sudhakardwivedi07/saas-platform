@@ -18,7 +18,7 @@ class AccountController extends AccountBaseController
 
     public function index()
     {
-        if (!auth()->user()->hasAnyRole(['client_admin', 'manager'])) {
+        if (!auth()->user()->hasAnyRole(['admin', 'manager'])) {
             $company  = company();
             $parentId = $company->created_by;
 

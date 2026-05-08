@@ -118,7 +118,7 @@
 <form method="POST" action="{{ route('my-companies.store') }}" id="create-company-form">
 @csrf
 
-@php $isClientUserFlow = auth()->user()->hasRole('user'); @endphp
+@php $isClientUserFlow = auth()->user()->hasRole('client'); @endphp
 
 <div class="create-co-layout">
 

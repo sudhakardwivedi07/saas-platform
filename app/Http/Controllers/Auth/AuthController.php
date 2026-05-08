@@ -117,13 +117,31 @@ class AuthController extends Controller
         $setting = global_setting();
         abort_unless($setting?->allow_registration, 403);
 
+        $domainType = $request->input('domain_type', 'subdomain');
+
         $request->validate([
-            'company_name' => 'required|string|max:255',
-            'subdomain'    => 'required|string|max:63|alpha_dash|unique:companies,subdomain',
-            'name'         => 'required|string|max:255',
-            'email'        => 'required|email|max:255|unique:users,email',
-            'password'     => 'required|string|min:8|confirmed',
-            'package_id'   => 'nullable|exists:packages,id',
+            'company_name'  => ['required','string','min:2','max:255'],
+            'company_phone' => 'required|digits:10',
+            'domain_type'   => ['required','in:subdomain,domain'],
+            'subdomain'     => $domainType === 'subdomain'
+                                ? ['required','string','min:3','max:63','regex:/^[a-z0-9-]+$/','unique:companies,subdomain']
+                                : ['nullable'],
+            'custom_domain' => $domainType === 'domain'
+                                ? ['required','string','max:253','regex:/^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/','unique:companies,custom_domain']
+                                : ['nullable'],
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|email|max:255|unique:users,email',
+            'password'      => 'required|string|min:8|confirmed',
+            'package_id'    => 'nullable|exists:packages,id',
+        ], [
+            'subdomain.required' => 'Subdomain is required.',
+            'subdomain.regex'    => 'Only lowercase letters, numbers, and hyphens are allowed.',
+            'subdomain.unique'   => 'This subdomain is already taken.',
+            'custom_domain.required' => 'Custom domain is required.',
+            'custom_domain.regex'    => 'Please enter a valid domain (e.g. app.acmecorp.com).',
+            'custom_domain.unique'   => 'This domain is already in use.',
+            'company_phone.required' => 'Phone number is required.',
+            'company_phone.digits'   => 'Phone number must be 10 digits.',
         ]);
 
         $package = $request->package_id
@@ -147,14 +165,20 @@ class AuthController extends Controller
             'requires_payment' => $requiresPayment,
         ]);
 
+        $verificationToken = $domainType === 'domain' ? \Illuminate\Support\Str::random(40) : null;
+
         // Create company — inactive until payment confirmed
         $company = Company::create([
-            'company_name'  => $request->company_name,
-            'app_name'      => $request->company_name,
-            'company_email' => $request->email,
-            'subdomain'     => Str::slug($request->subdomain),
-            'status'        => $requiresPayment ? 'inactive' : 'active',
-            'package_id'    => $package?->id,
+            'company_name'              => $request->company_name,
+            'app_name'                  => $request->company_name,
+            'company_email'             => $request->email,
+            'company_phone'             => $request->company_phone,
+            'domain_type'               => $domainType,
+            'subdomain'                 => $domainType === 'subdomain' ? Str::slug($request->subdomain) : null,
+            'custom_domain'             => $domainType === 'domain' ? strtolower(trim($request->custom_domain)) : null,
+            'domain_verification_token' => $verificationToken,
+            'status'                    => $requiresPayment ? 'inactive' : 'active',
+            'package_id'                => $package?->id,
             'trial_ends_at' => (!$requiresPayment && $package?->is_trial_allowed)
                 ? now()->addDays($package->trial_days)
                 : null,
@@ -176,7 +200,7 @@ class AuthController extends Controller
         }
 
         // Create admin user — inactive until payment confirmed
-        $role = Role::firstOrCreate(['name' => 'client_admin', 'guard_name' => 'web']);
+        $role = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $user = User::create([
             'company_id'        => $company->id,
             'name'              => $request->name,
@@ -288,7 +312,7 @@ class AuthController extends Controller
         // Activate company + user
         $company->update(['status' => 'active']);
         $user = \App\Models\User::withoutGlobalScopes()->where('company_id', $company->id)
-            ->whereHas('roles', fn ($q) => $q->where('name', 'client_admin'))
+            ->whereHas('roles', fn ($q) => $q->where('name', 'admin'))
             ->first();
 
         if ($user) {

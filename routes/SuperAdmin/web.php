@@ -29,8 +29,9 @@ Route::middleware(['auth', 'super-admin'])
         Route::post('companies',        [CompanyController::class, 'store'])->name('companies.store');
         Route::post('companies/bulk',   [CompanyController::class, 'bulkStore'])->name('companies.bulk-store');
         Route::resource('companies', CompanyController::class)->except(['create', 'store']);
-        Route::post('companies/{id}/impersonate', [CompanyController::class, 'impersonate'])->name('companies.impersonate');
-        Route::post('companies/{id}/checkout',   [CompanyController::class, 'initiateCheckout'])->name('companies.checkout');
+        Route::post('companies/{id}/impersonate',   [CompanyController::class, 'impersonate'])->name('companies.impersonate');
+        Route::post('companies/{id}/checkout',      [CompanyController::class, 'initiateCheckout'])->name('companies.checkout');
+        Route::post('companies/{id}/verify-domain', [CompanyController::class, 'verifyDomain'])->name('companies.verify-domain');
 
         // Users
         Route::resource('users', UserController::class)->except(['show']);

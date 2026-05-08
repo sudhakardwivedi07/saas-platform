@@ -1,0 +1,300 @@
+================================================================================
+CUSTOM DOMAIN FEATURE — CHANGE DOCUMENTATION
+Project: SaaS Platform
+Date:    2026-05-07
+Author:  Engineering Team
+================================================================================
+
+OVERVIEW
+--------
+This feature adds a "Custom Domain" option alongside the existing "Subdomain"
+option when onboarding a new firm (company). A Super Admin can now choose how
+a firm's platform will be accessed:
+
+  Option A — Subdomain  (existing behaviour, unchanged)
+             e.g.  acme.yourdomain.com
+
+  Option B — Custom Domain  (new)
+             e.g.  app.acmecorp.com
+
+The IdentifyTenant middleware already supported custom_domain resolution
+(highest-priority lookup), so no middleware changes were required.
+
+================================================================================
+FILES MODIFIED / CREATED
+================================================================================
+
+1. database/migrations/2026_05_07_000001_add_domain_type_to_companies_table.php
+   ─────────────────────────────────────────────────────────────────────────────
+   PURPOSE: Adds three new columns to the `companies` table.
+
+   NEW COLUMNS:
+
+   a) domain_type  (ENUM: 'subdomain' | 'domain', DEFAULT 'subdomain')
+      Tracks which access method this firm uses. All existing firms are
+      automatically set to 'subdomain' by the default value, so no data
+      migration is needed.
+
+   b) domain_verification_token  (VARCHAR 64, NULLABLE)
+      A randomly generated 40-character token created when a firm is saved
+      with domain_type = 'domain'. The firm's client must publish this value
+      as a DNS TXT record at:
+          _saas-verify.{custom_domain}   →   "saas-verify={token}"
+      This allows the Super Admin to verify that the client actually controls
+      the domain before routing live traffic.
+
+   c) domain_verified_at  (TIMESTAMP, NULLABLE)
+      Set to the current timestamp when domain verification succeeds (DNS TXT
+      check passes). NULL means the domain is unverified. Does NOT block
+      access — the IdentifyTenant middleware routes traffic regardless; this
+      column is informational and useful for auditing.
+
+   HOW TO RUN:
+       php artisan migrate
+
+   ROLLBACK:
+       php artisan migrate:rollback
+       (drops all three columns cleanly)
+
+--------------------------------------------------------------------------------
+
+2. app/Models/Company.php
+   ─────────────────────────────────────────────────────────────────────────────
+   PURPOSE: Exposes the new columns to Eloquent's mass-assignment.
+
+   CHANGES:
+   - Added to $fillable:
+       'domain_type'
+       'domain_verification_token'
+       'domain_verified_at'
+
+   - Added to $casts:
+       'domain_verified_at' => 'datetime'
+     (so Carbon can be used for date comparisons)
+
+   NO LOGIC CHANGES — the loginUrl computed property already reads
+   custom_domain first and falls back to subdomain, so it works correctly
+   for both domain types with no modification.
+
+--------------------------------------------------------------------------------
+
+3. app/Http/Controllers/SuperAdmin/CompanyController.php
+   ─────────────────────────────────────────────────────────────────────────────
+   PURPOSE: Handle the new domain_type during firm creation, and provide a
+   domain verification endpoint.
+
+   CHANGE A — store() method (validation)
+   The validation rules are now conditional on domain_type:
+
+   BEFORE:
+     'subdomain' => required, unique, regex ...
+     'status'    => in:active,inactive,suspended   ← also fixed: 'trial' was
+                                                      missing despite being a
+                                                      valid DB enum value
+
+   AFTER:
+     'domain_type'   => required, in:subdomain,domain
+     'subdomain'     => required+regex only when domain_type = 'subdomain'
+                        nullable otherwise
+     'custom_domain' => required + valid domain regex + unique
+                        only when domain_type = 'domain', nullable otherwise
+     'status'        => in:active,trial,inactive,suspended  (bug fix included)
+
+   CHANGE B — store() method (company creation)
+   - Reads domain_type from the request (defaults to 'subdomain').
+   - Generates a random 40-char verification token only for domain_type='domain'.
+   - Saves subdomain=null when using a custom domain, and custom_domain=null
+     when using a subdomain.  The four new columns are persisted.
+
+   CHANGE C — verifyDomain(int $id) method  [NEW]
+   Route:  POST /superadmin/companies/{id}/verify-domain
+
+   Logic:
+   1. Looks up the company by ID (without global scopes).
+   2. Guards: returns error if not a custom-domain company, or already verified.
+   3. Performs a live DNS TXT lookup on _saas-verify.{custom_domain} using
+      PHP's built-in dns_get_record().
+   4. If the record value matches "saas-verify={token}", sets domain_verified_at
+      to the current timestamp and returns success.
+   5. If not found, returns a clear error message so the Super Admin knows the
+      DNS record has not propagated yet.
+
+   This method can be called from the firm detail / edit page (the route exists;
+   the edit view UI can be wired up separately).
+
+--------------------------------------------------------------------------------
+
+4. routes/SuperAdmin/web.php
+   ─────────────────────────────────────────────────────────────────────────────
+   PURPOSE: Register the new domain verification route.
+
+   ADDED:
+     Route::post('companies/{id}/verify-domain',
+         [CompanyController::class, 'verifyDomain'])
+         ->name('companies.verify-domain');
+
+   The route is inside the ['auth', 'super-admin'] middleware group, so only
+   authenticated Super Admins can call it.
+
+--------------------------------------------------------------------------------
+
+5. resources/views/super-admin/companies/create.blade.php
+   ─────────────────────────────────────────────────────────────────────────────
+   PURPOSE: Add the domain type toggle and custom domain UI to the firm creation
+   form, with live preview and DNS setup instructions.
+
+   CHANGE A — Access Method toggle (new UI element)
+   A two-option card selector sits between the phone field and the subdomain/
+   domain field. It contains a hidden input (name="domain_type") and two styled
+   radio-card labels:
+
+     [ ● Subdomain        ]  [ ○ Custom Domain     ]
+       acme.yourdomain.com     app.acmecorp.com
+
+   Clicking either card calls domainTypeChanged(type) which:
+   - Sets the hidden domain_type input value.
+   - Shows/hides the subdomain input OR the custom_domain input.
+   - Shows/hides the DNS instructions panel.
+   - Updates the sidebar preview and tip cards.
+
+   CHANGE B — Custom Domain input (new, hidden by default)
+   A plain text input (name="custom_domain", id="custom_domain") that becomes
+   visible when "Custom Domain" is selected. Accepts lowercase input only,
+   strips whitespace, and validates against a domain regex on both the client
+   and server.
+
+   CHANGE C — DNS Setup Instructions panel (new, hidden by default)
+   A yellow warning box that appears when "Custom Domain" is selected, showing
+   the exact DNS records the client must configure:
+
+     A Record
+       Name:   @ (root of their domain / subdomain)
+       Type:   A
+       Value:  {SERVER_IP} — reads from env('SERVER_IP') or falls back to
+               request()->server('SERVER_ADDR'). Set SERVER_IP in your .env
+               file for production deployments.
+
+     TXT Record (verification)
+       Name:   _saas-verify
+       Type:   TXT
+       Value:  "Generated after firm is created" — shown here as a placeholder;
+               the actual token appears in the firm's detail page after saving.
+
+   An explanatory note reminds admins about DNS propagation time (up to 48 h)
+   and that SSL must be configured separately on the web server.
+
+   CHANGE D — Live preview update (updatePreview function)
+   The sidebar preview now shows:
+   - Subdomain mode: "{subdomain}.yourdomain.com" (existing behaviour)
+   - Custom domain mode: the custom domain string + a purple "Custom Domain"
+     badge under the firm avatar
+
+   CHANGE E — Client-side validation update (validateCreateForm function)
+   Validation branches on domainType:
+   - If 'subdomain': validates the subdomain field (existing rules).
+   - If 'domain':    validates the custom_domain field (domain regex check).
+
+   CHANGE F — Onboarding Tips & "What happens next" sidebars
+   Both sidebar cards now have two versions (subdomain / domain) that swap
+   when the domain type changes, so the guidance stays contextually relevant.
+
+   CHANGE G — Status validation bug fix
+   The 'trial' status option was present in the form but missing from the
+   server-side validation rule. Added 'trial' to in:active,trial,inactive,
+   suspended in store().
+
+================================================================================
+SERVER-SIDE CONFIGURATION (required for custom domains in production)
+================================================================================
+
+For a custom domain to actually serve your Laravel application, the following
+must be done on your web server OUTSIDE of the application code:
+
+1. DNS (done by the client at their registrar)
+   ─────────────────────────────────────────────
+   The client adds:
+     A record:    {their-domain}  →  {your server public IP}
+     TXT record:  _saas-verify.{their-domain}  →  saas-verify={token}
+
+2. Web Server Virtual Host (done on your server by you)
+   ──────────────────────────────────────────────────────
+   Add a server block / virtual host that accepts requests for the custom
+   domain and proxies them to the same Laravel application.
+
+   APACHE example (add to httpd-vhosts.conf or a separate .conf file):
+
+       <VirtualHost *:80>
+           ServerName app.acmecorp.com
+           DocumentRoot "C:/xampp/htdocs/saas-platform/public"
+           <Directory "C:/xampp/htdocs/saas-platform/public">
+               AllowOverride All
+               Require all granted
+           </Directory>
+       </VirtualHost>
+
+   NGINX example:
+
+       server {
+           listen 80;
+           server_name app.acmecorp.com;
+           root /var/www/saas-platform/public;
+           index index.php;
+           include snippets/laravel.conf;
+       }
+
+   For HTTPS you must also add an SSL VirtualHost block and obtain a
+   certificate (e.g. via Let's Encrypt / Certbot):
+
+       certbot --apache -d app.acmecorp.com
+       # or
+       certbot --nginx -d app.acmecorp.com
+
+3. Laravel .env (no changes needed for routing)
+   The IdentifyTenant middleware already reads the Host header and looks up
+   the company by custom_domain. No .env change is needed.
+
+   OPTIONAL — set your server's public IP so it appears in the DNS instructions:
+       SERVER_IP=203.0.113.10
+
+4. Wildcard vs per-domain SSL
+   ─────────────────────────────
+   If you host many custom domains, consider a wildcard certificate for your
+   root domain (*.yourdomain.com) plus individual Let's Encrypt certificates
+   for each client custom domain. Certbot can automate renewal.
+
+================================================================================
+HOW DOMAIN TYPE IDENTIFICATION WORKS AT RUNTIME
+================================================================================
+
+Every HTTP request passes through IdentifyTenant middleware which runs this
+logic (no changes needed to this file):
+
+  host = request host header (e.g. "app.acmecorp.com")
+
+  1. SELECT * FROM companies WHERE custom_domain = host AND status = 'active'
+     → If found, this is the tenant. (custom domain match — highest priority)
+
+  2. If host ends with ".yourdomain.com":
+       subdomain = host minus ".yourdomain.com"
+       SELECT * FROM companies WHERE subdomain = subdomain AND status = 'active'
+     → If found, this is the tenant. (subdomain match)
+
+  3. If neither matches → no tenant context (superadmin or unauthenticated page)
+
+The company is bound to app('currentCompany') and all subsequent code uses
+the company() helper to retrieve it from a 5-minute cache.
+
+================================================================================
+SUMMARY OF DATABASE CHANGES
+================================================================================
+
+Table: companies
+  + domain_type               ENUM('subdomain','domain')  DEFAULT 'subdomain'
+  + domain_verification_token VARCHAR(64)                 NULLABLE
+  + domain_verified_at        TIMESTAMP                   NULLABLE
+
+Run:  php artisan migrate
+
+================================================================================
+END OF DOCUMENT
+================================================================================

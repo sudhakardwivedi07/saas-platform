@@ -19,12 +19,12 @@ class DashboardController extends AccountBaseController
 
     public function index()
     {
-        // Only count companies that have a client_admin user (real tenant firms)
+        // Only count companies that have an admin user (real tenant firms)
         $firmBase = Company::withoutGlobalScopes()
-            ->whereHas('users', fn($q) => $q->whereHas('roles', fn($r) => $r->where('name', 'client_admin')));
+            ->whereHas('users', fn($q) => $q->whereHas('roles', fn($r) => $r->where('name', 'admin')));
 
         $this->stats = [
-            // Count only firms that have a client_admin user
+            // Count only firms that have an admin user
             'total_companies'  => (clone $firmBase)->count(),
             'active_companies' => (clone $firmBase)->where('status', 'active')->count(),
 
@@ -43,10 +43,10 @@ class DashboardController extends AccountBaseController
             'active_subscriptions' => Subscription::withoutGlobalScopes()
                                         ->whereIn('status', ['active', 'trialing'])->count(),
 
-            // End-clients: users with the 'user' role (not client_admin/super_admin)
+            // End-clients: users with the 'client' role
             'total_users' => User::withoutGlobalScopes()
                                 ->whereNotNull('company_id')
-                                ->whereHas('roles', fn($q) => $q->where('name', 'user'))
+                                ->whereHas('roles', fn($q) => $q->where('name', 'client'))
                                 ->count(),
         ];
 

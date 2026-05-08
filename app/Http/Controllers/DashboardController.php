@@ -35,7 +35,7 @@ class DashboardController extends AccountBaseController
         }
 
         // Simple dashboard for basic users — no access to management stats
-        if (!auth()->user()->hasAnyRole(['client_admin', 'manager'])) {
+        if (!auth()->user()->hasAnyRole(['admin', 'manager'])) {
             $this->loadUserPlanData($company);
             return view('dashboard.user', $this->data);
         }
@@ -100,7 +100,7 @@ class DashboardController extends AccountBaseController
             ->whereBetween('paid_at', [$startDate, $endDate])
             ->count();
 
-        // Current subscription (the client_admin's own plan)
+        // Current subscription (the admin's own plan)
         $this->subscription = $company->subscription;
 
         // Period info passed to view
@@ -182,7 +182,7 @@ class DashboardController extends AccountBaseController
     public function myFinancials()
     {
         $user = auth()->user();
-        abort_unless($user && $user->hasRole('client_admin'), 403);
+        abort_unless($user && $user->hasRole('admin'), 403);
 
         $company = company();
         abort_unless($company, 404);
@@ -208,7 +208,7 @@ class DashboardController extends AccountBaseController
     {
         $user = auth()->user();
         abort_unless($user, 403);
-        abort_unless(!$user->hasAnyRole(['client_admin', 'manager']), 403);
+        abort_unless(!$user->hasAnyRole(['admin', 'manager']), 403);
 
         $company = company();
         abort_unless($company, 404);

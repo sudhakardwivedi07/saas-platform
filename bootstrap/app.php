@@ -33,12 +33,25 @@ return Application::configure(basePath: dirname(__DIR__))
             'identify-tenant'  => IdentifyTenant::class,
         ]);
 
-        // ── CSRF exclusions (webhooks) ─────────────────────────────────────────
+        // ── CSRF exclusions ───────────────────────────────────────────────────
+        // logout: logging someone out is harmless, so we exempt it to prevent
+        // a 419 when the session expires while the page is still open.
         $middleware->validateCsrfTokens(except: [
             'webhooks/*',
+            'logout',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        // Redirect to login instead of showing the blank 419 page when a CSRF
+        // token has expired (e.g. session timed out while page was open).
+        $exceptions->render(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Session expired. Please refresh and try again.'], 419);
+            }
+            return redirect()->route('login')
+                ->withErrors(['session' => 'Your session expired. Please log in again.']);
+        });
+
         $exceptions->render(function (\Symfony\Component\HttpKernel\Exception\HttpException $e, $request) {
             $status = $e->getStatusCode();
 

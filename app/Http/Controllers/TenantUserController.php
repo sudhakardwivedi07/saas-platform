@@ -47,7 +47,24 @@ class TenantUserController extends AccountBaseController
             'password'  => 'required|string|min:8',
         ]);
 
-        $companyId   = auth()->user()->company_id;
+        $companyId = auth()->user()->company_id;
+
+        // Enforce plan's Max Clients limit when adding a 'client'-role member
+        if ($request->role === 'client') {
+            $plan = auth()->user()->company?->activePlan();
+
+            if ($plan && isset($plan->max_users) && (int) $plan->max_users > 0) {
+                $currentCount = User::where('company_id', $companyId)
+                    ->whereHas('roles', fn ($q) => $q->where('name', 'client'))
+                    ->count();
+
+                if ($currentCount >= (int) $plan->max_users) {
+                    return redirect()->route('users.index')
+                        ->with('error', 'Maximum limit exceeded. Please update your plan to add more clients.');
+                }
+            }
+        }
+
         $companyName = auth()->user()->company?->company_name ?? config('app.name');
         $plainPassword = $request->password;
 
@@ -109,8 +126,8 @@ class TenantUserController extends AccountBaseController
 
         $user = User::where('company_id', auth()->user()->company_id)->findOrFail($id);
 
-        // Prevent disabling the owner (client_admin)
-        if ($user->hasRole('client_admin')) {
+        // Prevent disabling the owner (admin)
+        if ($user->hasRole('admin')) {
             return response()->json([
                 'status'  => 'warning',
                 'message' => 'Owner account cannot be disabled.',

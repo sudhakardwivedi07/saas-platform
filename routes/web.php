@@ -119,7 +119,7 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{slug}',     [EmailTemplateController::class, 'destroy'])->name('destroy');
     });
 
-    // Plans (client_admin's own plans for sub-companies)
+    // Plans (admin's own plans for sub-companies)
     Route::prefix('plans')->name('plans.')->group(function () {
         Route::get('/',              [ClientPackageController::class, 'index'])->name('index');
         Route::get('/create',        [ClientPackageController::class, 'create'])->name('create');
@@ -139,7 +139,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/refresh-token',     [FirmQuickBooksController::class, 'refreshToken'])->name('refresh-token');
     });
 
-    // My Companies (multi-company management for client_admin)
+    // My Companies (multi-company management for admin)
     Route::prefix('my-companies')->name('my-companies.')->group(function () {
         Route::get('/',                          [ClientCompanyController::class, 'index'])->name('index');
         Route::get('/create',                    [ClientCompanyController::class, 'create'])->name('create');
@@ -173,6 +173,9 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/sms',          [SmsSettingController::class, 'update'])->name('sms.update');
         Route::get('/payment-gateway',  [TenantPaymentGatewayController::class, 'index'])->name('payment-gateway');
         Route::post('/payment-gateway', [TenantPaymentGatewayController::class, 'update'])->name('payment-gateway.update');
+
+        // Login Page customisation
+        Route::post('/login-page', [SettingsController::class, 'updateLoginPage'])->name('login-page.update');
 
         // QuickBooks Settings
         Route::post('/quickbooks-settings', [SettingsController::class, 'updateQuickbooksSettings'])->name('quickbooks-settings.update');
@@ -243,7 +246,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/delete-all',                  [InsightsController::class, 'deleteAllReports'])->name('delete-all');
     });
 
-    // Firm Insights (client_admin / manager — no monthly limit, scoped to firm)
+    // Firm Insights (admin / manager — no monthly limit, scoped to firm)
     Route::prefix('firm-insights')->name('firm-insights.')->group(function () {
         Route::get('/',                            [FirmInsightsController::class, 'index'])->name('index');
         Route::post('/generate',                   [FirmInsightsController::class, 'generate'])->name('generate');

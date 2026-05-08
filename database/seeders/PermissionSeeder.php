@@ -27,9 +27,9 @@ class PermissionSeeder extends Seeder
             'view_billing', 'manage_billing',
             // Reports
             'view_reports',
-            // Companies (multi-company management for client_admin)
+            // Companies (multi-company management for admin)
             'add_company', 'manage_company',
-            // Plans (client_admin's own plans for sub-companies)
+            // Plans (admin's own plans for sub-companies)
             'view_plan', 'add_plan', 'edit_plan', 'delete_plan',
         ];
 
@@ -38,12 +38,12 @@ class PermissionSeeder extends Seeder
         }
 
         // Roles (global — no company_id)
-        $clientAdmin = Role::firstOrCreate(['name' => 'client_admin', 'guard_name' => 'web']);
-        $manager     = Role::firstOrCreate(['name' => 'manager',      'guard_name' => 'web']);
-        $userRole    = Role::firstOrCreate(['name' => 'user',         'guard_name' => 'web']);
+        $adminRole  = Role::firstOrCreate(['name' => 'admin',   'guard_name' => 'web']);
+        $manager    = Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
+        $clientRole = Role::firstOrCreate(['name' => 'client',  'guard_name' => 'web']);
 
-        // Client Admin gets all permissions
-        $clientAdmin->syncPermissions($permissions);
+        // Admin gets all permissions
+        $adminRole->syncPermissions($permissions);
 
         // Manager gets most permissions except billing and branding
         $manager->syncPermissions([
@@ -55,8 +55,8 @@ class PermissionSeeder extends Seeder
             'view_reports',
         ]);
 
-        // User gets read-only access
-        $userRole->syncPermissions([
+        // Client gets read-only access
+        $clientRole->syncPermissions([
             'view_documents', 'download_documents',
             'view_quickbooks',
             'view_reports',

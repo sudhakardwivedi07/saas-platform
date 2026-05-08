@@ -110,7 +110,7 @@ class User extends Authenticatable
     public function portfolioCompanies(): \Illuminate\Support\Collection
     {
         $authUser = $this;
-        $ownerKey = $authUser->hasAnyRole(['client_admin', 'manager'])
+        $ownerKey = $authUser->hasAnyRole(['admin', 'manager'])
             ? (int) $authUser->company_id
             : (int) $authUser->id;
 

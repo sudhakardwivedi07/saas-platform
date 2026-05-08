@@ -1,0 +1,168 @@
+================================================================================
+MAX CLIENTS PLAN LIMIT ENFORCEMENT — CHANGE DOCUMENTATION
+Project: SaaS Platform
+Date:    2026-05-07
+================================================================================
+
+OVERVIEW
+--------
+This feature enforces the "Max Clients" limit that a Super Admin sets on each
+subscription plan (Package). When a firm's client_admin tries to add a new
+user with the 'user' role (i.e. a "client"), the system now checks whether
+the firm has already reached the maximum number of such users allowed by their
+active plan. If the limit is exceeded, a SweetAlert error popup is shown
+explaining that they must upgrade their plan.
+
+================================================================================
+HOW THE LIMIT IS DEFINED (no changes needed here — already existed)
+================================================================================
+
+Super Admin Plan (packages table):
+  Column:  max_users  (integer, not null)
+  Label in UI:  "Max Clients"
+  Set via:  SuperAdmin → Plan Management → Create / Edit Plan
+
+  This value represents the maximum number of users a subscribed firm can
+  have with the 'user' role. For example, if max_users = 5, the firm can
+  have at most 5 "client" users.
+
+Plan resolution per firm:
+  Company::activePlan() → returns clientPackage if set, otherwise package.
+  Both ClientPackage and Package have a max_users field.
+  The limit check uses activePlan()->max_users regardless of which plan type
+  is active.
+
+================================================================================
+FILES MODIFIED
+================================================================================
+
+1. app/Http/Controllers/TenantUserController.php
+   ─────────────────────────────────────────────────────────────────────────────
+   METHOD CHANGED: store(Request $request)
+
+   PURPOSE:
+   Enforce the plan's Max Clients limit before creating a new user.
+
+   WHAT WAS ADDED (after existing validation, before user creation):
+
+   ┌─────────────────────────────────────────────────────────────────────────┐
+   │  // Enforce plan's Max Clients limit when adding a 'user'-role member   │
+   │  if ($request->role === 'user') {                                        │
+   │      $plan = auth()->user()->company?->activePlan();                     │
+   │                                                                          │
+   │      if ($plan && isset($plan->max_users) && (int)$plan->max_users > 0) │
+   │      {                                                                   │
+   │          $currentCount = User::where('company_id', $companyId)          │
+   │              ->whereHas('roles', fn($q) => $q->where('name','user'))    │
+   │              ->count();                                                  │
+   │                                                                          │
+   │          if ($currentCount >= (int) $plan->max_users) {                 │
+   │              return redirect()->route('users.index')                     │
+   │                  ->with('error', 'Maximum limit exceeded. Please        │
+   │                                   update your plan to add more          │
+   │                                   clients.');                            │
+   │          }                                                               │
+   │      }                                                                   │
+   │  }                                                                       │
+   └─────────────────────────────────────────────────────────────────────────┘
+
+   DETAILED LOGIC EXPLANATION:
+
+   Step 1 — Role check
+     The limit only applies when the role being assigned is 'user' (i.e. a
+     "client" user). Manager, Analyst, Viewer, etc. are team members and are
+     NOT counted against the Max Clients quota. This matches the business rule:
+     "whenever a new client is added, they are automatically assigned the
+     'user' role."
+
+   Step 2 — Retrieve active plan
+     auth()->user()->company->activePlan() returns whichever plan is active
+     for the firm (client-defined plan takes priority over SuperAdmin plan).
+     If the firm has no plan at all, $plan is null and the check is skipped
+     (no plan = no limit = unlimited).
+
+   Step 3 — Guard clause
+     Only enforces if:
+       a) A plan exists ($plan is not null)
+       b) The plan has a max_users field set
+       c) max_users is greater than 0 (prevents accidental lockout if
+          a plan was saved with 0 due to a bug)
+
+   Step 4 — Count existing 'user'-role users in this company
+     Counts only users who:
+       - belong to this company (company_id = authenticated user's company_id)
+       - have the 'user' role assigned (via Spatie Permission)
+     This count is compared against the plan's max_users limit.
+
+   Step 5 — Block if at or over limit
+     If currentCount >= max_users, redirect back to the Users page with a
+     session key 'error'. The tenant layout (layouts/app.blade.php) automatically
+     picks up session('error') and fires a full SweetAlert popup with the
+     error message.
+
+   WHY session('error') → SweetAlert (no view changes needed):
+     The tenant layout (resources/views/layouts/app.blade.php, line ~758) already
+     contains:
+         Swal.fire({ icon: 'error', text: session('error') });
+     This means any controller that does `->with('error', 'message')` will
+     automatically trigger a SweetAlert error dialog on the next page load.
+     No new JavaScript or view changes were required.
+
+================================================================================
+NO OTHER FILES WERE MODIFIED
+================================================================================
+
+WHY NO OTHER FILES NEEDED CHANGES:
+  - The max_users column already exists in the packages table.
+  - The PackageController already validates and saves max_users correctly.
+  - The SuperAdmin plan create/edit form already shows "Max Clients" field.
+  - The tenant layout already has the SweetAlert session('error') handler.
+  - No migration is needed (column was added in the original schema).
+
+================================================================================
+EXAMPLE SCENARIOS
+================================================================================
+
+Scenario A — Firm on "Starter" plan (max_users = 5):
+  - Firm has 4 users with 'user' role.
+  - client_admin adds a 5th user with 'user' role.
+  - currentCount (4) < max_users (5)  →  User is created successfully.
+
+  - client_admin tries to add a 6th user with 'user' role.
+  - currentCount (5) >= max_users (5)  →  Redirect with SweetAlert error:
+    "Maximum limit exceeded. Please update your plan to add more clients."
+
+Scenario B — Firm adds a Manager (not a client):
+  - Role selected = 'manager'
+  - The limit check is SKIPPED entirely (role !== 'user').
+  - Manager is created regardless of client count.
+
+Scenario C — Firm has no plan:
+  - activePlan() returns null.
+  - The limit check is SKIPPED entirely.
+  - User is created without restriction.
+
+Scenario D — Plan has max_users = 0 (edge case):
+  - Guard clause (max_users > 0) is false.
+  - The limit check is SKIPPED (treated as unlimited).
+
+================================================================================
+HOW TO TEST
+================================================================================
+
+1. Log in as Super Admin.
+2. Go to Plan Management → Edit any plan.
+3. Set "Max Clients" to a small number (e.g. 2).
+
+4. Log in as a client_admin of a firm on that plan.
+5. Go to Users → Add User.
+6. Add 2 users with role "User" (clients).
+7. Try to add a 3rd user with role "User".
+   → Expected: SweetAlert popup with the limit exceeded message.
+
+8. Try adding a 3rd user with role "Manager".
+   → Expected: User created successfully (manager does not count against limit).
+
+================================================================================
+END OF DOCUMENT
+================================================================================

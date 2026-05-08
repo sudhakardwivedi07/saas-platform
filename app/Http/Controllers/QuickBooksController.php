@@ -24,7 +24,7 @@ class QuickBooksController extends AccountBaseController
     public function index()
     {
         // User role: show personal connect / disconnect page
-        if (auth()->user()->hasRole('user')) {
+        if (auth()->user()->hasRole('client')) {
             $this->connection  = QuickBooksConnection::where('user_id', auth()->id())
                 ->where('is_active', true)
                 ->first();
@@ -32,7 +32,7 @@ class QuickBooksController extends AccountBaseController
             return view('quickbooks.user-connection', $this->data);
         }
 
-        // Firm panel (client_admin, manager, etc.)
+        // Firm panel (admin, manager, etc.)
         $companyId = company()?->id ?? auth()->user()->company_id;
 
         $managedIds = Company::withoutGlobalScopes()

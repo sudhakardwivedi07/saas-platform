@@ -100,7 +100,7 @@ class PackageController extends AccountBaseController
             'is_free'          => $request->boolean('is_free', false),
         ]);
 
-        return Reply::successWithData('Plan saved successfully.', ['packageId' => $package->id]);
+        return Reply::successWithData('Plan created successfully.', ['packageId' => $package->id]);
     }
 
     public function show(int $id)
@@ -155,6 +155,6 @@ class PackageController extends AccountBaseController
         $package = Package::findOrFail($id);
         abort_403($package->companies()->exists());
         $package->delete();
-        return Reply::success('Package deleted.');
+        return Reply::success('Plan deleted successfully.');
     }
 }

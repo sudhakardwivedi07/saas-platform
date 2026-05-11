@@ -63,7 +63,7 @@ class SupportController extends AccountBaseController
             'status'     => 'open',
         ]);
 
-        return back()->with('success', 'Support ticket submitted. Our team will respond shortly.');
+        return back()->with('success', 'Support ticket submitted successfully. Our team will respond shortly.');
     }
 
     public function show(SupportTicket $ticket)

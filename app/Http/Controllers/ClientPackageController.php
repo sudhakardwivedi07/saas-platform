@@ -88,7 +88,7 @@ class ClientPackageController extends AccountBaseController
         ]);
 
         return redirect()->to(route('settings.index') . '#plans')
-            ->with('success', "Plan '{$data['name']}' created successfully.");
+            ->with('success', "Plan '{$data['name']}' created successfully. It is ready to assign to clients.");
     }
 
     // ── Edit form ────────────────────────────────────────────────────────────
@@ -164,7 +164,7 @@ class ClientPackageController extends AccountBaseController
         $name = $plan->name;
         $plan->delete();
 
-        $message = "Plan '{$name}' deleted.";
+        $message = "Plan '{$name}' deleted successfully.";
 
         if ($request->wantsJson() || $request->ajax()) {
             return response()->json(Reply::success($message));

@@ -874,10 +874,10 @@ document.getElementById('createForm').addEventListener('submit', async function(
     if (res.status === 'success') {
         if (res.checkout_url) {
             // Paid plan selected — redirect to Stripe checkout
-            showToast('Firm created! Redirecting to payment…');
+            showToast(res.message || 'Firm created successfully. Redirecting to payment…');
             setTimeout(() => window.location.href = res.checkout_url, 900);
         } else {
-            showToast('Firm created successfully!');
+            showToast(res.message || 'Firm created successfully!');
             setTimeout(() => window.location = res.redirect, 900);
         }
     } else {

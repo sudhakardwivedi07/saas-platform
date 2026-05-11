@@ -451,6 +451,32 @@ class ClientCompanyController extends AccountBaseController
         $company->client_package_id = $request->client_package_id ?: null;
         $company->save();
 
+        // Create or update subscription with 'active' status if a plan is assigned
+        if ($request->client_package_id) {
+            $plan = ClientPackage::findOrFail($request->client_package_id);
+            $existingSub = $company->subscription;
+            if ($existingSub) {
+                // Update existing subscription
+                $existingSub->update([
+                    'client_package_id' => $plan->id,
+                    'status'            => 'active',
+                    'canceled_at'       => null,
+                ]);
+            } else {
+                // Create new subscription
+                Subscription::create([
+                    'company_id'           => $company->id,
+                    'package_id'           => $company->package_id,
+                    'client_package_id'    => $plan->id,
+                    'status'               => 'active',
+                    'billing_cycle'        => 'monthly',
+                    'current_period_start' => now(),
+                    'current_period_end'   => now()->addMonth(),
+                    'trial_ends_at'        => null,
+                ]);
+            }
+        }
+
         return response()->json([
             'status'  => 'success',
             'message' => 'Plan assigned to ' . $company->company_name . '.',

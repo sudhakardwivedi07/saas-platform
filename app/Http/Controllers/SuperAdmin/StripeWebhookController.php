@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\SendEmailJob;
+use App\Services\EmailService;
 use App\Models\Company;
 use App\Models\EmailSmtpSetting;
 use App\Models\SuperAdmin\Package;
@@ -172,7 +172,7 @@ class StripeWebhookController extends Controller
                 ? $previousSub->current_period_end->format('M d, Y')
                 : now()->addMonth()->format('M d, Y');
 
-            $this->slog('info', 'checkout.session.completed — detected plan upgrade, dispatching plan_upgraded email', [
+            $this->slog('info', 'checkout.session.completed — detected plan upgrade, sending plan_upgraded email', [
                 'event_id'       => $eventId,
                 'company_id'     => $companyId,
                 'old_plan'       => $oldPlanName,
@@ -180,7 +180,7 @@ class StripeWebhookController extends Controller
                 'effective_date' => $effectiveDate,
             ]);
 
-            SendEmailJob::dispatch(
+            app(EmailService::class)->send(
                 toEmail:      $company->company_email,
                 templateSlug: 'plan_upgraded',
                 placeholders: [
@@ -194,7 +194,7 @@ class StripeWebhookController extends Controller
                     '{{support_email}}'         => $supportEmail,
                 ],
                 companyId: (int) $companyId
-            )->onQueue('emails');
+            );
 
         } elseif ($isDowngrade) {
             $oldPlanName   = $previousSub->package?->name ?? 'previous plan';
@@ -205,7 +205,7 @@ class StripeWebhookController extends Controller
             $newMaxClients = $newPackage->max_users    ? number_format($newPackage->max_users)    . ' clients'           : 'Unlimited clients';
             $newMaxDocs    = $newPackage->max_documents ? number_format($newPackage->max_documents) . ' insights / month' : 'Unlimited insights';
 
-            $this->slog('info', 'checkout.session.completed — detected plan downgrade, dispatching plan_downgraded email', [
+            $this->slog('info', 'checkout.session.completed — detected plan downgrade, sending plan_downgraded email', [
                 'event_id'       => $eventId,
                 'company_id'     => $companyId,
                 'old_plan'       => $oldPlanName,
@@ -213,7 +213,7 @@ class StripeWebhookController extends Controller
                 'effective_date' => $effectiveDate,
             ]);
 
-            SendEmailJob::dispatch(
+            app(EmailService::class)->send(
                 toEmail:      $company->company_email,
                 templateSlug: 'plan_downgraded',
                 placeholders: [
@@ -229,7 +229,7 @@ class StripeWebhookController extends Controller
                     '{{support_email}}'         => $supportEmail,
                 ],
                 companyId: (int) $companyId
-            )->onQueue('emails');
+            );
 
         } else {
             // Fresh signup or reactivation via new checkout
@@ -239,13 +239,13 @@ class StripeWebhookController extends Controller
             $startDate   = now()->format('M d, Y');
             $renewDate   = now()->addMonth()->format('M d, Y');
 
-            $this->slog('info', 'checkout.session.completed — dispatching payment_successful_subscription_activated email', [
+            $this->slog('info', 'checkout.session.completed — sending payment_successful_subscription_activated email', [
                 'event_id'   => $eventId,
                 'company_id' => $companyId,
                 'plan'       => $planName,
             ]);
 
-            SendEmailJob::dispatch(
+            app(EmailService::class)->send(
                 toEmail:      $company->company_email,
                 templateSlug: 'payment_successful_subscription_activated',
                 placeholders: [
@@ -261,7 +261,7 @@ class StripeWebhookController extends Controller
                     '{{support_email}}'      => $supportEmail,
                 ],
                 companyId: (int) $companyId
-            )->onQueue('emails');
+            );
         }
 
         $this->slog('info', 'checkout.session.completed — completed successfully', [
@@ -300,12 +300,12 @@ class StripeWebhookController extends Controller
                 $supportEmail = $globalSmtp?->from_email ?? config('mail.from.address');
                 $billingCycle = $sub->billing_cycle === 'annual' ? 'year' : 'month';
 
-                $this->slog('info', 'invoice.payment_succeeded — dispatching subscription_auto_renewed email', [
+                $this->slog('info', 'invoice.payment_succeeded — sending subscription_auto_renewed email', [
                     'event_id'   => $eventId,
                     'company_id' => $sub->company_id,
                 ]);
 
-                SendEmailJob::dispatch(
+                app(EmailService::class)->send(
                     toEmail:      $company->company_email,
                     templateSlug: 'subscription_auto_renewed',
                     placeholders: [
@@ -322,7 +322,7 @@ class StripeWebhookController extends Controller
                         '{{support_email}}' => $supportEmail,
                     ],
                     companyId: $sub->company_id
-                )->onQueue('emails');
+                );
             }
         }
 
@@ -361,13 +361,13 @@ class StripeWebhookController extends Controller
         if ($company && $company->company_email) {
             $firmName = $company->company_name ?? $company->app_name;
 
-            $this->slog('warning', 'invoice.payment_failed — dispatching payment_failed email', [
+            $this->slog('warning', 'invoice.payment_failed — sending payment_failed email', [
                 'event_id'   => $eventId,
                 'company_id' => $sub->company_id,
                 'firm_email' => $company->company_email,
             ]);
 
-            SendEmailJob::dispatch(
+            app(EmailService::class)->send(
                 toEmail:      $company->company_email,
                 templateSlug: 'payment_failed',
                 placeholders: [
@@ -378,7 +378,7 @@ class StripeWebhookController extends Controller
                     '{{billing_url}}' => tenant_url($company->subdomain, 'billing'),
                 ],
                 companyId: $sub->company_id
-            )->onQueue('emails');
+            );
         }
 
         $this->slog('warning', 'invoice.payment_failed — processed', ['event_id' => $eventId]);
@@ -409,7 +409,7 @@ class StripeWebhookController extends Controller
                 $globalSmtp   = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
                 $supportEmail = $globalSmtp?->from_email ?? config('mail.from.address');
 
-                SendEmailJob::dispatch(
+                app(EmailService::class)->send(
                     toEmail:      $company->company_email,
                     templateSlug: 'subscription_cancellation',
                     placeholders: [
@@ -423,9 +423,9 @@ class StripeWebhookController extends Controller
                         '{{support_email}}'         => $supportEmail,
                     ],
                     companyId: $sub->company_id
-                )->onQueue('emails');
+                );
 
-                $this->slog('info', 'customer.subscription.deleted — dispatched subscription_cancellation email', [
+                $this->slog('info', 'customer.subscription.deleted — sent subscription_cancellation email', [
                     'event_id'   => $eventId,
                     'company_id' => $sub->company_id,
                     'firm_email' => $company->company_email,

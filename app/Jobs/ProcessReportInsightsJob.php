@@ -223,6 +223,17 @@ class ProcessReportInsightsJob implements ShouldQueue
             $loginUrl   = $subdomain ? tenant_url($subdomain, 'login') : url('/login');
             $insightUrl = $subdomain ? tenant_url($subdomain, 'firm-insights') : url('/firm-insights');
 
+            // Resolve quota figures from active subscription plan
+            $quotaUsed  = (int) ($company?->insights_used ?? 0);
+            $quotaTotal = null;
+            try {
+                $subscription = Subscription::where('company_id', $ownCompanyId)
+                    ->whereIn('status', ['active', 'trialing'])
+                    ->first();
+                $plan        = $subscription?->clientPackage ?? $subscription?->package;
+                $quotaTotal  = $plan?->max_insights_per_month ?? $plan?->insights_per_month ?? null;
+            } catch (\Throwable) {}
+
             app(EmailService::class)->send(
                 toEmail:      $firmEmail,
                 templateSlug: 'first_insight_generated_partners_own_firm',
@@ -233,9 +244,13 @@ class ProcessReportInsightsJob implements ShouldQueue
                     '{{app_name}}'      => $company?->app_name ?? config('app.name'),
                     '{{report_name}}'   => $report->report_name ?? 'Your First Insight',
                     '{{insight_url}}'   => $insightUrl,
+                    '{{report_url}}'    => $insightUrl,
                     '{{portal_url}}'    => $loginUrl,
                     '{{login_url}}'     => $loginUrl,
                     '{{support_email}}' => $company?->company_email ?? config('mail.from.address'),
+                    '{{insight_date}}'  => $report->updated_at?->format('M d, Y') ?? now()->format('M d, Y'),
+                    '{{quota_used}}'    => $quotaUsed,
+                    '{{quota_total}}'   => $quotaTotal !== null ? (string) $quotaTotal : 'Unlimited',
                 ],
                 companyId: $ownCompanyId
             );

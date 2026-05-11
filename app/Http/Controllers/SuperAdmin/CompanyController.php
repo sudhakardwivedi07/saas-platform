@@ -260,7 +260,7 @@ class CompanyController extends AccountBaseController
                     route('superadmin.companies.index'),
                     route('superadmin.companies.index')
                 );
-                return Reply::successWithData('Firm created. Redirecting to payment…', [
+                return Reply::successWithData('Firm created successfully. Redirecting to payment…', [
                     'checkout_url' => $session->url,
                 ]);
             } catch (\Exception $e) {
@@ -269,7 +269,7 @@ class CompanyController extends AccountBaseController
             }
         }
 
-        return Reply::successWithData('Firm created successfully.', ['redirect' => route('superadmin.companies.index')]);
+        return Reply::successWithData('Firm created successfully. The firm has been added and is ready for setup.', ['redirect' => route('superadmin.companies.index')]);
     }
 
     /**

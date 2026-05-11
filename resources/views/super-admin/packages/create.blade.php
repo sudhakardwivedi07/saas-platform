@@ -352,7 +352,7 @@ document.getElementById('pkg-form').addEventListener('submit', async (e) => {
     const json = await r.json();
 
     if (json.status === 'success') {
-        showToast('Plan saved successfully.', 'success');
+        showToast(json.message || 'Plan saved successfully.', 'success');
         setTimeout(() => window.location = '{{ route("superadmin.packages.index") }}', 1000);
     } else if (json.errors) {
         // Laravel validation errors (HTTP 422) — show each error inline on its field

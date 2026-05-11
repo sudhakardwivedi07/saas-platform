@@ -10,6 +10,7 @@ use App\Models\Payment;
 use App\Models\QuickBooksConnection;
 use App\Models\Report;
 use App\Models\SuperAdmin\Package;
+use App\Models\SuperAdmin\Subscription;
 use App\Models\User;
 use App\Services\Kpis\KpiFormattedDataService;
 use Carbon\Carbon;
@@ -52,7 +53,7 @@ class DashboardController extends AccountBaseController
         // All sub-companies (used for activity feed, chart, QB lookup)
         $allCompanies  = Company::withoutGlobalScopes()
             ->where('created_by', $companyId)
-            ->with(['quickbooksConnections'])
+            ->with(['quickbooksConnections', 'subscription'])
             ->get();
         $subCompanyIds = $allCompanies->pluck('id');
 
@@ -61,22 +62,22 @@ class DashboardController extends AccountBaseController
             fn($c) => $c->created_at->between($startDate, $endDate)
         );
 
-        // Period-filtered: clients (users) created within selected date range
-        $periodClients = User::whereIn('company_id', $subCompanyIds)
-            ->whereBetween('created_at', [$startDate, $endDate])
+        $allClients = User::withoutGlobalScopes()
+            ->whereIn('company_id', $subCompanyIds)
             ->get();
 
-        $this->clientCount        = $periodClients->count();
-        $this->activeClientCount  = $periodClients->where('status', 'active')->count();
-        $this->companyCount       = $periodCompanies->count();
-        $this->activeCompanyCount = $periodCompanies->where('status', 'active')->count();
-        $this->qbConnectedCount   = $periodCompanies->filter(
+        $this->clientCount        = $allClients->count();
+        $this->activeClientCount  = $allClients->where('status', 'active')->count();
+        $this->companyCount       = $allCompanies->count();
+        $this->activeCompanyCount = $allCompanies->where('status', 'active')->count();
+        $this->qbConnectedCount   = $allCompanies->filter(
             fn($c) => $c->quickbooksConnections->where('is_active', true)->isNotEmpty()
         )->count();
 
-        // Active subscriptions = period companies with active or trial status
-        $this->activeSubscriptions = $periodCompanies->filter(
-            fn($c) => in_array($c->status, ['active', 'trial'])
+        // Active subscriptions = companies with an active/trial subscription or a client plan assigned without a subscription record
+        $this->activeSubscriptions = $allCompanies->filter(
+            fn($c) => in_array($c->subscription?->status, ['active', 'trialing'])
+                || ($c->client_package_id && $c->status === 'active')
         )->count();
 
         $reportCompanyIds = $subCompanyIds->concat([$companyId])->unique();
@@ -265,6 +266,29 @@ class DashboardController extends AccountBaseController
 
         $company->client_package_id = $plan->id;
         $company->save();
+
+        // Create or update subscription with 'active' status
+        $existingSub = $company->subscription;
+        if ($existingSub) {
+            // Update existing subscription
+            $existingSub->update([
+                'client_package_id' => $plan->id,
+                'status'            => 'active',
+                'canceled_at'       => null,  // Remove cancellation if it was pending
+            ]);
+        } else {
+            // Create new subscription
+            Subscription::create([
+                'company_id'           => $company->id,
+                'package_id'           => $company->package_id,
+                'client_package_id'    => $plan->id,
+                'status'               => 'active',
+                'billing_cycle'        => 'monthly',
+                'current_period_start' => now(),
+                'current_period_end'   => now()->addMonth(),
+                'trial_ends_at'        => null,
+            ]);
+        }
 
         return back()->with('success', "Plan '{$plan->name}' assigned successfully.");
     }

@@ -85,6 +85,7 @@
     padding: 0;
     overflow: hidden;
     box-shadow: var(--sh-sm);
+    margin-bottom: 20px;
 }
 .pro-plan-header {
     display: flex;

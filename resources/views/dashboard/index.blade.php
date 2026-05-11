@@ -602,7 +602,7 @@
             </div>
         </div>
         <div class="db-kpi-val">{{ $clientCount }}</div>
-        <div class="db-kpi-ctx">New clients added · {{ $periodLabel }}</div>
+        <div class="db-kpi-ctx">Clients in portfolio</div>
     </div>
 
     {{-- Active Clients --}}
@@ -616,7 +616,7 @@
         <div class="db-kpi-val green">
             {{ $activeClientCount }}<span class="sub-val"> / {{ $clientCount }}</span>
         </div>
-        <div class="db-kpi-ctx">Active of {{ $clientCount }} new clients · {{ $periodLabel }}</div>
+        <div class="db-kpi-ctx">Active of {{ $clientCount }} total clients</div>
     </div>
 
     {{-- Total Companies --}}
@@ -628,7 +628,7 @@
             </div>
         </div>
         <div class="db-kpi-val">{{ $companyCount }}</div>
-        <div class="db-kpi-ctx">New companies added · {{ $periodLabel }}</div>
+        <div class="db-kpi-ctx">Client companies in portfolio</div>
     </div>
 
     {{-- Data Connected --}}
@@ -642,7 +642,7 @@
         <div class="db-kpi-val {{ $qbConnectedCount > 0 ? 'green' : '' }}">
             {{ $qbConnectedCount }}<span class="sub-val"> / {{ $companyCount }}</span>
         </div>
-        <div class="db-kpi-ctx">Of {{ $companyCount }} new companies with QuickBooks · {{ $periodLabel }}</div>
+        <div class="db-kpi-ctx">Of {{ $companyCount }} client companies with QuickBooks</div>
     </div>
 
 </div>
@@ -661,7 +661,7 @@
         <div class="db-kpi-val">
             {{ $activeCompanyCount }}<span class="sub-val"> / {{ $companyCount }}</span>
         </div>
-        <div class="db-kpi-ctx">Active of {{ $companyCount }} new companies · {{ $periodLabel }}</div>
+        <div class="db-kpi-ctx">Active of {{ $companyCount }} client companies</div>
     </div>
 
     {{-- Insights Generated --}}
@@ -753,7 +753,7 @@
         <div class="db-kpi-val" style="color:#7c3aed">
             {{ $activeSubscriptions }}<span class="sub-val"> / {{ $companyCount }}</span>
         </div>
-        <div class="db-kpi-ctx">Active or trial of {{ $companyCount }} new companies · {{ $periodLabel }}</div>
+        <div class="db-kpi-ctx">Active or trial of {{ $companyCount }} client companies</div>
     </div>
 
 </div>

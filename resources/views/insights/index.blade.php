@@ -360,8 +360,20 @@
 
 @section('content')
 
+@if(!empty($isAdminView))
+@php $adminViewUser = $viewingAsUser ?? auth()->user(); @endphp
+<div style="display:flex;align-items:center;gap:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 16px;margin-bottom:18px;font-size:13px;color:#1d4ed8">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="flex-shrink:0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    <span>You are viewing <strong>{{ $adminViewUser->name }}</strong>'s insights in read-only mode.</span>
+    <a href="{{ $backUrl ?? route('dashboard') }}" style="margin-left:auto;color:#1d4ed8;font-weight:600;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to My Dashboard
+    </a>
+</div>
+@endif
+
 @php
-    $user            = auth()->user();
+    $user            = $viewingAsUser ?? auth()->user();
     $hasCtx          = !empty($user->business_context);
     $monthlyLimit    = $monthlyLimit ?? null;
     $monthlyUsed     = $monthlyUsed ?? 0;
@@ -461,7 +473,11 @@
                               fill="white" font-size="16" font-weight="700" font-family="Arial,sans-serif">QB</text>
                     </svg>
                 </div>
-                @if($qbConnection && !$limitReached)
+                @if(!empty($isAdminView))
+                    <h3>View-Only Mode</h3>
+                    <p>You are viewing this client's insights in read-only mode. Insight generation is managed by the client.</p>
+                    <button class="dashboard-action-card-btn primary" disabled style="opacity:.55;cursor:not-allowed">Read-Only View</button>
+                @elseif($qbConnection && !$limitReached)
                     <h3>Sync QuickBooks Data</h3>
                     <p>Fetch your latest financial data from QuickBooks and generate CFO-level insights.</p>
                     <button class="dashboard-action-card-btn primary" id="insightsSyncQBBtn" onclick="generateInsight()">
@@ -500,12 +516,14 @@
         <div class="table-header">
             <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
                 <h2>All Insights</h2>
-                @if($qbConnection && !$limitReached)
+                @if(empty($isAdminView) && $qbConnection && !$limitReached)
                 <button id="btnGenerateNew" onclick="generateInsight()"
                         style="background:#f06b25;color:white;padding:8px 18px;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .2s;"
                         onmouseover="this.style.background='#d95a1a'" onmouseout="this.style.background='#f06b25'">
                     <i class="fa fa-sync-alt"></i> Generate New Insight
                 </button>
+                @elseif(!empty($isAdminView))
+                {{-- read-only mode: no generate button --}}
                 @elseif($limitReached)
                 <span class="limit-badge-inline" style="font-size:12.5px;color:#ef4444;font-weight:600;background:#fef2f2;padding:6px 12px;border-radius:6px;border:1px solid #fecaca;">
                     Monthly limit reached ({{ $monthlyUsed }}/{{ $monthlyLimit }})
@@ -612,22 +630,22 @@
         <p>We use industry benchmarks to put your financials in context — from margins to cash flow trends. This helps our AI provide more relevant insights tailored to your business.</p>
         <select id="industrySelect">
             <option value="">— Select your industry —</option>
-            <option value="Automotive" {{ auth()->user()->business_context === 'Automotive' ? 'selected' : '' }}>Automotive</option>
-            <option value="Technology" {{ auth()->user()->business_context === 'Technology' ? 'selected' : '' }}>Technology</option>
-            <option value="Healthcare" {{ auth()->user()->business_context === 'Healthcare' ? 'selected' : '' }}>Healthcare</option>
-            <option value="Manufacturing" {{ auth()->user()->business_context === 'Manufacturing' ? 'selected' : '' }}>Manufacturing</option>
-            <option value="Finance" {{ auth()->user()->business_context === 'Finance' ? 'selected' : '' }}>Finance</option>
-            <option value="Retail" {{ auth()->user()->business_context === 'Retail' ? 'selected' : '' }}>Retail</option>
-            <option value="Construction" {{ auth()->user()->business_context === 'Construction' ? 'selected' : '' }}>Construction</option>
-            <option value="Transportation" {{ auth()->user()->business_context === 'Transportation' ? 'selected' : '' }}>Transportation</option>
-            <option value="Energy" {{ auth()->user()->business_context === 'Energy' ? 'selected' : '' }}>Energy</option>
-            <option value="Agriculture" {{ auth()->user()->business_context === 'Agriculture' ? 'selected' : '' }}>Agriculture</option>
-            <option value="Education" {{ auth()->user()->business_context === 'Education' ? 'selected' : '' }}>Education</option>
-            <option value="Real Estate" {{ auth()->user()->business_context === 'Real Estate' ? 'selected' : '' }}>Real Estate</option>
-            <option value="Entertainment" {{ auth()->user()->business_context === 'Entertainment' ? 'selected' : '' }}>Entertainment</option>
-            <option value="Consulting" {{ auth()->user()->business_context === 'Consulting' ? 'selected' : '' }}>Consulting</option>
-            <option value="Legal Services" {{ auth()->user()->business_context === 'Legal Services' ? 'selected' : '' }}>Legal Services</option>
-            <option value="Other" {{ auth()->user()->business_context === 'Other' ? 'selected' : '' }}>Other</option>
+            <option value="Automotive" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Automotive' ? 'selected' : '' }}>Automotive</option>
+            <option value="Technology" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Technology' ? 'selected' : '' }}>Technology</option>
+            <option value="Healthcare" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Healthcare' ? 'selected' : '' }}>Healthcare</option>
+            <option value="Manufacturing" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Manufacturing' ? 'selected' : '' }}>Manufacturing</option>
+            <option value="Finance" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Finance' ? 'selected' : '' }}>Finance</option>
+            <option value="Retail" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Retail' ? 'selected' : '' }}>Retail</option>
+            <option value="Construction" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Construction' ? 'selected' : '' }}>Construction</option>
+            <option value="Transportation" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Transportation' ? 'selected' : '' }}>Transportation</option>
+            <option value="Energy" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Energy' ? 'selected' : '' }}>Energy</option>
+            <option value="Agriculture" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Agriculture' ? 'selected' : '' }}>Agriculture</option>
+            <option value="Education" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Education' ? 'selected' : '' }}>Education</option>
+            <option value="Real Estate" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Real Estate' ? 'selected' : '' }}>Real Estate</option>
+            <option value="Entertainment" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Entertainment' ? 'selected' : '' }}>Entertainment</option>
+            <option value="Consulting" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Consulting' ? 'selected' : '' }}>Consulting</option>
+            <option value="Legal Services" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Legal Services' ? 'selected' : '' }}>Legal Services</option>
+            <option value="Other" {{ ($viewingAsUser ?? auth()->user())->business_context === 'Other' ? 'selected' : '' }}>Other</option>
         </select>
         <div class="ind-modal-actions">
             <button class="ind-btn-confirm" id="indBtnConfirm" onclick="saveIndustryAndProceed()">Continue</button>
@@ -699,7 +717,7 @@
 (function () {
     const CSRF              = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     const SAVE_CTX_URL      = '{{ route("insights.save-business-context") }}';
-    const HAS_BUSINESS_CTX  = {{ !empty(auth()->user()->business_context) ? 'true' : 'false' }};
+    const HAS_BUSINESS_CTX  = {{ !empty(($viewingAsUser ?? auth()->user())->business_context) ? 'true' : 'false' }};
     const SELECTED_COMPANY  = {{ $selectedCompanyId }};
     const LIMIT_REACHED     = {{ $limitReached ? 'true' : 'false' }};
     const LS_KEY            = 'insights_processing_ids';

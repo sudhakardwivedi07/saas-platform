@@ -686,7 +686,9 @@
         </div>
         @php
             $insAvail = $insightsAvailable ?? 0;
-            $insPkg   = $subscription?->package?->max_documents ?? 50;
+            $insPkg   = $insightPlanLimit ?? ($subscription?->clientPackage?->insights_per_month
+                ?? $subscription?->package?->max_insights_per_month
+                ?? 0);
         @endphp
         <div class="db-kpi-val orange">
             {{ $insAvail }}<span class="sub-val"> / {{ $insPkg }}</span>

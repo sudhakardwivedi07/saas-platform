@@ -79,9 +79,36 @@ class DashboardController extends AccountBaseController
             fn($c) => in_array($c->status, ['active', 'trial'])
         )->count();
 
-        // Insights (not yet implemented — no insights table)
+        $reportCompanyIds = $subCompanyIds->concat([$companyId])->unique();
         $this->insightsGenerated = 0;
         $this->insightsAvailable = 0;
+
+        $adminPlan = $this->subscription?->clientPackage
+            ?? $this->subscription?->package
+            ?? $company->package
+            ?? $company->activePlan();
+
+        $monthlyInsightLimit = $adminPlan?->insights_per_month
+            ?? $adminPlan?->max_insights_per_month
+            ?? 0;
+
+        $this->insightPlanLimit = $monthlyInsightLimit;
+
+        if ($reportCompanyIds->isNotEmpty()) {
+            $this->insightsGenerated = Report::withoutGlobalScopes()
+                ->whereIn('company_id', $reportCompanyIds)
+                ->where('status', 'Analyzed')
+                ->whereBetween('updated_at', [$startDate, $endDate])
+                ->count();
+
+            $totalInsightsUsed = Company::withoutGlobalScopes()
+                ->whereIn('id', $reportCompanyIds)
+                ->sum('insights_used');
+
+            $this->insightsAvailable = $monthlyInsightLimit > 0
+                ? max(0, $monthlyInsightLimit - (int) $totalInsightsUsed)
+                : 0;
+        }
 
         // Companies at risk in period = inactive
         $this->companiesAtRisk = $periodCompanies->filter(
@@ -320,8 +347,8 @@ class DashboardController extends AccountBaseController
 
         $parentCompany = $parentId ? Company::find($parentId) : null;
 
-        $this->plans            = $plans;
         $this->currentPlan      = $company->activePlan();
+        $this->plans            = $plans;
         $this->subscription     = $company->subscription;
         $this->isQuickbooksConnected = QuickBooksConnection::withoutGlobalScopes()
             ->where('company_id', $company->id)

@@ -508,19 +508,19 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         @endif
     </nav>
 
-    <div class="ca-sidebar-foot">
-        <div class="ca-sfoot-av">{{ strtoupper(substr($authUser->name ?? 'U', 0, 2)) }}</div>
-        <div style="flex:1;min-width:0">
+    <!-- <div class="ca-sidebar-foot"> -->
+        <!-- <div class="ca-sfoot-av">{{ strtoupper(substr($authUser->name ?? 'U', 0, 2)) }}</div> -->
+        <!-- <div style="flex:1;min-width:0">
             <div class="ca-sfoot-name">{{ $authUser->name }}</div>
             <div class="ca-sfoot-role">{{ $authUser->getRoleNames()->first() ?? 'Admin' }}</div>
-        </div>
-        <form method="POST" action="{{ route('logout') }}" style="margin:0">
+        </div> -->
+        <!-- <form method="POST" action="{{ route('logout') }}" style="margin:0">
             @csrf
             <button type="submit" class="ca-sfoot-logout" title="Logout">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             </button>
-        </form>
-    </div>
+        </form> -->
+    <!-- </div> -->
 </aside>
 
 {{-- ── Main ──────────────────────────────────────────────── --}}

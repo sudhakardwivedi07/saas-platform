@@ -498,7 +498,7 @@
 <div id="dashQbModal" class="qb-modal-overlay">
     <div class="qb-modal">
         <div style="margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 70" width="70" height="70">
+            <svg viewBox="0 0 70 70" width="70" height="70">
                 <circle cx="35" cy="35" r="35" fill="#2CA01C"/>
                 <circle cx="25" cy="36" r="11" fill="none" stroke="white" stroke-width="5.5"/>
                 <line x1="32.5" y1="43.5" x2="38" y2="52.5" stroke="white" stroke-width="5.5" stroke-linecap="round"/>

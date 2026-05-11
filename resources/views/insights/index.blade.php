@@ -120,7 +120,7 @@
     font-size: 13px;
     font-family: inherit;
     color: #1a202c;
-    background: #f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+    background: #f8fafc url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
     -webkit-appearance: none;
     appearance: none;
     outline: none;
@@ -467,7 +467,7 @@
         <div class="dashboard-action-cards-row" style="grid-template-columns:repeat(1,minmax(0,460px));">
             <div class="dashboard-action-card">
                 <div class="dashboard-action-card-icon">
-                    <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                    <svg width="40" height="40" viewBox="0 0 40 40">
                         <circle cx="20" cy="20" r="20" fill="#2CA01C"/>
                         <text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle"
                               fill="white" font-size="16" font-weight="700" font-family="Arial,sans-serif">QB</text>
@@ -687,7 +687,7 @@
 <div id="qbGenerateModal" class="qb-modal-overlay" style="display:none;" onclick="closeGenerateModal(event)">
     <div class="qb-modal">
         <div class="qb-modal-logo">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 70" width="70" height="70">
+            <svg viewBox="0 0 70 70" width="70" height="70">
                 <circle cx="35" cy="35" r="35" fill="#2CA01C"/>
                 <circle cx="25" cy="36" r="11" fill="none" stroke="white" stroke-width="5.5"/>
                 <line x1="32.5" y1="43.5" x2="38" y2="52.5" stroke="white" stroke-width="5.5" stroke-linecap="round"/>

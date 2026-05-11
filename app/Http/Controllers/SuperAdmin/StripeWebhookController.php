@@ -111,13 +111,22 @@ class StripeWebhookController extends Controller
             'currency'     => $session['currency'] ?? 'usd',
         ]);
 
+        // Snapshot existing active subscription BEFORE handleCheckoutCompleted overwrites it
+        $previousSub = $companyId
+            ? Subscription::withoutGlobalScopes()
+                ->where('company_id', $companyId)
+                ->whereIn('status', ['active', 'trialing'])
+                ->with('package')
+                ->latest()
+                ->first()
+            : null;
+
         $stripeService->handleCheckoutCompleted($session);
 
         $this->slog('info', 'checkout.session.completed — StripeService handler done', [
             'event_id' => $eventId,
         ]);
 
-        // Send welcome email
         if (!$companyId) {
             $this->slog('warning', 'checkout.session.completed — no company_id in metadata, skipping email', [
                 'event_id' => $eventId,
@@ -142,41 +151,118 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        $planName = Package::find($packageId)?->name ?? 'Unknown';
-
-        $this->slog('info', 'checkout.session.completed — dispatching payment_successful_subscription_activated email', [
-            'event_id'    => $eventId,
-            'company_id'  => $companyId,
-            'firm_email'  => $company->company_email,
-            'plan'        => $planName,
-        ]);
-
-        $firmName    = $company->company_name ?? $company->app_name;
-        $appName     = $company->app_name ?? $company->company_name;
-        $amountPaid  = '$' . number_format(($session['amount_total'] ?? 0) / 100, 2);
-        $invoiceId   = $session['payment_intent'] ?? $session['id'] ?? 'N/A';
-        $startDate   = now()->format('M d, Y');
-        $renewDate   = now()->addMonth()->format('M d, Y');
-        $globalSmtp  = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
+        $newPackage   = Package::find($packageId);
+        $firmName     = $company->company_name ?? $company->app_name;
+        $appName      = $company->app_name ?? $company->company_name;
+        $globalSmtp   = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
         $supportEmail = $globalSmtp?->from_email ?? config('mail.from.address');
 
-        SendEmailJob::dispatch(
-            toEmail:      $company->company_email,
-            templateSlug: 'payment_successful_subscription_activated',
-            placeholders: [
-                '{{name}}'               => $firmName,
-                '{{firm_name}}'          => $firmName,
-                '{{app_name}}'           => $appName,
-                '{{plan_name}}'          => $planName,
-                '{{amount}}'             => $amountPaid,
-                '{{invoice_id}}'         => $invoiceId,
-                '{{subscription_start}}' => $startDate,
-                '{{period_end}}'         => $renewDate,
-                '{{login_url}}'          => tenant_url($company->subdomain, 'login'),
-                '{{support_email}}'      => $supportEmail,
-            ],
-            companyId: (int) $companyId
-        )->onQueue('emails');
+        // Detect plan change: existing active sub switching to a different plan
+        $isPlanChange = $previousSub
+            && $newPackage
+            && (int) $packageId !== (int) $previousSub->package_id;
+
+        $isUpgrade   = $isPlanChange && ($newPackage->monthly_price ?? 0) > ($previousSub->package?->monthly_price ?? 0);
+        $isDowngrade = $isPlanChange && ($newPackage->monthly_price ?? 0) < ($previousSub->package?->monthly_price ?? 0);
+
+        if ($isUpgrade) {
+            $oldPlanName   = $previousSub->package?->name ?? 'previous plan';
+            $newPlanName   = $newPackage->name;
+            $effectiveDate = $previousSub->current_period_end
+                ? $previousSub->current_period_end->format('M d, Y')
+                : now()->addMonth()->format('M d, Y');
+
+            $this->slog('info', 'checkout.session.completed — detected plan upgrade, dispatching plan_upgraded email', [
+                'event_id'       => $eventId,
+                'company_id'     => $companyId,
+                'old_plan'       => $oldPlanName,
+                'new_plan'       => $newPlanName,
+                'effective_date' => $effectiveDate,
+            ]);
+
+            SendEmailJob::dispatch(
+                toEmail:      $company->company_email,
+                templateSlug: 'plan_upgraded',
+                placeholders: [
+                    '{{name}}'                  => $firmName,
+                    '{{firm_name}}'             => $firmName,
+                    '{{app_name}}'              => $appName,
+                    '{{old_plan_name}}'         => $oldPlanName,
+                    '{{new_plan_name}}'         => $newPlanName,
+                    '{{current_plan_end_date}}' => $effectiveDate,
+                    '{{login_url}}'             => tenant_url($company->subdomain, 'login'),
+                    '{{support_email}}'         => $supportEmail,
+                ],
+                companyId: (int) $companyId
+            )->onQueue('emails');
+
+        } elseif ($isDowngrade) {
+            $oldPlanName   = $previousSub->package?->name ?? 'previous plan';
+            $newPlanName   = $newPackage->name;
+            $effectiveDate = $previousSub->current_period_end
+                ? $previousSub->current_period_end->format('M d, Y')
+                : now()->addMonth()->format('M d, Y');
+            $newMaxClients = $newPackage->max_users    ? number_format($newPackage->max_users)    . ' clients'           : 'Unlimited clients';
+            $newMaxDocs    = $newPackage->max_documents ? number_format($newPackage->max_documents) . ' insights / month' : 'Unlimited insights';
+
+            $this->slog('info', 'checkout.session.completed — detected plan downgrade, dispatching plan_downgraded email', [
+                'event_id'       => $eventId,
+                'company_id'     => $companyId,
+                'old_plan'       => $oldPlanName,
+                'new_plan'       => $newPlanName,
+                'effective_date' => $effectiveDate,
+            ]);
+
+            SendEmailJob::dispatch(
+                toEmail:      $company->company_email,
+                templateSlug: 'plan_downgraded',
+                placeholders: [
+                    '{{name}}'                  => $firmName,
+                    '{{firm_name}}'             => $firmName,
+                    '{{app_name}}'              => $appName,
+                    '{{old_plan_name}}'         => $oldPlanName,
+                    '{{new_plan_name}}'         => $newPlanName,
+                    '{{current_plan_end_date}}' => $effectiveDate,
+                    '{{new_plan_clients}}'      => $newMaxClients,
+                    '{{new_plan_insights}}'     => $newMaxDocs,
+                    '{{login_url}}'             => tenant_url($company->subdomain, 'login'),
+                    '{{support_email}}'         => $supportEmail,
+                ],
+                companyId: (int) $companyId
+            )->onQueue('emails');
+
+        } else {
+            // Fresh signup or reactivation via new checkout
+            $planName    = $newPackage?->name ?? 'Unknown';
+            $amountPaid  = '$' . number_format(($session['amount_total'] ?? 0) / 100, 2);
+            $invoiceId   = $session['payment_intent'] ?? $session['id'] ?? 'N/A';
+            $startDate   = now()->format('M d, Y');
+            $renewDate   = now()->addMonth()->format('M d, Y');
+
+            $this->slog('info', 'checkout.session.completed — dispatching payment_successful_subscription_activated email', [
+                'event_id'   => $eventId,
+                'company_id' => $companyId,
+                'plan'       => $planName,
+            ]);
+
+            SendEmailJob::dispatch(
+                toEmail:      $company->company_email,
+                templateSlug: 'payment_successful_subscription_activated',
+                placeholders: [
+                    '{{name}}'               => $firmName,
+                    '{{firm_name}}'          => $firmName,
+                    '{{app_name}}'           => $appName,
+                    '{{plan_name}}'          => $planName,
+                    '{{amount}}'             => $amountPaid,
+                    '{{invoice_id}}'         => $invoiceId,
+                    '{{subscription_start}}' => $startDate,
+                    '{{period_end}}'         => $renewDate,
+                    '{{login_url}}'          => tenant_url($company->subdomain, 'login'),
+                    '{{support_email}}'      => $supportEmail,
+                ],
+                companyId: (int) $companyId
+            )->onQueue('emails');
+        }
 
         $this->slog('info', 'checkout.session.completed — completed successfully', [
             'event_id'   => $eventId,
@@ -265,6 +351,44 @@ class StripeWebhookController extends Controller
         ]);
 
         $stripeService->handleSubscriptionDeleted($stripeSub);
+
+        $sub = Subscription::withoutGlobalScopes()
+            ->where('stripe_subscription_id', $stripeSub['id'] ?? '')
+            ->with('package')
+            ->first();
+
+        if ($sub) {
+            $company = Company::withoutGlobalScopes()->find($sub->company_id);
+
+            if ($company && $company->company_email) {
+                $firmName     = $company->company_name ?? $company->app_name;
+                $endDate      = $sub->ends_at ?? $sub->current_period_end;
+                $globalSmtp   = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
+                $supportEmail = $globalSmtp?->from_email ?? config('mail.from.address');
+
+                SendEmailJob::dispatch(
+                    toEmail:      $company->company_email,
+                    templateSlug: 'subscription_cancellation',
+                    placeholders: [
+                        '{{name}}'                  => $firmName,
+                        '{{firm_name}}'             => $firmName,
+                        '{{app_name}}'              => $company->app_name ?? $company->company_name,
+                        '{{plan_name}}'             => $sub->package?->name ?? '',
+                        '{{subscription_end_date}}' => $endDate ? $endDate->format('M d, Y') : 'end of billing period',
+                        '{{canceled_at}}'           => now()->format('M d, Y'),
+                        '{{login_url}}'             => tenant_url($company->subdomain, 'login'),
+                        '{{support_email}}'         => $supportEmail,
+                    ],
+                    companyId: $sub->company_id
+                )->onQueue('emails');
+
+                $this->slog('info', 'customer.subscription.deleted — dispatched subscription_cancellation email', [
+                    'event_id'   => $eventId,
+                    'company_id' => $sub->company_id,
+                    'firm_email' => $company->company_email,
+                ]);
+            }
+        }
 
         $this->slog('info', 'customer.subscription.deleted — completed', ['event_id' => $eventId]);
     }

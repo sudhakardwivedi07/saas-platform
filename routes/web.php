@@ -159,7 +159,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/checkout',             [SubscriptionController::class, 'checkout'])->name('checkout');
         Route::get('/success',               [SubscriptionController::class, 'success'])->name('success');
         Route::get('/cancel',                [SubscriptionController::class, 'cancel'])->name('cancel');
-        Route::post('/cancel-subscription',  [SubscriptionController::class, 'cancelSubscription'])->name('cancel-subscription');
+        Route::post('/cancel-subscription',     [SubscriptionController::class, 'cancelSubscription'])->name('cancel-subscription');
+        Route::post('/reactivate-subscription', [SubscriptionController::class, 'reactivateSubscription'])->name('reactivate-subscription');
     });
 
     // Settings — unified tabbed page + individual sub-routes

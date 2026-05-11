@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Helper\Reply;
+use App\Jobs\SendEmailJob;
 use App\Models\Company;
+use App\Models\EmailSmtpSetting;
 use App\Models\SuperAdmin\Package;
 use App\Models\SuperAdmin\Subscription;
 use App\Services\StripeService;
@@ -100,6 +102,7 @@ class SubscriptionController extends AccountBaseController
         $company = company();
         $sub     = Subscription::where('company_id', $company->id)
             ->whereNotIn('status', ['canceled'])
+            ->with('package')
             ->latest()
             ->first();
 
@@ -113,6 +116,9 @@ class SubscriptionController extends AccountBaseController
                 'status'      => 'canceled',
                 'canceled_at' => now(),
             ]);
+
+            $this->dispatchCancellationEmail($company, $sub);
+
             return Reply::success('Subscription canceled.');
         }
 
@@ -132,6 +138,8 @@ class SubscriptionController extends AccountBaseController
                 'canceled_at' => now(),
             ]);
 
+            $this->dispatchCancellationEmail($company, $sub);
+
             Log::channel('stripe')->info('Subscription canceled at period end by user', [
                 'company_id'    => $company->id,
                 'stripe_sub_id' => $sub->stripe_subscription_id,
@@ -145,5 +153,111 @@ class SubscriptionController extends AccountBaseController
             ]);
             return Reply::error('Could not cancel subscription: ' . $e->getMessage());
         }
+    }
+
+    public function reactivateSubscription(Request $request)
+    {
+        abort_403(!auth()->user()->can('view_billing'));
+
+        $company = company();
+        $sub     = Subscription::where('company_id', $company->id)
+            ->where('status', 'canceled')
+            ->with('package')
+            ->latest()
+            ->first();
+
+        if (!$sub) {
+            return Reply::error('No canceled subscription found.');
+        }
+
+        if ($sub->ends_at && $sub->ends_at->isPast()) {
+            return Reply::error('Your access period has ended. Please subscribe to a new plan.');
+        }
+
+        if (!$sub->stripe_subscription_id) {
+            $sub->update(['status' => 'active', 'canceled_at' => null]);
+            $this->dispatchReactivationEmail($company, $sub);
+            return Reply::success('Subscription reactivated successfully.');
+        }
+
+        try {
+            new StripeService();
+
+            StripeSubscription::update($sub->stripe_subscription_id, [
+                'cancel_at_period_end' => false,
+            ]);
+
+            $sub->update(['status' => 'active', 'canceled_at' => null]);
+
+            $this->dispatchReactivationEmail($company, $sub);
+
+            Log::channel('stripe')->info('Subscription reactivated by user', [
+                'company_id'    => $company->id,
+                'stripe_sub_id' => $sub->stripe_subscription_id,
+            ]);
+
+            return Reply::success('Your subscription has been reactivated. Welcome back!');
+        } catch (\Exception $e) {
+            Log::channel('stripe')->error('Failed to reactivate subscription', [
+                'company_id' => $company->id,
+                'error'      => $e->getMessage(),
+            ]);
+            return Reply::error('Could not reactivate subscription: ' . $e->getMessage());
+        }
+    }
+
+    private function dispatchReactivationEmail(Company $company, Subscription $sub): void
+    {
+        if (!$company->company_email) {
+            return;
+        }
+
+        $globalSmtp   = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
+        $supportEmail = $globalSmtp?->from_email ?? config('mail.from.address');
+        $firmName     = $company->company_name ?? $company->app_name;
+
+        SendEmailJob::dispatch(
+            toEmail:      $company->company_email,
+            templateSlug: 'subscription_reactivated',
+            placeholders: [
+                '{{name}}'               => $firmName,
+                '{{firm_name}}'          => $firmName,
+                '{{app_name}}'           => $company->app_name ?? $company->company_name,
+                '{{plan_name}}'          => $sub->package?->name ?? '',
+                '{{subscription_start}}' => now()->format('M d, Y'),
+                '{{period_end}}'         => $sub->current_period_end?->format('M d, Y') ?? '',
+                '{{login_url}}'          => tenant_url($company->subdomain, 'login'),
+                '{{support_email}}'      => $supportEmail,
+            ],
+            companyId: $company->id
+        )->onQueue('emails');
+    }
+
+    private function dispatchCancellationEmail(Company $company, Subscription $sub): void
+    {
+        if (!$company->company_email) {
+            return;
+        }
+
+        $endDate      = $sub->ends_at ?? $sub->current_period_end;
+        $globalSmtp   = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
+        $supportEmail = $globalSmtp?->from_email ?? config('mail.from.address');
+        $firmName     = $company->company_name ?? $company->app_name;
+
+        SendEmailJob::dispatch(
+            toEmail:      $company->company_email,
+            templateSlug: 'subscription_cancellation',
+            placeholders: [
+                '{{name}}'                  => $firmName,
+                '{{firm_name}}'             => $firmName,
+                '{{app_name}}'              => $company->app_name ?? $company->company_name,
+                '{{plan_name}}'             => $sub->package?->name ?? '',
+                '{{subscription_end_date}}' => $endDate ? $endDate->format('M d, Y') : 'end of billing period',
+                '{{canceled_at}}'           => now()->format('M d, Y'),
+                '{{login_url}}'             => tenant_url($company->subdomain, 'login'),
+                '{{support_email}}'         => $supportEmail,
+            ],
+            companyId: $company->id
+        )->onQueue('emails');
     }
 }

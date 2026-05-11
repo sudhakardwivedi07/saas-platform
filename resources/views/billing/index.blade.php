@@ -309,10 +309,12 @@
                 @endif
             @endif
         </ul>
+        @php $isFreePackage = ($p->is_free ?? false) || ((float) ($p->monthly_price ?? 0) <= 0); @endphp
+        @php $isCurrentPaid = $subscription && !(!empty($pkg?->is_free) || ((float) ($pkg?->monthly_price ?? 0) <= 0)); @endphp
         <div style="margin-top:auto">
             @if($isCurrent)
             <button disabled class="btn btn-primary" style="width:100%;justify-content:center;cursor:not-allowed;opacity:.85">Current Plan</button>
-            @else
+            @elseif(!$isFreePackage || !$isCurrentPaid)
             <button class="btn {{ $subscription ? 'btn-ghost' : 'btn-primary' }}" style="width:100%;justify-content:center"
                     onclick="startCheckout({{ $p->id }}, this)">
                 {{ $subscription ? ($p->monthly_price > ($pkg?->monthly_price ?? 0) ? 'Upgrade to ' : 'Switch to ') . $p->name : 'Get ' . $p->name }}

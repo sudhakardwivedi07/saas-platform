@@ -30,8 +30,8 @@ class AccountController extends AccountBaseController
                     ->get()
                 : collect();
 
-            $this->plans        = $plans;
             $this->currentPlan  = $company->activePlan();
+            $this->plans        = $plans;
             $this->subscription = $company->subscription;
 
             $this->data['myTickets'] = SupportTicket::where('user_id', auth()->id())

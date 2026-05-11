@@ -1,6 +1,8 @@
 @php
     $tenant = company();
     $tenantName = $tenant?->company_name ?? $tenant?->app_name ?? 'Your firm';
+    $currentPlan = $tenant->activePlan();
+    $isCurrentPlanPaid = $currentPlan && !(!empty($currentPlan->is_free) || ((float) ($currentPlan->monthly_price ?? 0) <= 0));
     $allPlans = ($plans ?? collect())->values();
 @endphp
 
@@ -121,11 +123,13 @@
                         @endif
                         <a href="{{ route('billing.index') }}" class="plan-btn btn-orange-outline" style="text-decoration:none">Billing &amp; plan</a>
                     @else
-                        <form method="POST" action="{{ route('dashboard.assign-plan') }}" style="margin:0">
-                            @csrf
-                            <input type="hidden" name="client_package_id" value="{{ $plan->id }}">
-                            <button type="submit" class="plan-btn btn-orange">Choose {{ $plan->name }}</button>
-                        </form>
+                        @if(!$isFree || !$isCurrentPlanPaid)
+                            <form method="POST" action="{{ route('dashboard.assign-plan') }}" style="margin:0">
+                                @csrf
+                                <input type="hidden" name="client_package_id" value="{{ $plan->id }}">
+                                <button type="submit" class="plan-btn btn-orange">Choose {{ $plan->name }}</button>
+                            </form>
+                        @endif
                     @endif
                 </div>
             </div>

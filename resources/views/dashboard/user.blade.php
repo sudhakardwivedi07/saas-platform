@@ -410,14 +410,14 @@
     <h1>Hi <span>{{ $dashUser->first_name }}</span></h1>
     <p>
         @if(empty($isAdminView))
-        You’re one step away from unlocking your first financial insights.
-        @if($dashUser->can(‘view_quickbooks’))
-            <a href="{{ route(‘quickbooks.index’) }}">Connect QuickBooks</a> to proceed.
+        You're one step away from unlocking your first financial insights.
+        @if($dashUser->can('view_quickbooks'))
+            <a href="{{ route('quickbooks.index') }}">Connect QuickBooks</a> to proceed.
         @else
             Ask your administrator to connect QuickBooks to proceed.
         @endif
         @else
-        This client hasn’t generated any financial insights yet. Connect QuickBooks to get started.
+        This client hasn't generated any financial insights yet. Connect QuickBooks to get started.
         @endif
     </p>
 </div>

@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ClientPackage;
 use App\Models\Company;
+use App\Models\QuickBooksConnection;
+use App\Models\Report;
 use App\Models\SuperAdmin\Package;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -363,17 +365,158 @@ class ClientController extends AccountBaseController
     public function dashboard($id)
     {
         abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
-        $this->clientUser  = User::with(['company.quickbooksConnections', 'company.clientPackage'])->findOrFail($id);
-        $this->pageTitle   = $this->clientUser->name . "'s Dashboard";
-        return view('clients.dashboard', $this->data);
+
+        $clientUser = User::with(['company.quickbooksConnections', 'company.clientPackage'])->findOrFail($id);
+        $company    = $clientUser->company;
+        abort_if(!$company, 404, 'Client has no company');
+
+        $parentId = $company->created_by;
+
+        $plans = $parentId
+            ? ClientPackage::where('company_id', $parentId)
+                ->where('is_active', true)
+                ->orderBy('sort')
+                ->orderBy('monthly_price')
+                ->get()
+            : collect();
+
+        $currentPlan = $company->activePlan();
+
+        $isQuickbooksConnected = QuickBooksConnection::withoutGlobalScopes()
+            ->where('company_id', $company->id)
+            ->where('is_active', true)
+            ->exists();
+
+        // Find latest analyzed report for this client user
+        $portfolioIds = $clientUser->portfolioCompanies()
+            ->pluck('id')
+            ->map(fn ($i) => (int) $i)
+            ->all();
+        if (!in_array((int) $company->id, $portfolioIds, true)) {
+            $portfolioIds[] = (int) $company->id;
+        }
+
+        $latestAnalyzedReport = Report::query()
+            ->where('user_id', $clientUser->id)
+            ->whereNull('deleted_at')
+            ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
+            ->where(function ($q) use ($portfolioIds, $company, $clientUser) {
+                $q->whereIn('company_id', $portfolioIds);
+                if ($clientUser->company_id && (int) $company->id === (int) $clientUser->company_id) {
+                    $q->orWhereNull('company_id');
+                }
+            })
+            ->orderByDesc('created_at')
+            ->first();
+
+        $hasAnalyzedInsights  = (bool) $latestAnalyzedReport;
+        $showKpiDashboard     = $hasAnalyzedInsights;
+        $selectedKpiCompanyId = (int) ($latestAnalyzedReport?->company_id ?: $company->id);
+
+        $kpiCompanies = $clientUser->kpiEligiblePortfolioCompanies();
+        if ($kpiCompanies->isEmpty()) {
+            $kpiCompanies = collect([$company]);
+        }
+
+        if ($showKpiDashboard) {
+            $plans = collect();
+        }
+
+        $insightInProgress = Report::where('user_id', $clientUser->id)
+            ->whereIn('status', ['Uploading', 'Analyzing'])
+            ->first();
+
+        $limitValue   = $currentPlan
+            ? ($currentPlan->insights_per_month ?? $currentPlan->max_insights_per_month ?? null)
+            : null;
+        $monthlyLimit = $limitValue ? (int) $limitValue : null;
+        $monthlyUsed  = Report::countMonthlyUsageForUserCompany(
+            (int) $clientUser->id,
+            (int) $company->id,
+            (int) $clientUser->company_id
+        );
+
+        $this->plans               = $plans;
+        $this->currentPlan         = $currentPlan;
+        $this->subscription        = $company->subscription;
+        $this->isQuickbooksConnected = $isQuickbooksConnected;
+        $this->kpiCompanies        = $kpiCompanies->unique('id')->values();
+        $this->selectedKpiCompanyId = $selectedKpiCompanyId;
+        $this->hasAnalyzedInsights = $hasAnalyzedInsights;
+        $this->showKpiDashboard    = $showKpiDashboard;
+        $this->kpiDataUrl          = route('clients.kpi-data', $clientUser->id);
+        $this->kpiDetailBaseUrl    = url('/clients/' . $clientUser->id . '/kpi-detail');
+        $this->insightInProgress   = $insightInProgress;
+        $this->monthlyLimit        = $monthlyLimit;
+        $this->monthlyUsed         = $monthlyUsed;
+        $this->viewingAsUser       = $clientUser;
+        $this->isAdminView         = true;
+        $this->backUrl             = route('dashboard');
+        $this->pageTitle           = $clientUser->name . "'s Dashboard";
+
+        return view('dashboard.user', $this->data);
     }
 
     public function insights($id)
     {
-        $this->client = User::findOrFail($id);
-        $this->ensureInsightsQuotaAvailable($this->client->company);
-        $this->pageTitle = 'Insights';
-        return view('clients.insights', $this->data);
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
+
+        $clientUser = User::findOrFail($id);
+        $company    = $clientUser->company;
+        abort_if(!$company, 404);
+
+        $this->ensureInsightsQuotaAvailable($company);
+
+        $qbConnection = QuickBooksConnection::withoutGlobalScopes()
+            ->where('user_id', $clientUser->id)
+            ->where('is_active', true)
+            ->first();
+
+        $allCompanies      = $clientUser->portfolioCompanies();
+        $defaultId         = (int) ($allCompanies->first()?->id ?: $company->id);
+        $selectedCompanyId = (int) request()->get('company_id', $defaultId);
+        if (!$allCompanies->contains(fn ($c) => (int) $c->id === $selectedCompanyId)) {
+            $selectedCompanyId = $defaultId;
+        }
+
+        $reports = Report::withTrashed()
+            ->where('user_id', $clientUser->id)
+            ->where(function ($q) use ($selectedCompanyId, $clientUser) {
+                $q->where('company_id', $selectedCompanyId);
+                if ((int) $selectedCompanyId === (int) $clientUser->company_id) {
+                    $q->orWhereNull('company_id');
+                }
+            })
+            ->orderByDesc('created_at')
+            ->get();
+
+        $currentPlan  = $company?->clientPackage ?? $company?->package;
+        $limitValue   = $currentPlan
+            ? ($currentPlan->insights_per_month ?? $currentPlan->max_insights_per_month ?? null)
+            : null;
+        $monthlyLimit = $limitValue ? (int) $limitValue : null;
+        $monthlyUsed  = Report::countMonthlyUsageForUserCompany(
+            (int) $clientUser->id,
+            (int) $selectedCompanyId,
+            (int) $clientUser->company_id
+        );
+
+        $this->client            = $clientUser;
+        $this->qbConnection      = $qbConnection;
+        $this->qbConfigured      = $qbConnection !== null;
+        $this->companies         = $allCompanies;
+        $this->selectedCompanyId = $selectedCompanyId;
+        $this->selectedCompany   = $allCompanies->firstWhere('id', $selectedCompanyId);
+        $this->reports           = $reports;
+        $this->monthlyUsed       = $monthlyUsed;
+        $this->monthlyLimit      = $monthlyLimit;
+        $this->currentPlan       = $currentPlan;
+        $this->viewingAsUser     = $clientUser;
+        $this->isAdminView       = true;
+        $this->backUrl           = route('dashboard');
+        $this->pageTitle         = $clientUser->name . "'s Insights";
+
+        return view('insights.index', $this->data);
     }
 
     public function insightDetail($clientId, $insightId)

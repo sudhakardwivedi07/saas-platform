@@ -108,18 +108,20 @@
                         {{ ucfirst($user->status) }}
                     </span>
                 </td>
-                <td>
-                    <div class="dm-wrap" data-menu="user-{{ $user->id }}">
-                        <button class="dot-menu" onclick="toggleMenu('user-{{ $user->id }}')">···</button>
+                <td style="padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle">
+                    <div class="dm-wrap">
+                        <button class="dot-menu" type="button" data-menu="user-{{ $user->id }}"
+                                style="font-size:20px;letter-spacing:1px;font-weight:700;color:var(--text-3)">···</button>
                         <div class="dm-popup" id="user-{{ $user->id }}">
                             <a href="{{ route('superadmin.users.edit', $user) }}" class="dm-item">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 Edit User
                             </a>
                             @unless($user->is_superadmin)
-                            <button type="button" class="dm-item dm-danger" style="width:100%;text-align:left;background:none;border:none;font-family:inherit"
+                            <div class="dm-div"></div>
+                            <button type="button" class="dm-item dm-danger"
                                 onclick="toggleUserStatus({{ $user->id }}, '{{ route('superadmin.users.toggle-status', $user->id) }}')">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
                                 {{ $user->status === 'active' ? 'Disable User' : 'Enable User' }}
                             </button>
                             @endunless
@@ -153,5 +155,40 @@ async function toggleUserStatus(id, url) {
         showToast(res.message || 'Error', 'error');
     }
 }
+
+// Fixed-position action menu — prevents clipping inside table container
+document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-menu]');
+    if (!btn) return;
+
+    e.stopImmediatePropagation();
+
+    var id    = btn.dataset.menu;
+    var popup = document.getElementById(id);
+    if (!popup) return;
+
+    var isOpen = popup.classList.contains('open');
+
+    document.querySelectorAll('.dm-popup.open').forEach(function (p) {
+        p.classList.remove('open');
+        p.style.cssText = '';
+    });
+
+    if (!isOpen) {
+        var rect = btn.getBoundingClientRect();
+        popup.style.position = 'fixed';
+        popup.style.top      = (rect.bottom + 4) + 'px';
+        popup.style.right    = (window.innerWidth - rect.right) + 'px';
+        popup.style.left     = 'auto';
+        popup.classList.add('open');
+    }
+}, true);
+
+window.addEventListener('scroll', function () {
+    document.querySelectorAll('.dm-popup.open').forEach(function (p) {
+        p.classList.remove('open');
+        p.style.cssText = '';
+    });
+}, true);
 </script>
 @endpush

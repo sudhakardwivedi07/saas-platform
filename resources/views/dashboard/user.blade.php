@@ -3,6 +3,18 @@
 
 @section('content')
 
+@if(!empty($isAdminView))
+@php $adminViewUser = $viewingAsUser ?? auth()->user(); @endphp
+<div style="display:flex;align-items:center;gap:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 16px;margin-bottom:18px;font-size:13px;color:#1d4ed8">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="flex-shrink:0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+    <span>You are viewing <strong>{{ $adminViewUser->name }}</strong>'s dashboard in read-only mode.</span>
+    <a href="{{ $backUrl ?? route('dashboard') }}" style="margin-left:auto;color:#1d4ed8;font-weight:600;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to My Dashboard
+    </a>
+</div>
+@endif
+
 <div id="insights-refresh-target" data-refresh="1" style="display:none"></div>
 
 <style>
@@ -344,6 +356,7 @@
     </div>
     <div class="cfo-kpi-exec-actions">
         @if(!empty($isQuickbooksConnected))
+            @if(empty($isAdminView))
             <div class="cfo-kpi-gen-wrap">
                 <button type="button" id="dashGenerateBtn" class="cfo-btn-get-insights"
                         onclick="dashTriggerGenerate()"
@@ -361,12 +374,17 @@
                     <span>Generating insights…</span>
                 </div>
             </div>
+            @endif
         @else
-            @if(auth()->user()->can('view_quickbooks'))
+            @if(empty($isAdminView) && ($viewingAsUser ?? auth()->user())->can('view_quickbooks'))
             <a href="{{ route('quickbooks.index') }}" class="cfo-btn-get-insights" style="text-decoration:none">Connect QuickBooks</a>
             @endif
         @endif
+        @if(!empty($isAdminView) && !empty($viewingAsUser))
+        <a href="{{ route('clients.insights', $viewingAsUser->id) }}" class="cfo-btn-view-insights">View Insights</a>
+        @else
         <a href="{{ route('insights.index') }}" class="cfo-btn-view-insights">View Insights</a>
+        @endif
     </div>
 </div>
 
@@ -388,13 +406,18 @@
 @else
 {{-- Classic three-column dashboard when this tenant has no analyzed insights / KPI source yet --}}
 <div class="user-db-header">
-    <h1>Hi <span>{{ auth()->user()->first_name }}</span></h1>
+    @php $dashUser = $viewingAsUser ?? auth()->user(); @endphp
+    <h1>Hi <span>{{ $dashUser->first_name }}</span></h1>
     <p>
+        @if(empty($isAdminView))
         You’re one step away from unlocking your first financial insights.
-        @if(auth()->user()->can('view_quickbooks'))
-            <a href="{{ route('quickbooks.index') }}">Connect QuickBooks</a> to proceed.
+        @if($dashUser->can(‘view_quickbooks’))
+            <a href="{{ route(‘quickbooks.index’) }}">Connect QuickBooks</a> to proceed.
         @else
             Ask your administrator to connect QuickBooks to proceed.
+        @endif
+        @else
+        This client hasn’t generated any financial insights yet. Connect QuickBooks to get started.
         @endif
     </p>
 </div>
@@ -475,7 +498,7 @@
 <div id="dashQbModal" class="qb-modal-overlay">
     <div class="qb-modal">
         <div style="margin:0 auto 16px;display:flex;align-items:center;justify-content:center;">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 70 70" width="70" height="70">
+            <svg viewBox="0 0 70 70" width="70" height="70">
                 <circle cx="35" cy="35" r="35" fill="#2CA01C"/>
                 <circle cx="25" cy="36" r="11" fill="none" stroke="white" stroke-width="5.5"/>
                 <line x1="32.5" y1="43.5" x2="38" y2="52.5" stroke="white" stroke-width="5.5" stroke-linecap="round"/>
@@ -507,7 +530,7 @@
     const SAVE_CTX_URL     = '{{ route("insights.save-business-context") }}';
     const GENERATE_URL     = '{{ route("insights.generate") }}';
     const INSIGHTS_URL     = '{{ route("insights.index") }}';
-    const HAS_BUSINESS_CTX = {{ auth()->user()->business_context ? 'true' : 'false' }};
+    const HAS_BUSINESS_CTX = {{ ($viewingAsUser ?? auth()->user())->business_context ? 'true' : 'false' }};
     const DB_LIMIT_REACHED = {{ ($monthlyLimit !== null && ($monthlyUsed ?? 0) >= $monthlyLimit) ? 'true' : 'false' }};
     const LS_KEY           = 'dash_processing_insight_id';
     let dashboardProcessingSwalOpen = false;

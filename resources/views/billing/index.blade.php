@@ -61,6 +61,18 @@
     transition: background .13s;
 }
 .plan-cancel-btn:hover { background: rgba(255,255,255,.22); }
+.plan-reactivate-btn {
+    background: rgba(22,163,74,.2);
+    border: 1.5px solid rgba(22,163,74,.6);
+    color: #fff;
+    border-radius: 8px;
+    padding: 7px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .13s;
+}
+.plan-reactivate-btn:hover { background: rgba(22,163,74,.35); }
 
 /* ── Plan Cards ─────────────────────────────────────── */
 .plans-grid {
@@ -209,7 +221,11 @@
             @if($maxClients) {{ $maxClients }} clients · @endif
             @if($maxInsights) {{ number_format($maxInsights) }} insights / month · @endif
             @if($price) ${{ number_format($price, 0) }} / month @endif
-            @if($renewsAt) · Renews {{ $renewsAt->format('M j, Y') }} @endif
+            @if($subStatus === 'canceled' && $subscription?->ends_at)
+                · Access until {{ $subscription->ends_at->format('M j, Y') }}
+            @elseif($renewsAt)
+                · Renews {{ $renewsAt->format('M j, Y') }}
+            @endif
         </div>
     </div>
     <div class="plan-banner-right">
@@ -219,10 +235,15 @@
         <span class="plan-status-badge" style="background:rgba(245,158,11,.2);border-color:rgba(245,158,11,.5)">Trial</span>
         @elseif($subStatus === 'past_due')
         <span class="plan-status-badge" style="background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.5)">Past Due</span>
+        @elseif($subStatus === 'canceled')
+        <span class="plan-status-badge" style="background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.5)">Canceled</span>
         @else
         <span class="plan-status-badge" style="background:rgba(255,255,255,.1)">No Plan</span>
         @endif
-        @if($subscription)
+
+        @if($subStatus === 'canceled' && $subscription?->ends_at && $subscription->ends_at->isFuture())
+        <button class="plan-reactivate-btn" onclick="reactivateSubscription()">Reactivate Subscription</button>
+        @elseif(in_array($subStatus, ['active', 'trialing', 'past_due']) && $subscription)
         <button class="plan-cancel-btn" onclick="cancelSubscription()">Cancel Subscription</button>
         @endif
     </div>
@@ -537,6 +558,64 @@ async function startCheckout(packageId, btn) {
         showToast('Network error. Please try again.', 'error');
         btn.disabled = false;
         btn.textContent = orig;
+    }
+}
+
+async function reactivateSubscription() {
+    const result = await Swal.fire({
+        title: 'Reactivate Subscription?',
+        text: 'Your subscription will be restored and you will continue to be billed at the end of your current billing period.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Reactivate',
+        cancelButtonText: 'Not Now',
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    Swal.fire({
+        title: 'Reactivating…',
+        text: 'Please wait while we restore your subscription.',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+        const resp = await fetch('{{ route("billing.reactivate-subscription") }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN':     '{{ csrf_token() }}',
+                'Content-Type':     'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept':           'application/json',
+            },
+        });
+        const res = await resp.json();
+
+        if (res.status === 'success') {
+            await Swal.fire({
+                icon:             'success',
+                title:            'Subscription Reactivated',
+                text:             res.message || 'Welcome back! Your subscription is now active.',
+                confirmButtonText: 'Go to Dashboard',
+            });
+            window.location.reload();
+        } else {
+            Swal.fire({
+                icon:  'error',
+                title: 'Reactivation Failed',
+                text:  res.message || 'Something went wrong. Please try again.',
+            });
+        }
+    } catch (e) {
+        Swal.fire({
+            icon:  'error',
+            title: 'Network Error',
+            text:  'Could not reach the server. Please try again.',
+        });
     }
 }
 

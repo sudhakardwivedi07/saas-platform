@@ -219,6 +219,10 @@ class ProcessReportInsightsJob implements ShouldQueue
             $company   = Company::withoutGlobalScopes()->find($ownCompanyId);
             $firmEmail = $company?->company_email ?? $user->email;
 
+            $subdomain  = $company?->subdomain ?? '';
+            $loginUrl   = $subdomain ? tenant_url($subdomain, 'login') : url('/login');
+            $insightUrl = $subdomain ? tenant_url($subdomain, 'firm-insights') : url('/firm-insights');
+
             app(EmailService::class)->send(
                 toEmail:      $firmEmail,
                 templateSlug: 'first_insight_generated_partners_own_firm',
@@ -228,9 +232,9 @@ class ProcessReportInsightsJob implements ShouldQueue
                     '{{firm_name}}'     => $company?->company_name ?? '',
                     '{{app_name}}'      => $company?->app_name ?? config('app.name'),
                     '{{report_name}}'   => $report->report_name ?? 'Your First Insight',
-                    '{{insight_url}}'   => env('APP_URL') . '/firm-insights',
-                    '{{portal_url}}'    => url('/login'),
-                    '{{login_url}}'     => url('/login'),
+                    '{{insight_url}}'   => $insightUrl,
+                    '{{portal_url}}'    => $loginUrl,
+                    '{{login_url}}'     => $loginUrl,
                     '{{support_email}}' => $company?->company_email ?? config('mail.from.address'),
                 ],
                 companyId: $ownCompanyId

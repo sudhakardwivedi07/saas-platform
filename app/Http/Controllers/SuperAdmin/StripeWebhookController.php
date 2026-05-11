@@ -274,14 +274,57 @@ class StripeWebhookController extends Controller
     {
         $this->slog('info', 'invoice.payment_succeeded — starting', [
             'event_id'       => $eventId,
-            'invoice_id'     => $invoice['id']           ?? 'n/a',
-            'subscription'   => $invoice['subscription'] ?? 'n/a',
-            'amount_paid'    => ($invoice['amount_paid'] ?? 0) / 100,
-            'currency'       => $invoice['currency']     ?? 'usd',
-            'customer'       => $invoice['customer']     ?? 'n/a',
+            'invoice_id'     => $invoice['id']             ?? 'n/a',
+            'subscription'   => $invoice['subscription']   ?? 'n/a',
+            'billing_reason' => $invoice['billing_reason'] ?? 'n/a',
+            'amount_paid'    => ($invoice['amount_paid']   ?? 0) / 100,
+            'currency'       => $invoice['currency']       ?? 'usd',
+            'customer'       => $invoice['customer']       ?? 'n/a',
         ]);
 
         $stripeService->handleInvoicePaid($invoice);
+
+        // Send renewal confirmation only for auto-renewal charges, not the initial invoice
+        if (($invoice['billing_reason'] ?? '') === 'subscription_cycle') {
+            $sub = Subscription::withoutGlobalScopes()
+                ->where('stripe_subscription_id', $invoice['subscription'] ?? '')
+                ->with('package')
+                ->first();
+
+            $company = $sub ? Company::withoutGlobalScopes()->find($sub->company_id) : null;
+
+            if ($company && $company->company_email) {
+                $firmName     = $company->company_name ?? $company->app_name;
+                $appName      = $company->app_name ?? $company->company_name;
+                $globalSmtp   = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
+                $supportEmail = $globalSmtp?->from_email ?? config('mail.from.address');
+                $billingCycle = $sub->billing_cycle === 'annual' ? 'year' : 'month';
+
+                $this->slog('info', 'invoice.payment_succeeded — dispatching subscription_auto_renewed email', [
+                    'event_id'   => $eventId,
+                    'company_id' => $sub->company_id,
+                ]);
+
+                SendEmailJob::dispatch(
+                    toEmail:      $company->company_email,
+                    templateSlug: 'subscription_auto_renewed',
+                    placeholders: [
+                        '{{name}}'         => $firmName,
+                        '{{firm_name}}'    => $firmName,
+                        '{{app_name}}'     => $appName,
+                        '{{plan_name}}'    => $sub->package?->name ?? '',
+                        '{{billing_cycle}}' => $billingCycle,
+                        '{{amount}}'       => '$' . number_format(($invoice['amount_paid'] ?? 0) / 100, 2),
+                        '{{invoice_id}}'   => $invoice['id'] ?? 'N/A',
+                        '{{period_start}}' => $sub->current_period_start?->format('M d, Y') ?? now()->format('M d, Y'),
+                        '{{period_end}}'   => $sub->current_period_end?->format('M d, Y')   ?? now()->addMonth()->format('M d, Y'),
+                        '{{login_url}}'    => tenant_url($company->subdomain, 'login'),
+                        '{{support_email}}' => $supportEmail,
+                    ],
+                    companyId: $sub->company_id
+                )->onQueue('emails');
+            }
+        }
 
         $this->slog('info', 'invoice.payment_succeeded — completed', ['event_id' => $eventId]);
     }

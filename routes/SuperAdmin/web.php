@@ -6,7 +6,9 @@ use App\Http\Controllers\SuperAdmin\CompanyController;
 use App\Http\Controllers\SuperAdmin\DashboardController;
 use App\Http\Controllers\SuperAdmin\EmailTemplateController;
 use App\Http\Controllers\SuperAdmin\FinanceController;
+use App\Http\Controllers\SuperAdmin\GeneralLogController;
 use App\Http\Controllers\SuperAdmin\GlobalSettingController;
+use App\Http\Controllers\SuperAdmin\NavMenuController;
 use App\Http\Controllers\SuperAdmin\PackageController;
 use App\Http\Controllers\SuperAdmin\PaymentGatewayController;
 use App\Http\Controllers\SuperAdmin\RoleController;
@@ -15,7 +17,6 @@ use App\Http\Controllers\SuperAdmin\SupportController;
 use App\Http\Controllers\SuperAdmin\UserController;
 use App\Http\Controllers\SuperAdmin\WebhookLogController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\SuperAdmin\GeneralLogController;
 // ── SuperAdmin Panel ───────────────────────────────────────────────────────────
 Route::middleware(['auth', 'super-admin'])
     ->prefix('superadmin')
@@ -73,6 +74,10 @@ Route::middleware(['auth', 'super-admin'])
         Route::patch('support/{ticket}/status',         [SupportController::class, 'updateStatus'])->name('support.update-status');
         Route::patch('support/{ticket}/assign',         [SupportController::class, 'assign'])->name('support.assign');
         Route::patch('support/{ticket}/notes',          [SupportController::class, 'saveNotes'])->name('support.save-notes');
+
+        // Nav Menu Visibility
+        Route::get('nav-menu',  [NavMenuController::class, 'index'])->name('nav-menu.index');
+        Route::post('nav-menu', [NavMenuController::class, 'update'])->name('nav-menu.update');
 
         // My Account
         Route::get('my-account',  [AccountController::class, 'index'])->name('account');

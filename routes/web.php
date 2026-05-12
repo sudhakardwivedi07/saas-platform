@@ -79,6 +79,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/ar-aging', [DashboardKPIController::class, 'arAging'])->name('ar-aging');
         Route::get('/ap-aging', [DashboardKPIController::class, 'apAging'])->name('ap-aging');
         Route::get('/revenue-concentration', [DashboardKPIController::class, 'revenueConcentration'])->name('revenue-concentration');
+
+        Route::get('/kpi-synopsis-files/{kpiId}', [DashboardKPIController::class, 'getKpiSynopsisFiles'])->name('kpi-synopsis-files');
+        Route::post('/kpi-synopsis-api', [DashboardKPIController::class, 'callKpiSynopsisApi'])->name('kpi-synopsis-api');
     });
 
     // Profile

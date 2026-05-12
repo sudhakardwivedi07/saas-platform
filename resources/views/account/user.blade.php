@@ -85,6 +85,7 @@
     padding: 0;
     overflow: hidden;
     box-shadow: var(--sh-sm);
+    margin-bottom: 20px;
 }
 .pro-plan-header {
     display: flex;
@@ -354,6 +355,7 @@
         $subTrial   = $subscription?->isTrialing();
         $planName   = $currentPlan?->name ?? 'Free';
         $planStatus = $subscription ? ucfirst($subscription->status) : 'Active';
+        $hasPaidPlan = $currentPlan && !((bool) ($currentPlan->is_free ?? false) || (float) ($currentPlan->monthly_price ?? 0) <= 0);
         $upgradePlans = ($plans ?? collect())->filter(fn($p) => !($currentPlan && $currentPlan->id === $p->id))->values();
     @endphp
     <div class="sub-status-card">
@@ -429,13 +431,15 @@
                 <div class="pro-plan-actions">
                     <div class="pro-section-lbl">Actions</div>
                     <p class="pro-action-hint">Upgrading will unlock {{ $plan->name }} features for this workspace. Existing data remains intact.</p>
-                    <form method="POST" action="{{ route('dashboard.assign-plan') }}">
-                        @csrf
-                        <input type="hidden" name="client_package_id" value="{{ $plan->id }}">
-                        <button type="submit" class="plan-btn btn-orange" style="width:100%;margin-bottom:10px;padding:12px 16px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-family:inherit">
-                            Upgrade to {{ $plan->name }}
-                        </button>
-                    </form>
+                    @if(!$hasPaidPlan || !$isFree)
+                        <form method="POST" action="{{ route('dashboard.assign-plan') }}">
+                            @csrf
+                            <input type="hidden" name="client_package_id" value="{{ $plan->id }}">
+                            <button type="submit" class="plan-btn btn-orange" style="width:100%;margin-bottom:10px;padding:12px 16px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;border:none;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-family:inherit">
+                                Upgrade to {{ $plan->name }}
+                            </button>
+                        </form>
+                    @endif
                     <button type="button" class="plan-btn btn-orange-outline" style="width:100%;padding:12px 16px;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;border:2px solid var(--orange);background:#fff;color:var(--orange);display:flex;align-items:center;justify-content:center;font-family:inherit">
                         Contact Support
                     </button>

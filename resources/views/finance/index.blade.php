@@ -308,9 +308,17 @@
                     ? 'Free'
                     : '$' . number_format((float) $monthly, 2) . '/mo');
             $sub = $co->subscription;
-            $subStatus = $sub?->status ?? 'unassigned';
+            $subStatus = $sub?->status;
+            if (empty($subStatus)) {
+                if ($co->client_package_id) {
+                    $subStatus = $co->status === 'active' ? 'active' : 'inactive';
+                } else {
+                    $subStatus = 'unassigned';
+                }
+            }
             $badgeClass = match(strtolower((string) $subStatus)) {
                 'active', 'trialing' => 'b-green',
+                'inactive' => 'b-amber',
                 'past_due' => 'b-amber',
                 'canceled', 'cancelled', 'unpaid' => 'b-red',
                 'unassigned' => 'b-gray',
@@ -329,7 +337,7 @@
                 <div class="dm-wrap">
                     <button type="button" class="dot-menu" data-menu="fin-sub-{{ $co->id }}" title="Actions">•••</button>
                     <div class="dm-popup" id="fin-sub-{{ $co->id }}">
-                        <span class="dm-item" style="opacity:.55;cursor:default">Invoice after first payment</span>
+                        <span class="dm-item" style="opacity:.55;cursor:default">Invoice</span>
                     </div>
                 </div>
             </td>

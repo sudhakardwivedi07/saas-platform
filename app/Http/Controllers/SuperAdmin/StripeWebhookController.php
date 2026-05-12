@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
-use App\Jobs\SendEmailJob;
+use App\Services\EmailService;
 use App\Models\Company;
 use App\Models\EmailSmtpSetting;
 use App\Models\SuperAdmin\Package;
@@ -151,11 +151,12 @@ class StripeWebhookController extends Controller
             return;
         }
 
-        $newPackage   = Package::find($packageId);
-        $firmName     = $company->company_name ?? $company->app_name;
-        $appName      = $company->app_name ?? $company->company_name;
-        $globalSmtp   = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
-        $supportEmail = $globalSmtp?->from_email ?? config('mail.from.address');
+        $newPackage      = Package::find($packageId);
+        $firmName        = $company->company_name ?? $company->app_name;
+        $appName         = $company->app_name ?? $company->company_name;
+        $globalSmtp      = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
+        $supportEmail    = $globalSmtp?->from_email ?? config('mail.from.address');
+        $subscriptionUrl = tenant_url($company->subdomain, 'billing');
 
         // Detect plan change: existing active sub switching to a different plan
         $isPlanChange = $previousSub
@@ -166,102 +167,93 @@ class StripeWebhookController extends Controller
         $isDowngrade = $isPlanChange && ($newPackage->monthly_price ?? 0) < ($previousSub->package?->monthly_price ?? 0);
 
         if ($isUpgrade) {
-            $oldPlanName   = $previousSub->package?->name ?? 'previous plan';
             $newPlanName   = $newPackage->name;
             $effectiveDate = $previousSub->current_period_end
                 ? $previousSub->current_period_end->format('M d, Y')
                 : now()->addMonth()->format('M d, Y');
 
-            $this->slog('info', 'checkout.session.completed — detected plan upgrade, dispatching plan_upgraded email', [
+            $this->slog('info', 'checkout.session.completed — detected plan upgrade, sending plan_upgraded email', [
                 'event_id'       => $eventId,
                 'company_id'     => $companyId,
-                'old_plan'       => $oldPlanName,
                 'new_plan'       => $newPlanName,
                 'effective_date' => $effectiveDate,
             ]);
 
-            SendEmailJob::dispatch(
+            app(EmailService::class)->send(
                 toEmail:      $company->company_email,
                 templateSlug: 'plan_upgraded',
                 placeholders: [
-                    '{{name}}'                  => $firmName,
+                    '{{first_name}}'            => $firmName,
                     '{{firm_name}}'             => $firmName,
-                    '{{app_name}}'              => $appName,
-                    '{{old_plan_name}}'         => $oldPlanName,
+                    '{{plan_name}}'             => $newPlanName,
                     '{{new_plan_name}}'         => $newPlanName,
                     '{{current_plan_end_date}}' => $effectiveDate,
-                    '{{login_url}}'             => tenant_url($company->subdomain, 'login'),
-                    '{{support_email}}'         => $supportEmail,
+                    '{{subscription_url}}'      => $subscriptionUrl,
                 ],
                 companyId: (int) $companyId
-            )->onQueue('emails');
+            );
 
         } elseif ($isDowngrade) {
-            $oldPlanName   = $previousSub->package?->name ?? 'previous plan';
             $newPlanName   = $newPackage->name;
             $effectiveDate = $previousSub->current_period_end
                 ? $previousSub->current_period_end->format('M d, Y')
                 : now()->addMonth()->format('M d, Y');
-            $newMaxClients = $newPackage->max_users    ? number_format($newPackage->max_users)    . ' clients'           : 'Unlimited clients';
-            $newMaxDocs    = $newPackage->max_documents ? number_format($newPackage->max_documents) . ' insights / month' : 'Unlimited insights';
 
-            $this->slog('info', 'checkout.session.completed — detected plan downgrade, dispatching plan_downgraded email', [
+            $this->slog('info', 'checkout.session.completed — detected plan downgrade, sending plan_downgraded email', [
                 'event_id'       => $eventId,
                 'company_id'     => $companyId,
-                'old_plan'       => $oldPlanName,
                 'new_plan'       => $newPlanName,
                 'effective_date' => $effectiveDate,
             ]);
 
-            SendEmailJob::dispatch(
+            app(EmailService::class)->send(
                 toEmail:      $company->company_email,
                 templateSlug: 'plan_downgraded',
                 placeholders: [
-                    '{{name}}'                  => $firmName,
+                    '{{first_name}}'            => $firmName,
                     '{{firm_name}}'             => $firmName,
-                    '{{app_name}}'              => $appName,
-                    '{{old_plan_name}}'         => $oldPlanName,
+                    '{{plan_name}}'             => $newPlanName,
                     '{{new_plan_name}}'         => $newPlanName,
                     '{{current_plan_end_date}}' => $effectiveDate,
-                    '{{new_plan_clients}}'      => $newMaxClients,
-                    '{{new_plan_insights}}'     => $newMaxDocs,
-                    '{{login_url}}'             => tenant_url($company->subdomain, 'login'),
-                    '{{support_email}}'         => $supportEmail,
+                    '{{plan_review_url}}'       => $subscriptionUrl,
+                    '{{subscription_url}}'      => $subscriptionUrl,
                 ],
                 companyId: (int) $companyId
-            )->onQueue('emails');
+            );
 
         } else {
             // Fresh signup or reactivation via new checkout
-            $planName    = $newPackage?->name ?? 'Unknown';
-            $amountPaid  = '$' . number_format(($session['amount_total'] ?? 0) / 100, 2);
-            $invoiceId   = $session['payment_intent'] ?? $session['id'] ?? 'N/A';
-            $startDate   = now()->format('M d, Y');
-            $renewDate   = now()->addMonth()->format('M d, Y');
+            $rawCycle   = $session['metadata']['billing_cycle'] ?? 'monthly';
+            $billingCycle = $rawCycle === 'annual' ? 'Annual' : 'Monthly';
+            $planName     = $newPackage?->name ?? 'Unknown';
+            $amountPaid   = '$' . number_format(($session['amount_total'] ?? 0) / 100, 2);
+            $invoiceNumber = $session['payment_intent'] ?? $session['id'] ?? 'N/A';
+            $startDate     = now()->format('M d, Y');
+            $renewDate     = now()->addMonth()->format('M d, Y');
 
-            $this->slog('info', 'checkout.session.completed — dispatching payment_successful_subscription_activated email', [
+            $this->slog('info', 'checkout.session.completed — sending payment_successful_subscription_activated email', [
                 'event_id'   => $eventId,
                 'company_id' => $companyId,
                 'plan'       => $planName,
             ]);
 
-            SendEmailJob::dispatch(
+            app(EmailService::class)->send(
                 toEmail:      $company->company_email,
                 templateSlug: 'payment_successful_subscription_activated',
                 placeholders: [
-                    '{{name}}'               => $firmName,
-                    '{{firm_name}}'          => $firmName,
-                    '{{app_name}}'           => $appName,
-                    '{{plan_name}}'          => $planName,
-                    '{{amount}}'             => $amountPaid,
-                    '{{invoice_id}}'         => $invoiceId,
-                    '{{subscription_start}}' => $startDate,
-                    '{{period_end}}'         => $renewDate,
-                    '{{login_url}}'          => tenant_url($company->subdomain, 'login'),
-                    '{{support_email}}'      => $supportEmail,
+                    '{{first_name}}'              => $firmName,
+                    '{{firm_name}}'               => $firmName,
+                    '{{plan_name}}'               => $planName,
+                    '{{payment_amount}}'          => $amountPaid,
+                    '{{billing_cycle}}'           => $billingCycle,
+                    '{{subscription_start_date}}' => $startDate,
+                    '{{subscription_end_date}}'   => $renewDate,
+                    '{{next_billing_date}}'       => $renewDate,
+                    '{{portal_url}}'              => tenant_url($company->subdomain, 'login'),
+                    '{{invoice_number}}'          => $invoiceNumber,
                 ],
                 companyId: (int) $companyId
-            )->onQueue('emails');
+            );
         }
 
         $this->slog('info', 'checkout.session.completed — completed successfully', [
@@ -274,14 +266,57 @@ class StripeWebhookController extends Controller
     {
         $this->slog('info', 'invoice.payment_succeeded — starting', [
             'event_id'       => $eventId,
-            'invoice_id'     => $invoice['id']           ?? 'n/a',
-            'subscription'   => $invoice['subscription'] ?? 'n/a',
-            'amount_paid'    => ($invoice['amount_paid'] ?? 0) / 100,
-            'currency'       => $invoice['currency']     ?? 'usd',
-            'customer'       => $invoice['customer']     ?? 'n/a',
+            'invoice_id'     => $invoice['id']             ?? 'n/a',
+            'subscription'   => $invoice['subscription']   ?? 'n/a',
+            'billing_reason' => $invoice['billing_reason'] ?? 'n/a',
+            'amount_paid'    => ($invoice['amount_paid']   ?? 0) / 100,
+            'currency'       => $invoice['currency']       ?? 'usd',
+            'customer'       => $invoice['customer']       ?? 'n/a',
         ]);
 
         $stripeService->handleInvoicePaid($invoice);
+
+        // Send renewal confirmation only for auto-renewal charges, not the initial invoice
+        if (($invoice['billing_reason'] ?? '') === 'subscription_cycle') {
+            $sub = Subscription::withoutGlobalScopes()
+                ->where('stripe_subscription_id', $invoice['subscription'] ?? '')
+                ->with('package')
+                ->first();
+
+            $company = $sub ? Company::withoutGlobalScopes()->find($sub->company_id) : null;
+
+            if ($company && $company->company_email) {
+                $firmName     = $company->company_name ?? $company->app_name;
+                $billingCycle = $sub->billing_cycle === 'annual' ? 'Annual' : 'Monthly';
+                $planName     = $sub->package?->name ?? '';
+                $periodStart  = $sub->current_period_start?->format('M d, Y') ?? now()->format('M d, Y');
+                $periodEnd    = $sub->current_period_end?->format('M d, Y')   ?? now()->addMonth()->format('M d, Y');
+
+                $this->slog('info', 'invoice.payment_succeeded — sending subscription_auto_renewed email', [
+                    'event_id'   => $eventId,
+                    'company_id' => $sub->company_id,
+                ]);
+
+                app(EmailService::class)->send(
+                    toEmail:      $company->company_email,
+                    templateSlug: 'subscription_auto_renewed',
+                    placeholders: [
+                        '{{first_name}}'              => $firmName,
+                        '{{firm_name}}'               => $firmName,
+                        '{{plan_name}}'               => $planName,
+                        '{{plan_Name}}'               => $planName,
+                        '{{billing_cycle}}'           => $billingCycle,
+                        '{{payment_amount}}'          => '$' . number_format(($invoice['amount_paid'] ?? 0) / 100, 2),
+                        '{{subscription_start_date}}' => $periodStart,
+                        '{{subscription_end_date}}'   => $periodEnd,
+                        '{{next_billing_date}}'       => $periodEnd,
+                        '{{portal_url}}'              => tenant_url($company->subdomain, 'login'),
+                        '{{invoice_number}}'          => $invoice['id'] ?? 'N/A',
+                    ],
+                    companyId: $sub->company_id
+                );
+            }
+        }
 
         $this->slog('info', 'invoice.payment_succeeded — completed', ['event_id' => $eventId]);
     }
@@ -316,26 +351,26 @@ class StripeWebhookController extends Controller
         $company = Company::withoutGlobalScopes()->find($sub->company_id);
 
         if ($company && $company->company_email) {
-            $firmName = $company->company_name ?? $company->app_name;
+            $firmName        = $company->company_name ?? $company->app_name;
+            $updatePaymentUrl = tenant_url($company->subdomain, 'billing');
 
-            $this->slog('warning', 'invoice.payment_failed — dispatching payment_failed email', [
+            $this->slog('warning', 'invoice.payment_failed — sending payment_failed email', [
                 'event_id'   => $eventId,
                 'company_id' => $sub->company_id,
                 'firm_email' => $company->company_email,
             ]);
 
-            SendEmailJob::dispatch(
+            app(EmailService::class)->send(
                 toEmail:      $company->company_email,
                 templateSlug: 'payment_failed',
                 placeholders: [
-                    '{{name}}'        => $firmName,
-                    '{{firm_name}}'   => $firmName,
-                    '{{app_name}}'    => $company->app_name ?? $company->company_name,
-                    '{{plan_name}}'   => $sub->package?->name ?? '',
-                    '{{billing_url}}' => tenant_url($company->subdomain, 'billing'),
+                    '{{first_name}}'          => $firmName,
+                    '{{firm_name}}'           => $firmName,
+                    '{{update_payment_url}}'  => $updatePaymentUrl,
+                    '{{billing_support_url}}' => $updatePaymentUrl,
                 ],
                 companyId: $sub->company_id
-            )->onQueue('emails');
+            );
         }
 
         $this->slog('warning', 'invoice.payment_failed — processed', ['event_id' => $eventId]);
@@ -361,28 +396,23 @@ class StripeWebhookController extends Controller
             $company = Company::withoutGlobalScopes()->find($sub->company_id);
 
             if ($company && $company->company_email) {
-                $firmName     = $company->company_name ?? $company->app_name;
-                $endDate      = $sub->ends_at ?? $sub->current_period_end;
-                $globalSmtp   = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
-                $supportEmail = $globalSmtp?->from_email ?? config('mail.from.address');
+                $firmName        = $company->company_name ?? $company->app_name;
+                $endDate         = $sub->ends_at ?? $sub->current_period_end;
+                $reactivationUrl = tenant_url($company->subdomain, 'billing');
 
-                SendEmailJob::dispatch(
+                app(EmailService::class)->send(
                     toEmail:      $company->company_email,
                     templateSlug: 'subscription_cancellation',
                     placeholders: [
-                        '{{name}}'                  => $firmName,
+                        '{{first_name}}'            => $firmName,
                         '{{firm_name}}'             => $firmName,
-                        '{{app_name}}'              => $company->app_name ?? $company->company_name,
-                        '{{plan_name}}'             => $sub->package?->name ?? '',
                         '{{subscription_end_date}}' => $endDate ? $endDate->format('M d, Y') : 'end of billing period',
-                        '{{canceled_at}}'           => now()->format('M d, Y'),
-                        '{{login_url}}'             => tenant_url($company->subdomain, 'login'),
-                        '{{support_email}}'         => $supportEmail,
+                        '{{reactivation_url}}'      => $reactivationUrl,
                     ],
                     companyId: $sub->company_id
-                )->onQueue('emails');
+                );
 
-                $this->slog('info', 'customer.subscription.deleted — dispatched subscription_cancellation email', [
+                $this->slog('info', 'customer.subscription.deleted — sent subscription_cancellation email', [
                     'event_id'   => $eventId,
                     'company_id' => $sub->company_id,
                     'firm_email' => $company->company_email,

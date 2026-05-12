@@ -68,7 +68,13 @@ class FinanceController extends AccountBaseController
 
         $this->activeSubscriptions = Company::withoutGlobalScopes()
             ->where('created_by', $ownerCompanyId)
-            ->whereHas('subscription', fn ($q) => $q->whereIn('status', ['active', 'trialing']))
+            ->where(function ($query) {
+                $query->whereHas('subscription', fn ($q) => $q->whereIn('status', ['active', 'trialing']))
+                      ->orWhere(function ($subQuery) {
+                          $subQuery->whereNotNull('client_package_id')
+                                   ->where('status', 'active');
+                      });
+            })
             ->count();
 
         $this->subscribedCompanies = Company::withoutGlobalScopes()

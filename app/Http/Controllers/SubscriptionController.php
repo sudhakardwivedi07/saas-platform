@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helper\Reply;
-use App\Jobs\SendEmailJob;
+use App\Services\EmailService;
 use App\Models\Company;
 use App\Models\EmailSmtpSetting;
 use App\Models\SuperAdmin\Package;
@@ -212,25 +212,31 @@ class SubscriptionController extends AccountBaseController
             return;
         }
 
+        $firmName     = $company->company_name ?? $company->app_name;
+        $appName      = $company->app_name ?? $company->company_name;
+        $periodEnd    = $sub->current_period_end?->format('M d, Y') ?? now()->addMonth()->format('M d, Y');
         $globalSmtp   = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
         $supportEmail = $globalSmtp?->from_email ?? config('mail.from.address');
-        $firmName     = $company->company_name ?? $company->app_name;
 
-        SendEmailJob::dispatch(
+        app(EmailService::class)->send(
             toEmail:      $company->company_email,
             templateSlug: 'subscription_reactivated',
             placeholders: [
-                '{{name}}'               => $firmName,
-                '{{firm_name}}'          => $firmName,
-                '{{app_name}}'           => $company->app_name ?? $company->company_name,
-                '{{plan_name}}'          => $sub->package?->name ?? '',
-                '{{subscription_start}}' => now()->format('M d, Y'),
-                '{{period_end}}'         => $sub->current_period_end?->format('M d, Y') ?? '',
-                '{{login_url}}'          => tenant_url($company->subdomain, 'login'),
-                '{{support_email}}'      => $supportEmail,
+                '{{first_name}}'              => $firmName,
+                '{{name}}'                    => $firmName,
+                '{{firm_name}}'               => $firmName,
+                '{{app_name}}'                => $appName,
+                '{{plan_name}}'               => $sub->package?->name ?? '',
+                '{{subscription_start_date}}' => now()->format('M d, Y'),
+                '{{subscription_end_date}}'   => $periodEnd,
+                '{{next_billing_date}}'       => $periodEnd,
+                '{{portal_url}}'              => tenant_url($company->subdomain, 'login'),
+                '{{login_url}}'               => tenant_url($company->subdomain, 'login'),
+                '{{invoice_number}}'          => 'N/A',
+                '{{support_email}}'           => $supportEmail,
             ],
             companyId: $company->id
-        )->onQueue('emails');
+        );
     }
 
     private function dispatchCancellationEmail(Company $company, Subscription $sub): void
@@ -239,25 +245,28 @@ class SubscriptionController extends AccountBaseController
             return;
         }
 
+        $firmName     = $company->company_name ?? $company->app_name;
+        $appName      = $company->app_name ?? $company->company_name;
         $endDate      = $sub->ends_at ?? $sub->current_period_end;
         $globalSmtp   = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
         $supportEmail = $globalSmtp?->from_email ?? config('mail.from.address');
-        $firmName     = $company->company_name ?? $company->app_name;
 
-        SendEmailJob::dispatch(
+        app(EmailService::class)->send(
             toEmail:      $company->company_email,
             templateSlug: 'subscription_cancellation',
             placeholders: [
+                '{{first_name}}'            => $firmName,
                 '{{name}}'                  => $firmName,
                 '{{firm_name}}'             => $firmName,
-                '{{app_name}}'              => $company->app_name ?? $company->company_name,
+                '{{app_name}}'              => $appName,
                 '{{plan_name}}'             => $sub->package?->name ?? '',
-                '{{subscription_end_date}}' => $endDate ? $endDate->format('M d, Y') : 'end of billing period',
                 '{{canceled_at}}'           => now()->format('M d, Y'),
+                '{{subscription_end_date}}' => $endDate ? $endDate->format('M d, Y') : 'end of billing period',
                 '{{login_url}}'             => tenant_url($company->subdomain, 'login'),
+                '{{reactivation_url}}'      => tenant_url($company->subdomain, 'billing'),
                 '{{support_email}}'         => $supportEmail,
             ],
             companyId: $company->id
-        )->onQueue('emails');
+        );
     }
 }

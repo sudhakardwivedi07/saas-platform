@@ -7,6 +7,7 @@ use App\Models\Company;
 use App\Models\QuickBooksConnection;
 use App\Models\Report;
 use App\Models\SuperAdmin\Package;
+use App\Models\SuperAdmin\Subscription;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -216,7 +217,7 @@ class ClientController extends AccountBaseController
         $user->assignRole('client');
 
         return redirect()->route('clients.index')
-            ->with('success', 'Client "' . $user->name . '" added successfully.');
+            ->with('success', 'Client "' . $user->name . '" created successfully. The client can now access their account.');
     }
 
     public function bulkUpload(\Illuminate\Http\Request $request)
@@ -337,6 +338,30 @@ class ClientController extends AccountBaseController
 
         $company->client_package_id = $request->client_package_id ?: null;
         $company->save();
+
+        if ($request->client_package_id) {
+            $plan = ClientPackage::findOrFail($request->client_package_id);
+            $existingSub = $company->subscription;
+
+            if ($existingSub) {
+                $existingSub->update([
+                    'client_package_id' => $plan->id,
+                    'status'            => 'active',
+                    'canceled_at'       => null,
+                ]);
+            } else {
+                Subscription::create([
+                    'company_id'           => $company->id,
+                    'package_id'           => $company->package_id,
+                    'client_package_id'    => $plan->id,
+                    'status'               => 'active',
+                    'billing_cycle'        => 'monthly',
+                    'current_period_start' => now(),
+                    'current_period_end'   => now()->addMonth(),
+                    'trial_ends_at'        => null,
+                ]);
+            }
+        }
 
         return response()->json([
             'status'  => 'success',

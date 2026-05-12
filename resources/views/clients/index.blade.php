@@ -957,5 +957,12 @@ document.getElementById('modal-add-client').classList.add('open');
 showToast('{{ addslashes($error) }}', 'error');
 @endforeach
 @endif
+
+// Auto-open the Add Client modal when redirected from dashboard with ?add=1
+if (new URLSearchParams(window.location.search).get('add') === '1') {
+    openAddClientModal();
+    // Clean the query param from the URL without reloading
+    history.replaceState(null, '', window.location.pathname);
+}
 </script>
 @endpush

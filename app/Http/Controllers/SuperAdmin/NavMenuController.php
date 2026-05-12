@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
-use App\Http\Controllers\Controller;
+use App\Http\Controllers\AccountBaseController;
 use App\Models\NavMenuSetting;
 use Illuminate\Http\Request;
 
-class NavMenuController extends Controller
+class NavMenuController extends AccountBaseController
 {
     public function index()
     {

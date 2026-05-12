@@ -75,9 +75,14 @@ Route::middleware(['auth', 'super-admin'])
         Route::patch('support/{ticket}/assign',         [SupportController::class, 'assign'])->name('support.assign');
         Route::patch('support/{ticket}/notes',          [SupportController::class, 'saveNotes'])->name('support.save-notes');
 
-        // Nav Menu Visibility
-        Route::get('nav-menu',  [NavMenuController::class, 'index'])->name('nav-menu.index');
-        Route::post('nav-menu', [NavMenuController::class, 'update'])->name('nav-menu.update');
+        // Nav Menu Visibility + Management
+        Route::get('nav-menu',                         [NavMenuController::class, 'index'])->name('nav-menu.index');
+        Route::post('nav-menu',                        [NavMenuController::class, 'update'])->name('nav-menu.update');
+        Route::post('nav-menu/items',                  [NavMenuController::class, 'store'])->name('nav-menu.store');
+        Route::put('nav-menu/items/{navKey}',          [NavMenuController::class, 'updateItem'])->name('nav-menu.update-item');
+        Route::post('nav-menu/items/{navKey}/toggle',  [NavMenuController::class, 'toggleActive'])->name('nav-menu.toggle');
+        Route::delete('nav-menu/items/{navKey}',       [NavMenuController::class, 'destroy'])->name('nav-menu.destroy');
+        Route::post('nav-menu/reorder',                [NavMenuController::class, 'reorder'])->name('nav-menu.reorder');
 
         // My Account
         Route::get('my-account',  [AccountController::class, 'index'])->name('account');

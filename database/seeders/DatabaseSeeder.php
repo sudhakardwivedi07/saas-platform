@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             SuperAdminSeeder::class,       // 4. Initial SuperAdmin account
             EmailTemplateSeeder::class,    // 5. Global email templates
             PaymentGatewaySeeder::class,   // 6. Stripe credentials placeholder
+            NavItemSeeder::class,          // 7. Sidebar nav items + role assignments
         ]);
     }
 }

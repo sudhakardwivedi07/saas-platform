@@ -390,123 +390,22 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 
     <nav class="ca-nav">
     @php
-        $__navRole = auth()->user()->getRoleNames()->first() ?? 'client';
-        $__nav     = \App\Models\NavMenuSetting::visibilityForRole($__navRole);
-        // Helper: returns true if visible AND role-guard passes
-        $navShow   = fn(string $key) => $__nav[$key] ?? true;
+        $__navRole  = auth()->user()->getRoleNames()->first() ?? 'client';
+        $__navItems = \App\Models\NavItem::getForRole($__navRole, auth()->user());
     @endphp
 
-        {{-- Dashboard: all roles --}}
-        @if($navShow('dashboard'))
-        <a href="{{ route('dashboard') }}" class="ca-nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-            Dashboard
-        </a>
-        @endif
-
-        {{-- Clients: admin + manager only --}}
-        @if(auth()->user()->hasAnyRole(['admin','manager']) && $navShow('clients'))
-        <a href="{{ route('clients.index') }}" class="ca-nav-item {{ request()->routeIs('clients.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-            Clients
-        </a>
-        @endif
-
-        {{-- My Companies: client --}}
-        @if(auth()->user()->hasAnyRole(['client']) && $navShow('my_companies'))
-        <a href="{{ route('my-companies.index') }}" class="ca-nav-item {{ request()->routeIs('my-companies.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-            My Companies
-        </a>
-        @endif
-
-        {{-- Subscription & Usage: admin only (billing) --}}
-        @if(auth()->user()->can('view_billing') && $navShow('billing'))
-        <a href="{{ route('billing.index') }}" class="ca-nav-item {{ request()->routeIs('billing.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
-            Subscription &amp; Usage
-        </a>
-        @endif
-
-        {{-- Settings: users with view_settings --}}
-        @if(auth()->user()->can('view_settings') && $navShow('settings'))
-        <a href="{{ route('settings.index') }}" class="ca-nav-item {{ request()->routeIs('settings.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-            Settings
-        </a>
-        @endif
-
-        {{-- My Financials: admin only --}}
-        @if(auth()->user()->hasRole('admin') && $navShow('my_financials'))
-        <a href="{{ route('my-financials.index') }}" class="ca-nav-item {{ request()->routeIs('my-financials.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            My Financials
-        </a>
-        @endif
-
-        {{-- Insights: firm (admin + manager) --}}
-        @if(auth()->user()->hasAnyRole(['admin','manager']) && $navShow('insights'))
-        <a href="{{ route('firm-insights.index') }}" class="ca-nav-item {{ request()->routeIs('firm-insights.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            Insights
-        </a>
-        @endif
-
-        {{-- Insights: client role only --}}
-        @if(!auth()->user()->hasAnyRole(['admin','manager']) && $navShow('insights'))
-        <a href="{{ route('insights.index') }}" class="ca-nav-item {{ request()->routeIs('insights.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            Insights
-        </a>
-        @endif
-
-        {{-- QuickBooks: admin + manager --}}
-        @if(auth()->user()->hasAnyRole(['admin', 'manager']) && $navShow('quickbooks'))
-        <a href="{{ route('quickbooks.index') }}" class="ca-nav-item {{ (request()->routeIs('quickbooks.*') || request()->routeIs('firm-quickbooks.*')) ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-            QuickBooks
-        </a>
-        @endif
-
-        {{-- QuickBooks: client role (personal connection page) --}}
-        @if(!auth()->user()->hasAnyRole(['admin', 'manager']) && auth()->user()->can('view_quickbooks') && $navShow('quickbooks'))
-        <a href="{{ route('quickbooks.index') }}" class="ca-nav-item {{ request()->routeIs('quickbooks.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-            QuickBooks
-        </a>
-        @endif
-
-        {{-- Users: anyone with view_users --}}
-        @if(auth()->user()->can('view_users') && $navShow('users'))
-        <a href="{{ route('users.index') }}" class="ca-nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-            Users
-        </a>
-        @endif
-
-        {{-- Finance: admin only --}}
-        @if(auth()->user()->hasRole('admin') && $navShow('finance'))
-        <a href="{{ route('finance.index') }}" class="ca-nav-item {{ request()->routeIs('finance.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-            Finance
-        </a>
-        @endif
-
-        {{-- Support: admin/manager roles only --}}
-        @if(auth()->user()->hasAnyRole(['admin','manager']) && $navShow('support'))
-        <a href="{{ route('support.index') }}" class="ca-nav-item {{ request()->routeIs('support.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            Support
-        </a>
-        @endif
-
-        {{-- My Account: all roles --}}
-        @if($navShow('my_account'))
-        <a href="{{ route('account.index') }}" class="ca-nav-item {{ request()->routeIs('account.*') || request()->routeIs('activity.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            My Account
-        </a>
-        @endif
+    @foreach($__navItems as $__nir)
+    @php
+        // active_route_pattern is comma-separated, e.g. "quickbooks.*,firm-quickbooks.*"
+        $__patterns = array_values(array_filter(array_map('trim', explode(',', $__nir->active_route_pattern))));
+        $__isActive = !empty($__patterns) && request()->routeIs($__patterns);
+        try { $__href = route($__nir->route_name); } catch (\Exception $e) { $__href = '#'; }
+    @endphp
+    <a href="{{ $__href }}" class="ca-nav-item {{ $__isActive ? 'active' : '' }}">
+        {!! $__nir->navItem->icon_svg !!}
+        {{ $__nir->navItem->label }}
+    </a>
+    @endforeach
 
     </nav>
 

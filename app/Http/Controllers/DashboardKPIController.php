@@ -8,6 +8,7 @@ use App\Services\Kpis\KpiFormattedDataService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class DashboardKPIController extends AccountBaseController
 {
@@ -149,5 +150,382 @@ class DashboardKPIController extends AccountBaseController
     public function arAging(Request $request): JsonResponse { return $this->dataFor('ar-aging', $request); }
     public function apAging(Request $request): JsonResponse { return $this->dataFor('ap-leverage', $request); }
     public function revenueConcentration(Request $request): JsonResponse { return $this->dataFor('revenue-concentration', $request); }
+
+    public function getKpiSynopsisFiles(Request $request, int $kpiId = 1): JsonResponse
+    {
+        try {
+            $user = auth()->user();
+            abort_unless($user, 403);
+
+            $companyId = $this->resolveKpiCompany($user, $request);
+            $this->assertCanAccessCompany($user, $companyId);
+
+            // Get latest analyzed report
+            $report = \App\Models\Report::where('user_id', $user->id)
+                ->where('company_id', $companyId)
+                ->where(function($query) {
+                    $query->whereRaw('LOWER(status) = ?', ['analyzed'])
+                          ->orWhereRaw('LOWER(status) = ?', ['analysed']);
+                })
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if (!$report) {
+                $report = \App\Models\Report::where('user_id', $user->id)
+                    ->where('company_id', $companyId)
+                    ->orderBy('id', 'desc')
+                    ->first();
+            }
+
+            if (!$report) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No reports found'
+                ], 404);
+            }
+
+            // Get all attachments for the report (simplified since no financial_document_id)
+            $attachments = $report->attachments()->get();
+
+            if ($attachments->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No files found in latest report'
+                ], 404);
+            }
+
+            // Prepare file paths for API
+            $files = [];
+            foreach ($attachments as $attachment) {
+                $filePath = $attachment->attachment;
+                $fullPath = storage_path('app/public/reports/' . $filePath);
+
+                if (file_exists($fullPath)) {
+                    $files[] = [
+                        'path' => $fullPath,
+                        'name' => $attachment->original_filename ?? $filePath,
+                        'attachment_id' => $attachment->id
+                    ];
+                }
+            }
+
+            if (empty($files)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Files not found on server'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'files' => $files,
+                'kpi_id' => $kpiId,
+                'report_id' => $report->id
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get files: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function callKpiSynopsisApi(Request $request): JsonResponse
+    {
+        try {
+            $kpiId = $request->input('kpi_id', 1);
+            $kpiName = $request->input('kpi_name');
+
+            if (!$kpiName) {
+                $config = config('dashboard_graph_settings.synopsis_api_kpis');
+                $kpiName = $config[$kpiId] ?? null;
+            }
+
+            if (!$kpiName) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'KPI name not found'
+                ], 404);
+            }
+
+            $user = auth()->user();
+            abort_unless($user, 403);
+
+            $companyId = $this->resolveKpiCompany($user, $request);
+            $this->assertCanAccessCompany($user, $companyId);
+
+            // For client pages an admin passes client_user_id so we look up that user's reports
+            $reportUserId = $user->id;
+            $clientUserId = (int) $request->input('client_user_id', 0);
+            if ($clientUserId > 0 && $user->hasAnyRole(['admin', 'manager'])) {
+                $reportUserId = $clientUserId;
+            }
+
+            // Get latest analyzed report
+            $report = \App\Models\Report::where('user_id', $reportUserId)
+                ->where('company_id', $companyId)
+                ->where(function($query) {
+                    $query->whereRaw('LOWER(status) = ?', ['analyzed'])
+                          ->orWhereRaw('LOWER(status) = ?', ['analysed']);
+                })
+                ->orderBy('id', 'desc')
+                ->first();
+
+            if (!$report) {
+                $report = \App\Models\Report::where('user_id', $reportUserId)
+                    ->where('company_id', $companyId)
+                    ->orderBy('id', 'desc')
+                    ->first();
+            }
+
+            if (!$report) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No reports found'
+                ], 404);
+            }
+
+            // Get all attachments for the report
+            $attachments = $report->attachments()->get();
+
+            if ($attachments->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No files found in latest report'
+                ], 404);
+            }
+
+            // Prepare files for API
+            $files = [];
+            foreach ($attachments as $attachment) {
+                $filePath = $attachment->attachment;
+                $fullPath = storage_path('app/public/reports/' . $filePath);
+
+                if (file_exists($fullPath)) {
+                    $files[] = [
+                        'path' => $fullPath,
+                        'name' => $attachment->original_filename ?? $filePath
+                    ];
+                }
+            }
+
+            if (empty($files)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Files not found on server'
+                ], 404);
+            }
+
+            // Get graph data for the KPI
+            $graphData = $this->getGraphDataForSynopsis($kpiId, $companyId);
+
+            // Call the API
+            $apiUrl = config('dashboard_graph_settings.synopsis_api_url');
+            return $this->callSynopsisApiWithCurl($apiUrl, $kpiName, $files, $graphData);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to call API: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function getGraphDataForSynopsis(int $kpiId, int $companyId): ?array
+    {
+        try {
+            $kpiType = match($kpiId) {
+                1 => 'runway-burn',
+                2 => 'working-capital',
+                3 => 'operating-cashflow',
+                4 => 'revenue',
+                5 => 'ebitda',
+                6 => 'margin-trends',
+                7 => 'ar-aging',
+                8 => 'ap-leverage',
+                9 => 'revenue-concentration',
+                default => null
+            };
+
+            if (!$kpiType) return null;
+
+            $data = KpiFormattedDataService::get($companyId, $kpiType);
+
+            // Format data based on KPI type (simplified)
+            return match($kpiId) {
+                1 => $this->formatRunwayBurnData($data),
+                2 => $this->formatWorkingCapitalData($data),
+                3 => $this->formatOperatingCashFlowData($data),
+                4 => $this->formatRevenueData($data),
+                5 => $this->formatEbitdaData($data),
+                6 => $this->formatMarginTrendsData($data),
+                7 => $this->formatArAgingData($data),
+                8 => $this->formatApLeverageData($data),
+                9 => $this->formatRevenueConcentrationData($data),
+                default => null
+            };
+
+        } catch (\Exception $e) {
+            \Log::warning('Failed to get graph data for synopsis: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    private function formatRunwayBurnData(array $data): ?array
+    {
+        if (!isset($data['monthly_data'])) return null;
+
+        return [
+            'data' => array_map(function($item) {
+                return [
+                    'month' => $item['month'] ?? '',
+                    'cash_burn/cash_build' => $item['net_change'] ?? 0
+                ];
+            }, $data['monthly_data'])
+        ];
+    }
+
+    private function formatWorkingCapitalData(array $data): ?array
+    {
+        // Simplified - return basic structure
+        return ['data' => []];
+    }
+
+    private function formatOperatingCashFlowData(array $data): ?array
+    {
+        // Simplified - return basic structure
+        return ['data' => []];
+    }
+
+    private function formatRevenueData(array $data): ?array
+    {
+        // Simplified - return basic structure
+        return ['data' => []];
+    }
+
+    private function formatEbitdaData(array $data): ?array
+    {
+        // Simplified - return basic structure
+        return ['data' => []];
+    }
+
+    private function formatMarginTrendsData(array $data): ?array
+    {
+        // Simplified - return basic structure
+        return ['data' => []];
+    }
+
+    private function formatArAgingData(array $data): ?array
+    {
+        // Simplified - return basic structure
+        return ['data' => []];
+    }
+
+    private function formatApLeverageData(array $data): ?array
+    {
+        // Simplified - return basic structure
+        return ['data' => []];
+    }
+
+    private function formatRevenueConcentrationData(array $data): ?array
+    {
+        // Simplified - return basic structure
+        return ['data' => []];
+    }
+
+    private function callSynopsisApiWithCurl(string $apiUrl, string $kpiName, array $files, ?array $graphData = null): JsonResponse
+    {
+        try {
+            // Validate files exist
+            $validFiles = [];
+            foreach ($files as $file) {
+                if (isset($file['path']) && file_exists($file['path'])) {
+                    $validFiles[] = $file;
+                }
+            }
+
+            if (empty($validFiles)) {
+                throw new \Exception('No valid files found to upload');
+            }
+
+            $dataArray = $graphData['data'] ?? [];
+            $dataJson = json_encode($dataArray);
+
+            // Build multipart array for Guzzle
+            $multipart = [
+                [
+                    'name' => 'kpi_name',
+                    'contents' => $kpiName
+                ],
+                [
+                    'name' => 'data',
+                    'contents' => $dataJson,
+                    'headers' => [
+                        'Content-Type' => 'application/json'
+                    ]
+                ]
+            ];
+
+            // Add each file
+            foreach ($validFiles as $file) {
+                $filePath = $file['path'];
+                $fileName = $file['name'] ?? basename($filePath);
+
+                if (file_exists($filePath)) {
+                    $multipart[] = [
+                        'name' => 'files',
+                        'contents' => fopen($filePath, 'r'),
+                        'filename' => $fileName
+                    ];
+                }
+            }
+
+            // Create Guzzle client
+            $client = new \GuzzleHttp\Client([
+                'timeout' => 120,
+                'verify' => false
+            ]);
+
+            // Make API call
+            $response = $client->post($apiUrl, [
+                'multipart' => $multipart,
+                'headers' => [
+                    'Accept' => 'application/json'
+                ]
+            ]);
+
+            // Close file handles
+            foreach ($multipart as $part) {
+                if (isset($part['contents']) && is_resource($part['contents'])) {
+                    fclose($part['contents']);
+                }
+            }
+
+            $httpCode = $response->getStatusCode();
+            $responseBody = (string) $response->getBody();
+
+            if ($httpCode !== 200) {
+                throw new \Exception('API returned HTTP ' . $httpCode . ': ' . substr($responseBody, 0, 500));
+            }
+
+            $responseData = json_decode($responseBody, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception('Invalid JSON response: ' . json_last_error_msg());
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $responseData
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'API call failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
 

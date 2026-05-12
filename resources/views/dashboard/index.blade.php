@@ -402,7 +402,7 @@
 <div class="ph" style="margin-bottom:20px">
     <div class="ph-left">
         <h1>Dashboard</h1>
-        <p>Your partner portal is live — let's get you set up</p>
+        <p>Your portal is live — let's get you set up</p>
     </div>
     <div class="ph-actions">
         <a href="{{ route('account.index') . '#branding' }}" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:6px">
@@ -410,7 +410,7 @@
             Branding Settings
         </a>
         @if($canAddClient)
-        <a href="{{ route('clients.index') }}" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px">
+        <a href="{{ route('clients.index') }}?add=1" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:6px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
         </a>
@@ -430,12 +430,12 @@
 <div class="ob-banner">
     <div>
         <div class="ob-badge">{{ strtoupper(company()?->company_name ?? 'YOUR PORTAL') }}</div>
-        <div class="ob-title">Hi {{ auth()->user()->name }}, welcome to your Partner Portal 👋</div>
+        <div class="ob-title">Hi {{ auth()->user()->name }}, welcome to your Portal 👋</div>
         <p class="ob-sub">Three steps stand between you and delivering AI-powered CFO insights to your clients. Follow the setup guide below to get your portal fully configured.</p>
     </div>
     <div class="ob-banner-btns">
         @if($canAddClient)
-        <a href="{{ route('clients.index') }}" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap">
+        <a href="{{ route('clients.index') }}?add=1" class="btn btn-primary" style="display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
         </a>
@@ -497,7 +497,7 @@
 
     {{-- Step 3: Add Your Clients — clickable only when steps 1 & 2 are done --}}
     @if($canAddClient)
-    <a href="{{ route('clients.index') }}" class="ob-step {{ $activeStep === 3 ? 'active' : '' }}" style="text-decoration:none;display:flex;flex-direction:column">
+    <a href="{{ route('clients.index') }}?add=1" class="ob-step {{ $activeStep === 3 ? 'active' : '' }}" style="text-decoration:none;display:flex;flex-direction:column">
         @if($activeStep === 3)
         <div class="ob-step-badge">START HERE</div>
         @endif
@@ -562,7 +562,7 @@
         </button>
         @endif
         @if($canAddClient)
-        <a href="{{ route('clients.index') }}" class="btn btn-primary btn-sm">
+        <a href="{{ route('clients.index') }}?add=1" class="btn btn-primary btn-sm">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
         </a>

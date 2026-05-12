@@ -1,8 +1,8 @@
 <?php
 
 return [
-    'analyze_url'           => env('INSIGHTS_ANALYZE_URL', 'https://demo.incubation.ai/aicfo-short/analyze'),
-    'synopsis_api_url'      => env('SYNOPSIS_API_URL', 'https://demo.incubation.ai/kpi-insights/kpi-analyze'),
+    'analyze_url'           => env('INSIGHTS_ANALYZE_URL'),
+    'synopsis_api_url'      => env('SYNOPSIS_API_URL'),
     'default_style'         => env('INSIGHTS_DEFAULT_STYLE', 'plain'),
     'monthly_insight_limit' => (int) env('INSIGHTS_MONTHLY_LIMIT', 5),
 

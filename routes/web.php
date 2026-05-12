@@ -234,7 +234,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('my-account/password', [AccountController::class, 'updatePassword'])->name('account.password');
 
     // Activity Log
-    Route::get('activity', [ActivityController::class, 'index'])->name('activity.index');
+    Route::get('activity', fn() => redirect()->route('account.index', ['tab' => 'tab-activity']))->name('activity.index');
 
     // Insights (user role)
     Route::prefix('insights')->name('insights.')->group(function () {

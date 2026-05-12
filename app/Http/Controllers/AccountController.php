@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClientPackage;
+use App\Models\EventLog;
 use App\Models\SupportTicket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -41,6 +42,22 @@ class AccountController extends AccountBaseController
 
             return view('account.user', $this->data);
         }
+
+        // Activity log data for the tab
+        $this->activities = EventLog::query()
+            ->where('company_id', company()?->id)
+            ->with('user:id,name,email')
+            ->latest('created_at')
+            ->get();
+
+        $this->eventTypes = EventLog::query()
+            ->where('company_id', company()?->id)
+            ->distinct()
+            ->orderBy('event_type')
+            ->pluck('event_type');
+
+        // Branding for the Login Page tab
+        $this->branding = company()?->branding;
 
         return view('account.index', $this->data);
     }

@@ -61,6 +61,7 @@
         .kpi-detail-synopsis-grid { grid-template-columns: 1fr; }
         .kpi-explain-grid { grid-template-columns: 1fr; }
     }
+    @keyframes kpiSpin { to { transform: rotate(360deg); } }
 </style>
 @endpush
 
@@ -76,14 +77,69 @@
 @include('dashboard.partials.kpi-detail-markup-script')
 <script>
 (function () {
-    const kpiType = @json($kpiType ?? ($detailKpiType ?? ''));
-    const kpiDataUrl = @json($kpiDataUrl ?? ($detailApiRoute ?? ''));
-    const companyId = @json($selectedCompanyId ?? null);
-    const mount = document.getElementById('kpiStandaloneDetail');
+    var kpiType   = @json($kpiType ?? ($detailKpiType ?? ''));
+    var kpiDataUrl = @json($kpiDataUrl ?? ($detailApiRoute ?? ''));
+    var companyId = @json($selectedCompanyId ?? null);
+    var clientUserId = @json($clientId ?? null);
+    var mount = document.getElementById('kpiStandaloneDetail');
     if (!mount || !kpiType || !kpiDataUrl) return;
+
+    var kpiIdMap = {
+        'runway-burn': 1, 'working-capital': 2, 'operating-cashflow': 3,
+        'revenue': 4, 'ebitda': 5, 'margin-trends': 6,
+        'ar-aging': 7, 'ap-leverage': 8, 'revenue-concentration': 9
+    };
+
+    function textToHtml(text) {
+        if (!text) return '';
+        var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+            .split('\n').filter(function (l) { return l.trim(); });
+        if (!lines.length) return '<p>' + text + '</p>';
+        return lines.map(function (l) { return '<p style="margin:0 0 6px;">' + l.trim() + '</p>'; }).join('');
+    }
+
+    function fetchKpiSynopsis(kpiId) {
+        var loading = document.getElementById('kpiSynopsisLoading');
+        var cards   = document.getElementById('kpiSynopsisCards');
+        var errEl   = document.getElementById('kpiSynopsisError');
+        if (!loading) return;
+
+        var fd = new FormData();
+        fd.append('kpi_id', kpiId);
+        fd.append('_token', '{{ csrf_token() }}');
+        if (companyId) fd.append('company_id', String(companyId));
+        if (clientUserId) fd.append('client_user_id', String(clientUserId));
+
+        fetch('{{ route("dashboard-kpi.kpi-synopsis-api") }}', {
+            method: 'POST',
+            body: fd,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (res) {
+            if (loading) loading.style.display = 'none';
+            var d = (res.success && res.data) ? res.data : null;
+            if (d && d.success === true && (d.strength || d.shortcoming || d.action_plan)) {
+                var $s  = document.getElementById('kpiSynopsisStrength');
+                var $a  = document.getElementById('kpiSynopsisAttention');
+                var $ac = document.getElementById('kpiSynopsisActions');
+                if ($s)  $s.innerHTML  = d.strength    ? textToHtml(d.strength)    : '<p>No data available.</p>';
+                if ($a)  $a.innerHTML  = d.shortcoming ? textToHtml(d.shortcoming) : '<p>No data available.</p>';
+                if ($ac) $ac.innerHTML = d.action_plan ? textToHtml(d.action_plan) : '<p>No data available.</p>';
+                if (cards) cards.style.display = '';
+            } else {
+                if (errEl) errEl.style.display = '';
+            }
+        })
+        .catch(function () {
+            if (loading) loading.style.display = 'none';
+            if (errEl) errEl.style.display = '';
+        });
+    }
+
     mount.innerHTML = '';
     if (window.showAppLoading) window.showAppLoading('Loading KPI details', 'Fetching the latest metric data...');
-    const u = new URL(kpiDataUrl, window.location.origin);
+    var u = new URL(kpiDataUrl, window.location.origin);
     u.searchParams.set('company_id', String(companyId || ''));
     u.searchParams.set('kpi', kpiType);
     fetch(u.toString(), { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
@@ -96,6 +152,8 @@
             }
             if (response.success && typeof window.__kpiBuildDetailMarkup === 'function') {
                 mount.innerHTML = window.__kpiBuildDetailMarkup(kpiType, response.data);
+                var kpiId = kpiIdMap[kpiType] || null;
+                if (kpiId) fetchKpiSynopsis(kpiId);
             } else {
                 mount.innerHTML = '<div class="alert alert-danger">Could not load KPI details.</div>';
             }

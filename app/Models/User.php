@@ -130,13 +130,7 @@ class User extends Authenticatable
 
         $primaryCompany = $authUser->company;
         if ($primaryCompany && ! $companies->contains(fn ($row) => (int) $row->id === (int) $primaryCompany->id)) {
-            $pb = $primaryCompany->created_by;
-            $includePrimary = $pb === null
-                || (int) $pb === $ownerKey
-                || (int) $pb === (int) $authUser->id;
-            if ($includePrimary) {
-                $companies->prepend($primaryCompany);
-            }
+            $companies->prepend($primaryCompany);
         }
 
         return $companies->unique('id')->values();

@@ -511,6 +511,18 @@
 <script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
 $(document).ready(function() {
+
+    @if(session('payment_success'))
+    Swal.fire({
+        icon: 'success',
+        title: 'Payment Successful!',
+        html: 'Your subscription has been activated successfully.<br>Welcome aboard!',
+        confirmButtonText: 'Great, thanks!',
+        confirmButtonColor: '#3b82f6',
+        timer: 8000,
+        timerProgressBar: true,
+    });
+    @endif
     document.getElementById('usage-search').value        = '';
     document.getElementById('usage-status-filter').value = '';
 

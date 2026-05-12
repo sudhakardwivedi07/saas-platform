@@ -87,7 +87,7 @@ class SubscriptionController extends AccountBaseController
 
     public function success()
     {
-        return view('billing.success');
+        return redirect()->route('billing.index')->with('payment_success', true);
     }
 
     public function cancel()

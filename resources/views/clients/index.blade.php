@@ -447,45 +447,50 @@
 
         {{-- ── Manual Entry Panel ─────────────────────────── --}}
         <div id="panel-manual">
-            <form method="POST" action="{{ route('clients.store') }}">
+            <form method="POST" action="{{ route('clients.store') }}" id="add-client-form" novalidate>
                 @csrf
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                    <div class="mf-field" style="margin:0 0 14px">
+                    <div class="mf-field" style="margin:0 0 4px">
                         <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
-                        <input type="text" name="name" class="mf-inp"
-                            placeholder="e.g. Sarah Chen" value="{{ old('name') }}" required>
+                        <input type="text" name="name" id="ac-name" class="mf-inp"
+                            placeholder="e.g. Sarah Chen" value="{{ old('name') }}" maxlength="100">
+                        <div id="err-name" class="ac-err" style="display:none"></div>
                     </div>
-                    <div class="mf-field" style="margin:0 0 14px">
+                    <div class="mf-field" style="margin:0 0 4px">
                         <label class="mf-label">Email ID <span style="color:var(--red)">*</span></label>
-                        <input type="email" name="email" id="ac-email" class="mf-inp"
+                        <input type="text" name="email" id="ac-email" class="mf-inp"
                             placeholder="sarah@chen.com" value="{{ old('email') }}"
-                            autocomplete="off" required>
+                            autocomplete="off" maxlength="100">
+                        <div id="err-email" class="ac-err" style="display:none"></div>
                     </div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                    <div class="mf-field" style="margin:0 0 14px">
+                    <div class="mf-field" style="margin:0 0 4px">
                         <label class="mf-label">Phone Number</label>
-                        <input type="tel" name="phone" class="mf-inp" placeholder="+1 (555) 000-0000" value="{{ old('phone') }}">
+                        <input type="tel" name="phone" id="ac-phone" class="mf-inp" placeholder="10-digit number" value="{{ old('phone') }}" maxlength="10">
+                        <div id="err-phone" class="ac-err" style="display:none"></div>
                     </div>
-                    <div class="mf-field" style="margin:0 0 14px">
+                    <div class="mf-field" style="margin:0 0 4px">
                         <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
-                        <input type="text" name="company_name" class="mf-inp" placeholder="e.g. TechCorp Inc." value="{{ old('company_name') }}" required>
+                        <input type="text" name="company_name" id="ac-company" class="mf-inp" placeholder="e.g. TechCorp Inc." value="{{ old('company_name') }}" maxlength="100">
+                        <div id="err-company" class="ac-err" style="display:none"></div>
                     </div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
                     <div class="mf-field">
                         <label class="mf-label">Industry Type <span style="color:var(--red)">*</span></label>
-                        <select name="industry_type" class="mf-sel" style="height:40px" required>
-                            <option value="" disabled {{ old('industry_type') ? '' : 'selected' }}>Select Industry Type</option>
+                        <select name="industry_type" id="ac-industry" class="mf-sel" style="height:40px">
+                            <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select Industry Type</option>
                             @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
                             <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
                             @endforeach
                         </select>
+                        <div id="err-industry" class="ac-err" style="display:none"></div>
                     </div>
                     <div class="mf-field">
                         <label class="mf-label">Entity Type <span style="color:var(--red)">*</span></label>
-                        <select name="entity_type" class="mf-sel" style="height:40px" required>
-                            <option value="" disabled {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
+                        <select name="entity_type" class="mf-sel" style="height:40px">
+                            <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
                             @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
                             <option value="{{ $ent }}" {{ old('entity_type') === $ent ? 'selected' : '' }}>{{ $ent }}</option>
                             @endforeach
@@ -493,15 +498,16 @@
                     </div>
                 </div>
                 <div class="mf-field">
-                    <label class="mf-label">Plan Tier</label>
-                    <select name="client_package_id" class="mf-sel" style="height:40px">
-                        <option value="">— No Plan —</option>
+                    <label class="mf-label">Plan Tier <span style="color:var(--red)">*</span></label>
+                    <select name="client_package_id" id="ac-plan" class="mf-sel" style="height:40px">
+                        <option value="">— Select a Plan —</option>
                         @foreach($clientPackages ?? [] as $pkg)
                         <option value="{{ $pkg->id }}" {{ old('client_package_id') == $pkg->id ? 'selected' : '' }}>
                             {{ $pkg->name }}@if(($pkg->insights_per_month ?? $pkg->max_insights_per_month ?? $pkg->max_documents ?? null)) — {{ $pkg->insights_per_month ?? $pkg->max_insights_per_month ?? $pkg->max_documents }} insights / company / month @endif
                         </option>
                         @endforeach
                     </select>
+                    <div id="err-plan" class="ac-err" style="display:none"></div>
                     <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Plan tiers are managed by the CFO Insights platform.</div>
                 </div>
                 <div class="mf-field">
@@ -510,29 +516,28 @@
                     </label>
                     <div style="position:relative;display:flex;align-items:center">
                         <input type="password" name="password" id="ac-password" class="mf-inp"
-                            placeholder="Min. 8 characters" style="padding-right:88px"
-                            autocomplete="new-password" required>
-                        {{-- Show/hide toggle --}}
+                            placeholder="8–20 characters" style="padding-right:88px"
+                            autocomplete="new-password" maxlength="20">
                         <button type="button" title="Show/hide password"
                             onclick="toggleAcPassword()"
                             style="position:absolute;right:44px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text-3);display:flex;align-items:center">
                             <svg id="ac-eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                         </button>
-                        {{-- Auto-generate button --}}
                         <button type="button" title="Auto-generate password"
                             onclick="generateAcPassword()"
                             style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--blue);display:flex;align-items:center">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
                         </button>
                     </div>
-                    <div style="font-size:11px;color:var(--text-3);margin-top:4px">Click <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11" style="vertical-align:middle"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> to auto-generate a secure password.</div>
+                    <div id="err-password" class="ac-err" style="display:none"></div>
+                    <div style="font-size:11px;color:var(--text-3);margin-top:4px">Must be 8–20 characters. Click <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11" style="vertical-align:middle"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> to auto-generate a secure password.</div>
                 </div>
                 <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:11px 14px;margin-bottom:16px;font-size:12.5px;color:#3b82f6;line-height:1.5">
                     An email invite will be sent to the client automatically after submission.
                 </div>
                 <div class="mf-foot">
                     <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-add-client').classList.remove('open')">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-sm">Add Client</button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitAddClient()">Add Client</button>
                 </div>
             </form>
         </div>
@@ -611,6 +616,28 @@
 </div>
 
 @endsection
+
+@push('styles')
+<style>
+.ac-err {
+    font-size: 11.5px;
+    color: var(--red);
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.ac-err::before {
+    content: '';
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+    flex-shrink: 0;
+}
+.mf-inp.ac-invalid, .mf-sel.ac-invalid { border-color: var(--red) !important; }
+</style>
+@endpush
 
 @push('scripts')
 <script src="{{ asset(config('assets.jquery')) }}"></script>
@@ -729,6 +756,91 @@ $(document).ready(function() {
     document.getElementById('co-date-to').addEventListener('change', applyDateFilter);
 });
 
+// ── Add Client validation ────────────────────────────────────
+function validateAndSubmitAddClient() {
+    var valid = true;
+
+    function setErr(inputId, errId, msg) {
+        var inp = document.getElementById(inputId);
+        var err = document.getElementById(errId);
+        if (inp) inp.classList.add('ac-invalid');
+        if (err) { err.textContent = msg; err.style.display = 'flex'; }
+        valid = false;
+    }
+    function clearErr(inputId, errId) {
+        var inp = document.getElementById(inputId);
+        var err = document.getElementById(errId);
+        if (inp) inp.classList.remove('ac-invalid');
+        if (err) { err.textContent = ''; err.style.display = 'none'; }
+    }
+
+    // Full Name
+    var name = (document.getElementById('ac-name').value || '').trim();
+    clearErr('ac-name', 'err-name');
+    if (!name) {
+        setErr('ac-name', 'err-name', 'Full Name is required.');
+    } else if (name.length < 2 || name.length > 100 || !/^[a-zA-Z\s]+$/.test(name)) {
+        setErr('ac-name', 'err-name', 'Please enter a valid Full Name.');
+    }
+
+    // Email ID
+    var email = (document.getElementById('ac-email').value || '').trim();
+    clearErr('ac-email', 'err-email');
+    if (!email) {
+        setErr('ac-email', 'err-email', 'Email ID is required.');
+    } else if (email.length < 5 || email.length > 100 || !/^[a-zA-Z0-9@.\-_]+$/.test(email) || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        setErr('ac-email', 'err-email', 'Please enter a valid email address.');
+    }
+
+    // Phone Number (optional — if filled must be exactly 10 digits)
+    var rawPhone = (document.getElementById('ac-phone').value || '').trim();
+    clearErr('ac-phone', 'err-phone');
+    if (rawPhone) {
+        var digitsOnly = rawPhone.replace(/\D/g, '');
+        if (!/^\d+$/.test(rawPhone.replace(/\s/g, ''))) {
+            setErr('ac-phone', 'err-phone', 'Please enter a valid phone number.');
+        } else if (digitsOnly.length !== 10) {
+            setErr('ac-phone', 'err-phone', 'Phone number must be 10 digits.');
+        }
+    }
+
+    // Company Name
+    var company = (document.getElementById('ac-company').value || '').trim();
+    clearErr('ac-company', 'err-company');
+    if (!company) {
+        setErr('ac-company', 'err-company', 'Company Name is required.');
+    } else if (company.length < 2 || company.length > 100 || !/^[a-zA-Z0-9\s.\&\-_]+$/.test(company)) {
+        setErr('ac-company', 'err-company', 'Please enter a valid Company Name.');
+    }
+
+    // Industry Type
+    var industry = document.getElementById('ac-industry');
+    clearErr('ac-industry', 'err-industry');
+    if (!industry || !industry.value) {
+        setErr('ac-industry', 'err-industry', 'Please select an Industry Type.');
+    }
+
+    // Plan Tier
+    var plan = document.getElementById('ac-plan');
+    // clearErr('ac-plan', 'err-plan');
+    // if (!plan || !plan.value) {
+    //     setErr('ac-plan', 'err-plan', 'Please select a Plan Tier.');
+    // }
+
+    // Password
+    var pwd = document.getElementById('ac-password').value || '';
+    clearErr('ac-password', 'err-password');
+    if (!pwd) {
+        setErr('ac-password', 'err-password', 'Password is required.');
+    } else if (pwd.length < 8 || pwd.length > 20) {
+        setErr('ac-password', 'err-password', 'Password must be between 8 and 20 characters.');
+    }
+
+    if (valid) {
+        document.getElementById('add-client-form').submit();
+    }
+}
+
 // ── Add Client password helpers ──────────────────────────────
 function openAddClientModal() {
     // Clear email and password so browser autofill does not pre-populate them
@@ -742,7 +854,70 @@ function openAddClientModal() {
         var nameField = document.querySelector('#modal-add-client input[name="name"]');
         if (nameField) nameField.focus();
     }, 80);
+
+    // Clear all validation errors when modal opens
+    [['ac-name','err-name'],['ac-email','err-email'],['ac-phone','err-phone'],
+     ['ac-company','err-company'],['ac-industry','err-industry'],['ac-plan','err-plan'],['ac-password','err-password']
+    ].forEach(function(pair) {
+        var inp = document.getElementById(pair[0]);
+        var err = document.getElementById(pair[1]);
+        if (inp) inp.classList.remove('ac-invalid');
+        if (err) { err.textContent = ''; err.style.display = 'none'; }
+    });
 }
+
+// Clear field error on user input + character restrictions
+document.addEventListener('DOMContentLoaded', function() {
+    // Full Name: strip digits/special chars as user types
+    var nameInp = document.getElementById('ac-name');
+    if (nameInp) {
+        nameInp.addEventListener('input', function() {
+            var pos = this.selectionStart;
+            var cleaned = this.value.replace(/[^a-zA-Z\s]/g, '');
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+                this.setSelectionRange(pos - 1, pos - 1);
+            }
+            this.classList.remove('ac-invalid');
+            var err = document.getElementById('err-name');
+            if (err) { err.textContent = ''; err.style.display = 'none'; }
+        });
+    }
+
+    // Phone: strip non-digits as user types
+    var phoneInp = document.getElementById('ac-phone');
+    if (phoneInp) {
+        phoneInp.addEventListener('input', function() {
+            var cleaned = this.value.replace(/\D/g, '');
+            if (cleaned !== this.value) this.value = cleaned;
+            this.classList.remove('ac-invalid');
+            var err = document.getElementById('err-phone');
+            if (err) { err.textContent = ''; err.style.display = 'none'; }
+        });
+    }
+
+    // Other fields: just clear error on input
+    [['ac-email','err-email'],['ac-company','err-company'],['ac-password','err-password']
+    ].forEach(function(pair) {
+        var inp = document.getElementById(pair[0]);
+        if (!inp) return;
+        inp.addEventListener('input', function() {
+            this.classList.remove('ac-invalid');
+            var err = document.getElementById(pair[1]);
+            if (err) { err.textContent = ''; err.style.display = 'none'; }
+        });
+    });
+    ['ac-industry','ac-plan'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('change', function() {
+            this.classList.remove('ac-invalid');
+            var err = document.getElementById('err-' + id.replace('ac-',''));
+            if (err) { err.textContent = ''; err.style.display = 'none'; }
+        });
+    });
+});
+
 function toggleAcPassword() {
     var inp  = document.getElementById('ac-password');
     var icon = document.getElementById('ac-eye-icon');
@@ -755,12 +930,30 @@ function toggleAcPassword() {
     }
 }
 function generateAcPassword() {
-    var chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
-    var pwd = '';
-    for (var i = 0; i < 12; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+    var upper   = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+    var lower   = 'abcdefghjkmnpqrstuvwxyz';
+    var digits  = '23456789';
+    var special = '!@#$%';
+    var all     = upper + lower + digits + special;
+    // Guarantee at least one of each required type
+    var pwd = [
+        upper[Math.floor(Math.random() * upper.length)],
+        lower[Math.floor(Math.random() * lower.length)],
+        digits[Math.floor(Math.random() * digits.length)],
+        special[Math.floor(Math.random() * special.length)]
+    ];
+    for (var i = 4; i < 12; i++) pwd.push(all[Math.floor(Math.random() * all.length)]);
+    // Fisher-Yates shuffle
+    for (var j = pwd.length - 1; j > 0; j--) {
+        var k = Math.floor(Math.random() * (j + 1));
+        var t = pwd[j]; pwd[j] = pwd[k]; pwd[k] = t;
+    }
     var inp = document.getElementById('ac-password');
     inp.type  = 'text';
-    inp.value = pwd;
+    inp.value = pwd.join('');
+    inp.classList.remove('ac-invalid');
+    var errPwd = document.getElementById('err-password');
+    if (errPwd) { errPwd.textContent = ''; errPwd.style.display = 'none'; }
     document.getElementById('ac-eye-icon').innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
 }
 

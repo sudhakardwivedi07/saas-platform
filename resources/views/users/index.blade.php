@@ -13,6 +13,16 @@
 .u-perm-text             { font-size:12.5px;color:var(--text-2); }
 .u-last-login            { font-size:12.5px;color:var(--text-2); }
 .u-last-login.stale      { color:var(--red); }
+.au-err {
+    font-size: 11.5px; color: var(--red); margin-top: 4px;
+    display: flex; align-items: center; gap: 4px;
+}
+.au-err::before {
+    content: '';
+    display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.mf-inp.au-invalid, .mf-sel.au-invalid { border-color: var(--red) !important; }
 </style>
 @endpush
 
@@ -190,31 +200,34 @@
         </div>
         @endif
 
-        <form method="POST" action="{{ route('users.store') }}">
+        <form method="POST" action="{{ route('users.store') }}" id="add-user-form" novalidate>
             @csrf
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                <div class="mf-field" style="margin:0 0 14px">
+                <div class="mf-field" style="margin:0 0 4px">
                     <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
-                    <input type="text" name="name" class="mf-inp" placeholder="e.g. Priya Sharma" value="{{ old('name') }}" required>
+                    <input type="text" name="name" id="au-name" class="mf-inp" placeholder="e.g. Priya Sharma" value="{{ old('name') }}" maxlength="100">
+                    <div id="err-au-name" class="au-err" style="display:none"></div>
                 </div>
-                <div class="mf-field" style="margin:0 0 14px">
+                <div class="mf-field" style="margin:0 0 4px">
                     <label class="mf-label">Email Address <span style="color:var(--red)">*</span></label>
-                    <input type="email" name="email" class="mf-inp" placeholder="priya@rightfocuscfo.com" value="{{ old('email') }}" required>
+                    <input type="text" name="email" id="au-email" class="mf-inp" placeholder="priya@rightfocuscfo.com" value="{{ old('email') }}" maxlength="100">
+                    <div id="err-au-email" class="au-err" style="display:none"></div>
                 </div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                <div class="mf-field" style="margin:0 0 14px">
+                <div class="mf-field" style="margin:0 0 4px">
                     <label class="mf-label">Role <span style="color:var(--red)">*</span></label>
-                    <select name="role" class="mf-sel" style="height:40px" required>
-                        <option value="" disabled selected>e.g. Manager, Analyst, Viewer</option>
+                    <select name="role" id="au-role" class="mf-sel" style="height:40px">
+                        <option value="">e.g. Manager, Analyst, Viewer</option>
                         @foreach($roles as $role)
                         <option value="{{ $role->name }}" {{ old('role') === $role->name ? 'selected' : '' }}>
                             {{ ucwords(str_replace('_',' ',$role->name)) }}
                         </option>
                         @endforeach
                     </select>
+                    <div id="err-au-role" class="au-err" style="display:none"></div>
                 </div>
-                <div class="mf-field" style="margin:0 0 14px">
+                <div class="mf-field" style="margin:0 0 4px">
                     <label class="mf-label">Job Title</label>
                     <input type="text" name="job_title" class="mf-inp" placeholder="e.g. Financial Analyst" value="{{ old('job_title') }}">
                 </div>
@@ -222,7 +235,7 @@
             <div class="mf-field">
                 <label class="mf-label">Password <span style="color:var(--red)">*</span></label>
                 <div style="position:relative;display:flex;align-items:center">
-                    <input type="password" name="password" id="add-pwd" class="mf-inp" placeholder="Min. 8 characters" style="padding-right:88px" required>
+                    <input type="password" name="password" id="add-pwd" class="mf-inp" placeholder="Min. 8 characters" style="padding-right:88px" maxlength="20">
                     <button type="button" title="Show/hide" onclick="togglePwd('add-pwd','add-eye')" style="position:absolute;right:44px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text-3);display:flex">
                         <svg id="add-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
@@ -230,6 +243,7 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
                     </button>
                 </div>
+                <div id="err-au-pwd" class="au-err" style="display:none"></div>
                 <div style="font-size:11px;color:var(--text-3);margin-top:4px">Click the refresh icon to auto-generate a secure password.</div>
             </div>
             <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:11px 14px;margin-bottom:16px;font-size:12.5px;color:#3b82f6;line-height:1.5">
@@ -237,7 +251,7 @@
             </div>
             <div class="mf-foot">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-add-user').classList.remove('open')">Cancel</button>
-                <button type="submit" class="btn btn-primary btn-sm">Send Invite</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitAddUser()">Send Invite</button>
             </div>
         </form>
     </div>
@@ -340,15 +354,107 @@ function togglePwd(inputId, eyeId) {
     }
 }
 function genPwd(inputId, eyeId) {
-    var chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
-    var pwd = '';
-    for (var i = 0; i < 12; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+    var upper   = 'ABCDEFGHJKMNPQRSTUVWXYZ';
+    var lower   = 'abcdefghjkmnpqrstuvwxyz';
+    var digits  = '23456789';
+    var special = '!@#$%';
+    var all     = upper + lower + digits + special;
+    var arr = [
+        upper[Math.floor(Math.random() * upper.length)],
+        lower[Math.floor(Math.random() * lower.length)],
+        digits[Math.floor(Math.random() * digits.length)],
+        special[Math.floor(Math.random() * special.length)],
+    ];
+    for (var i = arr.length; i < 12; i++) arr.push(all[Math.floor(Math.random() * all.length)]);
+    for (var j = arr.length - 1; j > 0; j--) {
+        var k = Math.floor(Math.random() * (j + 1));
+        var tmp = arr[j]; arr[j] = arr[k]; arr[k] = tmp;
+    }
     var inp = document.getElementById(inputId);
     inp.type = 'text';
-    inp.value = pwd;
+    inp.value = arr.join('');
     var eye = document.getElementById(eyeId);
-    eye.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+    if (eye) eye.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
 }
+
+function validateAndSubmitAddUser() {
+    var ok = true;
+    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    function auErr(id, msg) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = msg || '';
+        el.style.display = msg ? 'flex' : 'none';
+    }
+    function auMark(id, invalid) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (invalid) el.classList.add('au-invalid');
+        else el.classList.remove('au-invalid');
+    }
+
+    // Full Name
+    var nameEl = document.getElementById('au-name');
+    var nameVal = nameEl ? nameEl.value.trim() : '';
+    if (!nameVal) {
+        auErr('err-au-name', 'Full name is required.'); auMark('au-name', true); ok = false;
+    } else if (nameVal.length < 2) {
+        auErr('err-au-name', 'Minimum 2 characters required.'); auMark('au-name', true); ok = false;
+    } else if (!/^[a-zA-Z\s]+$/.test(nameVal)) {
+        auErr('err-au-name', 'Name must contain only letters and spaces.'); auMark('au-name', true); ok = false;
+    } else {
+        auErr('err-au-name', ''); auMark('au-name', false);
+    }
+
+    // Email
+    var emailEl = document.getElementById('au-email');
+    var emailVal = emailEl ? emailEl.value.trim() : '';
+    if (!emailVal) {
+        auErr('err-au-email', 'Email address is required.'); auMark('au-email', true); ok = false;
+    } else if (!emailRx.test(emailVal)) {
+        auErr('err-au-email', 'Enter a valid email address.'); auMark('au-email', true); ok = false;
+    } else {
+        auErr('err-au-email', ''); auMark('au-email', false);
+    }
+
+    // Role
+    var roleEl = document.getElementById('au-role');
+    if (!roleEl || !roleEl.value) {
+        auErr('err-au-role', 'Please select a role.'); auMark('au-role', true); ok = false;
+    } else {
+        auErr('err-au-role', ''); auMark('au-role', false);
+    }
+
+    // Password
+    var pwdEl = document.getElementById('add-pwd');
+    var pwdVal = pwdEl ? pwdEl.value : '';
+    if (!pwdVal) {
+        auErr('err-au-pwd', 'Password is required.'); auMark('add-pwd', true); ok = false;
+    } else if (pwdVal.length < 8) {
+        auErr('err-au-pwd', 'Password must be at least 8 characters.'); auMark('add-pwd', true); ok = false;
+    } else {
+        auErr('err-au-pwd', ''); auMark('add-pwd', false);
+    }
+
+    if (ok) {
+        document.getElementById('add-user-form').submit();
+    }
+}
+
+// Real-time: restrict full name to letters + spaces
+(function() {
+    var el = document.getElementById('au-name');
+    if (!el) return;
+    el.addEventListener('input', function() {
+        var pos = this.selectionStart;
+        var cleaned = this.value.replace(/[^a-zA-Z\s]/g, '');
+        if (cleaned !== this.value) {
+            this.value = cleaned;
+            this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+        }
+    });
+})();
 
 function openEditUser(id, name, email, role) {
     document.getElementById('edit-name').value  = name;

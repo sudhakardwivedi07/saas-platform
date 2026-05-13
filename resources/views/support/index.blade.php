@@ -80,6 +80,18 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 
 /* ── Update Status Modal ───────────────────────────── */
 .us-cur{width:100%;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:7px;font-size:13px;color:var(--text-3);cursor:not-allowed}
+
+/* ── Ticket Form Validation ────────────────────────── */
+.tk-err {
+    font-size: 11.5px; color: var(--red); margin-top: 4px;
+    display: flex; align-items: center; gap: 4px;
+}
+.tk-err::before {
+    content: '';
+    display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.mf-inp.tk-invalid, .mf-textarea.tk-invalid { border-color: var(--red) !important; }
 </style>
 @endpush
 
@@ -411,15 +423,16 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
         <div class="modal-title">New Support Ticket</div>
         <div class="modal-sub">Describe your issue and we'll get back to you as soon as possible.</div>
 
-        <form method="POST" action="{{ route('support.store') }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ route('support.store') }}" enctype="multipart/form-data" id="new-ticket-form" novalidate>
             @csrf
             <div class="mf-field">
-                <label class="mf-label" for="ticket-subject">Subject</label>
+                <label class="mf-label" for="ticket-subject">Subject <span style="color:var(--red)">*</span></label>
                 <input type="text" id="ticket-subject" name="subject" class="mf-inp"
-                       placeholder="Brief description of your issue" required value="{{ old('subject') }}">
+                       placeholder="Brief description of your issue" value="{{ old('subject') }}" maxlength="100">
+                <div id="err-tk-subject" class="tk-err" style="display:none"></div>
             </div>
             <div class="mf-field">
-                <label class="mf-label">Priority</label>
+                <label class="mf-label">Priority <span style="color:var(--red)">*</span></label>
                 <div style="display:flex;gap:8px;margin-top:4px">
                     @foreach(['low'=>'Low','medium'=>'Medium','high'=>'High'] as $v => $l)
                     <button type="button" class="btn btn-sm priority-toggle" data-value="{{ $v }}"
@@ -427,23 +440,30 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                     @endforeach
                 </div>
                 <input type="hidden" name="priority" id="priorityInput" value="{{ old('priority','low') }}">
+                <div id="err-tk-priority" class="tk-err" style="display:none"></div>
             </div>
             <div class="mf-field">
-                <label class="mf-label" for="ticket-message">Message</label>
+                <label class="mf-label" for="ticket-message">Message <span style="color:var(--red)">*</span></label>
                 <textarea id="ticket-message" name="message" class="mf-textarea" rows="5"
-                          placeholder="Provide as much detail as possible..." required>{{ old('message') }}</textarea>
+                          placeholder="Provide as much detail as possible..." maxlength="500">{{ old('message') }}</textarea>
+                <div style="font-size:11px;color:var(--text-3);margin-top:3px;text-align:right">
+                    <span id="tk-msg-count">0</span>/500 characters
+                </div>
+                <div id="err-tk-message" class="tk-err" style="display:none"></div>
             </div>
             <div class="mf-field">
                 <label class="mf-label" for="ticket-attachment">
                     Attachment <span style="color:var(--text-3);font-weight:400">(optional)</span>
                 </label>
                 <input type="file" id="ticket-attachment" name="attachment"
+                       accept=".jpg,.jpeg,.png,.pdf,.zip"
                        style="display:block;width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text-2);background:#fafafa;cursor:pointer">
-                <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block">Max 10MB. Accepted: jpg, png, pdf, zip.</span>
+                <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block">Max 10MB. Accepted: jpg, jpeg, png, pdf, zip.</span>
+                <div id="err-tk-attachment" class="tk-err" style="display:none"></div>
             </div>
             <div class="mf-foot">
                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('newTicketModal').style.display='none'">Cancel</button>
-                <button type="submit" class="btn btn-primary">Submit Ticket</button>
+                <button type="button" class="btn btn-primary" onclick="validateAndSubmitTicket()">Submit Ticket</button>
             </div>
         </form>
     </div>
@@ -702,6 +722,98 @@ function openUpdateStatus(updateUrl, tkId, currentStatus) {
     document.getElementById('viewTicketModal').style.display   = 'none';
     document.getElementById('updateStatusModal').style.display = 'flex';
 }
+
+// ── New Ticket Validation ────────────────────────────────────────────────────
+function validateAndSubmitTicket() {
+    var ok = true;
+
+    function tkErr(id, msg) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = msg || '';
+        el.style.display = msg ? 'flex' : 'none';
+    }
+    function tkMark(el, invalid) {
+        if (!el) return;
+        if (invalid) el.classList.add('tk-invalid');
+        else el.classList.remove('tk-invalid');
+    }
+
+    // Subject
+    var subEl  = document.getElementById('ticket-subject');
+    var subVal = subEl ? subEl.value.trim() : '';
+    var subRx  = /^[a-zA-Z0-9\s.,\-_\/&()]+$/;
+    if (!subVal) {
+        tkErr('err-tk-subject', 'Subject is required.'); tkMark(subEl, true); ok = false;
+    } else if (subVal.length < 3) {
+        tkErr('err-tk-subject', 'Subject must be at least 3 characters long.'); tkMark(subEl, true); ok = false;
+    } else if (subVal.length > 100) {
+        tkErr('err-tk-subject', 'Subject cannot exceed 100 characters.'); tkMark(subEl, true); ok = false;
+    } else if (!subRx.test(subVal)) {
+        tkErr('err-tk-subject', 'Subject contains invalid characters.'); tkMark(subEl, true); ok = false;
+    } else {
+        tkErr('err-tk-subject', ''); tkMark(subEl, false);
+        if (subEl) subEl.value = subVal;
+    }
+
+    // Priority (already selected by default so normally always passes)
+    var priVal = document.getElementById('priorityInput') ? document.getElementById('priorityInput').value : '';
+    if (!priVal || ['low','medium','high'].indexOf(priVal) === -1) {
+        tkErr('err-tk-priority', 'Please select a priority.'); ok = false;
+    } else {
+        tkErr('err-tk-priority', '');
+    }
+
+    // Message
+    var msgEl  = document.getElementById('ticket-message');
+    var msgVal = msgEl ? msgEl.value.trim() : '';
+    if (!msgVal) {
+        tkErr('err-tk-message', 'Description is required.'); tkMark(msgEl, true); ok = false;
+    } else if (msgVal.length < 10) {
+        tkErr('err-tk-message', 'Description must be at least 10 characters long.'); tkMark(msgEl, true); ok = false;
+    } else if (msgVal.length > 500) {
+        tkErr('err-tk-message', 'Description cannot exceed 500 characters.'); tkMark(msgEl, true); ok = false;
+    } else {
+        tkErr('err-tk-message', ''); tkMark(msgEl, false);
+        if (msgEl) msgEl.value = msgVal;
+    }
+
+    // Attachment (optional)
+    var attEl = document.getElementById('ticket-attachment');
+    if (attEl && attEl.files && attEl.files.length > 0) {
+        var file     = attEl.files[0];
+        var extRx    = /\.(jpg|jpeg|png|pdf|zip)$/i;
+        var nameRx   = /^[a-zA-Z0-9\s.\-_]+$/;
+        var maxBytes = 10 * 1024 * 1024;
+        var baseName = file.name.replace(/\.[^.]+$/, '');
+
+        if (!extRx.test(file.name)) {
+            tkErr('err-tk-attachment', 'Invalid file format. Allowed formats are JPG, JPEG, PNG, PDF, and ZIP.'); ok = false;
+        } else if (file.size > maxBytes) {
+            tkErr('err-tk-attachment', 'File size cannot exceed 10 MB.'); ok = false;
+        } else if (!nameRx.test(baseName)) {
+            tkErr('err-tk-attachment', 'Attachment file name contains invalid characters.'); ok = false;
+        } else {
+            tkErr('err-tk-attachment', '');
+        }
+    } else {
+        tkErr('err-tk-attachment', '');
+    }
+
+    if (ok) {
+        document.getElementById('new-ticket-form').submit();
+    }
+}
+
+// Message character counter
+(function() {
+    var msgEl   = document.getElementById('ticket-message');
+    var counter = document.getElementById('tk-msg-count');
+    if (!msgEl || !counter) return;
+    function updateCount() { counter.textContent = msgEl.value.length; }
+    msgEl.addEventListener('input', updateCount);
+    updateCount();
+})();
 
 document.getElementById('us-submit-btn').addEventListener('click', function() {
     var newStatus = document.getElementById('us-new-status').value;

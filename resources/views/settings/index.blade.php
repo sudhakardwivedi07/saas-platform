@@ -52,8 +52,9 @@
             <span class="info-banner-txt">Configure your Stripe keys to enable payments for your sub-companies.</span>
         </div>
 
-        <form method="POST" action="{{ route('settings.payment-gateway.update') }}#tab-payment">
+        <form method="POST" action="{{ route('settings.payment-gateway.update') }}" id="payment-form" onsubmit="submitSettingsForm(event,this,'Payment gateway settings updated.')">
             @csrf
+            <input type="hidden" name="status" value="active">
             <div class="form-2col">
                 <div class="f-group">
                     <label class="f-label">Mode</label>
@@ -110,8 +111,9 @@
             Email SMTP Settings
         </div>
 
-        <form method="POST" action="{{ route('settings.email.update') }}#tab-email">
+        <form method="POST" action="{{ route('settings.email.update') }}" id="email-form" onsubmit="submitSettingsForm(event,this,'Email settings updated.')">
             @csrf
+            <input type="hidden" name="driver" value="smtp">
             <div class="form-2col">
                 <div class="f-group">
                     <label class="f-label">From Name</label>
@@ -173,8 +175,9 @@
             <span class="info-banner-txt">SMS notifications are powered by Twilio. Enter your credentials from the Twilio Console.</span>
         </div>
 
-        <form method="POST" action="{{ route('settings.sms.update') }}#tab-sms">
+        <form method="POST" action="{{ route('settings.sms.update') }}" id="sms-form" onsubmit="submitSettingsForm(event,this,'SMS settings updated.')">
             @csrf
+            <input type="hidden" name="provider" value="twilio">
             <div class="f-group">
                 <label class="f-label">Account SID</label>
                 <input type="text" name="account_sid" class="f-inp" placeholder="ACxxxxxxxxxxxxxxxx" value="{{ $smsSetting->account_sid ?? '' }}">
@@ -687,8 +690,9 @@ function submitCreateRole(e) {
             btn.disabled = false;
             if (res.status === 'success') {
                 document.getElementById('create-role-modal').classList.remove('open');
-                showToast(res.message || 'Role created.', 'success');
-                setTimeout(function() { location.reload(); }, 900);
+                var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+                Swal.fire({ icon: 'success', text: res.message || 'Role created.', confirmButtonText: 'Ok', confirmButtonColor: btnColor })
+                    .then(function() { location.reload(); });
             } else {
                 showToast(res.message || 'Something went wrong.', 'error');
             }
@@ -734,8 +738,9 @@ function submitEditRole(e) {
             btn.disabled = false;
             if (res.status === 'success') {
                 document.getElementById('edit-role-modal').classList.remove('open');
-                showToast(res.message || 'Role updated.', 'success');
-                setTimeout(function() { location.reload(); }, 900);
+                var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+                Swal.fire({ icon: 'success', text: res.message || 'Role updated.', confirmButtonText: 'Ok', confirmButtonColor: btnColor })
+                    .then(function() { location.reload(); });
             } else {
                 showToast(res.message || 'Something went wrong.', 'error');
             }
@@ -766,8 +771,9 @@ function deleteRole(id, name) {
         .then(function(r) { return r.json(); })
         .then(function(res) {
             if (res.status === 'success') {
-                showToast(res.message || 'Role deleted.', 'success');
-                setTimeout(function() { location.reload(); }, 900);
+                var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+                Swal.fire({ icon: 'success', text: res.message || 'Role deleted.', confirmButtonText: 'Ok', confirmButtonColor: btnColor })
+                    .then(function() { location.reload(); });
             } else {
                 showToast(res.message || 'Cannot delete role.', 'error');
             }
@@ -793,12 +799,51 @@ function submitQbSettings(e) {
     .then(function(res) {
         btn.disabled = false;
         if (res.status === 'success') {
-            showToast(res.message || 'QuickBooks settings saved.', 'success');
+            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+            Swal.fire({ icon: 'success', text: res.message || 'QuickBooks settings saved.', confirmButtonText: 'Ok', confirmButtonColor: btnColor });
         } else {
             showToast(res.message || 'Something went wrong.', 'error');
         }
     })
     .catch(function() { btn.disabled = false; showToast('Request failed.', 'error'); });
+}
+
+// ── Generic Settings Form AJAX Submit ─────────────────────────────────────────
+function submitSettingsForm(e, form, defaultMsg) {
+    e.preventDefault();
+    var btn      = form.querySelector('[type=submit]');
+    var origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0" stroke-dasharray="40" stroke-dashoffset="10"/></svg> Saving…';
+
+    var action = form.action.split('#')[0];
+    fetch(action, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: new FormData(form),
+    })
+    .then(function(r) {
+        if (r.status === 422) return r.json().then(function(d) { throw { validation: true, data: d }; });
+        return r.json();
+    })
+    .then(function(res) {
+        btn.disabled = false; btn.innerHTML = origHtml;
+        if (res.status === 'success') {
+            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+            Swal.fire({ icon: 'success', text: res.message || defaultMsg || 'Settings saved.', confirmButtonText: 'Ok', confirmButtonColor: btnColor });
+        } else {
+            showToast(res.message || 'Something went wrong.', 'error');
+        }
+    })
+    .catch(function(err) {
+        btn.disabled = false; btn.innerHTML = origHtml;
+        if (err && err.validation && err.data && err.data.errors) {
+            var firstError = Object.values(err.data.errors)[0];
+            showToast(Array.isArray(firstError) ? firstError[0] : firstError, 'error');
+        } else {
+            showToast('Request failed. Please try again.', 'error');
+        }
+    });
 }
 
 // Auto-switch tab based on URL hash (#payment, #plans, #email, #sms, #roles, #quickbooks)

@@ -33,6 +33,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         Plan Management
     </button>
+    <button class="tab-btn" data-tab="tab-insight-limits">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Insight Limits
+    </button>
     <button class="tab-btn" data-tab="tab-roles">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
         Roles &amp; Permissions
@@ -354,6 +358,167 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+{{-- Tab: Insight Limits --}}
+<div class="tab-panel" id="tab-insight-limits">
+
+    {{-- Sub-tab bar --}}
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px">
+        <button type="button" class="il-subtab active" data-subtab="subtab-limit-setup"
+            style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;font-size:13px;font-weight:500;border:none;border-bottom:3px solid var(--orange);background:none;cursor:pointer;color:var(--orange);margin-bottom:-2px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            Insight Limit Setup
+        </button>
+        <button type="button" class="il-subtab" data-subtab="subtab-company-overrides"
+            style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;font-size:13px;font-weight:500;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--text-3);margin-bottom:-2px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+            Company-wise Limit Overrides
+        </button>
+    </div>
+
+    {{-- Sub-tab 1: Insight Limit Setup --}}
+    <div id="subtab-limit-setup">
+        <div class="acc-card">
+            <div class="acc-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                Insights Limit
+            </div>
+
+            <form id="insight-limit-form" onsubmit="submitInsightLimitForm(event)">
+                @csrf
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:start">
+                    <div class="f-group" style="margin:0">
+                        <label class="f-label">Default Limit Per Client</label>
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <input type="number" name="default_limit" id="il-default-limit" class="f-inp"
+                                value="{{ $insightSetting->default_limit ?? 50 }}"
+                                min="1" max="99999" style="max-width:110px">
+                            <span style="font-size:13px;color:var(--text-3);white-space:nowrap">insights</span>
+                        </div>
+                        <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Applied to all companies unless overridden</div>
+                    </div>
+                    <div class="f-group" style="margin:0">
+                        <label class="f-label">Billing Period</label>
+                        <select name="billing_period" class="f-sel">
+                            <option value="monthly" {{ ($insightSetting->billing_period ?? 'monthly') === 'monthly' ? 'selected' : '' }}>Monthly</option>
+                            <option value="yearly"  {{ ($insightSetting->billing_period ?? '') === 'yearly' ? 'selected' : '' }}>Yearly</option>
+                        </select>
+                        <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">When the limit resets for each company</div>
+                    </div>
+                    <div class="f-group" style="margin:0">
+                        <label class="f-label">Overage Behaviour</label>
+                        <select name="overage_behaviour" class="f-sel">
+                            <option value="pause"         {{ ($insightSetting->overage_behaviour ?? 'pause') === 'pause' ? 'selected' : '' }}>Pause generation when limit is reached</option>
+                            <option value="allow_overage" {{ ($insightSetting->overage_behaviour ?? '') === 'allow_overage' ? 'selected' : '' }}>Allow overage and notify when limit is reached</option>
+                        </select>
+                        <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">What happens when a company reaches its cap</div>
+                    </div>
+                </div>
+                <div style="margin-top:24px">
+                    <button type="submit" class="btn btn-primary" id="il-submit">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Sub-tab 2: Company-wise Limit Overrides --}}
+    <div id="subtab-company-overrides" style="display:none">
+        <div class="acc-card">
+            <div class="acc-section-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                Custom Limit
+            </div>
+            <div style="font-size:12.5px;color:var(--text-3);margin-bottom:18px">Set a custom monthly insight limit for specific companies. Overrides the default limit.</div>
+
+            @php $ilDefault = $insightSetting->default_limit ?? 50; @endphp
+
+            @if(($companiesWithUsage ?? collect())->isEmpty())
+            <div style="text-align:center;padding:56px 20px">
+                <div style="width:56px;height:56px;border-radius:14px;background:#eff6ff;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.6"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+                </div>
+                <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:8px">Company-level overrides will appear here</div>
+                <div style="font-size:13px;color:var(--text-3);line-height:1.6;max-width:480px;margin:0 auto">
+                    Once you add clients and their companies, you can set custom insight limits for individual companies here. This is useful when specific clients need more or fewer insights than your default allocation.
+                </div>
+            </div>
+            @else
+            <div style="overflow-x:auto">
+                <table style="width:100%;border-collapse:collapse">
+                    <thead>
+                        <tr>
+                            <th style="text-align:left;padding:10px 12px;font-size:11.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">Company</th>
+                            <th style="text-align:left;padding:10px 12px;font-size:11.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">Client</th>
+                            <th style="text-align:center;padding:10px 12px;font-size:11.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">Default Limit</th>
+                            <th style="text-align:left;padding:10px 12px;font-size:11.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">Used This Month</th>
+                            <th style="text-align:right;padding:10px 12px;font-size:11.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($companiesWithUsage as $co)
+                        @php
+                            $coOwner        = $co->users->first();
+                            $coCustomLimit  = $co->custom_insight_limit;
+                            $coEffective    = $coCustomLimit ?? $ilDefault;
+                            $coUsed         = (int) ($co->insights_used ?? 0);
+                            $coPct          = $coEffective > 0 ? min(100, round($coUsed / $coEffective * 100)) : 0;
+                            $coBarColor     = $coPct >= 90 ? 'var(--red)' : ($coPct >= 70 ? '#f59e0b' : 'var(--blue)');
+                        @endphp
+                        <tr style="border-bottom:1px solid var(--border)">
+                            <td style="padding:12px;font-size:13px;font-weight:500;color:var(--text-1)">{{ $co->company_name }}</td>
+                            <td style="padding:12px;font-size:13px;color:var(--text-2)">{{ $coOwner?->name ?? '—' }}</td>
+                            <td style="padding:12px;font-size:13px;color:var(--text-2);text-align:center">{{ $ilDefault }}</td>
+                            <td style="padding:12px">
+                                <div style="display:flex;align-items:center;gap:10px">
+                                    <div style="flex:1;max-width:120px;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+                                        <div style="width:{{ $coPct }}%;height:100%;background:{{ $coBarColor }};border-radius:3px;transition:width .3s"></div>
+                                    </div>
+                                    <span style="font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ $coUsed }}/{{ $coEffective }}</span>
+                                </div>
+                            </td>
+                            <td style="padding:12px;text-align:right">
+                                <button type="button" class="btn btn-primary btn-sm"
+                                    onclick="openCustomLimitModal({{ $co->id }}, '{{ addslashes($co->company_name) }}', {{ $coCustomLimit ?? $ilDefault }})">
+                                    Set Custom Limit
+                                </button>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @endif
+        </div>
+    </div>
+</div>
+
+{{-- Set Custom Limit Modal --}}
+<div class="modal-overlay" id="modal-custom-limit" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box" style="width:420px">
+        <button class="modal-close" onclick="document.getElementById('modal-custom-limit').classList.remove('open')">&times;</button>
+        <div class="modal-title">Set Custom Limit</div>
+        <div class="modal-sub" id="custom-limit-subtitle"></div>
+        <div class="mf-field" style="margin-top:16px">
+            <label class="mf-label">Custom Monthly Insight Limit</label>
+            <div style="display:flex;align-items:center;gap:10px">
+                <input type="number" id="custom-limit-value" class="mf-inp" min="1" max="99999"
+                    style="max-width:130px;text-align:center;font-size:16px;font-weight:600">
+                <span style="font-size:13px;color:var(--text-3)">insights per month</span>
+            </div>
+            <div style="font-size:11.5px;color:var(--text-3);margin-top:6px;line-height:1.5">
+                This overrides the default limit set in Insight Limit Setup. Set to the default value to remove the override.
+            </div>
+        </div>
+        <input type="hidden" id="custom-limit-company-id">
+        <div class="mf-foot">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-custom-limit').classList.remove('open')">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm" id="custom-limit-save-btn" onclick="saveCustomLimit()">Save Limit</button>
         </div>
     </div>
 </div>
@@ -853,6 +1018,118 @@ document.addEventListener('DOMContentLoaded', function () {
     var btn = document.querySelector('[data-tab="tab-' + hash + '"]');
     if (btn) btn.click();
 });
+
+// ── Insight Limits sub-tab switching ──────────────────────────────────────────
+document.querySelectorAll('.il-subtab').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var target = this.dataset.subtab;
+        document.querySelectorAll('.il-subtab').forEach(function(b) {
+            b.style.color = 'var(--text-3)';
+            b.style.borderBottomColor = 'transparent';
+            b.style.fontWeight = '500';
+        });
+        this.style.color = 'var(--orange)';
+        this.style.borderBottomColor = 'var(--orange)';
+        this.style.fontWeight = '600';
+
+        document.querySelectorAll('#subtab-limit-setup, #subtab-company-overrides').forEach(function(p) {
+            p.style.display = 'none';
+        });
+        var panel = document.getElementById(target);
+        if (panel) panel.style.display = '';
+    });
+});
+
+// ── Insight Limit Setup form ──────────────────────────────────────────────────
+function submitInsightLimitForm(e) {
+    e.preventDefault();
+    var form = document.getElementById('insight-limit-form');
+    var btn  = document.getElementById('il-submit');
+    var origHtml = btn.innerHTML;
+
+    var limitVal = parseInt(document.getElementById('il-default-limit').value, 10);
+    if (!limitVal || limitVal < 1) {
+        Swal.fire({ icon: 'error', title: 'Invalid Limit', text: 'Please enter a valid limit (minimum 1).', confirmButtonColor: '#f06b21' });
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0" stroke-dasharray="40" stroke-dashoffset="10"/></svg> Saving…';
+
+    fetch('{{ route("settings.insight-limits.update") }}', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: new FormData(form),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+        btn.disabled = false; btn.innerHTML = origHtml;
+        if (res.status === 'success') {
+            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+            Swal.fire({ icon: 'success', text: res.message || 'Insight limit settings saved.', confirmButtonText: 'Ok', confirmButtonColor: btnColor });
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: res.message || 'Something went wrong.', confirmButtonColor: '#f06b21' });
+        }
+    })
+    .catch(function() {
+        btn.disabled = false; btn.innerHTML = origHtml;
+        Swal.fire({ icon: 'error', title: 'Request Failed', text: 'Could not save settings. Please try again.', confirmButtonColor: '#f06b21' });
+    });
+}
+
+// ── Custom Limit Modal ────────────────────────────────────────────────────────
+function openCustomLimitModal(companyId, companyName, currentLimit) {
+    document.getElementById('custom-limit-company-id').value = companyId;
+    document.getElementById('custom-limit-subtitle').textContent = 'Set a custom monthly insight limit for: ' + companyName;
+    document.getElementById('custom-limit-value').value = currentLimit || 50;
+    document.getElementById('modal-custom-limit').classList.add('open');
+    setTimeout(function() { document.getElementById('custom-limit-value').focus(); }, 80);
+}
+
+function saveCustomLimit() {
+    var companyId = document.getElementById('custom-limit-company-id').value;
+    var limitVal  = parseInt(document.getElementById('custom-limit-value').value, 10);
+    var btn       = document.getElementById('custom-limit-save-btn');
+
+    if (!limitVal || limitVal < 1) {
+        Swal.fire({ icon: 'error', title: 'Invalid Limit', text: 'Please enter a valid limit (minimum 1).', confirmButtonColor: '#f06b21' });
+        return;
+    }
+
+    btn.disabled = true;
+    var origHtml = btn.innerHTML;
+    btn.innerHTML = 'Saving…';
+
+    var csrf = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '{{ csrf_token() }}';
+    var url  = '{{ route("settings.insight-limits.custom", ":id") }}'.replace(':id', companyId);
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': csrf,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+        },
+        body: JSON.stringify({ custom_limit: limitVal }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(res) {
+        btn.disabled = false; btn.innerHTML = origHtml;
+        document.getElementById('modal-custom-limit').classList.remove('open');
+        if (res.status === 'success') {
+            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+            Swal.fire({ icon: 'success', text: res.message || 'Custom limit saved.', confirmButtonText: 'Ok', confirmButtonColor: btnColor })
+                .then(function() { location.reload(); });
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: res.message || 'Could not save limit.', confirmButtonColor: '#f06b21' });
+        }
+    })
+    .catch(function() {
+        btn.disabled = false; btn.innerHTML = origHtml;
+        Swal.fire({ icon: 'error', title: 'Request Failed', text: 'Could not save limit. Please try again.', confirmButtonColor: '#f06b21' });
+    });
+}
 
 
 </script>

@@ -18,6 +18,7 @@ use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FirmQuickBooksController;
 use App\Http\Controllers\QuickBooksController;
+use App\Http\Controllers\InsightLimitController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SmtpSettingController;
@@ -188,6 +189,10 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/roles',       [RoleController::class, 'store'])->name('roles.store');
         Route::post('/roles/{id}',  [RoleController::class, 'update'])->name('roles.update');
         Route::delete('/roles/{id}',[RoleController::class, 'destroy'])->name('roles.destroy');
+
+        // Insight Limits
+        Route::post('/insight-limits',                      [InsightLimitController::class, 'updateLimitSetup'])->name('insight-limits.update');
+        Route::post('/insight-limits/{companyId}/custom',   [InsightLimitController::class, 'setCustomLimit'])->name('insight-limits.custom');
     });
 
     // Clients

@@ -24,7 +24,7 @@
             </button>
             @endif
         @else
-        <button type="button" class="btn btn-primary" disabled title="No plan is assigned to this account. Choose a plan under Subscription &amp; Usage first.">
+        <button type="button" class="btn btn-primary" onclick="showNoPlanSwal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
         </button>
@@ -32,16 +32,6 @@
     </div>
 </div>
 
-@if(!($hasActivePlan ?? false))
-<div class="info-banner" style="margin-bottom: 1rem;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    <span class="info-banner-txt">
-        No plan is assigned to this account. Select a subscription plan on
-        <a href="{{ route('billing.index') }}" style="color:var(--blue);font-weight:600;text-decoration:none">Subscription &amp; Usage</a>
-        before adding clients or companies.
-    </span>
-</div>
-@endif
 
 {{-- Tab Bar --}}
 <div class="tab-bar">
@@ -219,7 +209,7 @@
                 Add Company
             </a>
             @else
-            <button type="button" class="btn btn-primary btn-sm" disabled title="No plan is assigned. Choose a plan under Subscription &amp; Usage first.">
+            <button type="button" class="btn btn-primary btn-sm" onclick="showNoPlanSwal()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add Company
             </button>
@@ -1150,6 +1140,24 @@ document.getElementById('modal-add-client').classList.add('open');
 showToast('{{ addslashes($error) }}', 'error');
 @endforeach
 @endif
+
+function showNoPlanSwal() {
+    Swal.fire({
+        icon: 'warning',
+        title: 'No Plan Assigned',
+        html: 'No plan is assigned to your account.<br>Please select a subscription plan on <a href="{{ route("billing.index") }}" style="color:var(--blue);font-weight:600;text-decoration:none">Subscription &amp; Usage</a> before adding clients or companies.',
+        confirmButtonText: 'Go to Subscription & Usage',
+        confirmButtonColor: '#f06b21',
+        showCancelButton: true,
+        cancelButtonText: 'Cancel',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    }).then(function(result) {
+        if (result.isConfirmed) {
+            window.location.href = '{{ route("billing.index") }}';
+        }
+    });
+}
 
 // Auto-open the Add Client modal when redirected from dashboard with ?add=1
 if (new URLSearchParams(window.location.search).get('add') === '1') {

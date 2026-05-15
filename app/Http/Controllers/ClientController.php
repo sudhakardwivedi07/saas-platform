@@ -175,7 +175,15 @@ class ClientController extends AccountBaseController
         ]);
 
         $parentCompanyId = company()->id;
-        $this->enforceMaxCompaniesLimit($parentCompanyId);
+
+        try {
+            $this->enforceMaxCompaniesLimit($parentCompanyId);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            if ($e->getStatusCode() === 422) {
+                return redirect()->back()->with('error', $e->getMessage());
+            }
+            throw $e;
+        }
 
         // Enforce plan's Max Clients limit (max_users on the plan)
         $ownerCompany = Company::withoutGlobalScopes()->find($parentCompanyId);

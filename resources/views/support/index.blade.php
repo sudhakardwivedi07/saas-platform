@@ -836,5 +836,16 @@ document.getElementById('us-submit-btn').addEventListener('click', function() {
     })
     .catch(function(){showToast('Update failed.','error');});
 });
+
+@if(session('ticket_success'))
+Swal.fire({
+    icon: 'success',
+    title: 'Ticket Submitted',
+    text: 'Your request has been received. Our team will review it and respond shortly.',
+    confirmButtonText: 'View Tickets',
+    confirmButtonColor: '#f06b21',
+    allowOutsideClick: false,
+});
+@endif
 </script>
 @endpush

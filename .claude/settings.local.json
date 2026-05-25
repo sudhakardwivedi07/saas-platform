@@ -51,7 +51,26 @@
       "Bash(sed 's|https://fonts\\\\.gstatic\\\\.com/s/materialicons/v[0-9]*/||g' C:/xampp/htdocs/saas-platform/public/vendor/fonts/material-icons/_raw.css)",
       "Bash(sed -i 's|<script src=\"https://cdn\\\\.jsdelivr\\\\.net/npm/chart\\\\.js@4/dist/chart\\\\.umd\\\\.min\\\\.js\"></script>|<script src=\"{{ asset\\(config\\('\\\\''assets.chartjs'\\\\''\\)\\) }}\"></script>|g' C:/xampp/htdocs/saas-platform/resources/views/dashboard/index.blade.php C:/xampp/htdocs/saas-platform/resources/views/super-admin/dashboard/index.blade.php)",
       "Bash(sed -i 's|<link rel=\"stylesheet\" href=\"https://cdn\\\\.datatables\\\\.net/1\\\\.13\\\\.8/css/dataTables\\\\.bootstrap5\\\\.min\\\\.css\">|<link rel=\"stylesheet\" href=\"{{ asset\\(config\\('\\\\''assets.datatables_bs5_css'\\\\''\\)\\) }}\">|g' C:/xampp/htdocs/saas-platform/resources/views/super-admin/companies/index.blade.php)",
-      "Bash(sed -i 's|<link rel=\"stylesheet\" href=\"https://cdn\\\\.datatables\\\\.net/1\\\\.13\\\\.8/css/jquery\\\\.dataTables\\\\.min\\\\.css\">|<link rel=\"stylesheet\" href=\"{{ asset\\(config\\('\\\\''assets.datatables_css'\\\\''\\)\\) }}\">|g' C:/xampp/htdocs/saas-platform/resources/views/support/index.blade.php)"
+      "Bash(sed -i 's|<link rel=\"stylesheet\" href=\"https://cdn\\\\.datatables\\\\.net/1\\\\.13\\\\.8/css/jquery\\\\.dataTables\\\\.min\\\\.css\">|<link rel=\"stylesheet\" href=\"{{ asset\\(config\\('\\\\''assets.datatables_css'\\\\''\\)\\) }}\">|g' C:/xampp/htdocs/saas-platform/resources/views/support/index.blade.php)",
+      "Bash(C:/xampp/php/php.exe C:/xampp/htdocs/saas-platform/artisan storage:link)",
+      "Bash(dir C:/xampp/htdocs/saas-platform/storage/app/public/)",
+      "Bash(C:/xampp/php/php.exe -r \"echo realpath\\('C:/xampp/htdocs/saas-platform/public/storage'\\) . PHP_EOL;\")",
+      "Bash(C:/xampp/php/php.exe -r \"echo file_exists\\('C:/xampp/htdocs/saas-platform/public/storage/global/eqrRpJowwvyGAQ3n4lPAgBh9TOQJhUDyVLupVELP.svg'\\) ? 'FILE ACCESSIBLE' : 'FILE NOT FOUND';\")",
+      "Bash(C:/xampp/php/php.exe C:/xampp/htdocs/saas-platform/artisan make:command AssetsVendorInstall)",
+      "Bash(del \"C:\\\\xampp\\\\htdocs\\\\saas-platform\\\\app\\\\Console\\\\Commands\\\\AssetsVendorInstall.php\")",
+      "Bash(C:/xampp/php/php.exe -r \"unlink\\('C:/xampp/htdocs/saas-platform/app/Console/Commands/AssetsVendorInstall.php'\\); echo 'Deleted';\")",
+      "Bash(C:/xampp/php/php.exe -r \"echo file_exists\\('C:/xampp/htdocs/saas-platform/resources/views/settings/index.blade.php'\\) ? 'exists' : 'not found';\")",
+      "Bash(git commit -m 'Add Stripe payment gateway integration for SuperAdmin firms:*)",
+      "Bash(git fetch:*)",
+      "Bash(git commit -m 'Resolve merge conflicts from oa/dev pull:*)",
+      "Bash(dir \"C:\\\\xampp\\\\htdocs\\\\saas-platform\\\\public\\\\storage\")",
+      "Bash(C:\\\\xampp\\\\php\\\\php.exe -r \"echo is_dir\\('C:/xampp/htdocs/saas-platform/public/storage'\\) ? 'DIR_OK' : 'NO_DIR'; echo PHP_EOL; echo is_link\\('C:/xampp/htdocs/saas-platform/public/storage'\\) ? 'IS_LINK' : 'NOT_LINK'; echo PHP_EOL; echo file_exists\\('C:/xampp/htdocs/saas-platform/public/storage/global'\\) ? 'GLOBAL_OK' : 'NO_GLOBAL';\")",
+      "Bash(git commit -m 'Add comprehensive Stripe webhook logging with SuperAdmin log viewer:*)",
+      "Bash(git commit -m 'Update webhook log viewer blade with URL display fix:*)",
+      "Bash(git commit -m 'Fix stale Stripe customer ID causing '\\\\''No such customer'\\\\'' error:*)",
+      "Bash(git commit -m 'Fix Cancel Subscription — wire button to real Stripe API endpoint:*)",
+      "Bash(git commit -m 'Fix cancel subscription using SuperAdmin Stripe credentials:*)",
+      "Bash(git commit -m 'Fix dashboard counts, revenue, table sort and Make Payment visibility:*)"
     ]
   }
 }

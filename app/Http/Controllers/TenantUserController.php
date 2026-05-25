@@ -92,7 +92,7 @@ class TenantUserController extends AccountBaseController
         }
 
         return redirect()->route('users.index')
-            ->with('toast_success', 'User "' . $user->name . '" added successfully.');
+            ->with('success', 'User "' . $user->name . '" added successfully.');
     }
 
     public function update(Request $request, $id)

@@ -4,6 +4,17 @@
 
 @push('styles')
 <style>
+.co-err {
+    font-size: 11.5px; color: var(--red); margin-top: 4px;
+    display: flex; align-items: center; gap: 4px;
+}
+.co-err::before {
+    content: '';
+    display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.mf-inp.co-invalid, .mf-sel.co-invalid { border-color: var(--red) !important; }
+.subdomain-wrap.co-invalid { border-color: var(--red) !important; }
 .create-co-layout {
     display: grid;
     grid-template-columns: 1fr 300px;
@@ -115,7 +126,7 @@
 </div>
 @endif
 
-<form method="POST" action="{{ route('my-companies.store') }}" id="create-company-form">
+<form method="POST" action="{{ route('my-companies.store') }}" id="create-company-form" novalidate>
 @csrf
 
 @php $isClientUserFlow = auth()->user()->hasRole('client'); @endphp
@@ -135,30 +146,33 @@
             <div class="mf-field">
                 <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
                 <input type="text" name="company_name" id="company_name" class="mf-inp"
-                       placeholder="Acme Inc." value="{{ old('company_name') }}" required>
+                       placeholder="Acme Inc." value="{{ old('company_name') }}" maxlength="100">
                 @error('company_name')
                 <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
                 @enderror
+                <div id="err-co-name" class="co-err" style="display:none"></div>
             </div>
 
             <div class="form-2col">
                 <div class="mf-field">
-                    <label class="mf-label">Industry Type</label>
-                    <select name="industry_type" class="mf-sel" style="height:38px" required>
-                        <option value="" disabled {{ old('industry_type') ? '' : 'selected' }}>Select industry</option>
+                    <label class="mf-label">Industry Type <span style="color:var(--red)">*</span></label>
+                    <select name="industry_type" id="co-industry" class="mf-sel" style="height:38px">
+                        <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select industry</option>
                         @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
                         <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
                         @endforeach
                     </select>
+                    <div id="err-co-industry" class="co-err" style="display:none"></div>
                 </div>
                 <div class="mf-field">
-                    <label class="mf-label">Entity Type</label>
-                    <select name="entity_type" class="mf-sel" style="height:38px" required>
-                        <option value="" disabled {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
+                    <label class="mf-label">Entity Type <span style="color:var(--red)">*</span></label>
+                    <select name="entity_type" id="co-entity" class="mf-sel" style="height:38px">
+                        <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
                         @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
                         <option value="{{ $ent }}" {{ old('entity_type') === $ent ? 'selected' : '' }}>{{ $ent }}</option>
                         @endforeach
                     </select>
+                    <div id="err-co-entity" class="co-err" style="display:none"></div>
                 </div>
             </div>
 
@@ -179,16 +193,18 @@
                 @error('subdomain')
                 <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
                 @enderror
+                <div id="err-co-subdomain" class="co-err" style="display:none"></div>
                 <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Only letters, numbers and hyphens. Cannot be changed later.</div>
             </div>
 
             <div class="mf-field">
                 <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
-                <input type="email" name="company_email" class="mf-inp"
-                       placeholder="info@acme.com" value="{{ old('company_email') }}" required>
+                <input type="email" name="company_email" id="co-email" class="mf-inp"
+                       placeholder="info@acme.com" value="{{ old('company_email') }}" maxlength="100">
                 @error('company_email')
                 <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
                 @enderror
+                <div id="err-co-email" class="co-err" style="display:none"></div>
             </div>
         </div>
 
@@ -199,42 +215,91 @@
                 <span class="step-num">2</span>
                 <div style="font-size:15px;font-weight:600;color:var(--text-1)">Company Admin Account</div>
             </div>
-            <div style="font-size:12.5px;color:var(--text-3);margin-bottom:18px;padding-left:32px">
-                Create login credentials for this company's administrator.
+
+            {{-- Admin type toggle --}}
+            <div style="display:flex;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:3px;gap:3px;margin-bottom:18px;margin-left:32px">
+                <button type="button" id="btn-admin-new"
+                    onclick="setAdminType('new')"
+                    style="flex:1;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:all .12s;background:var(--orange);color:#fff">
+                    New Admin
+                </button>
+                <button type="button" id="btn-admin-existing"
+                    onclick="setAdminType('existing')"
+                    style="flex:1;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:all .12s;background:transparent;color:var(--text-2)">
+                    Existing Client
+                </button>
             </div>
 
-            <div class="mf-field">
-                <label class="mf-label">Admin Full Name <span style="color:var(--red)">*</span></label>
-                <input type="text" name="admin_name" class="mf-inp"
-                       placeholder="Jane Smith" value="{{ old('admin_name') }}" required>
-                @error('admin_name')
-                <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
-                @enderror
-            </div>
+            <input type="hidden" name="admin_type" id="admin_type" value="{{ old('admin_type', 'new') }}">
 
-            <div class="mf-field">
-                <label class="mf-label">Admin Email <span style="color:var(--red)">*</span></label>
-                <input type="email" name="admin_email" class="mf-inp"
-                       placeholder="jane@acme.com" value="{{ old('admin_email') }}" required>
-                @error('admin_email')
-                <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <div class="form-2col">
+            {{-- Panel: New Admin --}}
+            <div id="panel-admin-new">
+                <div style="font-size:12.5px;color:var(--text-3);margin-bottom:14px;padding-left:0">
+                    Create login credentials for this company's administrator.
+                </div>
                 <div class="mf-field">
-                    <label class="mf-label">Password <span style="color:var(--red)">*</span></label>
-                    <input type="password" name="admin_password" class="mf-inp"
-                           placeholder="Min. 8 characters" autocomplete="new-password" minlength="8" required>
-                    @error('admin_password')
+                    <label class="mf-label">Admin Full Name <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="admin_name" id="co-admin-name" class="mf-inp"
+                           placeholder="Jane Smith" value="{{ old('admin_name') }}" maxlength="100">
+                    @error('admin_name')
+                    <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
+                    @enderror
+                    <div id="err-co-admin-name" class="co-err" style="display:none"></div>
+                </div>
+                <div class="mf-field">
+                    <label class="mf-label">Admin Email <span style="color:var(--red)">*</span></label>
+                    <input type="email" name="admin_email" id="co-admin-email" class="mf-inp"
+                           placeholder="jane@acme.com" value="{{ old('admin_email') }}" maxlength="100">
+                    @error('admin_email')
+                    <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
+                    @enderror
+                    <div id="err-co-admin-email" class="co-err" style="display:none"></div>
+                </div>
+                <div class="form-2col">
+                    <div class="mf-field">
+                        <label class="mf-label">Password <span style="color:var(--red)">*</span></label>
+                        <input type="password" name="admin_password" id="co-admin-pwd" class="mf-inp"
+                               placeholder="Min. 8 characters" autocomplete="new-password">
+                        @error('admin_password')
+                        <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
+                        @enderror
+                        <div id="err-co-admin-pwd" class="co-err" style="display:none"></div>
+                    </div>
+                    <div class="mf-field">
+                        <label class="mf-label">Confirm Password <span style="color:var(--red)">*</span></label>
+                        <input type="password" name="admin_password_confirmation" id="co-admin-confirm" class="mf-inp"
+                               placeholder="Repeat password" autocomplete="new-password">
+                        <div id="err-co-admin-confirm" class="co-err" style="display:none"></div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Panel: Existing Client --}}
+            <div id="panel-admin-existing" style="display:none">
+                <div style="font-size:12.5px;color:var(--text-3);margin-bottom:14px">
+                    Assign an existing client as the administrator for this company.
+                </div>
+                @if(($existingClients ?? collect())->isEmpty())
+                <div style="padding:16px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-3);text-align:center">
+                    No existing clients found. Add clients first from the Clients menu.
+                </div>
+                @else
+                <div class="mf-field">
+                    <label class="mf-label">Select Client <span style="color:var(--red)">*</span></label>
+                    <select name="existing_client_id" id="existing_client_id" class="mf-sel" style="height:38px">
+                        <option value="">— Select a client —</option>
+                        @foreach($existingClients ?? [] as $client)
+                        <option value="{{ $client->id }}"
+                            {{ old('existing_client_id') == $client->id ? 'selected' : '' }}>
+                            {{ $client->name }} ({{ $client->email }})
+                        </option>
+                        @endforeach
+                    </select>
+                    @error('existing_client_id')
                     <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
                     @enderror
                 </div>
-                <div class="mf-field">
-                    <label class="mf-label">Confirm Password <span style="color:var(--red)">*</span></label>
-                    <input type="password" name="admin_password_confirmation" class="mf-inp"
-                           placeholder="Repeat password" autocomplete="new-password" required>
-                </div>
+                @endif
             </div>
         </div>
         @endif
@@ -454,9 +519,195 @@ function selectPkg(label, pkgId, price) {
     }
 }
 
+function setAdminType(type) {
+    var isNew = type === 'new';
+    document.getElementById('admin_type').value = type;
+    document.getElementById('panel-admin-new').style.display = isNew ? '' : 'none';
+    document.getElementById('panel-admin-existing').style.display = isNew ? 'none' : '';
+
+    ['admin_name', 'admin_email', 'admin_password', 'admin_password_confirmation'].forEach(function(n) {
+        var el = document.querySelector('[name="' + n + '"]');
+        if (el) el.required = isNew;
+    });
+    var existingEl = document.getElementById('existing_client_id');
+    if (existingEl) existingEl.required = !isNew;
+
+    var btnNew = document.getElementById('btn-admin-new');
+    var btnExisting = document.getElementById('btn-admin-existing');
+    if (btnNew) {
+        btnNew.style.background = isNew ? 'var(--orange)' : 'transparent';
+        btnNew.style.color = isNew ? '#fff' : 'var(--text-2)';
+    }
+    if (btnExisting) {
+        btnExisting.style.background = isNew ? 'transparent' : 'var(--orange)';
+        btnExisting.style.color = isNew ? 'var(--text-2)' : '#fff';
+    }
+}
+
+// ── Company Form Validation ──────────────────────────────────
+function coErr(id, msg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg || '';
+    el.style.display = msg ? 'flex' : 'none';
+}
+function coMark(inputId, invalid) {
+    var el = document.getElementById(inputId);
+    if (!el) return;
+    if (invalid) el.classList.add('co-invalid');
+    else el.classList.remove('co-invalid');
+}
+
+function validateCompanyForm(e) {
+    e.preventDefault();
+    var ok = true;
+    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Company Name
+    var nameEl = document.getElementById('company_name');
+    var nameVal = nameEl ? nameEl.value.trim() : '';
+    if (!nameVal) {
+        coErr('err-co-name', 'Company name is required.'); coMark('company_name', true); ok = false;
+    } else if (nameVal.length < 2) {
+        coErr('err-co-name', 'Minimum 2 characters required.'); coMark('company_name', true); ok = false;
+    } else {
+        coErr('err-co-name', ''); coMark('company_name', false);
+    }
+
+    // Industry Type
+    var indEl = document.getElementById('co-industry');
+    if (!indEl || !indEl.value) {
+        coErr('err-co-industry', 'Please select an industry.'); coMark('co-industry', true); ok = false;
+    } else {
+        coErr('err-co-industry', ''); coMark('co-industry', false);
+    }
+
+    // Entity Type
+    var entEl = document.getElementById('co-entity');
+    if (!entEl || !entEl.value) {
+        coErr('err-co-entity', 'Please select an entity type.'); coMark('co-entity', true); ok = false;
+    } else {
+        coErr('err-co-entity', ''); coMark('co-entity', false);
+    }
+
+    // Subdomain
+    var subEl = document.getElementById('subdomain');
+    var subVal = subEl ? subEl.value.trim() : '';
+    var subWrap = subEl ? subEl.closest('.subdomain-wrap') : null;
+    if (!subVal) {
+        coErr('err-co-subdomain', 'Subdomain is required.');
+        if (subWrap) subWrap.classList.add('co-invalid'); ok = false;
+    } else if (!/^[a-z0-9]([a-z0-9\-]*[a-z0-9])?$/.test(subVal)) {
+        coErr('err-co-subdomain', 'Use only lowercase letters, numbers and hyphens. Cannot start or end with a hyphen.');
+        if (subWrap) subWrap.classList.add('co-invalid'); ok = false;
+    } else {
+        coErr('err-co-subdomain', '');
+        if (subWrap) subWrap.classList.remove('co-invalid');
+    }
+
+    // Company Email
+    var coEmailEl = document.getElementById('co-email');
+    var coEmailVal = coEmailEl ? coEmailEl.value.trim() : '';
+    if (!coEmailVal) {
+        coErr('err-co-email', 'Company email is required.'); coMark('co-email', true); ok = false;
+    } else if (!emailRx.test(coEmailVal)) {
+        coErr('err-co-email', 'Enter a valid email address.'); coMark('co-email', true); ok = false;
+    } else {
+        coErr('err-co-email', ''); coMark('co-email', false);
+    }
+
+    // Admin section
+    var adminTypeEl = document.getElementById('admin_type');
+    if (adminTypeEl) {
+        if (adminTypeEl.value === 'new') {
+            // Admin Full Name
+            var adminNameEl = document.getElementById('co-admin-name');
+            var adminNameVal = adminNameEl ? adminNameEl.value.trim() : '';
+            if (!adminNameVal) {
+                coErr('err-co-admin-name', 'Admin full name is required.'); coMark('co-admin-name', true); ok = false;
+            } else if (adminNameVal.length < 2) {
+                coErr('err-co-admin-name', 'Minimum 2 characters required.'); coMark('co-admin-name', true); ok = false;
+            } else if (!/^[a-zA-Z\s]+$/.test(adminNameVal)) {
+                coErr('err-co-admin-name', 'Name must contain only letters and spaces.'); coMark('co-admin-name', true); ok = false;
+            } else {
+                coErr('err-co-admin-name', ''); coMark('co-admin-name', false);
+            }
+
+            // Admin Email
+            var adminEmailEl = document.getElementById('co-admin-email');
+            var adminEmailVal = adminEmailEl ? adminEmailEl.value.trim() : '';
+            if (!adminEmailVal) {
+                coErr('err-co-admin-email', 'Admin email is required.'); coMark('co-admin-email', true); ok = false;
+            } else if (!emailRx.test(adminEmailVal)) {
+                coErr('err-co-admin-email', 'Enter a valid email address.'); coMark('co-admin-email', true); ok = false;
+            } else {
+                coErr('err-co-admin-email', ''); coMark('co-admin-email', false);
+            }
+
+            // Password
+            var pwdEl = document.getElementById('co-admin-pwd');
+            var pwdVal = pwdEl ? pwdEl.value : '';
+            if (!pwdVal) {
+                coErr('err-co-admin-pwd', 'Password is required.'); coMark('co-admin-pwd', true); ok = false;
+            } else if (pwdVal.length < 8) {
+                coErr('err-co-admin-pwd', 'Password must be at least 8 characters.'); coMark('co-admin-pwd', true); ok = false;
+            } else {
+                coErr('err-co-admin-pwd', ''); coMark('co-admin-pwd', false);
+            }
+
+            // Confirm Password
+            var confirmEl = document.getElementById('co-admin-confirm');
+            var confirmVal = confirmEl ? confirmEl.value : '';
+            if (!confirmVal) {
+                coErr('err-co-admin-confirm', 'Please confirm the password.'); coMark('co-admin-confirm', true); ok = false;
+            } else if (confirmVal !== pwdVal) {
+                coErr('err-co-admin-confirm', 'Passwords do not match.'); coMark('co-admin-confirm', true); ok = false;
+            } else {
+                coErr('err-co-admin-confirm', ''); coMark('co-admin-confirm', false);
+            }
+        } else {
+            // Existing client
+            var existingEl = document.getElementById('existing_client_id');
+            if (existingEl && !existingEl.value) {
+                existingEl.classList.add('co-invalid');
+                ok = false;
+                Swal.fire({ icon: 'warning', title: 'Please select an existing client.', confirmButtonColor: '#1a6aa8' });
+            } else if (existingEl) {
+                existingEl.classList.remove('co-invalid');
+            }
+        }
+    }
+
+    if (ok) {
+        document.getElementById('create-company-form').submit();
+    }
+}
+
+// Real-time: restrict admin name to letters + spaces
+(function() {
+    var el = document.getElementById('co-admin-name');
+    if (!el) return;
+    el.addEventListener('input', function() {
+        var pos = this.selectionStart;
+        var cleaned = this.value.replace(/[^a-zA-Z\s]/g, '');
+        if (cleaned !== this.value) {
+            this.value = cleaned;
+            this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+        }
+    });
+})();
+
+// Attach validation to form submit
+(function() {
+    var form = document.getElementById('create-company-form');
+    if (form) form.addEventListener('submit', validateCompanyForm);
+})();
+
 // Init on load
 (function() {
     updatePreview();
+    var adminTypeEl = document.getElementById('admin_type');
+    if (adminTypeEl) setAdminType(adminTypeEl.value || 'new');
     const checked = document.querySelector('input[name=package_id]:checked');
     if (checked) {
         const card  = checked.closest('.pkg-card');

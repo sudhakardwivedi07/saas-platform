@@ -67,11 +67,10 @@ class AccountController extends AccountBaseController
         $user = auth()->user();
 
         $request->validate([
-            'name'  => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'name' => 'required|string|max:255',
         ]);
 
-        $user->update(['name' => $request->name, 'email' => $request->email]);
+        $user->update(['name' => $request->name]);
 
         return back()->with('success', 'Profile updated successfully.');
     }

@@ -8,7 +8,7 @@
     $heading    = $branding?->login_heading     ?? 'Welcome back';
     $subheading = $branding?->login_subheading
         ?? 'Sign in to ' . ($branding?->app_name ?? $setting?->global_app_name ?? config('app.name'));
-
+ 
     if ($bgType === 'solid') {
         $bodyBg = "background:{$bgColor}";
     } elseif ($bgType === 'image' && $branding?->login_background) {
@@ -52,10 +52,10 @@
     @else
         <link rel="icon" href="data:,">
     @endif
-
+ 
     <link href="{{ asset(config('assets.font_dm_sans')) }}" rel="stylesheet">
-    <link href="{{ asset(config('assets.font_inter')) }}" rel="stylesheet">
-
+<link href="{{ asset(config('assets.font_inter')) }}" rel="stylesheet">
+ 
     <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -95,7 +95,7 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
 .login-divider{text-align:center;margin-top:22px;font-size:12.5px;color:#9ca3af}
 .login-divider a{color:var(--primary);font-weight:600;text-decoration:none}
 .login-divider a:hover{text-decoration:underline}
-    </style>
+</style>
 </head>
 <body>
 <div class="login-card">
@@ -119,27 +119,27 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
             <div class="login-sub">{{ $branding->login_subheading }}</div>
         @endif
     @endif
-
+ 
     @if($errors->any())
-        <div class="login-error">{{ $errors->first() }}</div>
+<div class="login-error">{{ $errors->first() }}</div>
     @endif
     @if(session('error'))
-        <div class="login-error">{{ session('error') }}</div>
+<div class="login-error">{{ session('error') }}</div>
     @endif
 
     <form method="POST" action="{{ route('login.submit') }}" style="{{ $logoSrc ? 'margin-top:0' : 'margin-top:4px' }}">
         @csrf
-
+ 
         <div class="login-field">
-            <label for="email">Email Address</label>
-            <input type="email" id="email" name="email"
+<label for="email">Email Address</label>
+<input type="email" id="email" name="email"
                    value="{{ old('email') }}"
                    placeholder="you@yourfirm.com"
                    class="{{ $errors->has('email') ? 'is-error' : '' }}"
                    autocomplete="email" autofocus required>
             @error('email')<span class="err-msg">{{ $message }}</span>@enderror
-        </div>
-
+</div>
+ 
         <div class="login-field">
             <label for="password">Password</label>
             <div class="pw-wrap">
@@ -162,25 +162,25 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
                 </button>
             </div>
             @error('password')<span class="err-msg">{{ $message }}</span>@enderror
-        </div>
-
+</div>
+ 
         <div class="login-extras">
-            <label class="login-remember">
-                <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}>
+<label class="login-remember">
+<input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}>
                 Remember me
-            </label>
-            <div class="login-forgot">
-                <a href="{{ route('password.request') }}">Forgot password?</a>
-            </div>
-        </div>
-
+</label>
+<div class="login-forgot">
+<a href="{{ route('password.request') }}">Forgot password?</a>
+</div>
+</div>
+ 
         <button type="submit" class="login-btn">Sign In</button>
-    </form>
-
+</form>
+ 
     @if($setting?->allow_registration)
-        <div class="login-divider">
+<div class="login-divider">
             Don't have an account? <a href="{{ route('register') }}">Create one free</a>
-        </div>
+</div>
     @endif
 </div>
 

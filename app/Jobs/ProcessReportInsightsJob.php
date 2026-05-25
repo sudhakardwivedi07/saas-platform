@@ -219,9 +219,8 @@ class ProcessReportInsightsJob implements ShouldQueue
             $company   = Company::withoutGlobalScopes()->find($ownCompanyId);
             $firmEmail = $company?->company_email ?? $user->email;
 
-            $subdomain  = $company?->subdomain ?? '';
-            $loginUrl   = $subdomain ? tenant_url($subdomain, 'login') : url('/login');
-            $insightUrl = $subdomain ? tenant_url($subdomain, 'firm-insights') : url('/firm-insights');
+            $loginUrl   = $company?->domainUrlFor('login') ?? url('/login');
+            $insightUrl = $company?->domainUrlFor('firm-insights') ?? url('/firm-insights');
 
             // Resolve quota figures from active subscription plan
             $quotaUsed  = (int) ($company?->insights_used ?? 0);
@@ -709,10 +708,10 @@ class ProcessReportInsightsJob implements ShouldQueue
                     '{{quota_total}}'       => $quotaTotal,
                     '{{Quota_Total}}'       => $quotaTotal,
                     '{{quota_reset_date}}'  => $quotaResetDate,
-                    '{{upgrade_url}}'       => url('/billing'),
-                    '{{billing_url}}'       => url('/billing'),
-                    '{{portal_url}}'        => url('/login'),
-                    '{{login_url}}'         => url('/login'),
+                    '{{upgrade_url}}'       => $company->domainUrlFor('billing') ?? url('/billing'),
+                    '{{billing_url}}'       => $company->domainUrlFor('billing') ?? url('/billing'),
+                    '{{portal_url}}'        => $company->domainUrlFor('login') ?? url('/login'),
+                    '{{login_url}}'         => $company->domainUrlFor('login') ?? url('/login'),
                     '{{support_email}}'     => $company->company_email ?? config('mail.from.address'),
                 ],
                 companyId: $company->id

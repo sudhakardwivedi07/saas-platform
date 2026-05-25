@@ -162,17 +162,20 @@ class Company extends BaseModel
 
     protected function loginUrl(): Attribute
     {
-        return Attribute::get(function () {
-            if ($this->custom_domain) {
-                return 'https://' . $this->custom_domain . '/login';
-            }
+        return Attribute::get(fn () => $this->domainUrlFor('login'));
+    }
 
-            if (!empty($this->subdomain)) {
-                return tenant_url($this->subdomain, 'login');
-            }
+    public function domainUrlFor(string $path = ''): ?string
+    {
+        if ($this->custom_domain) {
+            return 'https://' . trim($this->custom_domain, '/') . '/' . ltrim($path, '/');
+        }
 
-            return null;
-        });
+        if (!empty($this->subdomain)) {
+            return tenant_url($this->subdomain, $path);
+        }
+
+        return null;
     }
 
     // ─── Scopes ────────────────────────────────────────────────────────────────

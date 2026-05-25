@@ -55,19 +55,22 @@
         {{-- Profile Form --}}
         <div style="margin-bottom:26px">
             <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:16px">Personal Information</div>
-            <form method="POST" action="{{ route('account.profile') }}">
+            <form method="POST" action="{{ route('account.profile') }}" id="profile-form" novalidate>
                 @csrf
                 <div class="form-2col">
                     <div class="f-group">
-                        <label class="f-label">Full Name</label>
-                        <input type="text" name="name" class="f-inp" value="{{ old('name', $authUser->name) }}" required>
+                        <label class="f-label">Full Name <span style="color:var(--red)">*</span></label>
+                        <input type="text" name="name" id="ac-profile-name" class="f-inp" value="{{ old('name', $authUser->name) }}" maxlength="100">
+                        <div id="err-profile-name" class="ac-err" style="display:none"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Email Address</label>
-                        <input type="email" name="email" class="f-inp" value="{{ old('email', $authUser->email) }}" required>
+                        <input type="email" class="f-inp" value="{{ $authUser->email }}" readonly
+                               style="background:var(--bg);cursor:not-allowed;color:var(--text-2)">
+                        <div style="font-size:11px;color:var(--text-3);margin-top:4px">Email address cannot be changed.</div>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary btn-sm">
+                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitProfile()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                     Save Profile
                 </button>
@@ -81,23 +84,26 @@
         <div>
             <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:4px">Change Password</div>
             <div style="font-size:12.5px;color:var(--text-3);margin-bottom:16px">Use a strong password that you don't use elsewhere.</div>
-            <form method="POST" action="{{ route('account.password') }}">
+            <form method="POST" action="{{ route('account.password') }}" id="password-form" novalidate>
                 @csrf
-                <div class="f-group">
-                    <label class="f-label">Current Password</label>
-                    <input type="password" name="current_password" class="f-inp" placeholder="Enter your current password" autocomplete="current-password" required style="max-width:400px">
+                <div class="f-group" style="max-width:400px">
+                    <label class="f-label">Current Password <span style="color:var(--red)">*</span></label>
+                    <input type="password" name="current_password" id="ac-cur-pwd" class="f-inp" placeholder="Enter your current password" autocomplete="current-password">
+                    <div id="err-cur-pwd" class="ac-err" style="display:none"></div>
                 </div>
                 <div class="form-2col" style="max-width:400px">
                     <div class="f-group">
-                        <label class="f-label">New Password</label>
-                        <input type="password" name="password" class="f-inp" placeholder="Min. 8 characters" autocomplete="new-password" required>
+                        <label class="f-label">New Password <span style="color:var(--red)">*</span></label>
+                        <input type="password" name="password" id="ac-new-pwd" class="f-inp" placeholder="Min. 8 characters" autocomplete="new-password">
+                        <div id="err-new-pwd" class="ac-err" style="display:none"></div>
                     </div>
                     <div class="f-group">
-                        <label class="f-label">Confirm Password</label>
-                        <input type="password" name="password_confirmation" class="f-inp" placeholder="Repeat new password" autocomplete="new-password" required>
+                        <label class="f-label">Confirm Password <span style="color:var(--red)">*</span></label>
+                        <input type="password" name="password_confirmation" id="ac-confirm-pwd" class="f-inp" placeholder="Repeat new password" autocomplete="new-password">
+                        <div id="err-confirm-pwd" class="ac-err" style="display:none"></div>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-ghost btn-sm">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="validateAndSubmitPassword()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                     Save Password
                 </button>
@@ -769,7 +775,8 @@ document.getElementById('branding-form').addEventListener('submit', async functi
                 }
             }
 
-            showToast(json.message || 'Branding updated successfully.', 'success');
+            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+            Swal.fire({ icon: 'success', text: json.message || 'Branding updated successfully.', confirmButtonText: 'Ok', confirmButtonColor: btnColor });
         } else {
             showToast(json.message || 'Failed to save branding.', 'error');
         }
@@ -953,11 +960,96 @@ function submitLoginPageForm(e) {
     .then(function (r) { return r.json(); })
     .then(function (res) {
         btn.disabled = false;
-        showToast(res.status === 'success' ? (res.message || 'Login page saved.') : (res.message || 'Something went wrong.'), res.status === 'success' ? 'success' : 'error');
+        if (res.status === 'success') {
+            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+            Swal.fire({ icon: 'success', text: res.message || 'Login page saved.', confirmButtonText: 'Ok', confirmButtonColor: btnColor });
+        } else {
+            showToast(res.message || 'Something went wrong.', 'error');
+        }
     })
     .catch(function () { btn.disabled = false; showToast('Request failed.', 'error'); });
 }
 @endif
+
+// ── Profile & Password Validation ─────────────────────────────────────────────
+function acErr(id, msg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg || '';
+    el.style.display = msg ? 'flex' : 'none';
+}
+function acMark(id, invalid) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (invalid) el.classList.add('ac-invalid');
+    else el.classList.remove('ac-invalid');
+}
+
+function validateAndSubmitProfile() {
+    var ok = true;
+    var nameEl  = document.getElementById('ac-profile-name');
+    var nameVal = nameEl ? nameEl.value.trim() : '';
+    if (!nameVal) {
+        acErr('err-profile-name', 'Full name is required.'); acMark('ac-profile-name', true); ok = false;
+    } else if (nameVal.length < 2) {
+        acErr('err-profile-name', 'Minimum 2 characters required.'); acMark('ac-profile-name', true); ok = false;
+    } else if (!/^[a-zA-Z\s]+$/.test(nameVal)) {
+        acErr('err-profile-name', 'Name must contain only letters and spaces.'); acMark('ac-profile-name', true); ok = false;
+    } else {
+        acErr('err-profile-name', ''); acMark('ac-profile-name', false);
+        if (nameEl) nameEl.value = nameVal;
+    }
+    if (ok) document.getElementById('profile-form').submit();
+}
+
+// Real-time: restrict name to letters + spaces
+(function() {
+    var el = document.getElementById('ac-profile-name');
+    if (!el) return;
+    el.addEventListener('input', function() {
+        var pos = this.selectionStart;
+        var cleaned = this.value.replace(/[^a-zA-Z\s]/g, '');
+        if (cleaned !== this.value) {
+            this.value = cleaned;
+            this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+        }
+    });
+})();
+
+function validateAndSubmitPassword() {
+    var ok = true;
+    var curEl  = document.getElementById('ac-cur-pwd');
+    var newEl  = document.getElementById('ac-new-pwd');
+    var confEl = document.getElementById('ac-confirm-pwd');
+
+    var curVal = curEl  ? curEl.value  : '';
+    var newVal = newEl  ? newEl.value  : '';
+    var confVal = confEl ? confEl.value : '';
+
+    if (!curVal) {
+        acErr('err-cur-pwd', 'Current password is required.'); acMark('ac-cur-pwd', true); ok = false;
+    } else {
+        acErr('err-cur-pwd', ''); acMark('ac-cur-pwd', false);
+    }
+
+    if (!newVal) {
+        acErr('err-new-pwd', 'New password is required.'); acMark('ac-new-pwd', true); ok = false;
+    } else if (newVal.length < 8) {
+        acErr('err-new-pwd', 'Password must be at least 8 characters.'); acMark('ac-new-pwd', true); ok = false;
+    } else {
+        acErr('err-new-pwd', ''); acMark('ac-new-pwd', false);
+    }
+
+    if (!confVal) {
+        acErr('err-confirm-pwd', 'Please confirm your new password.'); acMark('ac-confirm-pwd', true); ok = false;
+    } else if (confVal !== newVal) {
+        acErr('err-confirm-pwd', 'Passwords do not match.'); acMark('ac-confirm-pwd', true); ok = false;
+    } else {
+        acErr('err-confirm-pwd', ''); acMark('ac-confirm-pwd', false);
+    }
+
+    if (ok) document.getElementById('password-form').submit();
+}
 </script>
 @endpush
 
@@ -971,5 +1063,15 @@ function submitLoginPageForm(e) {
 .activity-dot-info    { background:var(--blue); }
 .activity-dot-warning { background:var(--orange); }
 .activity-dot-muted   { background:var(--text-3); }
+.ac-err {
+    font-size: 11.5px; color: var(--red); margin-top: 4px;
+    display: flex; align-items: center; gap: 4px;
+}
+.ac-err::before {
+    content: '';
+    display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.f-inp.ac-invalid { border-color: var(--red) !important; }
 </style>
 @endpush

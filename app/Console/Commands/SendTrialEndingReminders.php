@@ -39,7 +39,7 @@ class SendTrialEndingReminders extends Command
                         '{{app_name}}'      => $company->app_name,
                         '{{days_left}}'     => (string) $days,
                         '{{trial_end_date}}' => $sub->trial_ends_at->format('F j, Y'),
-                        '{{billing_url}}'   => tenant_url($company->subdomain, 'billing'),
+                        '{{billing_url}}'   => $company->domainUrlFor('billing') ?? url('/billing'),
                     ],
                     companyId: $company->id
                 )->onQueue('emails');

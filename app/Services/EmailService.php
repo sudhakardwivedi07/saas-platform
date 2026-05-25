@@ -85,7 +85,7 @@ class EmailService
             '{{email}}'         => $user->email,
             '{{app_name}}'      => $company?->app_name ?? global_setting()?->global_app_name ?? config('app.name'),
             '{{company}}'       => $company?->company_name ?? '',
-            '{{login_url}}'     => $company ? tenant_url($company->subdomain, 'login') : url('/login'),
+            '{{login_url}}'     => $company?->login_url ?? url('/login'),
             '{{support_email}}' => $company?->company_email ?? config('mail.from.address'),
             '{{date}}'          => now()->format('Y-m-d'),
         ], $extra);

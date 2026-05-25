@@ -290,7 +290,7 @@ class AuthController extends Controller
                     '{{name}}'      => $user->name,
                     '{{email}}'     => $user->email,
                     '{{app_name}}' => $company->app_name,
-                    '{{login_url}}' => tenant_url($company->subdomain, 'login'),
+                    '{{login_url}}' => $company->domainUrlFor('login') ?? url('/login'),
                 ],
                 companyId: $company->id,
             )->onQueue('emails');

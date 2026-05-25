@@ -430,7 +430,7 @@
 <div class="ob-banner">
     <div>
         <div class="ob-badge">{{ strtoupper(company()?->company_name ?? 'YOUR PORTAL') }}</div>
-        <div class="ob-title">Hi {{ auth()->user()->name }}, welcome to your Portal 👋</div>
+        <div class="ob-title">Hi {{ explode(' ', auth()->user()->name)[0] }}, welcome to your Portal 👋</div>
         <p class="ob-sub">Three steps stand between you and delivering AI-powered CFO insights to your clients. Follow the setup guide below to get your portal fully configured.</p>
     </div>
     <div class="ob-banner-btns">

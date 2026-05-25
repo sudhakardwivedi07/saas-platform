@@ -494,18 +494,11 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         @endif
 
         {{-- My Account: all roles --}}
-        <a href="{{ route('account.index') }}" class="ca-nav-item {{ request()->routeIs('account.*') ? 'active' : '' }}">
+        <a href="{{ route('account.index') }}" class="ca-nav-item {{ request()->routeIs('account.*') || request()->routeIs('activity.*') ? 'active' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             My Account
         </a>
 
-        {{-- Activity Log: admin + manager --}}
-        @if(auth()->user()->hasAnyRole(['admin','manager']))
-        <a href="{{ route('activity.index') }}" class="ca-nav-item {{ request()->routeIs('activity.*') ? 'active' : '' }}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            Activity Log
-        </a>
-        @endif
     </nav>
 
     <!-- <div class="ca-sidebar-foot"> -->

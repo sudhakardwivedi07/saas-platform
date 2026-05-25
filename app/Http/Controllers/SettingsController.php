@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helper\Reply;
 use App\Models\Company;
 use App\Models\CompanyBranding;
+use App\Models\CompanyInsightSetting;
 use App\Models\CompanyQuickbooksSetting;
 use App\Models\EmailSmtpSetting;
 use App\Models\SmsSetting;
@@ -35,6 +36,12 @@ class SettingsController extends AccountBaseController
         $this->qbSetting      = CompanyQuickbooksSetting::where('company_id', $companyId)->first();
         $this->clientPackages = ClientPackage::forCompany($companyId)->orderBy('sort')->get();
         $this->branding       = company()?->branding;
+        $this->insightSetting       = CompanyInsightSetting::where('company_id', $companyId)->first();
+        $this->companiesWithUsage   = Company::withoutGlobalScopes()
+            ->where('created_by', $companyId)
+            ->with(['users' => fn($q) => $q->orderBy('id')->limit(1)])
+            ->orderBy('company_name')
+            ->get();
 
         // Roles & Permissions — count only users within this admin's company hierarchy
         $subCompanyIds = Company::withoutGlobalScopes()

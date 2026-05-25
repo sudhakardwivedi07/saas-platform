@@ -110,7 +110,7 @@ class EmailTemplateController extends AccountBaseController
                 '{{name}}'      => 'Test User',
                 '{{email}}'     => $request->to_email,
                 '{{app_name}}' => $company->app_name ?? $company->company_name,
-                '{{login_url}}' => tenant_url($company->subdomain, 'login'),
+                '{{login_url}}' => $company->domainUrlFor('login') ?? url('/login'),
             ],
             companyId: $company->id
         )->onQueue('emails');

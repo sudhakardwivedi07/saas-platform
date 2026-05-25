@@ -128,7 +128,7 @@ class CompanyController extends AccountBaseController
                 app(EmailService::class)->sendToUser($user, 'firm_welcome_email', [
                     '{{first_name}}'    => explode(' ', $user->name)[0],
                     '{{firm_name}}'     => $company->company_name,
-                    '{{portal_url}}'    => url('/login'),
+                    '{{portal_url}}'    => $company->domainUrlFor('login') ?? url('/login'),
                     '{{password}}'      => $plainPass,
                     '{{company_name}}' => $company->company_name,
                     '{{subdomain}}'    => $company->subdomain,
@@ -242,7 +242,7 @@ class CompanyController extends AccountBaseController
         app(EmailService::class)->sendToUser($user, 'firm_welcome_email', [
             '{{first_name}}'    => explode(' ', $user->name)[0],
             '{{firm_name}}'     => $company->company_name,
-            '{{portal_url}}'    => url('/login'),
+            '{{portal_url}}'    => $company->domainUrlFor('login') ?? url('/login'),
             '{{password}}'      => $request->admin_password,
             '{{company_name}}' => $company->company_name,
             '{{subdomain}}'    => $company->subdomain,

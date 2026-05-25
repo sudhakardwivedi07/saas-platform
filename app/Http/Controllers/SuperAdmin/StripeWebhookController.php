@@ -156,7 +156,7 @@ class StripeWebhookController extends Controller
         $appName         = $company->app_name ?? $company->company_name;
         $globalSmtp      = EmailSmtpSetting::whereNull('company_id')->where('is_active', true)->first();
         $supportEmail    = $globalSmtp?->from_email ?? config('mail.from.address');
-        $subscriptionUrl = tenant_url($company->subdomain, 'billing');
+        $subscriptionUrl = $company->domainUrlFor('billing') ?? url('/billing');
 
         // Detect plan change: existing active sub switching to a different plan
         $isPlanChange = $previousSub
@@ -249,7 +249,7 @@ class StripeWebhookController extends Controller
                     '{{subscription_start_date}}' => $startDate,
                     '{{subscription_end_date}}'   => $renewDate,
                     '{{next_billing_date}}'       => $renewDate,
-                    '{{portal_url}}'              => tenant_url($company->subdomain, 'login'),
+                    '{{portal_url}}'              => $company->domainUrlFor('login') ?? url('/login'),
                     '{{invoice_number}}'          => $invoiceNumber,
                 ],
                 companyId: (int) $companyId
@@ -310,7 +310,7 @@ class StripeWebhookController extends Controller
                         '{{subscription_start_date}}' => $periodStart,
                         '{{subscription_end_date}}'   => $periodEnd,
                         '{{next_billing_date}}'       => $periodEnd,
-                        '{{portal_url}}'              => tenant_url($company->subdomain, 'login'),
+                        '{{portal_url}}'              => $company->domainUrlFor('login') ?? url('/login'),
                         '{{invoice_number}}'          => $invoice['id'] ?? 'N/A',
                     ],
                     companyId: $sub->company_id
@@ -352,7 +352,7 @@ class StripeWebhookController extends Controller
 
         if ($company && $company->company_email) {
             $firmName        = $company->company_name ?? $company->app_name;
-            $updatePaymentUrl = tenant_url($company->subdomain, 'billing');
+            $updatePaymentUrl = $company->domainUrlFor('billing') ?? url('/billing');
 
             $this->slog('warning', 'invoice.payment_failed — sending payment_failed email', [
                 'event_id'   => $eventId,
@@ -398,7 +398,7 @@ class StripeWebhookController extends Controller
             if ($company && $company->company_email) {
                 $firmName        = $company->company_name ?? $company->app_name;
                 $endDate         = $sub->ends_at ?? $sub->current_period_end;
-                $reactivationUrl = tenant_url($company->subdomain, 'billing');
+                $reactivationUrl = $company->domainUrlFor('billing') ?? url('/billing');
 
                 app(EmailService::class)->send(
                     toEmail:      $company->company_email,

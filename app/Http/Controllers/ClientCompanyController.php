@@ -126,6 +126,12 @@ class ClientCompanyController extends AccountBaseController
             ->orderBy('sort')
             ->get();
 
+        // Existing clients this admin can assign as company admin
+        $this->existingClients = User::whereHas('roles', fn ($q) => $q->where('name', 'client'))
+            ->whereHas('company', fn ($q) => $q->where('created_by', $companyId))
+            ->orderBy('name')
+            ->get();
+
         return view('companies.create', $this->data);
     }
 
@@ -239,10 +245,16 @@ class ClientCompanyController extends AccountBaseController
             'state'           => 'nullable|string|max:100',
         ];
 
+        $adminType = $request->input('admin_type', 'new');
+
         if (!$isClientUserFlow) {
-            $rules['admin_name'] = 'required|string|max:255';
-            $rules['admin_email'] = 'required|email|max:255|unique:users,email';
-            $rules['admin_password'] = 'required|string|min:8|confirmed';
+            if ($adminType === 'existing') {
+                $rules['existing_client_id'] = 'required|exists:users,id';
+            } else {
+                $rules['admin_name']     = 'required|string|max:255';
+                $rules['admin_email']    = 'required|email|max:255|unique:users,email';
+                $rules['admin_password'] = 'required|string|min:8|confirmed';
+            }
         }
 
         $request->validate($rules);
@@ -316,18 +328,32 @@ class ClientCompanyController extends AccountBaseController
 
         $newUser = null;
         if (!$isClientUserFlow) {
-            // Create the new company's admin user
-            $role    = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-            $newUser = User::create([
-                'company_id'        => $company->id,
-                'name'              => $request->admin_name,
-                'email'             => $request->admin_email,
-                'password'          => Hash::make($request->admin_password),
-                'status'            => $requiresPayment ? 'inactive' : 'active',
-                'admin_approval'    => true,
-                'email_verified_at' => ($setting?->email_verification || $requiresPayment) ? null : now(),
-            ]);
-            $newUser->assignRole($role);
+            if ($adminType === 'existing') {
+                $existingUser = User::findOrFail($request->existing_client_id);
+                // Ensure the client belongs to this admin's portfolio
+                abort_unless(
+                    (int) ($existingUser->company?->created_by) === (int) $companyId,
+                    403,
+                    'You cannot assign this user.'
+                );
+                $existingUser->managedCompanies()->syncWithoutDetaching([
+                    $company->id => ['role' => 'admin'],
+                ]);
+                $newUser = $existingUser;
+            } else {
+                // Create the new company's admin user
+                $role    = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+                $newUser = User::create([
+                    'company_id'        => $company->id,
+                    'name'              => $request->admin_name,
+                    'email'             => $request->admin_email,
+                    'password'          => Hash::make($request->admin_password),
+                    'status'            => $requiresPayment ? 'inactive' : 'active',
+                    'admin_approval'    => true,
+                    'email_verified_at' => ($setting?->email_verification || $requiresPayment) ? null : now(),
+                ]);
+                $newUser->assignRole($role);
+            }
         }
 
         // Link the CREATING admin to the new company via user_companies

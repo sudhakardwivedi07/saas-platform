@@ -872,13 +872,26 @@ document.getElementById('createForm').addEventListener('submit', async function(
     const res  = await apiCall('{{ route("superadmin.companies.store") }}', 'POST', body);
 
     if (res.status === 'success') {
+        const firmName = (body.company_name || 'The firm').trim();
+        const swalMsg  = firmName + ' has been added and is ready for onboarding. An invitation has been sent to complete the setup.';
         if (res.checkout_url) {
-            // Paid plan selected — redirect to Stripe checkout
-            showToast(res.message || 'Firm created successfully. Redirecting to payment…');
-            setTimeout(() => window.location.href = res.checkout_url, 900);
+            Swal.fire({
+                icon: 'success',
+                title: 'Firm Created',
+                text: swalMsg,
+                confirmButtonText: 'Proceed to Payment',
+                confirmButtonColor: '#f06b21',
+                allowOutsideClick: false,
+            }).then(() => { window.location.href = res.checkout_url; });
         } else {
-            showToast(res.message || 'Firm created successfully!');
-            setTimeout(() => window.location = res.redirect, 900);
+            Swal.fire({
+                icon: 'success',
+                title: 'Firm Created',
+                text: swalMsg,
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#f06b21',
+                allowOutsideClick: false,
+            }).then(() => { window.location.href = res.redirect; });
         }
     } else {
         if (res.errors) {

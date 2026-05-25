@@ -1,0 +1,363 @@
+================================================================================
+  HOW FIRM (TENANT) CREATION & DOMAIN SETUP WORKS
+  SaaS Platform — Internal Developer/Admin Reference
+================================================================================
+
+OVERVIEW
+--------
+When a Super Admin adds a new firm (tenant) to the platform, the system
+automatically provisions everything that firm needs:
+  - A unique web address (domain or subdomain)
+  - An admin user account
+  - A subscription/trial record
+  - A branding profile (colours, logo)
+  - A welcome email to the new admin
+
+All of this happens in a single form submission.
+
+
+================================================================================
+PART 1 — THE TWO DOMAIN OPTIONS
+================================================================================
+
+When creating a firm, the Super Admin must choose ONE of two domain methods:
+
+────────────────────────────────────────────────────────────────────────────────
+OPTION A: SUBDOMAIN  (default, easiest)
+────────────────────────────────────────────────────────────────────────────────
+
+  What it looks like:   acme.yourdomain.com
+  How it works:         The firm gets a prefix on YOUR platform's root domain.
+  Who controls DNS:     You do — no action needed from the customer.
+  When it's live:       Immediately after the firm is created.
+
+  Input rules:
+    - Lowercase letters, numbers, and hyphens only
+    - Example valid input: "acme-corp", "smithllc", "jones2"
+    - The system converts spaces/uppercase automatically (Str::slug)
+    - Must be unique — no two firms can share a subdomain
+    - Cannot be changed after creation
+
+  What gets stored in the database:
+    companies.subdomain       = "acme"       (the prefix you chose)
+    companies.domain_type     = "subdomain"
+    companies.custom_domain   = NULL
+
+  How the URL is built:
+    tenant_url(subdomain, path) → https://{subdomain}.{ROOT_DOMAIN}/{path}
+    Example: https://acme.yourdomain.com/login
+
+────────────────────────────────────────────────────────────────────────────────
+OPTION B: CUSTOM DOMAIN  (advanced, requires DNS verification)
+────────────────────────────────────────────────────────────────────────────────
+
+  What it looks like:   app.acme.com  (the firm's own domain)
+  How it works:         The firm uses their own domain/subdomain entirely.
+  Who controls DNS:     The customer must add a DNS record to their domain.
+  When it's live:       After DNS verification is completed (see Part 3).
+
+  Input rules:
+    - Full domain format required: e.g., "app.acme.com" or "portal.smithlaw.io"
+    - Must pass domain regex validation
+    - Must be unique across all firms
+    - Stored in lowercase
+
+  What gets stored in the database:
+    companies.custom_domain             = "app.acme.com"
+    companies.domain_type               = "domain"
+    companies.domain_verification_token = "a8f3b2c1d4..." (40-char random token)
+    companies.domain_verified_at        = NULL  (until verified)
+    companies.subdomain                 = NULL
+
+
+================================================================================
+PART 2 — STEP-BY-STEP: WHAT HAPPENS WHEN YOU CLICK "CREATE FIRM"
+================================================================================
+
+The form is at:  Super Admin Panel → Companies → Add Firm
+The form posts to:  POST /superadmin/companies
+
+STEP 1 — VALIDATION
+  The system checks every field before doing anything:
+    • Company name: 2–100 chars, alphanumeric + (. & - _ space)
+    • Domain type: must be "subdomain" or "domain"
+    • Subdomain (if chosen): unique, lowercase-safe characters only
+    • Custom domain (if chosen): valid domain format, unique
+    • Company email: valid email, unique across all firms
+    • Phone: exactly 10 digits
+    • Admin name/email/password: standard validation
+    • Package: must exist in the packages table (optional)
+  If anything fails, the form returns errors — nothing is created yet.
+
+STEP 2 — CREATE THE COMPANY RECORD
+  A row is inserted into the "companies" table with:
+    - company_name, app_name, company_email, company_phone
+    - domain_type  ("subdomain" or "domain")
+    - subdomain    (Str::slug of input, if subdomain mode)
+    - custom_domain (lowercased input, if custom domain mode)
+    - domain_verification_token (random 40 chars, only for custom domain)
+    - status       (active / trial / inactive / suspended)
+    - package_id   (linked to chosen plan, if any)
+    - trial_ends_at (calculated from package trial days, if applicable)
+
+STEP 3 — CREATE THE BRANDING RECORD
+  An empty row is inserted into "company_brandings" (linked by company_id).
+  This stores the firm's logo, primary colour, accent colour, etc.
+  All values default to null (falls back to platform defaults).
+
+STEP 4 — CREATE THE SUBSCRIPTION RECORD  (only if a package was selected)
+  A row is inserted into "subscriptions":
+    - status        = "trialing"
+    - billing_cycle = "monthly"
+    - trial_ends_at = calculated from package settings
+    - current_period_start = now()
+    - current_period_end   = trial end date (or +14 days if no trial)
+
+STEP 5 — CREATE THE ADMIN USER
+  A row is inserted into "users":
+    - company_id        = the new firm's ID  ← this is how the user is "inside" the firm
+    - name, email       = from form
+    - password          = bcrypt hashed
+    - status            = "active"
+    - email_verified_at = now()  (pre-verified, no email confirmation step)
+  The user is then assigned the "admin" role via Spatie Laravel-Permission.
+
+STEP 6 — SEND WELCOME EMAIL
+  The system sends a "firm_welcome_email" template to the new admin containing:
+    - First name, firm name
+    - Portal login URL
+    - Their plain-text password (as entered)
+    - Plan name and trial end date
+
+STEP 7 — STRIPE CHECKOUT  (only if the package has a paid price > $0)
+  If a paid plan was selected, the system creates a Stripe Checkout session
+  and returns its URL so the Super Admin can redirect the customer to pay.
+  If Stripe fails, the firm is still created — payment can be collected later.
+
+STEP 8 — REDIRECT
+  On success, the Super Admin is redirected to the Companies list.
+  The new firm appears immediately.
+
+
+================================================================================
+PART 3 — CUSTOM DOMAIN: DNS VERIFICATION PROCESS
+================================================================================
+
+Custom domains require proof that the customer actually owns the domain.
+This is done via a DNS TXT record check.
+
+HOW TO VERIFY A CUSTOM DOMAIN
+------------------------------
+
+  1. After the firm is created, go to:
+       Super Admin → Companies → Edit the firm → "Verify Domain" button
+     OR hit the endpoint:  POST /superadmin/companies/{id}/verify-domain
+
+  2. Tell the customer to log in to their DNS provider (GoDaddy, Cloudflare,
+     Route 53, Namecheap, etc.) and add this TXT record:
+
+       Host/Name:   _saas-verify.{their-domain}
+       Type:        TXT
+       Value:       saas-verify={their-token}
+
+     Example for domain "app.acme.com" with token "abc123xyz":
+       Host:  _saas-verify.app.acme.com
+       Type:  TXT
+       Value: saas-verify=abc123xyz
+
+  3. DNS changes can take 5 minutes to 48 hours to propagate.
+
+  4. Once the record exists, clicking "Verify Domain" triggers:
+       dns_get_record("_saas-verify.app.acme.com", DNS_TXT)
+       → looks for value matching "saas-verify={token}"
+       → if found: sets companies.domain_verified_at = now()
+       → if not found: returns error "TXT record not found"
+
+  5. Only after domain_verified_at is set will the custom domain route
+     correctly to the tenant (the middleware checks this).
+
+  NOTE: The verification token is stored in companies.domain_verification_token
+        and is unique per firm. It is generated as a random 40-char string
+        when the firm is created.
+
+
+================================================================================
+PART 4 — HOW EVERY REQUEST FINDS THE RIGHT TENANT  (The Middleware)
+================================================================================
+
+File: app/Http/Middleware/IdentifyTenant.php
+Runs on: EVERY web request (registered globally in bootstrap/app.php)
+
+When a user visits any URL, the middleware does this:
+
+  1. Gets the hostname from the request  (e.g., "acme.yourdomain.com")
+
+  2. Tries CUSTOM DOMAIN first:
+       SELECT * FROM companies
+       WHERE custom_domain = 'acme.yourdomain.com'
+       AND status = 'active'
+       LIMIT 1
+     If found → this is the tenant.
+
+  3. If not found, tries SUBDOMAIN:
+       Extracts prefix:  "acme.yourdomain.com" minus ".yourdomain.com" = "acme"
+       SELECT * FROM companies
+       WHERE subdomain = 'acme'
+       AND status = 'active'
+       LIMIT 1
+     If found → this is the tenant.
+
+  4. If still not found → no tenant (SuperAdmin context or unknown domain).
+
+  5. Once matched, the Company model is stored in the service container:
+       app()->instance('currentCompany', $company)
+     And made available to all views as $tenantCompany and $tenantBranding.
+
+  6. The company() helper function reads from auth()->user()->company_id first,
+     and falls back to the middleware-resolved company for guest pages.
+
+IMPORTANT: Only companies with status = 'active' are resolved.
+           Suspended or inactive firms cannot be accessed via their domain.
+
+
+================================================================================
+PART 5 — DATABASE TABLES INVOLVED
+================================================================================
+
+TABLE: companies
+  id                         Primary key
+  company_name               "Acme Corp"
+  app_name                   "Acme Portal"  (white-label name)
+  company_email              admin@acme.com
+  company_phone              1234567890
+  subdomain                  "acme"          (unique, used for subdomain mode)
+  custom_domain              "app.acme.com"  (unique, used for custom domain mode)
+  domain_type                "subdomain" | "domain"
+  domain_verification_token  "abc123..."     (40 chars, custom domain only)
+  domain_verified_at         timestamp or NULL
+  status                     "active" | "trial" | "inactive" | "suspended"
+  package_id                 FK → packages.id
+  trial_ends_at              timestamp or NULL
+  created_by                 FK → users.id (the Super Admin who created this)
+  created_at / updated_at
+
+TABLE: users
+  id
+  company_id                 FK → companies.id  (NULL = SuperAdmin)
+  name, email, password
+  status
+  email_verified_at
+  [+ Spatie role via model_has_roles]
+
+TABLE: company_brandings
+  id
+  company_id                 FK → companies.id  (1-to-1)
+  primary_color, accent_color
+  logo, favicon
+  [other branding fields]
+
+TABLE: subscriptions
+  id
+  company_id                 FK → companies.id
+  package_id                 FK → packages.id
+  status                     "trialing" | "active" | "cancelled" | etc.
+  billing_cycle              "monthly" | "yearly"
+  trial_ends_at
+  current_period_start / end
+
+
+================================================================================
+PART 6 — CONFIGURATION & ENVIRONMENT VARIABLES
+================================================================================
+
+File: config/tenancy.php
+
+  root_domain      = env('ROOT_DOMAIN', 'yourdomain.com')
+                     → The base domain for all subdomain tenants
+                     → Change this to your actual platform domain in .env
+
+  superadmin_domain = env('SUPERADMIN_DOMAIN', 'app.yourdomain.com')
+                      → The domain used to access the Super Admin panel
+
+File: .env (values to set per environment)
+
+  ROOT_DOMAIN=yourdomain.com
+  SUPERADMIN_DOMAIN=app.yourdomain.com
+
+  Example for production:
+    ROOT_DOMAIN=mysaasplatform.com
+    → Firms get URLs like: acme.mysaasplatform.com
+
+
+================================================================================
+PART 7 — BULK FIRM CREATION (CSV UPLOAD)
+================================================================================
+
+The "Bulk Upload" tab on the Add Firm page allows creating many firms at once.
+
+CSV FORMAT REQUIRED:
+  Headers (case-insensitive):
+    firm_name, contact_name, email, subdomain, phone (optional), plan (optional)
+
+  Example:
+    firm_name,contact_name,email,subdomain,phone,plan
+    Acme Corp,John Smith,john@acme.com,acme,1234567890,starter
+    Beta LLC,Jane Doe,jane@beta.com,beta-llc,,
+
+NOTES:
+  - Subdomain is auto-slugified (spaces → hyphens, uppercase → lowercase)
+  - A random 16-character password is auto-generated for each admin user
+  - Password is sent to the admin via welcome email
+  - No custom domain option in bulk mode (subdomain only)
+  - No Stripe checkout in bulk mode
+  - Results show a per-row success/error summary
+
+
+================================================================================
+PART 8 — QUICK REFERENCE: URLS
+================================================================================
+
+  Add single firm:          GET  /superadmin/companies/create
+  Submit new firm:          POST /superadmin/companies
+  Bulk CSV upload:          POST /superadmin/companies/bulk
+  Verify custom domain:     POST /superadmin/companies/{id}/verify-domain
+  Edit firm:                GET  /superadmin/companies/{id}/edit
+  List all firms:           GET  /superadmin/companies
+
+
+================================================================================
+PART 9 — COMMON QUESTIONS
+================================================================================
+
+Q: Can a firm change its subdomain after creation?
+A: No. The subdomain is permanent. If a change is needed, the firm must be
+   recreated or a custom domain must be set instead.
+
+Q: Can one firm have BOTH a subdomain and a custom domain?
+A: No. domain_type is either "subdomain" OR "domain". One per firm.
+
+Q: What happens if a custom domain is set but not verified?
+A: The domain is stored in the database but the middleware will not match
+   incoming requests to it until domain_verified_at is populated.
+
+Q: What if a firm is suspended? Can they still log in?
+A: No. The middleware only resolves companies with status = 'active'.
+   A suspended firm's domain simply won't resolve to any tenant.
+
+Q: Can two firms share the same email address?
+A: No. company_email has a unique constraint in the database.
+
+Q: Does the system create a database per tenant?
+A: No. This platform uses a single shared database. Tenant isolation is done
+   via the company_id foreign key on every relevant table. All queries inside
+   the tenant context automatically filter by the current company_id.
+
+Q: Where is the "currentCompany" set per request?
+A: In IdentifyTenant middleware → app()->instance('currentCompany', $company)
+   Accessible via the company() helper function anywhere in the app.
+
+
+================================================================================
+END OF DOCUMENT
+================================================================================
+Last updated: May 2026

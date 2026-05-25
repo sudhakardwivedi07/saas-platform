@@ -1,11 +1,11 @@
 @php
     // ── Resolve login-page branding ──────────────────────────────────────────
-    $bgType    = $branding?->login_bg_type    ?? 'gradient';
-    $bgColor   = $branding?->login_bg_color   ?? '#0d3d66';
-    $bgColorTo = $branding?->login_bg_color_to ?? '#f06b21';
-    $cardBg    = $branding?->login_card_bg    ?? '#ffffff';
-    $btnColor  = $branding?->login_btn_color  ?? ($branding?->accent_color ?? '#f06b21');
-    $heading   = $branding?->login_heading    ?? 'Welcome back';
+    $bgType     = $branding?->login_bg_type     ?? 'gradient';
+    $bgColor    = $branding?->login_bg_color    ?? '#0d3d66';
+    $bgColorTo  = $branding?->login_bg_color_to ?? '#f06b21';
+    $cardBg     = $branding?->login_card_bg     ?? '#ffffff';
+    $btnColor   = $branding?->login_btn_color   ?? ($branding?->accent_color ?? '#f06b21');
+    $heading    = $branding?->login_heading     ?? 'Welcome back';
     $subheading = $branding?->login_subheading
         ?? 'Sign in to ' . ($branding?->app_name ?? $setting?->global_app_name ?? config('app.name'));
 
@@ -17,8 +17,27 @@
         $bodyBg = "background:linear-gradient(135deg,{$bgColor} 0%,{$bgColorTo} 130%)";
     }
 
-    // Darken the button colour slightly for hover
-    $btnDark = $btnColor; // fallback; we'll do a JS-free approach via opacity
+    // ── Logo resolution ───────────────────────────────────────────────────────
+    // On a tenant domain: only use the company's own uploaded logo.
+    // On the root/superadmin domain ($branding is null): fall back to global setting logo.
+    $logoSrc = null;
+    if ($branding?->logo) {
+        $logoSrc = asset('storage/' . $branding->logo);        // company logo
+    } elseif (!$branding && $setting?->logo) {
+        $logoSrc = asset('storage/' . $setting->logo);         // global logo (root domain only)
+    }
+    // $logoSrc === null  →  show "Your Logo" placeholder, hide heading
+
+    // ── Favicon resolution ────────────────────────────────────────────────────
+    // On a tenant domain: only use the company's own favicon, never the platform default.
+    // On root domain: use global setting favicon if available.
+    $faviconUrl = null;
+    if ($branding?->favicon) {
+        $faviconUrl = asset('storage/' . $branding->favicon);
+    } elseif (!$branding && $setting?->favicon) {
+        $faviconUrl = asset('storage/' . $setting->favicon);
+    }
+    // $faviconUrl === null  →  emit an empty data: URI to suppress the browser's default icon
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -27,10 +46,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign In — {{ $branding ? ($branding->app_name ?? config('app.name')) : ($setting?->global_app_name ?? config('app.name')) }}</title>
 
-    @if($branding?->favicon)
-        <link rel="icon" href="{{ asset('storage/' . $branding->favicon) }}">
-    @elseif($setting?->favicon)
-        <link rel="icon" href="{{ asset('storage/' . $setting->favicon) }}">
+    {{-- Favicon: explicit empty URI prevents browser showing its own default icon --}}
+    @if($faviconUrl)
+        <link rel="icon" href="{{ $faviconUrl }}">
+    @else
+        <link rel="icon" href="data:,">
     @endif
 
     <link href="{{ asset(config('assets.font_dm_sans')) }}" rel="stylesheet">
@@ -58,6 +78,12 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
 .login-field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,106,168,.12)}
 .login-field input.is-error{border-color:#ef4444}
 .login-field .err-msg{color:#ef4444;font-size:12px;margin-top:4px;display:block}
+/* Password wrapper */
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:44px}
+.pw-eye{position:absolute;right:0;top:0;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:#9ca3af;transition:color .14s;padding:0}
+.pw-eye:hover{color:#6b7280}
+.pw-eye svg{width:17px;height:17px;stroke:currentColor;stroke-width:2;fill:none;pointer-events:none}
 .login-extras{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
 .login-remember{display:flex;align-items:center;gap:7px;font-size:13px;color:#6b7280;cursor:pointer}
 .login-remember input{accent-color:var(--btn-color);width:14px;height:14px}
@@ -73,22 +99,25 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
 </head>
 <body>
 <div class="login-card">
+
+    {{-- ── Logo zone ──────────────────────────────────────────────────────── --}}
     <div class="login-logo-zone">
-        @if($branding?->logo)
-            <img src="{{ asset('storage/' . $branding->logo) }}" alt="Logo" class="login-logo-img">
-        @elseif($setting?->logo)
-            <img src="{{ asset('storage/' . $setting->logo) }}" alt="Logo" class="login-logo-img">
+        @if($logoSrc)
+            <img src="{{ $logoSrc }}" alt="Logo" class="login-logo-img">
         @else
             <div class="login-logo-placeholder">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                {{ $setting?->global_app_name ?? config('app.name') }}
+                Your Logo
             </div>
         @endif
     </div>
 
-    <div class="login-title">{{ $heading }}</div>
-    @if($branding?->login_subheading)
-    <div class="login-sub">{{ $branding->login_subheading }}</div>
+    {{-- ── Heading: only shown when a logo has been uploaded ─────────────── --}}
+    @if($logoSrc)
+        <div class="login-title">{{ $heading }}</div>
+        @if($branding?->login_subheading)
+            <div class="login-sub">{{ $branding->login_subheading }}</div>
+        @endif
     @endif
 
     @if($errors->any())
@@ -98,7 +127,7 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
         <div class="login-error">{{ session('error') }}</div>
     @endif
 
-    <form method="POST" action="{{ route('login.submit') }}">
+    <form method="POST" action="{{ route('login.submit') }}" style="{{ $logoSrc ? 'margin-top:0' : 'margin-top:4px' }}">
         @csrf
 
         <div class="login-field">
@@ -113,10 +142,25 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
 
         <div class="login-field">
             <label for="password">Password</label>
-            <input type="password" id="password" name="password"
-                   placeholder="Enter your password"
-                   class="{{ $errors->has('password') ? 'is-error' : '' }}"
-                   autocomplete="current-password" required>
+            <div class="pw-wrap">
+                <input type="password" id="password" name="password"
+                       placeholder="Enter your password"
+                       class="{{ $errors->has('password') ? 'is-error' : '' }}"
+                       autocomplete="current-password" required>
+                <button type="button" class="pw-eye" id="pw-toggle" aria-label="Show password" tabindex="-1">
+                    {{-- Eye open (shown when password is hidden) --}}
+                    <svg id="eye-show" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                        <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    {{-- Eye crossed (shown when password is visible) --}}
+                    <svg id="eye-hide" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>
+                        <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>
+                        <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                </button>
+            </div>
             @error('password')<span class="err-msg">{{ $message }}</span>@enderror
         </div>
 
@@ -139,5 +183,22 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
         </div>
     @endif
 </div>
+
+<script>
+(function () {
+    var toggle   = document.getElementById('pw-toggle');
+    var input    = document.getElementById('password');
+    var eyeShow  = document.getElementById('eye-show');
+    var eyeHide  = document.getElementById('eye-hide');
+
+    toggle.addEventListener('click', function () {
+        var isPassword = input.type === 'password';
+        input.type      = isPassword ? 'text' : 'password';
+        eyeShow.style.display = isPassword ? 'none'  : '';
+        eyeHide.style.display = isPassword ? ''      : 'none';
+        toggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+    });
+}());
+</script>
 </body>
 </html>

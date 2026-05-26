@@ -103,9 +103,9 @@ class NavItemSeeder extends Seeder
                 'label'    => 'Insights',
                 'icon_svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
                 'roles' => [
-                    'admin'   => ['route' => 'firm-insights.index', 'active' => 'firm-insights.*'],
-                    'manager' => ['route' => 'firm-insights.index', 'active' => 'firm-insights.*'],
-                    'client'  => ['route' => 'insights.index',      'active' => 'insights.*'],
+                    'admin'   => ['route' => 'partner-insights.index', 'active' => 'partner-insights.*'],
+                    'manager' => ['route' => 'partner-insights.index', 'active' => 'partner-insights.*'],
+                    'client'  => ['route' => 'insights.index',         'active' => 'insights.*'],
                 ],
             ],
             [

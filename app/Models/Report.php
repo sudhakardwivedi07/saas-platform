@@ -22,6 +22,7 @@ class Report extends BaseModel
         'upload_date',
         'total_file_size',
         'status',
+        'publish_status',
         'one_page_insight',
         'seven_page_insight',
         'insight_json_data',
@@ -87,6 +88,24 @@ class Report extends BaseModel
     public function isProcessing(): bool
     {
         return in_array(strtolower($this->status), ['uploading', 'analyzing']);
+    }
+
+    public function isDraft(): bool
+    {
+        return ($this->publish_status ?? 'draft') === 'draft';
+    }
+
+    public function isPublished(): bool
+    {
+        return ($this->publish_status ?? 'draft') === 'published';
+    }
+
+    public function getPublishStatusLabelAttribute(): string
+    {
+        return match ($this->publish_status ?? 'draft') {
+            'published' => 'Published',
+            default     => 'Draft',
+        };
     }
 
     public function getEncryptedIdAttribute(): string

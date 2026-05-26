@@ -10,7 +10,6 @@
     gap: 14px;
     margin-bottom: 14px;
 }
-.db-kpi-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
 .db-kpi-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
 
 .db-kpi {
@@ -22,8 +21,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    position: relative;
-    border-left: 4px solid var(--border);
+    position: relative;    border-left: 4px solid var(--border);
 }
 .db-kpi.bl { border-left-color: var(--blue); }
 .db-kpi.gr { border-left-color: var(--green); }
@@ -190,13 +188,12 @@
 .act-txt { flex: 1; font-size: 13px; color: var(--text-1); line-height: 1.4; }
 .act-time { font-size: 11.5px; color: var(--text-3); white-space: nowrap; flex-shrink: 0; }
 
-@media(max-width:1100px){
-    .db-kpi-grid.cols-4 { grid-template-columns: repeat(2,1fr); }
+@media(max-width:900px){
     .db-kpi-grid.cols-3 { grid-template-columns: repeat(2,1fr); }
     .db-bottom { grid-template-columns: 1fr; }
 }
-@media(max-width:640px){
-    .db-kpi-grid.cols-4,.db-kpi-grid.cols-3 { grid-template-columns: 1fr; }
+@media(max-width:560px){
+    .db-kpi-grid.cols-3 { grid-template-columns: 1fr; }
 }
 
 /* ── Onboarding (fresh user) ─────────────────────────── */
@@ -552,13 +549,9 @@
             Last updated: {{ now()->format('M j, Y · g:i A') }}
         </span>
         @if($modalClients->isNotEmpty())
-        <button class="btn btn-primary btn-sm" onclick="openViewClientModal('dashboard')" style="display:inline-flex;align-items:center;gap:6px">
+        <button class="btn btn-primary btn-sm" onclick="openViewClientModal()" style="display:inline-flex;align-items:center;gap:6px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-            View Client Dashboard
-        </button>
-        <button class="btn btn-primary btn-sm" onclick="openViewClientModal('insights')" style="display:inline-flex;align-items:center;gap:6px">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            View Client Insights
+            View Client Portal
         </button>
         @endif
         @if($canAddClient)
@@ -590,8 +583,8 @@
     </span>
 </div>
 
-{{-- KPI Row 1: 4 cards --}}
-<div class="db-kpi-grid cols-4">
+{{-- KPI Row 1: 3 cards --}}
+<div class="db-kpi-grid cols-3">
 
     {{-- Total Clients --}}
     <div class="db-kpi bl">
@@ -602,21 +595,7 @@
             </div>
         </div>
         <div class="db-kpi-val">{{ $clientCount }}</div>
-        <div class="db-kpi-ctx">Clients in portfolio</div>
-    </div>
-
-    {{-- Active Clients --}}
-    <div class="db-kpi gr">
-        <div class="db-kpi-head">
-            <span class="db-kpi-lbl">Active Clients</span>
-            <div class="db-kpi-ico ico-gr">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            </div>
-        </div>
-        <div class="db-kpi-val green">
-            {{ $activeClientCount }}<span class="sub-val"> / {{ $clientCount }}</span>
-        </div>
-        <div class="db-kpi-ctx">Active of {{ $clientCount }} total clients</div>
+        <div class="db-kpi-ctx">Active clients in portfolio</div>
     </div>
 
     {{-- Total Companies --}}
@@ -631,10 +610,10 @@
         <div class="db-kpi-ctx">Client companies in portfolio</div>
     </div>
 
-    {{-- Data Connected --}}
+    {{-- Connected --}}
     <div class="db-kpi gr">
         <div class="db-kpi-head">
-            <span class="db-kpi-lbl">Data Connected</span>
+            <span class="db-kpi-lbl">Connected</span>
             <div class="db-kpi-ico ico-gr">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M5 12.55a11 11 0 0114.08 0"/><path d="M1.42 9a16 16 0 0121.16 0"/><path d="M8.53 16.11a6 6 0 016.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
             </div>
@@ -642,44 +621,30 @@
         <div class="db-kpi-val {{ $qbConnectedCount > 0 ? 'green' : '' }}">
             {{ $qbConnectedCount }}<span class="sub-val"> / {{ $companyCount }}</span>
         </div>
-        <div class="db-kpi-ctx">Of {{ $companyCount }} client companies with QuickBooks</div>
+        <div class="db-kpi-ctx">Companies with accounting tool connected</div>
     </div>
 
 </div>
 
-{{-- KPI Row 2: 4 cards --}}
-<div class="db-kpi-grid cols-4">
+{{-- KPI Row 2: 3 cards --}}
+<div class="db-kpi-grid cols-3" style="margin-bottom:18px">
 
-    {{-- Active Companies --}}
-    <div class="db-kpi bl">
+    {{-- Insights Used --}}
+    <div class="db-kpi gr">
         <div class="db-kpi-head">
-            <span class="db-kpi-lbl">Active Companies</span>
-            <div class="db-kpi-ico ico-bl">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            </div>
-        </div>
-        <div class="db-kpi-val">
-            {{ $activeCompanyCount }}<span class="sub-val"> / {{ $companyCount }}</span>
-        </div>
-        <div class="db-kpi-ctx">Active of {{ $companyCount }} client companies</div>
-    </div>
-
-    {{-- Insights Generated --}}
-    <div class="db-kpi bl">
-        <div class="db-kpi-head">
-            <span class="db-kpi-lbl">Insights Generated</span>
-            <div class="db-kpi-ico ico-bl">
+            <span class="db-kpi-lbl">Insights Used</span>
+            <div class="db-kpi-ico ico-gr">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             </div>
         </div>
-        <div class="db-kpi-val">{{ $insightsGenerated ?? 0 }}</div>
-        <div class="db-kpi-ctx">CFO financial insights generated · {{ $periodLabel }}</div>
+        <div class="db-kpi-val green">{{ $insightsGenerated ?? 0 }}</div>
+        <div class="db-kpi-ctx">Insights generated this month</div>
     </div>
 
-    {{-- Insights Available --}}
+    {{-- Insights Remaining --}}
     <div class="db-kpi or">
         <div class="db-kpi-head">
-            <span class="db-kpi-lbl">Insights Available</span>
+            <span class="db-kpi-lbl">Insights Remaining</span>
             <div class="db-kpi-ico ico-or">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             </div>
@@ -690,70 +655,20 @@
                 ?? $subscription?->package?->max_insights_per_month
                 ?? 0);
         @endphp
-        <div class="db-kpi-val orange">
-            {{ $insAvail }}<span class="sub-val"> / {{ $insPkg }}</span>
-        </div>
-        <div class="db-kpi-ctx">Insight credits left · resets {{ now()->endOfMonth()->format('M j') }}</div>
+        <div class="db-kpi-val orange">{{ $insAvail }}</div>
+        <div class="db-kpi-ctx">Of {{ $insPkg }} total · resets {{ now()->endOfMonth()->format('M j, Y') }}</div>
     </div>
 
-    {{-- Companies at Risk --}}
-    <div class="db-kpi rd">
+    {{-- Pending Review --}}
+    <div class="db-kpi or">
         <div class="db-kpi-head">
-            <span class="db-kpi-lbl">Companies at Risk</span>
-            <div class="db-kpi-ico ico-rd">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span class="db-kpi-lbl">Pending Review</span>
+            <div class="db-kpi-ico ico-or">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
         </div>
-        <div class="db-kpi-val red">{{ $companiesAtRisk ?? 0 }}</div>
-        <div class="db-kpi-ctx">Companies with inactive status</div>
-        @if(($companiesAtRisk ?? 0) > 0)
-        <a href="{{ route('clients.index') }}" class="db-kpi-arrow">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </a>
-        @endif
-    </div>
-
-</div>
-
-{{-- KPI Row 3: 3 cards --}}
-<div class="db-kpi-grid cols-3" style="margin-bottom:18px">
-
-    {{-- Total Revenue --}}
-    <div class="db-kpi gr">
-        <div class="db-kpi-head">
-            <span class="db-kpi-lbl">Total Revenue</span>
-            <div class="db-kpi-ico ico-gr">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-            </div>
-        </div>
-        <div class="db-kpi-val green">${{ number_format($totalRevenue, 0) }}</div>
-        <div class="db-kpi-ctx">Collected from clients · {{ $periodLabel }}</div>
-    </div>
-
-    {{-- Payments Received --}}
-    <div class="db-kpi bl">
-        <div class="db-kpi-head">
-            <span class="db-kpi-lbl">Payments Received</span>
-            <div class="db-kpi-ico ico-bl">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-            </div>
-        </div>
-        <div class="db-kpi-val">{{ $paymentsReceived }}</div>
-        <div class="db-kpi-ctx">Payments received · {{ $periodLabel }}</div>
-    </div>
-
-    {{-- Active Subscriptions --}}
-    <div class="db-kpi pu">
-        <div class="db-kpi-head">
-            <span class="db-kpi-lbl">Active Subscriptions</span>
-            <div class="db-kpi-ico ico-pu">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            </div>
-        </div>
-        <div class="db-kpi-val" style="color:#7c3aed">
-            {{ $activeSubscriptions }}<span class="sub-val"> / {{ $companyCount }}</span>
-        </div>
-        <div class="db-kpi-ctx">Active or trial of {{ $companyCount }} client companies</div>
+        <div class="db-kpi-val orange">{{ $pendingReview ?? 0 }}</div>
+        <div class="db-kpi-ctx">Drafts awaiting review &amp; publish</div>
     </div>
 
 </div>
@@ -766,7 +681,7 @@
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
             <div>
                 <div class="db-card-title">Usage Overview</div>
-                <div class="db-card-sub">Companies &amp; payments · last 6 months</div>
+                <div class="db-card-sub">Insights generated · last 6 months</div>
             </div>
         </div>
         <canvas id="usageChart" height="160"></canvas>
@@ -819,38 +734,57 @@
 
 @endif {{-- end @if($isFreshUser) / @else --}}
 
-{{-- View Client Modal --}}
+{{-- View Client Portal Modal --}}
 <div id="viewClientModal" style="display:none;position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:440px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:520px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px;border-bottom:1px solid var(--border)">
             <div>
-                <div id="vcmTitle" style="font-size:15px;font-weight:700;color:var(--text-1)">View Client Dashboard</div>
-                <div style="font-size:12.5px;color:var(--text-3);margin-top:2px">Select a client to open their portal</div>
+                <div style="font-size:15px;font-weight:700;color:var(--text-1)">View Client Portal</div>
+                <div style="font-size:12.5px;color:var(--text-3);margin-top:2px">Select a client to preview their portal experience</div>
             </div>
             <button onclick="closeViewClientModal()" style="border:none;background:none;cursor:pointer;color:var(--text-3);padding:4px;line-height:1;border-radius:6px" title="Close">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
-        <div style="padding:22px">
-            <label style="font-size:12.5px;font-weight:600;color:var(--text-2);display:block;margin-bottom:7px">Client</label>
-            <select id="vcmClientSelect" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;color:var(--text-1);outline:none;appearance:none;background:#fff url(\"data:image/svg+xml,%3Csvg xmlns='' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E\") no-repeat right 10px center;padding-right:32px">
-                <option value="">— Select a client —</option>
-                @foreach($modalClients as $mc)
-                <option value="{{ $mc->id }}" data-company="{{ addslashes($mc->company?->company_name ?? 'No Company') }}">
-                    {{ $mc->name }}@if($mc->company) &nbsp;·&nbsp; {{ $mc->company->company_name }}@endif
-                </option>
-                @endforeach
-            </select>
-            <div id="vcmCompanyHint" style="display:none;margin-top:8px;padding:9px 12px;background:var(--bg);border-radius:7px;font-size:12.5px;color:var(--text-2)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="display:inline-block;vertical-align:middle;margin-right:4px"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
-                Company: <strong id="vcmCompanyName"></strong>
-            </div>
+        <div style="padding:0 22px;max-height:340px;overflow-y:auto">
+            <table style="width:100%;border-collapse:collapse">
+                <thead>
+                    <tr style="border-bottom:1px solid var(--border)">
+                        <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 0 10px">Client Name</th>
+                        <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 8px 10px">Company</th>
+                        <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 0 10px">Publish Status</th>
+                    </tr>
+                </thead>
+                <tbody id="vcmTableBody">
+                    @foreach($modalClients as $mc)
+                    @php
+                        $cid    = $mc->company_id;
+                        $status = $companyPublishStatus[$cid] ?? null;
+                    @endphp
+                    <tr class="vcm-row" data-client-id="{{ $mc->id }}"
+                        onclick="selectVcmRow(this)"
+                        style="cursor:pointer;border-bottom:1px solid var(--bg);transition:background .1s">
+                        <td style="padding:11px 0;font-size:13px;color:var(--text-1);font-weight:500">{{ $mc->name }}</td>
+                        <td style="padding:11px 8px;font-size:13px;color:var(--text-2)">{{ $mc->company?->company_name ?? '—' }}</td>
+                        <td style="padding:11px 0">
+                            @if($status === 'Published')
+                                <span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11.5px;font-weight:600;background:rgba(16,185,129,.12);color:#059669">Published</span>
+                            @elseif($status === 'Draft')
+                                <span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11.5px;font-weight:600;background:rgba(240,107,33,.12);color:var(--orange)">Draft</span>
+                            @else
+                                <span style="font-size:13px;color:var(--text-3)">—</span>
+                            @endif
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
-        <div style="display:flex;gap:10px;padding:0 22px 20px;justify-content:flex-end">
+        <div style="display:flex;gap:10px;padding:16px 22px 20px;justify-content:flex-end;border-top:1px solid var(--border);margin-top:4px">
             <button onclick="closeViewClientModal()" class="btn btn-secondary btn-sm">Cancel</button>
-            <button id="vcmGoBtn" onclick="goToClientPage()" class="btn btn-primary btn-sm" disabled>
-                <svg id="vcmBtnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-                <span id="vcmBtnLabel">Open Dashboard</span>
+            <button id="vcmGoBtn" onclick="goToClientPage()" class="btn btn-primary btn-sm" disabled style="display:inline-flex;align-items:center;gap:6px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                Enter Client Portal
             </button>
         </div>
     </div>
@@ -892,56 +826,31 @@ if (CURRENT_PERIOD === 'custom') {
     document.getElementById('customRangeRow').classList.add('visible');
 }
 
-// View Client Modal
-const vcmRoutes = {
-    dashboard: {!! json_encode(collect($modalClients)->mapWithKeys(fn($c) => [$c->id => route('clients.dashboard', $c->id)])) !!},
-    insights:  {!! json_encode(collect($modalClients)->mapWithKeys(fn($c) => [$c->id => route('clients.insights', $c->id)])) !!},
-};
-let vcmMode = 'dashboard';
+// View Client Portal Modal
+const vcmRoutes = {!! json_encode(collect($modalClients)->mapWithKeys(fn($c) => [$c->id => route('clients.dashboard', $c->id)])) !!};
+let vcmSelectedId = null;
 
-function openViewClientModal(mode) {
-    vcmMode = mode;
-    const modal  = document.getElementById('viewClientModal');
-    const title  = document.getElementById('vcmTitle');
-    const icon   = document.getElementById('vcmBtnIcon');
-    const label  = document.getElementById('vcmBtnLabel');
-    if (mode === 'insights') {
-        title.textContent = 'View Client Insights';
-        label.textContent = 'Open Insights';
-        icon.innerHTML    = '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>';
-    } else {
-        title.textContent = 'View Client Dashboard';
-        label.textContent = 'Open Dashboard';
-        icon.innerHTML    = '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>';
-    }
-    document.getElementById('vcmClientSelect').value = '';
-    document.getElementById('vcmCompanyHint').style.display = 'none';
+function openViewClientModal() {
+    vcmSelectedId = null;
     document.getElementById('vcmGoBtn').disabled = true;
-    modal.style.display = 'flex';
+    document.querySelectorAll('.vcm-row').forEach(r => r.style.background = '');
+    document.getElementById('viewClientModal').style.display = 'flex';
 }
 
 function closeViewClientModal() {
     document.getElementById('viewClientModal').style.display = 'none';
 }
 
-document.getElementById('vcmClientSelect')?.addEventListener('change', function () {
-    const id   = this.value;
-    const name = this.options[this.selectedIndex]?.dataset?.company ?? '';
-    const hint = document.getElementById('vcmCompanyHint');
-    if (id) {
-        document.getElementById('vcmCompanyName').textContent = name;
-        hint.style.display = 'block';
-        document.getElementById('vcmGoBtn').disabled = false;
-    } else {
-        hint.style.display = 'none';
-        document.getElementById('vcmGoBtn').disabled = true;
-    }
-});
+function selectVcmRow(row) {
+    document.querySelectorAll('.vcm-row').forEach(r => r.style.background = '');
+    row.style.background = 'rgba(240,107,33,.06)';
+    vcmSelectedId = row.dataset.clientId;
+    document.getElementById('vcmGoBtn').disabled = false;
+}
 
 function goToClientPage() {
-    const id = document.getElementById('vcmClientSelect').value;
-    if (!id) return;
-    const url = vcmRoutes[vcmMode]?.[id];
+    if (!vcmSelectedId) return;
+    const url = vcmRoutes[vcmSelectedId];
     if (url) window.location.href = url;
 }
 
@@ -957,16 +866,8 @@ if (ctx) {
         data: {
             labels: {!! json_encode($chartLabels) !!},
             datasets: [{
-                label: 'Companies',
-                data: {!! json_encode($chartCompanies) !!},
-                backgroundColor: 'rgba(240,107,33,.15)',
-                borderColor: '#f06b21',
-                borderWidth: 1.5,
-                borderRadius: 5,
-                borderSkipped: false,
-            }, {
-                label: 'Payments',
-                data: {!! json_encode($chartPayments) !!},
+                label: 'Insights',
+                data: {!! json_encode($chartInsights) !!},
                 backgroundColor: 'rgba(26,106,168,.18)',
                 borderColor: '#1a6aa8',
                 borderWidth: 1.5,
@@ -977,7 +878,7 @@ if (ctx) {
         options: {
             responsive: true,
             plugins: {
-                legend: { display: true, position: 'bottom', labels: { boxWidth: 10, font: { size: 11 }, padding: 16 } }
+                legend: { display: false }
             },
             scales: {
                 y: {

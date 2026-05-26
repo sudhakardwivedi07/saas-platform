@@ -28,22 +28,96 @@
         --cfo-muted: #6b7280;
         --cfo-bg: #f3f4f6;
     }
+    /* ── Exec bar: 3-column layout ───────────────────────── */
     .cfo-kpi-exec-bar {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
+        display: grid;
+        grid-template-columns: minmax(160px, 210px) 1fr auto;
+        align-items: stretch;
+        gap: 0;
         margin-bottom: 22px;
-        padding: 18px 22px;
         background: #fff;
         border: 1px solid #e8ecf1;
         border-radius: 10px;
         box-shadow: 0 1px 3px rgba(0,0,0,.06);
+        overflow: hidden;
     }
-    .cfo-kpi-exec-title { font-size: 20px; font-weight: 700; color: var(--cfo-slate); margin: 0 0 6px; letter-spacing: -0.02em; }
-    .cfo-kpi-exec-updated { font-size: 13px; color: var(--cfo-muted); margin: 0; }
-    .cfo-kpi-exec-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; flex-shrink: 0; }
+    @media (max-width: 860px) {
+        .cfo-kpi-exec-bar {
+            grid-template-columns: 1fr;
+        }
+        .cfo-kpi-exec-entity  { border-right: none !important; border-bottom: 1px solid #e8ecf1; }
+        .cfo-kpi-exec-right   { border-left: none !important; border-top: 1px solid #e8ecf1; align-items: flex-start !important; }
+    }
+
+    /* Entity / company selector — left column */
+    .cfo-kpi-exec-entity {
+        padding: 16px 20px;
+        border-right: 1px solid #e8ecf1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        background: #fafbfc;
+    }
+    .cfo-kpi-exec-entity-label {
+        display: block;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: #9ca3af;
+        margin-bottom: 7px;
+    }
+    .cfo-kpi-exec-entity-name {
+        display: block;
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--cfo-slate);
+        line-height: 1.25;
+        word-break: break-word;
+    }
+    .cfo-kpi-exec-entity-select {
+        width: 100%;
+        padding: 7px 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--cfo-slate);
+        background: #fff;
+        cursor: pointer;
+        outline: none;
+        font-family: inherit;
+    }
+    .cfo-kpi-exec-entity-select:focus { border-color: var(--cfo-orange); box-shadow: 0 0 0 3px rgba(249,115,22,.1); }
+
+    /* Title / subtitle — center column */
+    .cfo-kpi-exec-center {
+        padding: 18px 22px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-width: 0;
+    }
+    .cfo-kpi-exec-title { font-size: 18px; font-weight: 700; color: var(--cfo-slate); margin: 0 0 4px; letter-spacing: -0.02em; }
+    .cfo-kpi-exec-sub   { font-size: 12.5px; color: var(--cfo-muted); margin: 0; }
+
+    /* Last-updated + actions — right column */
+    .cfo-kpi-exec-right {
+        padding: 16px 20px;
+        border-left: 1px solid #e8ecf1;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+    .cfo-kpi-exec-updated { font-size: 11.5px; color: var(--cfo-muted); margin: 0; white-space: nowrap; }
+    .cfo-kpi-exec-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+    /* legacy left wrapper — kept in case any other template uses it */
+    .cfo-kpi-exec-left { flex: 1; min-width: 0; }
+
     .cfo-btn-get-insights {
         display: inline-flex;
         align-items: center;

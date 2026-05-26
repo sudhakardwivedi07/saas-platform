@@ -4,14 +4,161 @@
 @section('content')
 
 @if(!empty($isAdminView))
-@php $adminViewUser = $viewingAsUser ?? auth()->user(); @endphp
-<div style="display:flex;align-items:center;gap:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 16px;margin-bottom:18px;font-size:13px;color:#1d4ed8">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="flex-shrink:0"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-    <span>You are viewing <strong>{{ $adminViewUser->name }}</strong>'s dashboard in read-only mode.</span>
-    <a href="{{ $backUrl ?? route('dashboard') }}" style="margin-left:auto;color:#1d4ed8;font-weight:600;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:4px">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="15 18 9 12 15 6"/></svg>
-        Back to My Dashboard
-    </a>
+@php
+    $adminViewUser  = $viewingAsUser ?? auth()->user();
+    $adminCompany   = $adminViewUser->company;
+    $adminPubStatus = $dashboardPublishStatus ?? 'published';
+@endphp
+<style>
+.cdb-admin-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    background: #1a2b45;
+    border-radius: 10px;
+    padding: 10px 18px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+.cdb-exit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: rgba(255,255,255,.7);
+    font-size: 12.5px;
+    font-weight: 500;
+    text-decoration: none;
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,.15);
+    transition: background .12s;
+    flex-shrink: 0;
+}
+.cdb-exit-btn:hover { background: rgba(255,255,255,.08); color: #fff; }
+.cdb-client-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.cdb-client-name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #fff;
+}
+.cdb-company-name {
+    font-size: 13px;
+    color: rgba(255,255,255,.6);
+}
+.cdb-sep { color: rgba(255,255,255,.3); font-size: 12px; }
+.cdb-status-badge {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    padding: 2px 9px;
+    border-radius: 20px;
+}
+.cdb-status-draft      { background: rgba(240,107,33,.25); color: #f97316; }
+.cdb-status-published  { background: rgba(16,185,129,.2);  color: #10b981; }
+.cdb-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.cdb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 7px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity .12s, background .12s;
+    text-decoration: none;
+}
+.cdb-btn:hover { opacity: .88; }
+.cdb-btn-edit   { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.2); }
+.cdb-btn-edit.active { background: var(--orange); border-color: var(--orange); }
+.cdb-btn-draft  { background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); border: 1px solid rgba(255,255,255,.15); }
+.cdb-btn-publish { background: var(--orange); color: #fff; }
+
+/* ── KPI Eye Icon ─────────────────────────────────────── */
+.kpi-eye-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: default;
+    padding: 4px;
+    border-radius: 6px;
+    line-height: 1;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .1s;
+    opacity: .55;
+}
+/* In edit mode: icons are fully interactive */
+.kpi-edit-active .kpi-eye-btn {
+    cursor: pointer;
+    opacity: 1;
+}
+.kpi-edit-active .kpi-eye-btn:hover { background: rgba(0,0,0,.06); }
+.kpi-card { position: relative; }
+/* Hidden state is always visible — shows regardless of edit mode */
+.kpi-card.kpi-hidden-draft {
+    opacity: .42;
+    outline: 2px dashed rgba(240,107,33,.5);
+    outline-offset: -2px;
+}
+.kpi-card.kpi-hidden-draft::after {
+    content: 'Hidden from client';
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--orange);
+    white-space: nowrap;
+    pointer-events: none;
+}
+</style>
+<div class="cdb-admin-bar" id="cdbAdminBar">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <a href="{{ $backUrl ?? route('dashboard') }}" class="cdb-exit-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="15 18 9 12 15 6"/></svg>
+            Exit
+        </a>
+        <div class="cdb-client-info">
+            <span class="cdb-client-name">{{ $adminViewUser->name }}</span>
+            <span class="cdb-sep">·</span>
+            <span class="cdb-company-name">{{ $adminCompany?->company_name ?? '' }}</span>
+            <span id="cdbStatusBadge" class="cdb-status-badge cdb-status-{{ $adminPubStatus }}">{{ ucfirst($adminPubStatus) }}</span>
+        </div>
+    </div>
+    <div class="cdb-bar-right">
+        <button class="cdb-btn cdb-btn-edit" id="cdbEditModeBtn" onclick="cdbToggleEditMode()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit Mode
+        </button>
+        <button class="cdb-btn cdb-btn-draft" id="cdbSaveDraftBtn" onclick="cdbSaveDraft()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Draft
+        </button>
+        <button class="cdb-btn cdb-btn-publish" id="cdbPublishBtn" onclick="cdbPublish()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Publish
+        </button>
+    </div>
 </div>
 @endif
 
@@ -349,43 +496,78 @@
 
 @if(!empty($showKpiDashboard))
 <div class="user-kpi-fullbleed">
+@php
+    $__kpiCoList     = $kpiCompanies ?? collect();
+    $__selectedKpiCo = $__kpiCoList->firstWhere('id', $selectedKpiCompanyId ?? null);
+@endphp
 <div class="cfo-kpi-exec-bar">
-    <div class="cfo-kpi-exec-left">
+
+    {{-- Left: entity / company selector ---------------------------------------- --}}
+    <div class="cfo-kpi-exec-entity">
+        <span class="cfo-kpi-exec-entity-label">Selected Entity</span>
+        @if($__kpiCoList->count() > 1)
+        <select class="cfo-kpi-exec-entity-select"
+                onchange="if(window.__kpiEmbedChangeCompany)window.__kpiEmbedChangeCompany(this.value)">
+            @foreach($__kpiCoList as $__co)
+            <option value="{{ $__co->id }}" {{ $__co->id == $selectedKpiCompanyId ? 'selected' : '' }}>
+                {{ $__co->company_name }}
+            </option>
+            @endforeach
+        </select>
+        @else
+        <span class="cfo-kpi-exec-entity-name">{{ $__selectedKpiCo?->company_name ?? 'Company' }}</span>
+        @endif
+    </div>
+
+    {{-- Center: title + sub-label ---------------------------------------------- --}}
+    <div class="cfo-kpi-exec-center">
         <h2 class="cfo-kpi-exec-title">Executive Financial Summary</h2>
-        <p class="cfo-kpi-exec-updated">Last updated {{ now()->format('M d, Y h:i A') }}</p>
+        <p class="cfo-kpi-exec-sub">AI-powered financial intelligence</p>
     </div>
-    <div class="cfo-kpi-exec-actions">
-        @if(!empty($isQuickbooksConnected))
-            @if(empty($isAdminView))
-            <div class="cfo-kpi-gen-wrap">
-                <button type="button" id="dashGenerateBtn" class="cfo-btn-get-insights"
-                        onclick="dashTriggerGenerate()"
-                        style="{{ !empty($insightInProgress) ? 'display:none;' : '' }}">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-                    @if($monthlyLimit !== null)
-                        Get Insights {{ (int) ($monthlyUsed ?? 0) }}/{{ (int) $monthlyLimit }} Left
-                    @else
-                        Generate Insights
-                    @endif
-                </button>
-                <div id="dashGeneratingLoader" class="dash-gen-loader cfo-dash-gen-loader"
-                     style="{{ empty($insightInProgress) ? 'display:none;' : '' }}">
-                    <span class="dash-gen-spinner"></span>
-                    <span>Generating insights…</span>
+
+    {{-- Right: last updated + action buttons ------------------------------------ --}}
+    <div class="cfo-kpi-exec-right">
+        <p class="cfo-kpi-exec-updated">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"
+                 style="display:inline-block;vertical-align:middle;margin-right:4px;stroke:#9ca3af">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            Last updated {{ now()->format('M d, Y g:i A') }}
+        </p>
+        <div class="cfo-kpi-exec-actions">
+            @if(!empty($isQuickbooksConnected))
+                @if(empty($isAdminView))
+                <div class="cfo-kpi-gen-wrap">
+                    <button type="button" id="dashGenerateBtn" class="cfo-btn-get-insights"
+                            onclick="dashTriggerGenerate()"
+                            style="{{ !empty($insightInProgress) ? 'display:none;' : '' }}">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+                        @if($monthlyLimit !== null)
+                            Get Insights {{ (int) ($monthlyUsed ?? 0) }}/{{ (int) $monthlyLimit }} Left
+                        @else
+                            Generate Insights
+                        @endif
+                    </button>
+                    <div id="dashGeneratingLoader" class="dash-gen-loader cfo-dash-gen-loader"
+                         style="{{ empty($insightInProgress) ? 'display:none;' : '' }}">
+                        <span class="dash-gen-spinner"></span>
+                        <span>Generating insights…</span>
+                    </div>
                 </div>
-            </div>
+                @endif
+            @else
+                @if(empty($isAdminView) && ($viewingAsUser ?? auth()->user())->can('view_quickbooks'))
+                <a href="{{ route('quickbooks.index') }}" class="cfo-btn-get-insights" style="text-decoration:none">Connect QuickBooks</a>
+                @endif
             @endif
-        @else
-            @if(empty($isAdminView) && ($viewingAsUser ?? auth()->user())->can('view_quickbooks'))
-            <a href="{{ route('quickbooks.index') }}" class="cfo-btn-get-insights" style="text-decoration:none">Connect QuickBooks</a>
+            @if(!empty($isAdminView) && !empty($viewingAsUser))
+            <a href="{{ route('clients.insights', $viewingAsUser->id) }}" class="cfo-btn-view-insights">View Insights</a>
+            @else
+            <a href="{{ route('insights.index') }}" class="cfo-btn-view-insights">View Insights</a>
             @endif
-        @endif
-        @if(!empty($isAdminView) && !empty($viewingAsUser))
-        <a href="{{ route('clients.insights', $viewingAsUser->id) }}" class="cfo-btn-view-insights">View Insights</a>
-        @else
-        <a href="{{ route('insights.index') }}" class="cfo-btn-view-insights">View Insights</a>
-        @endif
+        </div>
     </div>
+
 </div>
 
 @if(($kpiCompanies ?? collect())->isEmpty() || empty($selectedKpiCompanyId))
@@ -395,10 +577,11 @@
     </div>
 @else
     @include('dashboard.partials.kpi-dashboard-embed', [
-        'kpiDataUrl' => $kpiDataUrl,
-        'kpiDetailBaseUrl' => $kpiDetailBaseUrl,
-        'companies' => $kpiCompanies,
+        'kpiDataUrl'        => $kpiDataUrl,
+        'kpiDetailBaseUrl'  => $kpiDetailBaseUrl,
+        'companies'         => $kpiCompanies,
         'selectedCompanyId' => $selectedKpiCompanyId,
+        'clientHiddenKpis'  => !empty($isAdminView) ? [] : ($hiddenKpis ?? []),
     ])
 @endif
 </div>{{-- .user-kpi-fullbleed --}}
@@ -428,6 +611,116 @@
     'isQuickbooksConnected' => !empty($isQuickbooksConnected),
     'insightInProgress' => $insightInProgress ?? null,
 ])
+@endif
+
+{{-- ── Admin Edit Mode Script ─────────────────────────────────────────────── --}}
+@if(!empty($isAdminView))
+@push('scripts')
+<script>
+(function () {
+    const CSRF             = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const SAVE_DRAFT_URL   = '{{ route("clients.dashboard.save-draft", $viewingAsUser->id) }}';
+    const PUBLISH_URL      = '{{ route("clients.dashboard.publish",    $viewingAsUser->id) }}';
+    let editModeActive     = false;
+    let draftHiddenKpis    = {!! json_encode(array_values($draftHiddenKpis ?? [])) !!};
+
+    // Inject eye icons once KPI cards are in the DOM
+    window.__kpiReadyCallback = function () {
+        injectEyeIcons();
+    };
+
+    function injectEyeIcons() {
+        document.querySelectorAll('[data-kpi-card]').forEach(function (card) {
+            if (card.querySelector('.kpi-eye-btn')) return;
+            const kpiType = card.getAttribute('data-kpi-card');
+            const btn = document.createElement('button');
+            btn.className = 'kpi-eye-btn';
+            btn.setAttribute('type', 'button');
+            btn.setAttribute('title', 'Toggle visibility');
+            btn.setAttribute('data-kpi-eye', kpiType);
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (!editModeActive) return;
+                toggleKpiHidden(kpiType);
+            });
+            card.appendChild(btn);
+            refreshEyeIcon(kpiType);
+        });
+    }
+
+    function refreshEyeIcon(kpiType) {
+        const btn = document.querySelector('[data-kpi-eye="' + kpiType + '"]');
+        if (!btn) return;
+        const hidden = draftHiddenKpis.includes(kpiType);
+        btn.innerHTML = hidden
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" width="16" height="16"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+        const card = document.querySelector('[data-kpi-card="' + kpiType + '"]');
+        if (card) {
+            card.classList.toggle('kpi-hidden-draft', hidden);
+        }
+    }
+
+    function toggleKpiHidden(kpiType) {
+        const idx = draftHiddenKpis.indexOf(kpiType);
+        if (idx === -1) draftHiddenKpis.push(kpiType);
+        else draftHiddenKpis.splice(idx, 1);
+        refreshEyeIcon(kpiType);
+    }
+
+    window.cdbToggleEditMode = function () {
+        editModeActive = !editModeActive;
+        const btn   = document.getElementById('cdbEditModeBtn');
+        const dash  = document.getElementById('kpiDashboard');
+        if (btn)  btn.classList.toggle('active', editModeActive);
+        if (dash) dash.classList.toggle('kpi-edit-active', editModeActive);
+        if (editModeActive) {
+            injectEyeIcons();
+        }
+    };
+
+    window.cdbSaveDraft = function () {
+        const btn = document.getElementById('cdbSaveDraftBtn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+        fetch(SAVE_DRAFT_URL, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            body:    JSON.stringify({ hidden_kpis: draftHiddenKpis }),
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Draft'; }
+            const badge = document.getElementById('cdbStatusBadge');
+            if (badge) { badge.textContent = 'Draft'; badge.className = 'cdb-status-badge cdb-status-draft'; }
+        })
+        .catch(function () {
+            if (btn) { btn.disabled = false; btn.textContent = 'Save Draft'; }
+            alert('Failed to save draft. Please try again.');
+        });
+    };
+
+    window.cdbPublish = function () {
+        const btn = document.getElementById('cdbPublishBtn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Publishing…'; }
+        fetch(PUBLISH_URL, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+            body:    JSON.stringify({ hidden_kpis: draftHiddenKpis }),
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Publish'; }
+            const badge = document.getElementById('cdbStatusBadge');
+            if (badge) { badge.textContent = 'Published'; badge.className = 'cdb-status-badge cdb-status-published'; }
+        })
+        .catch(function () {
+            if (btn) { btn.disabled = false; btn.textContent = 'Publish'; }
+            alert('Failed to publish. Please try again.');
+        });
+    };
+}());
+</script>
+@endpush
 @endif
 
 {{-- ── Industry Type Selection Modal ─────────────────────────────────────── --}}

@@ -5,6 +5,7 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\InsightsController;
 use App\Http\Controllers\FirmInsightsController;
+use App\Http\Controllers\PartnerInsightsController;
 use App\Http\Controllers\BrandingController;
 use App\Http\Controllers\ClientCompanyController;
 use App\Http\Controllers\ClientController;
@@ -253,6 +254,22 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{id}/download',               [InsightsController::class, 'download'])->name('download');
         Route::delete('/{id}',                     [InsightsController::class, 'destroy'])->name('destroy');
         Route::get('/delete-all',                  [InsightsController::class, 'deleteAllReports'])->name('delete-all');
+    });
+
+    // Partner Insights (admin / manager — all client insights, with generate/edit/publish)
+    Route::prefix('partner-insights')->name('partner-insights.')->group(function () {
+        Route::get('/',                            [PartnerInsightsController::class, 'index'])->name('index');
+        Route::post('/generate',                   [PartnerInsightsController::class, 'generate'])->name('generate');
+        Route::get('/clients',                     [PartnerInsightsController::class, 'getClients'])->name('clients');
+        Route::get('/clients/{clientId}/companies',[PartnerInsightsController::class, 'getCompanies'])->name('companies');
+        Route::get('/status/{id}',                 [PartnerInsightsController::class, 'checkStatus'])->name('status');
+        Route::get('/{encryptedId}/view',          [PartnerInsightsController::class, 'view'])->name('view');
+        Route::get('/{id}/data',                   [PartnerInsightsController::class, 'getData'])->name('data');
+        Route::post('/{id}/update-content',        [PartnerInsightsController::class, 'updateContent'])->name('update-content');
+        Route::post('/{id}/publish',               [PartnerInsightsController::class, 'publish'])->name('publish');
+        Route::get('/{id}/export-pdf',             [PartnerInsightsController::class, 'exportPdf'])->name('export-pdf');
+        Route::get('/{id}/download',               [PartnerInsightsController::class, 'download'])->name('download');
+        Route::delete('/{id}',                     [PartnerInsightsController::class, 'destroy'])->name('destroy');
     });
 
     // Firm Insights (admin / manager — no monthly limit, scoped to firm)

@@ -17,19 +17,7 @@
 @endphp
 
 <div class="kpi-container">
-    @if($__kpiCompanies->count() > 1)
-    <div class="company-selector">
-        <label for="kpiCompanySelectEmbed">Viewing metrics for</label>
-        <select id="kpiCompanySelectEmbed" onchange="window.__kpiEmbedChangeCompany(this.value)">
-            @foreach($__kpiCompanies as $company)
-                <option value="{{ $company->id }}" {{ (int) $__sel === (int) $company->id ? 'selected' : '' }}>
-                    {{ $company->company_name }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-    @endif
-
+ 
     <div id="kpiDashboard"></div>
 
     <div id="kpiDetailDrawer" class="kpi-detail-drawer-root" hidden aria-hidden="true">
@@ -52,8 +40,9 @@
 @include('dashboard.partials.kpi-detail-markup-script')
 <script>
 (function () {
-    const KPI_DATA_URL = @json($kpiDataUrl);
-    const KPI_DETAIL_BASE = @json(rtrim($kpiDetailBaseUrl, '/'));
+    const KPI_DATA_URL       = @json($kpiDataUrl);
+    const KPI_DETAIL_BASE    = @json(rtrim($kpiDetailBaseUrl, '/'));
+    const CLIENT_HIDDEN_KPIS = @json(array_values($clientHiddenKpis ?? []));
     const KPI_DETAIL_ROUTES = {
         'runway-burn': @json(route('dashboard-kpi.runway-burn-details')),
         'working-capital': @json(route('dashboard-kpi.working-capital-details')),
@@ -399,6 +388,25 @@
         </div>`;
 
         bindKpiCardNav();
+
+        // Hide KPI cards the admin has published as hidden (client view only)
+        if (CLIENT_HIDDEN_KPIS.length) {
+            CLIENT_HIDDEN_KPIS.forEach(function (kpiType) {
+                var card = document.querySelector('[data-kpi-card="' + kpiType + '"]');
+                if (card) card.style.display = 'none';
+            });
+            // Hide entire tier blocks whose every card is hidden
+            document.querySelectorAll('.kpi-tier-block').forEach(function (block) {
+                var cards = block.querySelectorAll('[data-kpi-card]');
+                if (cards.length && Array.from(cards).every(function (c) { return c.style.display === 'none'; })) {
+                    block.style.display = 'none';
+                }
+            });
+        }
+
+        // Notify the page that KPI cards are in the DOM (used by admin edit-mode)
+        if (typeof window.__kpiReadyCallback === 'function') window.__kpiReadyCallback();
+
         if (window.showAppLoading) window.showAppLoading('Loading KPI dashboard', 'Fetching the latest metrics...');
         loadTier1Metrics().finally(function () {
             if (window.hideAppLoading) window.hideAppLoading();

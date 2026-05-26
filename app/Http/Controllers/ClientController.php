@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClientDashboardSetting;
 use App\Models\ClientPackage;
 use App\Models\Company;
 use App\Models\QuickBooksConnection;
@@ -482,12 +483,56 @@ class ClientController extends AccountBaseController
         $this->insightInProgress   = $insightInProgress;
         $this->monthlyLimit        = $monthlyLimit;
         $this->monthlyUsed         = $monthlyUsed;
+        $dashSetting = ClientDashboardSetting::forCompany($company->id);
+        $this->dashboardPublishStatus = $dashSetting->publish_status;
+        $this->hiddenKpis             = $dashSetting->hidden_kpis ?? [];
+        $this->draftHiddenKpis        = $dashSetting->draft_hidden_kpis ?? [];
+
         $this->viewingAsUser       = $clientUser;
         $this->isAdminView         = true;
         $this->backUrl             = route('dashboard');
         $this->pageTitle           = $clientUser->name . "'s Dashboard";
 
         return view('dashboard.user', $this->data);
+    }
+
+    public function saveDashboardDraft(Request $request, $id)
+    {
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
+
+        $clientUser = User::findOrFail($id);
+        $company    = $clientUser->company;
+        abort_if(!$company, 404);
+
+        $hiddenKpis = array_values(array_filter((array) $request->input('hidden_kpis', [])));
+
+        $setting = ClientDashboardSetting::forCompany($company->id);
+        $setting->update([
+            'draft_hidden_kpis' => $hiddenKpis,
+            'publish_status'    => 'draft',
+        ]);
+
+        return response()->json(['status' => 'success', 'message' => 'Draft saved']);
+    }
+
+    public function publishDashboard(Request $request, $id)
+    {
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
+
+        $clientUser = User::findOrFail($id);
+        $company    = $clientUser->company;
+        abort_if(!$company, 404);
+
+        $hiddenKpis = array_values(array_filter((array) $request->input('hidden_kpis', [])));
+
+        $setting = ClientDashboardSetting::forCompany($company->id);
+        $setting->update([
+            'hidden_kpis'       => $hiddenKpis,
+            'draft_hidden_kpis' => $hiddenKpis,
+            'publish_status'    => 'published',
+        ]);
+
+        return response()->json(['status' => 'success', 'message' => 'Dashboard published']);
     }
 
     public function insights($id)

@@ -70,7 +70,11 @@
       "Bash(git commit -m 'Fix stale Stripe customer ID causing '\\\\''No such customer'\\\\'' error:*)",
       "Bash(git commit -m 'Fix Cancel Subscription — wire button to real Stripe API endpoint:*)",
       "Bash(git commit -m 'Fix cancel subscription using SuperAdmin Stripe credentials:*)",
-      "Bash(git commit -m 'Fix dashboard counts, revenue, table sort and Make Payment visibility:*)"
+      "Bash(git commit -m 'Fix dashboard counts, revenue, table sort and Make Payment visibility:*)",
+      "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\whitelabel-saas\\\\resources\\\\views\" -Recurse -Filter \"*dashboard*\")",
+      "Bash(Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\whitelabel-saas\" -Name)",
+      "Bash(Select-Object -First 20)"
     ]
   }
 }

@@ -207,6 +207,8 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{id}/assign-plan',   [ClientController::class, 'assignPlan'])->name('assign-plan');
         Route::post('/bulk-upload',        [ClientController::class, 'bulkUpload'])->name('bulk-upload');
         Route::get('/{id}/dashboard',      [ClientController::class, 'dashboard'])->name('dashboard');
+        Route::post('/{id}/dashboard/save-draft', [ClientController::class, 'saveDashboardDraft'])->name('dashboard.save-draft');
+        Route::post('/{id}/dashboard/publish',    [ClientController::class, 'publishDashboard'])->name('dashboard.publish');
         // KPI Dashboard
         Route::get('/{id}/kpi-dashboard', [ClientKPIController::class, 'index'])->name('kpi-dashboard');
         Route::get('/{id}/kpi-detail/{kpiType}', [ClientKPIController::class, 'showKpiDetail'])->name('kpi-detail');

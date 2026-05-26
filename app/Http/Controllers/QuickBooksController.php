@@ -35,22 +35,20 @@ class QuickBooksController extends AccountBaseController
         // Firm panel (admin, manager, etc.)
         $companyId = company()?->id ?? auth()->user()->company_id;
 
-        $managedIds = Company::withoutGlobalScopes()
+        $this->managedCompanies = Company::withoutGlobalScopes()
             ->where('created_by', $companyId)
-            ->pluck('id')
-            ->push($companyId);
-
-        $this->connections  = QuickBooksConnection::with('connectedBy', 'company', 'syncLogs')
-            ->whereIn('company_id', $managedIds)
-            ->orderByDesc('created_at')
+            ->with([
+                'users',
+                'quickbooksConnections' => fn($q) => $q->withoutGlobalScopes()->where('is_active', true)->orderByDesc('created_at'),
+            ])
+            ->orderBy('company_name')
             ->get();
-        $this->qbConfigured = $this->resolveCredentials($companyId) !== null;
 
-        // Firm's own QB connection — used by "My QuickBook" tab
-        $this->firmConnection = QuickBooksConnection::where('company_id', $companyId)
-            ->where('user_id', auth()->id())
-            ->where('is_active', true)
-            ->first();
+        $this->connectedCount    = $this->managedCompanies->filter(
+            fn($co) => $co->quickbooksConnections->isNotEmpty() && !$co->quickbooksConnections->first()->isAccessTokenExpired()
+        )->count();
+        $this->notConnectedCount = $this->managedCompanies->count() - $this->connectedCount;
+        $this->qbConfigured      = $this->resolveCredentials($companyId) !== null;
 
         return view('quickbooks.index', $this->data);
     }
@@ -59,15 +57,26 @@ class QuickBooksController extends AccountBaseController
     {
         abort_403(!auth()->user()->can('connect_quickbooks'));
 
-        $companyId   = company()?->id ?? auth()->user()->company_id;
-        $credentials = $this->resolveCredentials($companyId);
+        $firmCompanyId  = company()?->id ?? auth()->user()->company_id;
+        $targetCompanyId = (int) request()->input('company_id', $firmCompanyId);
+
+        // Validate firm owns the target company when connecting on behalf of a client
+        if ($targetCompanyId !== $firmCompanyId) {
+            $isManaged = Company::withoutGlobalScopes()
+                ->where('id', $targetCompanyId)
+                ->where('created_by', $firmCompanyId)
+                ->exists();
+            abort_403(!$isManaged);
+        }
+
+        $credentials = $this->resolveCredentials($firmCompanyId);
 
         if (!$credentials) {
             return redirect()->route('quickbooks.index')
                 ->with('error', 'QuickBooks credentials are not configured. Please set them up in Settings → QuickBooks.');
         }
 
-        session(['qb_company_id' => $companyId, 'qb_user_id' => auth()->id()]);
+        session(['qb_company_id' => $targetCompanyId, 'qb_user_id' => auth()->id()]);
         return redirect(QuickBooksService::getAuthorizationUrl($credentials));
     }
 
@@ -156,17 +165,21 @@ class QuickBooksController extends AccountBaseController
         abort_403(!auth()->user()->can('sync_quickbooks'));
 
         $request->validate(['sync_type' => 'required|in:customers,invoices']);
-        $connection = QuickBooksConnection::findOrFail($connectionId);
+        $connection = QuickBooksConnection::withoutGlobalScopes()->findOrFail($connectionId);
+
+        $connection->update(['last_synced_at' => now()]);
 
         SyncQuickBooksJob::dispatch($connection->id, $request->sync_type)
             ->onQueue('quickbooks');
 
-        return Reply::success('Sync job dispatched. Results will appear shortly.');
+        return Reply::successWithData('Sync job dispatched. Results will appear shortly.', [
+            'last_synced_at' => $connection->last_synced_at->format('M j, Y'),
+        ]);
     }
 
     public function disconnect(int $connectionId)
     {
-        $connection = QuickBooksConnection::findOrFail($connectionId);
+        $connection = QuickBooksConnection::withoutGlobalScopes()->findOrFail($connectionId);
         $connection->update(['is_active' => false]);
 
         $this->logQuickBooksActivity(

@@ -42,6 +42,8 @@ class SyncQuickBooksJob implements ShouldQueue
             'invoices'  => $service->syncInvoices(),
             default     => throw new \InvalidArgumentException("Unknown sync type: {$this->syncType}"),
         };
+
+        $connection->update(['last_synced_at' => now()]);
     }
 
     private function resolveCredentials(int $companyId): ?array

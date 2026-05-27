@@ -8,8 +8,10 @@ use App\Models\Company;
 use App\Models\CompanyQuickbooksSetting;
 use App\Models\EventLog;
 use App\Models\QuickBooksConnection;
+use App\Models\User;
 use App\Services\QuickBooksService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class QuickBooksController extends AccountBaseController
@@ -35,17 +37,55 @@ class QuickBooksController extends AccountBaseController
         // Firm panel (admin, manager, etc.)
         $companyId = company()?->id ?? auth()->user()->company_id;
 
+        // Step 1: admin's own managed companies (primary + linked via user_companies)
+        $adminCompanyIds = collect([$companyId])
+            ->merge(
+                auth()->user()->managedCompanies()
+                    ->withoutGlobalScopes()
+                    ->pluck('companies.id')
+            )
+            ->unique()->filter()->values()->all();
+
+        // Step 2: direct client companies created by those admin companies
+        $directClientIds = Company::withoutGlobalScopes()
+            ->whereIn('created_by', $adminCompanyIds)
+            ->pluck('id');
+
+        // Step 3: users who belong to those direct client companies
+        $clientUserIds = User::withoutGlobalScopes()
+            ->whereIn('company_id', $directClientIds)
+            ->pluck('id');
+
+        // Step 4: all companies those client users are linked to via user_companies
+        //         (covers sub-companies they created + companies assigned to them)
+        $linkedCompanyIds = DB::table('user_companies')
+            ->whereIn('user_id', $clientUserIds)
+            ->pluck('company_id');
+
+        $allClientCompanyIds = $directClientIds
+            ->merge($linkedCompanyIds)
+            ->unique()->filter()->values()->all();
+
         $this->managedCompanies = Company::withoutGlobalScopes()
-            ->where('created_by', $companyId)
+            ->whereIn('id', $allClientCompanyIds)
             ->with([
                 'users',
-                'quickbooksConnections' => fn($q) => $q->withoutGlobalScopes()->where('is_active', true)->orderByDesc('created_at'),
+                'managers',
+                'quickbooksConnections' => fn($q) => $q->withoutGlobalScopes()
+                    ->where('is_active', true)
+                    ->orderByDesc('created_at'),
+                'creatorCompany',
             ])
             ->orderBy('company_name')
             ->get();
 
+        // Show the "Partner" column only when multiple admin companies are in scope
+        $this->showPartnerColumn = count($adminCompanyIds) > 1;
+
         $this->connectedCount    = $this->managedCompanies->filter(
-            fn($co) => $co->quickbooksConnections->isNotEmpty() && !$co->quickbooksConnections->first()->isAccessTokenExpired()
+            fn($co) => $co->quickbooksConnections->contains(
+                fn($c) => !$c->isAccessTokenExpired()
+            )
         )->count();
         $this->notConnectedCount = $this->managedCompanies->count() - $this->connectedCount;
         $this->qbConfigured      = $this->resolveCredentials($companyId) !== null;
@@ -60,13 +100,11 @@ class QuickBooksController extends AccountBaseController
         $firmCompanyId  = company()?->id ?? auth()->user()->company_id;
         $targetCompanyId = (int) request()->input('company_id', $firmCompanyId);
 
-        // Validate firm owns the target company when connecting on behalf of a client
+        // Validate the admin can manage the target company.
+        // Uses the same multi-step resolution as index(): direct created_by check first,
+        // then the user_companies path that covers client-owned sub-companies.
         if ($targetCompanyId !== $firmCompanyId) {
-            $isManaged = Company::withoutGlobalScopes()
-                ->where('id', $targetCompanyId)
-                ->where('created_by', $firmCompanyId)
-                ->exists();
-            abort_403(!$isManaged);
+            abort_403(!$this->adminCanManageCompany($firmCompanyId, $targetCompanyId));
         }
 
         $credentials = $this->resolveCredentials($firmCompanyId);
@@ -76,7 +114,11 @@ class QuickBooksController extends AccountBaseController
                 ->with('error', 'QuickBooks credentials are not configured. Please set them up in Settings → QuickBooks.');
         }
 
-        session(['qb_company_id' => $targetCompanyId, 'qb_user_id' => auth()->id()]);
+        session([
+            'qb_company_id'      => $targetCompanyId,
+            'qb_user_id'         => auth()->id(),
+            'qb_firm_company_id' => $firmCompanyId,
+        ]);
         return redirect(QuickBooksService::getAuthorizationUrl($credentials));
     }
 
@@ -98,9 +140,10 @@ class QuickBooksController extends AccountBaseController
                 ->with('error', 'Invalid callback from QuickBooks. Missing required parameters.');
         }
 
-        $userId    = session('qb_user_id');
-        $companyId = session('qb_company_id');
-        session()->forget(['qb_company_id', 'qb_user_id', 'qb_return_route']);
+        $userId         = session('qb_user_id');
+        $companyId      = session('qb_company_id');
+        $firmCompanyId  = session('qb_firm_company_id', $companyId);
+        session()->forget(['qb_company_id', 'qb_user_id', 'qb_firm_company_id', 'qb_return_route']);
 
         if (!$userId || !$companyId) {
             Log::error('QuickBooks OAuth: Missing session data', compact('userId', 'companyId'));
@@ -108,11 +151,14 @@ class QuickBooksController extends AccountBaseController
                 ->with('error', 'Authorization session expired. Please try connecting again.');
         }
 
-        $credentials = $this->resolveCredentials($companyId);
+        // Resolve credentials from the firm company (always has credentials configured).
+        // Using $companyId directly fails for client sub-companies whose created_by is a
+        // user ID rather than a company ID, so the parent lookup cannot find credentials.
+        $credentials = $this->resolveCredentials($firmCompanyId);
 
         if (!$credentials) {
             return redirect()->route($returnRoute)
-                ->with('error', 'QuickBooks credentials are not configured for this company.');
+                ->with('error', 'QuickBooks credentials are not configured. Please set them up in Settings → QuickBooks.');
         }
 
         Log::info('QuickBooks OAuth: Processing callback', compact('userId', 'companyId', 'realmId'));
@@ -120,23 +166,36 @@ class QuickBooksController extends AccountBaseController
         try {
             $tokenData = QuickBooksService::handleCallback($code, $realmId, $credentials);
 
+            // Look up by (company_id, realm_id) first — the actual unique business key.
+            // Falling back to (user_id, company_id) handles the case where the realm
+            // has changed (rare). Without this, a reconnect by a different user than
+            // the original connector would violate the company_id+realm_id unique index.
             $connection = QuickBooksConnection::withoutGlobalScopes()
-                ->where('user_id', $userId)
                 ->where('company_id', $companyId)
-                ->first();
+                ->where('realm_id', $realmId)
+                ->first()
+                ?? QuickBooksConnection::withoutGlobalScopes()
+                    ->where('user_id', $userId)
+                    ->where('company_id', $companyId)
+                    ->first();
 
             if ($connection) {
-                $connection->update(array_merge($tokenData, ['is_active' => true]));
-                $message = 'QuickBooks reconnected successfully!';
+                $connection->update(array_merge($tokenData, [
+                    'user_id'        => $userId,
+                    'is_active'      => true,
+                    'last_synced_at' => now(),
+                ]));
+                $message   = 'QuickBooks reconnected successfully!';
                 $eventType = 'quickbooks_reconnected';
             } else {
                 QuickBooksConnection::create([
-                    'user_id'    => $userId,
-                    'company_id' => $companyId,
-                    'is_active'  => true,
+                    'user_id'        => $userId,
+                    'company_id'     => $companyId,
+                    'is_active'      => true,
+                    'last_synced_at' => now(),
                     ...$tokenData,
                 ]);
-                $message = 'QuickBooks connected successfully!';
+                $message   = 'QuickBooks connected successfully!';
                 $eventType = 'quickbooks_connected';
             }
 
@@ -347,5 +406,47 @@ class QuickBooksController extends AccountBaseController
         }
 
         return $actorCompanyId;
+    }
+
+    /**
+     * Returns true when the given admin company (or any company it manages) is
+     * allowed to connect/reconnect on behalf of $targetCompanyId.
+     *
+     * Mirrors the four-step resolution used in index():
+     *  1. Direct created_by match (fast path)
+     *  2. Admin's user_companies-linked companies (multi-partner scenario)
+     *  3. Companies linked via client users' user_companies entries
+     */
+    private function adminCanManageCompany(int $firmCompanyId, int $targetCompanyId): bool
+    {
+        // Step 1: direct created_by (fast path)
+        $adminCompanyIds = collect([$firmCompanyId])
+            ->merge(
+                auth()->user()->managedCompanies()
+                    ->withoutGlobalScopes()
+                    ->pluck('companies.id')
+            )
+            ->unique()->filter()->values()->all();
+
+        if (Company::withoutGlobalScopes()
+            ->where('id', $targetCompanyId)
+            ->whereIn('created_by', $adminCompanyIds)
+            ->exists()) {
+            return true;
+        }
+
+        // Step 2: via client users' user_companies
+        $directClientIds = Company::withoutGlobalScopes()
+            ->whereIn('created_by', $adminCompanyIds)
+            ->pluck('id');
+
+        $clientUserIds = User::withoutGlobalScopes()
+            ->whereIn('company_id', $directClientIds)
+            ->pluck('id');
+
+        return DB::table('user_companies')
+            ->whereIn('user_id', $clientUserIds)
+            ->where('company_id', $targetCompanyId)
+            ->exists();
     }
 }

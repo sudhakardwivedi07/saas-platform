@@ -140,6 +140,12 @@ class Company extends BaseModel
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /** The partner/firm company that created this client company. */
+    public function creatorCompany(): BelongsTo
+    {
+        return $this->belongsTo(Company::class, 'created_by');
+    }
+
     /** Primary admin user for this company (admin role). */
     public function adminUser(): HasOne
     {

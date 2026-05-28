@@ -41,12 +41,13 @@
 .pi-search-wrap svg { position:absolute;left:10px;color:#94a3b8;pointer-events:none; }
 .pi-search-inp { height:34px;padding:0 12px 0 32px;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;font-family:inherit;color:#1a202c;background:#f8fafc;outline:none;width:210px;transition:border-color .2s; }
 .pi-search-inp:focus { border-color:#1a6aa8; }
-.pi-status-sel { height:34px;border:1px solid #e2e8f0;border-radius:7px;padding:0 28px 0 10px;font-size:13px;font-family:inherit;color:#1a202c;background:#f8fafc url("data:image/svg+xml,%3Csvg xmlns='' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;-webkit-appearance:none;appearance:none;outline:none;cursor:pointer;min-width:140px; }
+.pi-status-sel { height:34px;border:1px solid #e2e8f0;border-radius:7px;padding:0 28px 0 10px;font-size:13px;font-family:inherit;color:#1a202c;background:#f8fafc url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2020/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;-webkit-appearance:none;appearance:none;outline:none;cursor:pointer;min-width:140px; }
 .pi-status-sel:focus { border-color:#1a6aa8; }
 .pi-btn-reset { height:34px;padding:0 14px;border:1px solid #ef4444;border-radius:7px;background:#fff;color:#ef4444;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s; }
 .pi-btn-reset:hover { background:#fef2f2; }
 .pi-btn-generate { height:38px;padding:0 20px;background:#f06b25;color:#fff;border:none;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .2s;white-space:nowrap; }
-.pi-btn-generate:hover { background:#d95a1a; }
+.pi-btn-generate:hover:not(:disabled) { background:#d95a1a; }
+.pi-btn-generate:disabled { background:#9ca3af !important;cursor:not-allowed;pointer-events:none; }
 .pi-btn-export { height:38px;padding:0 16px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;color:#374151;font-size:13.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s; }
 .pi-btn-export:hover { background:#f8fafc;color:#1a202c; }
 
@@ -134,7 +135,7 @@
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             Export
         </button>
-        <button class="pi-btn-generate" onclick="piOpenGenerateModal()">
+        <button id="piHeaderGenerateBtn" class="pi-btn-generate" onclick="piOpenGenerateModal()">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
             Generate New Insight
         </button>
@@ -235,6 +236,7 @@
                 <tr id="pi-row-{{ $report->id }}"
                     data-search="{{ strtolower($report->report_name . ' ' . $clientName . ' ' . $companyName) }}"
                     data-status="{{ $rowStatus }}"
+                    data-company-id="{{ $report->company_id }}"
                     style="{{ $isDeleted ? 'opacity:0.65;' : '' }}">
                     <td>
                         <div class="pi-name-cell">
@@ -336,7 +338,7 @@
 
         <div class="pi-modal-actions">
             <button class="pi-modal-btn-cancel" onclick="piCloseGenerateModal()">Cancel</button>
-            <button class="pi-modal-btn-generate" id="piBtnGenerate" onclick="piDoGenerate()">
+            <button class="pi-modal-btn-generate" id="piBtnGenerate" onclick="piDoGenerate()" disabled>
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
                 Generate Insights
             </button>
@@ -357,11 +359,25 @@
     let perPage   = 10;
     let curPage   = 1;
 
+    const HDR_SPIN = `<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`;
+    const HDR_ICON = `<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`;
+
+    function piSyncHeaderBtn() {
+        const btn = document.getElementById('piHeaderGenerateBtn');
+        if (!btn) return;
+        const anyProcessing = allRows.some(r => r.dataset.status === 'processing');
+        btn.disabled  = anyProcessing;
+        btn.innerHTML = anyProcessing
+            ? HDR_SPIN + ' Generating...'
+            : HDR_ICON + ' Generate New Insight';
+    }
+
     function initTable() {
         const tbody = document.getElementById('piTableBody');
         allRows = Array.from(tbody.querySelectorAll('tr[data-status]'));
         filtered = [...allRows];
         renderPage();
+        piSyncHeaderBtn();
         // Auto-poll for processing rows
         allRows.filter(r => r.dataset.status === 'processing').forEach(r => {
             const id = r.id.replace('pi-row-', '');
@@ -467,19 +483,55 @@
     };
 
     // ── Generate Modal ────────────────────────────────────────────────────────
+    const SPIN_ICON = `<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`;
+    const GEN_ICON  = `<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>`;
+
     window.piOpenGenerateModal = function () {
-        const modal = document.getElementById('piGenerateModal');
-        modal.classList.add('open');
+        document.getElementById('piGenerateModal').classList.add('open');
+        const btn = document.getElementById('piBtnGenerate');
+        const anyProcessing = allRows.some(r => r.dataset.status === 'processing');
+        btn.disabled  = true;
+        btn.innerHTML = anyProcessing ? SPIN_ICON + ' Generating...' : GEN_ICON + ' Generate Insights';
         piLoadClients();
     };
 
     window.piCloseGenerateModal = function () {
         document.getElementById('piGenerateModal').classList.remove('open');
-        document.getElementById('piClientSelect').innerHTML = '<option value="">Choose a client…</option>';
+        document.getElementById('piClientSelect').innerHTML  = '<option value="">Choose a client…</option>';
         document.getElementById('piCompanySelect').innerHTML = '<option value="">Choose a company…</option>';
-        document.getElementById('piCompanySelect').disabled = true;
-        document.getElementById('piBtnGenerate').disabled = false;
+        document.getElementById('piCompanySelect').disabled  = true;
+        const btn = document.getElementById('piBtnGenerate');
+        btn.disabled  = true;
+        btn.innerHTML = GEN_ICON + ' Generate Insights';
     };
+
+    function piUpdateGenerateBtn() {
+        const clientId  = document.getElementById('piClientSelect').value;
+        const companyId = document.getElementById('piCompanySelect').value;
+        const btn = document.getElementById('piBtnGenerate');
+
+        if (!clientId || !companyId) {
+            btn.disabled   = true;
+            btn.innerHTML  = GEN_ICON + ' Generate Insights';
+            return;
+        }
+
+        // Check if a processing report already exists for this company
+        const alreadyRunning = allRows.some(
+            r => String(r.dataset.companyId) === String(companyId) && r.dataset.status === 'processing'
+        );
+
+        if (alreadyRunning) {
+            btn.disabled  = true;
+            btn.innerHTML = SPIN_ICON + ' Generating...';
+        } else {
+            btn.disabled  = false;
+            btn.innerHTML = GEN_ICON + ' Generate Insights';
+        }
+    }
+
+    // Re-check button state whenever company selection changes
+    document.getElementById('piCompanySelect').addEventListener('change', piUpdateGenerateBtn);
 
     window.piCloseModalOnBackdrop = function (e) {
         if (e.target === document.getElementById('piGenerateModal')) piCloseGenerateModal();
@@ -488,7 +540,7 @@
     function piLoadClients() {
         const sel = document.getElementById('piClientSelect');
         sel.innerHTML = '<option value="">Loading clients…</option>';
-        sel.disabled = true;
+        sel.disabled  = true;
 
         fetch('{{ route("partner-insights.clients") }}', {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
@@ -496,7 +548,7 @@
         .then(r => r.json())
         .then(data => {
             sel.innerHTML = '<option value="">Choose a client…</option>';
-            sel.disabled = false;
+            sel.disabled  = false;
             if (data.clients && data.clients.length > 0) {
                 data.clients.forEach(c => {
                     const opt = document.createElement('option');
@@ -510,7 +562,7 @@
         })
         .catch(() => {
             sel.innerHTML = '<option value="">Failed to load clients</option>';
-            sel.disabled = false;
+            sel.disabled  = false;
         });
     }
 
@@ -520,12 +572,13 @@
 
         if (!clientId) {
             compSel.innerHTML = '<option value="">Choose a company…</option>';
-            compSel.disabled = true;
+            compSel.disabled  = true;
+            document.getElementById('piBtnGenerate').disabled = true;
             return;
         }
 
         compSel.innerHTML = '<option value="">Loading companies…</option>';
-        compSel.disabled = true;
+        compSel.disabled  = true;
 
         fetch(`/partner-insights/clients/${clientId}/companies`, {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
@@ -533,58 +586,73 @@
         .then(r => r.json())
         .then(data => {
             compSel.innerHTML = '<option value="">Choose a company…</option>';
-            compSel.disabled = false;
+            compSel.disabled  = false;
             if (data.companies && data.companies.length > 0) {
                 data.companies.forEach(c => {
                     const opt = document.createElement('option');
-                    opt.value = c.id;
+                    opt.value       = c.id;
                     opt.textContent = c.name;
                     compSel.appendChild(opt);
                 });
+                // Auto-select if only one company
+                if (data.companies.length === 1) compSel.value = data.companies[0].id;
             } else {
                 compSel.innerHTML = '<option value="">No QB-connected companies found</option>';
             }
+            piUpdateGenerateBtn();
         })
         .catch(() => {
             compSel.innerHTML = '<option value="">Failed to load companies</option>';
-            compSel.disabled = false;
+            compSel.disabled  = false;
         });
     };
 
     window.piDoGenerate = function () {
-        const clientId  = document.getElementById('piClientSelect').value;
-        const companyId = document.getElementById('piCompanySelect').value;
+        const clientId    = document.getElementById('piClientSelect').value;
+        const companyId   = document.getElementById('piCompanySelect').value;
+        const companyName = document.getElementById('piCompanySelect').options[document.getElementById('piCompanySelect').selectedIndex]?.textContent?.trim() || '';
+        const clientName  = document.getElementById('piClientSelect').options[document.getElementById('piClientSelect').selectedIndex]?.textContent?.split(' (')[0]?.trim() || '';
 
-        if (!clientId)  { Swal.fire({ icon:'warning', title:'Select Client', text:'Please select a client.' }); return; }
-        if (!companyId) { Swal.fire({ icon:'warning', title:'Select Company', text:'Please select a company.' }); return; }
+        if (!clientId || !companyId) return;
 
-        const btn = document.getElementById('piBtnGenerate');
-        btn.disabled = true;
-        btn.innerHTML = '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg> Generating…';
+        // Disable header button immediately
+        const hdrBtn = document.getElementById('piHeaderGenerateBtn');
+        if (hdrBtn) { hdrBtn.disabled = true; hdrBtn.innerHTML = HDR_SPIN + ' Generating...'; }
+
+        // Close the form modal and immediately show the generating overlay
+        piCloseGenerateModal();
+
+        Swal.fire({
+            title: 'Generating insights',
+            html: `<p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0">
+                       Starting insight generation&hellip; You can navigate to other pages freely while this runs.
+                   </p>`,
+            showConfirmButton: false,
+            allowOutsideClick: true,
+            allowEscapeKey: true,
+            didOpen: () => Swal.showLoading(),
+            customClass: { popup: 'pi-swal-generating' },
+        });
 
         fetch('{{ route("partner-insights.generate") }}', {
             method:  'POST',
             headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN':CSRF, 'Accept':'application/json' },
-            body:    JSON.stringify({ client_id: parseInt(clientId), company_id: parseInt(companyId) }),
+            body:    JSON.stringify({ company_id: parseInt(companyId) }),
         })
         .then(r => r.json())
         .then(data => {
-            piCloseGenerateModal();
             if (data.status === 'processing') {
-                Swal.fire({
-                    title: 'Generating Insights',
-                    html:  '<p>QuickBooks data synced. Insights are being generated for <strong>' + (data.company_name || '') + '</strong>. This may take a few minutes.</p>',
-                    icon:  'info', allowOutsideClick: true, showConfirmButton: true, confirmButtonText: 'OK', confirmButtonColor: '#1a6aa8',
-                });
-                prependRow(data.report_id, data.report_name, data.client_name || '', data.company_name || '');
+                Swal.close();
+                prependRow(data.report_id, data.report_name, data.client_name || clientName, data.company_name || companyName, companyId);
                 pollStatus(data.report_id);
             } else {
                 Swal.fire({ icon:'error', title:'Error', text: data.message || 'Failed to generate insights.' });
+                piSyncHeaderBtn();
             }
         })
         .catch(() => {
-            piCloseGenerateModal();
             Swal.fire({ icon:'error', title:'Error', text:'Network error. Please try again.' });
+            piSyncHeaderBtn();
         });
     };
 
@@ -602,15 +670,16 @@
         .catch(() => setTimeout(() => pollStatus(id), 15000));
     }
 
-    function prependRow(id, name, clientName, companyName) {
+    function prependRow(id, name, clientName, companyName, companyId) {
         const tbody = document.getElementById('piTableBody');
         const empty = document.getElementById('pi-empty-row');
         if (empty) empty.style.display = 'none';
 
         const tr = document.createElement('tr');
         tr.id = 'pi-row-' + id;
-        tr.dataset.status = 'processing';
-        tr.dataset.search = (name + ' ' + clientName + ' ' + companyName).toLowerCase();
+        tr.dataset.status    = 'processing';
+        tr.dataset.companyId = companyId || '';
+        tr.dataset.search    = (name + ' ' + clientName + ' ' + companyName).toLowerCase();
         tr.innerHTML = `
             <td><div class="pi-name-cell">
                 <span class="pi-name-icon"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span>
@@ -625,6 +694,7 @@
         allRows.unshift(tr);
         filtered.unshift(tr);
         renderPage();
+        piSyncHeaderBtn();
     }
 
     function markReady(id, encId) {
@@ -633,6 +703,7 @@
         const badge = document.getElementById('pi-badge-' + id);
         if (badge) { badge.className = 'badge badge-draft'; badge.textContent = 'Draft'; }
         row.dataset.status = 'draft';
+
         const viewUrl = `/partner-insights/${encId}/view`;
         const nameCell = row.querySelector('.pi-name-cell span[style]');
         if (nameCell) {
@@ -644,7 +715,27 @@
         if (actions) {
             actions.innerHTML = `<a href="${viewUrl}" class="pi-btn-view">View</a>`;
         }
-        Swal.fire({ icon:'success', title:'Insight Ready!', text:'The insight has been generated and is ready to view.', timer:3000, showConfirmButton:false });
+
+        // Refresh the Generate button and header button
+        piUpdateGenerateBtn();
+        piSyncHeaderBtn();
+
+        // Success popup
+        Swal.fire({
+            title: 'Insight Generated!',
+            html: `<p style="color:#6b7280;font-size:14px;line-height:1.6">
+                       Your CFO financial insight is ready to view.
+                   </p>`,
+            icon: 'success',
+            confirmButtonText: 'View Insight',
+            showCancelButton: true,
+            cancelButtonText: 'Later',
+            confirmButtonColor: '#f06b25',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: false,
+        }).then(result => {
+            if (result.isConfirmed) window.location.href = viewUrl;
+        });
     }
 
     function markFailed(id) {
@@ -655,6 +746,7 @@
         row.dataset.status = 'failed';
         const vb = row.querySelector('.pi-btn-view');
         if (vb) { vb.textContent = 'Failed'; vb.style.background = '#9ca3af'; }
+        piSyncHeaderBtn();
     }
 
     // ── Download ──────────────────────────────────────────────────────────────
@@ -710,5 +802,10 @@
     if (document.readyState === 'complete' || document.readyState === 'interactive') initTable();
 }());
 </script>
-<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+.pi-swal-generating { padding: 40px 36px 36px !important; border-radius: 16px !important; max-width: 420px !important; }
+.pi-swal-generating .swal2-title { font-size: 22px !important; font-weight: 700 !important; color: #1a202c !important; margin-bottom: 10px !important; }
+.pi-swal-generating .swal2-loading { margin-top: 18px !important; }
+</style>
 @endpush

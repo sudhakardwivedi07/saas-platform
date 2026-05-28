@@ -25,12 +25,12 @@
 .rd-btn-edit { background:#fff;color:#1a6aa8;border:1.5px solid #1a6aa8; }
 .rd-btn-edit:hover { background:#f0f7ff;text-decoration:none; }
 .rd-btn-edit.active { background:#1a6aa8;color:#fff; }
-.rd-btn-save { background:#10b981;color:#fff;border:1.5px solid #10b981; }
-.rd-btn-save:hover { background:#059669;border-color:#059669;text-decoration:none; }
+.rd-btn-save { background:#f06b25;color:#fff;border:1.5px solid #f06b25; }
+.rd-btn-save:hover { background:#d95a1a;border-color:#d95a1a;text-decoration:none; }
 .rd-btn-pdf { background:#f06b25;color:#fff;border:1.5px solid #f06b25; }
 .rd-btn-pdf:hover { background:#d95a1a;border-color:#d95a1a;text-decoration:none; }
-.rd-btn-publish { background:#1a6aa8;color:#fff;border:1.5px solid #1a6aa8; }
-.rd-btn-publish:hover { background:#155a8a;border-color:#155a8a;text-decoration:none; }
+.rd-btn-publish { background:#f06b25;color:#fff;border:1.5px solid #f06b25; }
+.rd-btn-publish:hover { background:#d95a1a;border-color:#d95a1a;text-decoration:none; }
 .rd-btn:disabled { opacity:.6;cursor:not-allowed; }
 
 /* ── Publish status badge ────────────────────────────────────── */

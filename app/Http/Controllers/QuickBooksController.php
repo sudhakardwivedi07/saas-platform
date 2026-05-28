@@ -79,6 +79,17 @@ class QuickBooksController extends AccountBaseController
             ->orderBy('company_name')
             ->get();
 
+        // Auto-refresh any expired access tokens so the status stays current
+        $this->autoRefreshExpiredTokens($this->managedCompanies, $companyId);
+
+        // Reload connections so refreshed tokens are reflected
+        $this->managedCompanies->each(fn($co) => $co->unsetRelation('quickbooksConnections'));
+        $this->managedCompanies->load([
+            'quickbooksConnections' => fn($q) => $q->withoutGlobalScopes()
+                ->where('is_active', true)
+                ->orderByDesc('created_at'),
+        ]);
+
         // Show the "Partner" column only when multiple admin companies are in scope
         $this->showPartnerColumn = count($adminCompanyIds) > 1;
 
@@ -338,6 +349,23 @@ class QuickBooksController extends AccountBaseController
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private function autoRefreshExpiredTokens(\Illuminate\Support\Collection $companies, int $firmCompanyId): void
+    {
+        foreach ($companies as $company) {
+            foreach ($company->quickbooksConnections as $connection) {
+                if (!$connection->isAccessTokenExpired()) continue;
+                try {
+                    $credentials = $this->resolveCredentials($company->id)
+                        ?? $this->resolveCredentials($firmCompanyId);
+                    if (!$credentials) continue;
+                    (new QuickBooksService($connection, $credentials))->refreshTokenIfNeeded();
+                } catch (\Throwable $e) {
+                    Log::warning("QB auto-refresh failed for connection {$connection->id}: " . $e->getMessage());
+                }
+            }
+        }
+    }
 
     /**
      * Load QB credentials for the given company.

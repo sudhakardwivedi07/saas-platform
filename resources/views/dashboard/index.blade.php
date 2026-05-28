@@ -735,11 +735,6 @@
 @endif {{-- end @if($isFreshUser) / @else --}}
 
 {{-- View Client Portal Modal --}}
-{{-- Hidden form: POSTs to clients/{id}/login-as for full client impersonation --}}
-<form id="vcmLoginAsForm" method="POST" style="display:none">
-    @csrf
-    <input type="hidden" name="redirect_to" id="vcmRedirectTo" value="/dashboard">
-</form>
 
 <div id="viewClientModal" style="display:none;position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:14px;width:100%;max-width:520px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden">
@@ -752,27 +747,26 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
-        <div style="padding:0 22px;max-height:340px;overflow-y:auto">
+        <div style="padding:0 22px;max-height:380px;overflow-y:auto">
             <table style="width:100%;border-collapse:collapse">
                 <thead>
                     <tr style="border-bottom:1px solid var(--border)">
                         <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 0 10px">Client Name</th>
                         <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 8px 10px">Company</th>
-                        <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 0 10px">Publish Status</th>
+                        <th style="text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 8px 10px">Status</th>
+                        <th style="text-align:center;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:12px 0 10px">Action</th>
                     </tr>
                 </thead>
-                <tbody id="vcmTableBody">
+                <tbody>
                     @foreach($modalClients as $mc)
                     @php
                         $cid    = $mc->company_id;
                         $status = $companyPublishStatus[$cid] ?? null;
                     @endphp
-                    <tr class="vcm-row" data-client-id="{{ $mc->id }}"
-                        onclick="selectVcmRow(this)"
-                        style="cursor:pointer;border-bottom:1px solid var(--bg);transition:background .1s">
-                        <td style="padding:11px 0;font-size:13px;color:var(--text-1);font-weight:500">{{ $mc->name }}</td>
-                        <td style="padding:11px 8px;font-size:13px;color:var(--text-2)">{{ $mc->company?->company_name ?? '—' }}</td>
-                        <td style="padding:11px 0">
+                    <tr style="border-bottom:1px solid var(--bg)">
+                        <td style="padding:10px 0;font-size:13px;color:var(--text-1);font-weight:500">{{ $mc->name }}</td>
+                        <td style="padding:10px 8px;font-size:13px;color:var(--text-2)">{{ $mc->company?->company_name ?? '—' }}</td>
+                        <td style="padding:10px 8px">
                             @if($status === 'Published')
                                 <span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11.5px;font-weight:600;background:rgba(16,185,129,.12);color:#059669">Published</span>
                             @elseif($status === 'Draft')
@@ -781,17 +775,23 @@
                                 <span style="font-size:13px;color:var(--text-3)">—</span>
                             @endif
                         </td>
+                        <td style="padding:10px 0;text-align:center">
+                            <form method="POST" action="{{ route('clients.login-as', $mc->id) }}" style="display:inline">
+                                @csrf
+                                <input type="hidden" name="redirect_to" value="/dashboard">
+                                <button type="submit" style="display:inline-flex;align-items:center;gap:5px;padding:5px 14px;background:var(--orange);color:#fff;border-radius:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;white-space:nowrap">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                                    View
+                                </button>
+                            </form>
+                        </td>
                     </tr>
                     @endforeach
                 </tbody>
             </table>
         </div>
-        <div style="display:flex;gap:10px;padding:16px 22px 20px;justify-content:flex-end;border-top:1px solid var(--border);margin-top:4px">
-            <button onclick="closeViewClientModal()" class="btn btn-secondary btn-sm">Cancel</button>
-            <button id="vcmGoBtn" onclick="goToClientPage()" class="btn btn-primary btn-sm" disabled style="display:inline-flex;align-items:center;gap:6px">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-                Enter Client Portal
-            </button>
+        <div style="padding:12px 22px 16px;border-top:1px solid var(--border);margin-top:2px;text-align:right">
+            <button onclick="closeViewClientModal()" class="btn btn-secondary btn-sm">Close</button>
         </div>
     </div>
 </div>
@@ -833,36 +833,12 @@ if (CURRENT_PERIOD === 'custom') {
 }
 
 // View Client Portal Modal
-// loginAs URLs — POST to these to impersonate the client with full permissions
-const vcmLoginAsRoutes = {!! json_encode(collect($modalClients)->mapWithKeys(fn($c) => [$c->id => route('clients.login-as', $c->id)])) !!};
-let vcmSelectedId = null;
-
 function openViewClientModal() {
-    vcmSelectedId = null;
-    document.getElementById('vcmGoBtn').disabled = true;
-    document.querySelectorAll('.vcm-row').forEach(r => r.style.background = '');
     document.getElementById('viewClientModal').style.display = 'flex';
 }
 
 function closeViewClientModal() {
     document.getElementById('viewClientModal').style.display = 'none';
-}
-
-function selectVcmRow(row) {
-    document.querySelectorAll('.vcm-row').forEach(r => r.style.background = '');
-    row.style.background = 'rgba(240,107,33,.06)';
-    vcmSelectedId = row.dataset.clientId;
-    document.getElementById('vcmGoBtn').disabled = false;
-}
-
-function goToClientPage() {
-    if (!vcmSelectedId) return;
-    const actionUrl = vcmLoginAsRoutes[vcmSelectedId];
-    if (!actionUrl) return;
-    // Point the hidden form at this client's login-as endpoint and submit
-    const form = document.getElementById('vcmLoginAsForm');
-    form.action = actionUrl;
-    form.submit();
 }
 
 document.getElementById('viewClientModal')?.addEventListener('click', function (e) {

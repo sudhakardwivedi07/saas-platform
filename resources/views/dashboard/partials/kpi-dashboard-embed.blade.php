@@ -43,17 +43,20 @@
     const KPI_DATA_URL       = @json($kpiDataUrl);
     const KPI_DETAIL_BASE    = @json(rtrim($kpiDetailBaseUrl, '/'));
     const CLIENT_HIDDEN_KPIS = @json(array_values($clientHiddenKpis ?? []));
-    const KPI_DETAIL_ROUTES = {
-        'runway-burn': @json(route('dashboard-kpi.runway-burn-details')),
-        'working-capital': @json(route('dashboard-kpi.working-capital-details')),
-        'operating-cashflow': @json(route('dashboard-kpi.operating-cash-flow-details')),
-        'revenue': @json(route('dashboard-kpi.revenue-details')),
-        'ebitda': @json(route('dashboard-kpi.ebitda-details')),
-        'margin-trends': @json(route('dashboard-kpi.margin-trends-details')),
-        'ar-aging': @json(route('dashboard-kpi.ar-aging-details')),
-        'ap-leverage': @json(route('dashboard-kpi.ap-aging-details')),
-        'revenue-concentration': @json(route('dashboard-kpi.revenue-concentration-details')),
-    };
+    // Build detail routes from the context-aware base URL so admin view uses /clients/{id}/kpi-detail/...
+    const KPI_DETAIL_ROUTES = (function (base) {
+        return {
+            'runway-burn':           base + '/runway-burn',
+            'working-capital':       base + '/working-capital',
+            'operating-cashflow':    base + '/operating-cashflow',
+            'revenue':               base + '/revenue',
+            'ebitda':                base + '/ebitda',
+            'margin-trends':         base + '/margin-trends',
+            'ar-aging':              base + '/ar-aging',
+            'ap-leverage':           base + '/ap-leverage',
+            'revenue-concentration': base + '/revenue-concentration',
+        };
+    }(KPI_DETAIL_BASE));
     let selectedCompanyId = @json($__sel);
 
     const KPI_DETAIL_TITLES = {

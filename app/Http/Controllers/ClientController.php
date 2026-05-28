@@ -432,7 +432,8 @@ class ClientController extends AccountBaseController
 
     public function saveDashboardDraft(Request $request, $id)
     {
-        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
+        $canEdit = auth()->user()->hasAnyRole(['admin', 'manager']) || session('impersonating_client_original_id');
+        abort_403(!$canEdit);
 
         $clientUser = User::findOrFail($id);
         $company    = $clientUser->company;
@@ -451,7 +452,8 @@ class ClientController extends AccountBaseController
 
     public function publishDashboard(Request $request, $id)
     {
-        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
+        $canEdit = auth()->user()->hasAnyRole(['admin', 'manager']) || session('impersonating_client_original_id');
+        abort_403(!$canEdit);
 
         $clientUser = User::findOrFail($id);
         $company    = $clientUser->company;

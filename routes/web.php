@@ -84,6 +84,8 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/kpi-synopsis-files/{kpiId}', [DashboardKPIController::class, 'getKpiSynopsisFiles'])->name('kpi-synopsis-files');
         Route::post('/kpi-synopsis-api', [DashboardKPIController::class, 'callKpiSynopsisApi'])->name('kpi-synopsis-api');
+        Route::post('/kpi-synopsis-save', [DashboardKPIController::class, 'saveKpiSynopsis'])->name('kpi-synopsis-save');
+        Route::get('/kpi-synopsis-get', [DashboardKPIController::class, 'getKpiSynopsisOverride'])->name('kpi-synopsis-get');
     });
 
     // Profile

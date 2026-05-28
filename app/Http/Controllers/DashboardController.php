@@ -39,6 +39,19 @@ class DashboardController extends AccountBaseController
         // Simple dashboard for basic users — no access to management stats
         if (!auth()->user()->hasAnyRole(['admin', 'manager'])) {
             $this->loadUserPlanData($company);
+
+            // If an admin is impersonating this client, inject the admin bar data
+            // so Edit Mode / Save Draft / Publish remain available.
+            if (session('impersonating_client_original_id')) {
+                $clientUser  = auth()->user();
+                $dashSetting = ClientDashboardSetting::forCompany($company->id);
+                $this->isAdminView            = true;
+                $this->viewingAsUser          = $clientUser;
+                $this->dashboardPublishStatus = $dashSetting->publish_status ?? 'published';
+                $this->draftHiddenKpis        = $dashSetting->draft_hidden_kpis ?? [];
+                $this->backUrl                = route('clients.stop-impersonating');
+            }
+
             return view('dashboard.user', $this->data);
         }
 
@@ -71,9 +84,14 @@ class DashboardController extends AccountBaseController
         $this->activeClientCount  = $allClients->where('status', 'active')->count();
         $this->companyCount       = $allCompanies->count();
         $this->activeCompanyCount = $allCompanies->where('status', 'active')->count();
-        $this->qbConnectedCount   = $allCompanies->filter(
-            fn($c) => $c->quickbooksConnections->where('is_active', true)->isNotEmpty()
-        )->count();
+        // Count via direct query to bypass any global scopes on the relation
+        $this->qbConnectedCount = $subCompanyIds->isNotEmpty()
+            ? QuickBooksConnection::withoutGlobalScopes()
+                ->whereIn('company_id', $subCompanyIds)
+                ->where('is_active', true)
+                ->distinct('company_id')
+                ->count('company_id')
+            : 0;
 
         // Active subscriptions = companies with an active/trial subscription or a client plan assigned without a subscription record
         $this->activeSubscriptions = $allCompanies->filter(
@@ -138,12 +156,12 @@ class DashboardController extends AccountBaseController
         $this->startDateInput = $startDate->format('Y-m-d');
         $this->endDateInput   = $endDate->format('Y-m-d');
 
-        // Pending Review = Analyzed reports from the current period (insights ready for admin review)
-        $this->pendingReview = Report::withoutGlobalScopes()
-            ->whereIn('company_id', $reportCompanyIds)
-            ->where('status', 'Analyzed')
-            ->whereBetween('updated_at', [$startDate, $endDate])
-            ->count();
+        // Pending Review = client companies whose dashboard publish_status is 'draft'
+        $this->pendingReview = $subCompanyIds->isNotEmpty()
+            ? ClientDashboardSetting::whereIn('company_id', $subCompanyIds)
+                ->where('publish_status', 'draft')
+                ->count()
+            : 0;
 
         // Chart: insights generated per month for last 6 months
         $chartLabels   = [];
@@ -161,30 +179,15 @@ class DashboardController extends AccountBaseController
         $this->chartLabels   = $chartLabels;
         $this->chartInsights = $chartInsights;
 
-        // Publish status per company for "View Client Portal" modal
-        // Published = has at least one Analyzed report; Draft = has a report in progress; — = none
+        // Publish status per company for "View Client Portal" modal — read from client_dashboard_settings
         $companyPublishStatus = [];
         if ($subCompanyIds->isNotEmpty()) {
-            $analyzedCompanyIds = Report::withoutGlobalScopes()
-                ->whereIn('company_id', $subCompanyIds)
-                ->where('status', 'Analyzed')
-                ->pluck('company_id')
-                ->unique()
-                ->flip();
-            $draftCompanyIds = Report::withoutGlobalScopes()
-                ->whereIn('company_id', $subCompanyIds)
-                ->whereIn('status', ['Uploading', 'Analyzing'])
-                ->pluck('company_id')
-                ->unique()
-                ->flip();
+            $settings = ClientDashboardSetting::whereIn('company_id', $subCompanyIds)
+                ->get(['company_id', 'publish_status'])
+                ->keyBy('company_id');
             foreach ($subCompanyIds as $cid) {
-                if ($analyzedCompanyIds->has($cid)) {
-                    $companyPublishStatus[$cid] = 'Published';
-                } elseif ($draftCompanyIds->has($cid)) {
-                    $companyPublishStatus[$cid] = 'Draft';
-                } else {
-                    $companyPublishStatus[$cid] = null;
-                }
+                $ps = $settings->get($cid)?->publish_status ?? null;
+                $companyPublishStatus[$cid] = $ps ? ucfirst($ps) : null;
             }
         }
         $this->companyPublishStatus = $companyPublishStatus;

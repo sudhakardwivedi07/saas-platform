@@ -25,10 +25,12 @@
 .rd-btn-edit { background:#fff;color:#1a6aa8;border:1.5px solid #1a6aa8; }
 .rd-btn-edit:hover { background:#f0f7ff;text-decoration:none; }
 .rd-btn-edit.active { background:#1a6aa8;color:#fff; }
-.rd-btn-save { background:#10b981;color:#fff;border:1.5px solid #10b981; }
-.rd-btn-save:hover { background:#059669;border-color:#059669;text-decoration:none; }
+.rd-btn-save { background:#f06b25;color:#fff;border:1.5px solid #f06b25; }
+.rd-btn-save:hover { background:#d95a1a;border-color:#d95a1a;text-decoration:none; }
 .rd-btn-pdf { background:#f06b25;color:#fff;border:1.5px solid #f06b25; }
 .rd-btn-pdf:hover { background:#d95a1a;border-color:#d95a1a;text-decoration:none; }
+.rd-btn-publish { background:#f06b25;color:#fff;border:1.5px solid #f06b25; }
+.rd-btn-publish:hover { background:#d95a1a;border-color:#d95a1a;text-decoration:none; }
 .rd-btn:disabled { opacity:.6;cursor:not-allowed; }
 
 /* ── Publish status badge ────────────────────────────────────── */
@@ -141,7 +143,6 @@
 
         @if($report->insight_json_data)
         <div class="rd-header-actions">
-            @if($report->isDraft())
             <button id="rdBtnEdit" class="rd-btn rd-btn-edit" onclick="rdToggleEdit()">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                 <span id="rdBtnEditLabel">Edit Insight</span>
@@ -149,6 +150,11 @@
             <button id="rdBtnSave" class="rd-btn rd-btn-save" onclick="rdSaveEdits()">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
                 <span id="rdBtnSaveLabel">Save</span>
+            </button>
+            @if($report->isDraft())
+            <button id="rdBtnPublish" class="rd-btn rd-btn-publish" onclick="rdPublishInsight()">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span id="rdBtnPublishLabel">Publish Insight</span>
             </button>
             @endif
             <a href="{{ route('partner-insights.export-pdf', $report->id) }}" class="rd-btn rd-btn-pdf" id="rdBtnPdf"
@@ -333,7 +339,6 @@
 
     // ── Edit mode ─────────────────────────────────────────────────────────────
     window.rdToggleEdit = function () {
-        if (!IS_DRAFT) return;
         editMode = !editMode;
 
         const btn      = document.getElementById('rdBtnEdit');
@@ -434,6 +439,87 @@
         });
     };
 
+
+    // ── Publish ───────────────────────────────────────────────────────────────
+    window.rdPublishInsight = function () {
+        if (!IS_DRAFT) return;
+        Swal.fire({
+            html: `
+                <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
+                    <div style="width:70px;height:70px;background:#eff6ff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+                        <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#1a6aa8" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Publish Insight?</h2>
+                    <p style="font-size:14px;color:#64748b;margin:0;text-align:center;">This will make the insight visible to the client. You won't be able to edit it after publishing.</p>
+                </div>`,
+            showConfirmButton: true,
+            confirmButtonText: 'Yes, Publish',
+            showCancelButton: true,
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#1a6aa8',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+            didOpen: (popup) => {
+                const actions = popup.querySelector('.swal2-actions');
+                if (actions) actions.style.cssText = 'width:100%;padding:0 24px;display:flex;gap:10px;';
+                popup.querySelectorAll('.swal2-confirm,.swal2-cancel').forEach(b => {
+                    b.style.cssText = 'flex:1;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;border:none;cursor:pointer;';
+                });
+            },
+        }).then(result => {
+            if (!result.isConfirmed) return;
+
+            const btn = document.getElementById('rdBtnPublish');
+            if (btn) { btn.disabled = true; document.getElementById('rdBtnPublishLabel').textContent = 'Publishing…'; }
+
+            fetch(PUBLISH_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                body: JSON.stringify({}),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update badge
+                    const badge = document.getElementById('rdPublishBadge');
+                    if (badge) {
+                        badge.className = 'rd-publish-badge published';
+                        badge.innerHTML = '<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Published';
+                    }
+                    // Hide only the Publish button once published
+                    const publishBtn = document.getElementById('rdBtnPublish');
+                    if (publishBtn) publishBtn.style.display = 'none';
+                    Swal.fire({
+                        html: `
+                            <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
+                                <div style="width:70px;height:70px;background:#d1fae5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+                                    <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#065f46" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                                <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Published!</h2>
+                                <p style="font-size:14px;color:#64748b;margin:0;">The insight is now visible to the client.</p>
+                            </div>`,
+                        showConfirmButton: true,
+                        confirmButtonText: 'Got it',
+                        confirmButtonColor: '#1a6aa8',
+                        allowOutsideClick: true,
+                        didOpen: (popup) => {
+                            const actions = popup.querySelector('.swal2-actions');
+                            if (actions) actions.style.cssText = 'width:100%;padding:0 24px;display:flex;';
+                            const b = popup.querySelector('.swal2-confirm');
+                            if (b) b.style.cssText = 'flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:#1a6aa8;border:none;color:#fff;cursor:pointer;';
+                        },
+                    });
+                } else {
+                    if (btn) { btn.disabled = false; document.getElementById('rdBtnPublishLabel').textContent = 'Publish Insight'; }
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Could not publish.' });
+                }
+            })
+            .catch(() => {
+                if (btn) { btn.disabled = false; document.getElementById('rdBtnPublishLabel').textContent = 'Publish Insight'; }
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Network error. Please try again.' });
+            });
+        });
+    };
 
     // ── Section parsing (mirrors firm insight view) ───────────────────────────
     const canonicalSections = ['Executive Summary','Financial Snapshot','Key Trends & Drivers','Wins & Opportunities','Risks & Concerns','Forensic Observations','Actionable Recommendations'];

@@ -721,18 +721,16 @@
         piSyncHeaderBtn();
 
         // Success popup
+        const companyName = row?.cells[2]?.textContent?.trim() || '';
         Swal.fire({
             title: 'Insight Generated!',
             html: `<p style="color:#6b7280;font-size:14px;line-height:1.6">
-                       Your CFO financial insight is ready to view.
+                       Your CFO level Financial Insight is ready to view for <strong>"${companyName}"</strong>.
                    </p>`,
             icon: 'success',
             confirmButtonText: 'View Insight',
-            showCancelButton: true,
-            cancelButtonText: 'Later',
+            showCancelButton: false,
             confirmButtonColor: '#f06b25',
-            cancelButtonColor: '#6b7280',
-            reverseButtons: false,
         }).then(result => {
             if (result.isConfirmed) window.location.href = viewUrl;
         });

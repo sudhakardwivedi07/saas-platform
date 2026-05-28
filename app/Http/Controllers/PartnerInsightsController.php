@@ -435,10 +435,6 @@ class PartnerInsightsController extends AccountBaseController
             ->where('id', $reportId)
             ->firstOrFail();
 
-        if ($report->isPublished()) {
-            return response()->json(['status' => 'error', 'message' => 'Published insights cannot be edited.'], 403);
-        }
-
         $sections = $request->sections; // [{title, html}]
 
         // Rebuild plain-text `report` key so PDF export continues to work

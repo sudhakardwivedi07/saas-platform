@@ -372,6 +372,20 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 </div>
 @endif
 
+{{-- Client Impersonation Banner --}}
+@if(session('impersonating_client_original_id'))
+<div class="ca-impersonate-bar" style="background:#1a6aa8;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap">
+    <span>
+        👤 Logged in as <strong>{{ session('impersonating_client_name') }}</strong>
+        <span style="opacity:.75;font-weight:400"> — {{ session('impersonating_client_email') }}</span>
+    </span>
+    <a href="{{ route('clients.stop-impersonating') }}"
+       style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:6px;padding:3px 12px;font-size:12.5px;font-weight:600;text-decoration:none;display:inline-block">
+        ↩ Exit — Return to Admin
+    </a>
+</div>
+@endif
+
 <div style="display:flex;min-height:100vh">
 
 {{-- ── Sidebar ──────────────────────────────────────────── --}}

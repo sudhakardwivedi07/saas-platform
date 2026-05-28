@@ -11,6 +11,7 @@ use App\Models\SuperAdmin\Package;
 use App\Models\SuperAdmin\Subscription;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -19,17 +20,11 @@ class ClientController extends AccountBaseController
     private function enforceMaxCompaniesLimit(int $ownerCompanyId): void
     {
         $ownerCompany = Company::withoutGlobalScopes()->find($ownerCompanyId);
-        $plan = $ownerCompany?->activePlan();
+        $plan         = $ownerCompany?->activePlan();
         $maxCompanies = $plan?->max_companies;
 
-        if (!$plan) {
-            abort(
-                422,
-                'No plan is assigned to your account. Please select a subscription plan before adding clients or companies.'
-            );
-        }
-
-        if (!$maxCompanies || (int) $maxCompanies <= 0) {
+        // No plan assigned or no limit set — allow freely
+        if (!$plan || !$maxCompanies || (int) $maxCompanies <= 0) {
             return;
         }
 
@@ -67,32 +62,6 @@ class ClientController extends AccountBaseController
             ->where('is_active', true)
             ->orderBy('sort')
             ->value('id');
-    }
-
-    private function resolveClientPackageId(int $parentCompanyId, ?int $requestedPackageId): ?int
-    {
-        if ($requestedPackageId) {
-            $requestedPlan = ClientPackage::forCompany($parentCompanyId)
-                ->where('is_active', true)
-                ->find($requestedPackageId);
-
-            if ($requestedPlan) {
-                return $requestedPlan->id;
-            }
-        }
-
-        // Default to the first active free plan when no explicit plan was selected.
-        $freePlan = ClientPackage::forCompany($parentCompanyId)
-            ->where('is_active', true)
-            ->where(function ($query) {
-                $query->where('is_free', true)
-                    ->orWhere('monthly_price', '<=', 0);
-            })
-            ->orderBy('sort')
-            ->orderBy('id')
-            ->first();
-
-        return $freePlan?->id;
     }
 
     public function __construct()
@@ -165,14 +134,12 @@ class ClientController extends AccountBaseController
         abort_403(!auth()->user()->can('create_users'));
 
         $request->validate([
-            'name'              => 'required|string|max:255',
-            'email'             => 'required|email|max:255|unique:users,email',
-            'phone'             => 'nullable|string|max:30',
-            'company_name'      => 'required|string|max:255',
-            'industry_type'     => 'required|string|max:100',
-            'entity_type'       => 'required|string|max:100',
-            'client_package_id' => 'nullable|exists:client_packages,id',
-            'password'          => 'required|string|min:8',
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|email|max:255|unique:users,email',
+            'phone'         => 'nullable|string|max:30',
+            'company_name'  => 'required|string|max:255',
+            'industry_type' => 'required|string|max:100',
+            'entity_type'   => 'required|string|max:100',
         ]);
 
         $parentCompanyId = company()->id;
@@ -186,33 +153,14 @@ class ClientController extends AccountBaseController
             throw $e;
         }
 
-        // Enforce plan's Max Clients limit (max_users on the plan)
-        $ownerCompany = Company::withoutGlobalScopes()->find($parentCompanyId);
-        $plan = $ownerCompany?->activePlan();
-        if ($plan && isset($plan->max_users) && (int) $plan->max_users > 0) {
-            $currentClientCount = Company::withoutGlobalScopes()
-                ->where('created_by', $parentCompanyId)
-                ->count();
-            if ($currentClientCount >= (int) $plan->max_users) {
-                return redirect()->route('clients.index')
-                    ->with('error', 'Maximum client limit reached. Please upgrade your plan to add more clients.');
-            }
-        }
-
-        $resolvedClientPackageId = $this->resolveClientPackageId(
-            $parentCompanyId,
-            $request->filled('client_package_id') ? (int) $request->client_package_id : null
-        );
-
         $subCompany = Company::create([
-            'created_by'        => $parentCompanyId,
-            'company_name'      => $request->company_name,
-            'company_email'     => $request->email,
-            'status'            => 'active',
-            'package_id'        => $this->resolveFallbackPackageId(),
-            'industry_type'     => $request->industry_type,
-            'entity_type'       => $request->entity_type,
-            'client_package_id' => $resolvedClientPackageId,
+            'created_by'    => $parentCompanyId,
+            'company_name'  => $request->company_name,
+            'company_email' => $request->email,
+            'status'        => 'active',
+            'package_id'    => $this->resolveFallbackPackageId(),
+            'industry_type' => $request->industry_type,
+            'entity_type'   => $request->entity_type,
         ]);
 
         $user = User::create([
@@ -220,13 +168,13 @@ class ClientController extends AccountBaseController
             'name'       => $request->name,
             'email'      => $request->email,
             'mobile'     => $request->phone,
-            'password'   => Hash::make($request->password),
+            'password'   => Hash::make(Str::random(16)),
         ]);
 
         $user->assignRole('client');
 
         return redirect()->route('clients.index')
-            ->with('success', 'Client "' . $user->name . '" created successfully. The client can now access their account.');
+            ->with('success', 'Client "' . $user->name . '" added successfully.');
     }
 
     public function bulkUpload(\Illuminate\Http\Request $request)
@@ -260,7 +208,6 @@ class ClientController extends AccountBaseController
             if (count($row) < 2) continue;
 
             [$clientName, $email] = array_map('trim', $row);
-            $planTier = trim($row[2] ?? '');
 
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $skipped++;
@@ -272,32 +219,19 @@ class ClientController extends AccountBaseController
                 continue;
             }
 
-            $pkg = $planTier
-                ? ClientPackage::forCompany($parentCompanyId)
-                    ->where('is_active', true)
-                    ->whereRaw('LOWER(name) = ?', [strtolower($planTier)])
-                    ->first()
-                : null;
-
-            $resolvedClientPackageId = $this->resolveClientPackageId(
-                $parentCompanyId,
-                $pkg?->id
-            );
-
             $subCompany = Company::create([
-                'created_by'        => $parentCompanyId,
-                'company_name'      => $clientName ?: ($email . "'s Company"),
-                'company_email'     => $email,
-                'status'            => 'active',
-                'package_id'        => $this->resolveFallbackPackageId(),
-                'client_package_id' => $resolvedClientPackageId,
+                'created_by'    => $parentCompanyId,
+                'company_name'  => $clientName ?: ($email . "'s Company"),
+                'company_email' => $email,
+                'status'        => 'active',
+                'package_id'    => $this->resolveFallbackPackageId(),
             ]);
 
             $user = User::create([
                 'company_id' => $subCompany->id,
                 'name'       => $clientName ?: $email,
                 'email'      => $email,
-                'password'   => Hash::make(\Illuminate\Support\Str::random(12)),
+                'password'   => Hash::make(Str::random(16)),
             ]);
             $user->assignRole('client');
             $created++;
@@ -603,5 +537,83 @@ class ClientController extends AccountBaseController
         $this->ensureInsightsQuotaAvailable($this->client->company);
         $this->pageTitle = 'Insight Detail';
         return view('clients.insight-detail', $this->data);
+    }
+
+    // ── Impersonation ──────────────────────────────────────────────────────
+
+    public function loginAs(Request $request, int $id)
+    {
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
+
+        // Capture admin identity BEFORE switching auth, so it survives session migration.
+        $adminId    = (int) auth()->id();
+        $companyId  = company()?->id ?? auth()->user()->company_id;
+
+        // Resolve the sub-company IDs that this admin owns
+        $subCompanyIds = Company::withoutGlobalScopes()
+            ->where('created_by', $companyId)
+            ->pluck('id');
+
+        // Ensure the target user belongs to one of those sub-companies
+        $client = User::whereIn('company_id', $subCompanyIds)->findOrFail($id);
+
+        // Switch auth to the client — this migrates the session (new session ID).
+        Auth::loginUsingId($client->id);
+
+        // Write impersonation markers AFTER the session has been migrated so they
+        // are guaranteed to land on the new session that the browser will receive.
+        session([
+            'impersonating_client_original_id' => $adminId,
+            'impersonating_client_name'         => $client->name,
+            'impersonating_client_email'        => $client->email,
+        ]);
+
+        // Allow callers to specify a redirect destination (e.g. /insights)
+        $redirectTo = $request->input('redirect_to');
+        $allowed    = ['/dashboard', '/insights'];
+        if ($redirectTo && in_array($redirectTo, $allowed, true)) {
+            return redirect($redirectTo);
+        }
+
+        return redirect('/dashboard');
+    }
+
+    public function stopImpersonating()
+    {
+        $originalId = session('impersonating_client_original_id');
+
+        // Graceful fallback: if session data is gone (expired or cookie issue),
+        // log the user out and send them back to the login page instead of 403.
+        if (!$originalId) {
+            Auth::logout();
+            session()->invalidate();
+            session()->regenerateToken();
+            return redirect()->route('login')
+                ->with('warning', 'Your impersonation session expired. Please log in again.');
+        }
+
+        // Fetch the original admin bypassing any tenant/global scopes that would
+        // filter them out while we are currently scoped to the client's company.
+        $originalUser = User::withoutGlobalScopes()->find($originalId);
+
+        if (!$originalUser) {
+            // Admin account no longer exists — clear everything and go to login.
+            Auth::logout();
+            session()->invalidate();
+            session()->regenerateToken();
+            return redirect()->route('login')
+                ->with('warning', 'The original admin account could not be found. Please log in again.');
+        }
+
+        // Clear impersonation markers, then restore the admin session.
+        session()->forget([
+            'impersonating_client_original_id',
+            'impersonating_client_name',
+            'impersonating_client_email',
+        ]);
+
+        Auth::login($originalUser);
+
+        return redirect()->route('clients.index')->with('success', 'Returned to admin account.');
     }
 }

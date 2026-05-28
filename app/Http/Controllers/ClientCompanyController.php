@@ -50,14 +50,11 @@ class ClientCompanyController extends AccountBaseController
     private function enforceMaxCompaniesLimit(int $ownerCompanyId): void
     {
         $ownerCompany = Company::withoutGlobalScopes()->find($ownerCompanyId);
-        $plan = $ownerCompany?->activePlan();
+        $plan         = $ownerCompany?->activePlan();
         $maxCompanies = $plan?->max_companies;
 
-        if (!$plan) {
-            abort(422, 'No plan is assigned to your account. Please select a plan before adding companies.');
-        }
-
-        if (!$maxCompanies || (int) $maxCompanies <= 0) {
+        // No plan assigned or no limit set — allow freely
+        if (!$plan || !$maxCompanies || (int) $maxCompanies <= 0) {
             return;
         }
 
@@ -95,18 +92,17 @@ class ClientCompanyController extends AccountBaseController
             'subscription',
         ]);
 
-        // Check if user can add more companies based on their plan
-        $ownerCompany = Company::withoutGlobalScopes()->find($companyId);
-        $plan = $ownerCompany?->activePlan();
-        $maxCompanies = $plan?->max_companies ?? 0;
+        // Check company limit — no plan means unlimited
+        $ownerCompany          = Company::withoutGlobalScopes()->find($companyId);
+        $plan                  = $ownerCompany?->activePlan();
+        $maxCompanies          = (int) ($plan?->max_companies ?? 0);
         $currentCompaniesCount = $this->companies->count();
-        $hasActivePlan = (bool) $plan;
-        $canAddCompany = $hasActivePlan && ($maxCompanies == 0 || $currentCompaniesCount < $maxCompanies);
+        $canAddCompany         = $maxCompanies === 0 || $currentCompaniesCount < $maxCompanies;
 
-        $this->canAddCompany = $canAddCompany;
-        $this->maxCompanies = $maxCompanies;
-        $this->currentCompaniesCount = $currentCompaniesCount;
-        $this->hasActivePlan = $hasActivePlan;
+        $this->canAddCompany          = $canAddCompany;
+        $this->maxCompanies           = $maxCompanies;
+        $this->currentCompaniesCount  = $currentCompaniesCount;
+        $this->hasActivePlan          = true; // plan no longer required to add companies
 
         return view('companies.index', $this->data);
     }
@@ -119,12 +115,6 @@ class ClientCompanyController extends AccountBaseController
 
         $companyId = auth()->user()->company_id;
         $this->enforceMaxCompaniesLimit($companyId);
-
-        // Load only THIS admin's own plans (not SuperAdmin packages)
-        $this->packages = ClientPackage::forCompany($companyId)
-            ->active()
-            ->orderBy('sort')
-            ->get();
 
         // Existing clients this admin can assign as company admin
         $this->existingClients = User::whereHas('roles', fn ($q) => $q->where('name', 'client'))
@@ -153,13 +143,6 @@ class ClientCompanyController extends AccountBaseController
 
         $authUser = auth()->user();
         $this->isClientUserFlow = $authUser->hasRole('client');
-
-        if (!$this->isClientUserFlow) {
-            $this->packages = ClientPackage::forCompany($authUser->company_id)
-                ->active()
-                ->orderBy('sort')
-                ->get();
-        }
 
         return view('companies.edit', $this->data);
     }
@@ -232,17 +215,15 @@ class ClientCompanyController extends AccountBaseController
 
         $companyId = auth()->user()->company_id;
         $this->enforceMaxCompaniesLimit($companyId);
-        $authUser = auth()->user();
+        $authUser         = auth()->user();
         $isClientUserFlow = $authUser->hasRole('client');
 
         $rules = [
-            'company_name'    => 'required|string|max:255',
-            'subdomain'       => 'required|string|max:63|alpha_dash|unique:companies,subdomain',
-            'company_email'   => 'required|email|max:255',
-            'package_id'      => 'nullable|exists:client_packages,id',
-            'industry_type'   => 'required|string|max:100',
-            'entity_type'     => 'required|string|max:100',
-            'state'           => 'nullable|string|max:100',
+            'company_name'  => 'required|string|max:255',
+            'company_email' => 'required|email|max:255',
+            'industry_type' => 'required|string|max:100',
+            'entity_type'   => 'required|string|max:100',
+            'state'         => 'nullable|string|max:100',
         ];
 
         $adminType = $request->input('admin_type', 'new');
@@ -259,78 +240,39 @@ class ClientCompanyController extends AccountBaseController
 
         $request->validate($rules);
 
-        $setting  = global_setting();
-
-        // Resolve plan:
-        // - user flow: always use the client's currently assigned plan
-        // - admin/manager flow: use selected plan or default first active plan
-        $package = $isClientUserFlow
-            ? $authUser->company?->clientPackage
-            : ($request->package_id
-                ? ClientPackage::forCompany($companyId)->find($request->package_id)
-                : ClientPackage::forCompany($companyId)->active()->orderBy('sort')->first());
-
-        if ($isClientUserFlow && !$package) {
-            return back()->withErrors([
-                'package_id' => 'No plan is assigned to your account. Please contact your administrator.',
-            ])->withInput();
-        }
- 
-        // Determine if Stripe payment is required
-        $stripeReady     = $this->stripeIsConfigured();
-        $requiresPayment = $package
-            && !$package->is_free
-            && $package->monthly_price > 0
-            && $stripeReady;
-
+        $setting      = global_setting();
         $createdByKey = $this->companyOwnerKeyForCurrentUser();
 
-        Log::info('ClientAdmin company creation', [
-            'created_by'       => $createdByKey,
-            'client_plan'      => $package?->name,
-            'stripe_ready'     => $stripeReady,
-            'requires_payment' => $requiresPayment,
-        ]);
+        Log::info('ClientAdmin company creation', ['created_by' => $createdByKey]);
 
-        // Create the new company (inactive until payment confirmed)
+        // Auto-generate a unique subdomain from the company name
+        $baseSubdomain = Str::slug($request->company_name);
+        $subdomain     = $baseSubdomain;
+        $counter       = 1;
+        while (Company::withoutGlobalScopes()->where('subdomain', $subdomain)->exists()) {
+            $subdomain = $baseSubdomain . '-' . $counter++;
+        }
+
+        // Create company — always active, no plan required
         $company = Company::create([
-            'created_by'        => $createdByKey,
-            'company_name'      => $request->company_name,
-            'app_name'          => $request->company_name,
-            'company_email'     => $request->company_email,
-            'subdomain'         => Str::slug($request->subdomain),
-            'status'            => $requiresPayment ? 'inactive' : 'active',
-            'package_id'        => null,
-            'client_package_id' => $package?->id,
-            'industry_type'     => $request->industry_type,
-            'entity_type'       => $request->entity_type,
-            'state'             => $request->state,
-            'trial_ends_at'     => (!$requiresPayment && $package?->is_trial_allowed)
-                ? now()->addDays($package->trial_days)
-                : null,
+            'created_by'    => $createdByKey,
+            'company_name'  => $request->company_name,
+            'app_name'      => $request->company_name,
+            'company_email' => $request->company_email,
+            'subdomain'     => $subdomain,
+            'status'        => 'active',
+            'package_id'    => null,
+            'industry_type' => $request->industry_type,
+            'entity_type'   => $request->entity_type,
+            'state'         => $request->state,
         ]);
 
         CompanyBranding::create(['company_id' => $company->id]);
-
-        // Create trial subscription when no payment is needed
-        if ($package && !$requiresPayment) {
-            Subscription::create([
-                'company_id'           => $company->id,
-                'package_id'           => $this->resolveFallbackPackageId(),
-                'client_package_id'    => $package->id,
-                'status'               => 'trialing',
-                'billing_cycle'        => 'monthly',
-                'trial_ends_at'        => $company->trial_ends_at,
-                'current_period_start' => now(),
-                'current_period_end'   => $company->trial_ends_at ?? now()->addDays(14),
-            ]);
-        }
 
         $newUser = null;
         if (!$isClientUserFlow) {
             if ($adminType === 'existing') {
                 $existingUser = User::findOrFail($request->existing_client_id);
-                // Ensure the client belongs to this admin's portfolio
                 abort_unless(
                     (int) ($existingUser->company?->created_by) === (int) $companyId,
                     403,
@@ -341,59 +283,26 @@ class ClientCompanyController extends AccountBaseController
                 ]);
                 $newUser = $existingUser;
             } else {
-                // Create the new company's admin user
                 $role    = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
                 $newUser = User::create([
                     'company_id'        => $company->id,
                     'name'              => $request->admin_name,
                     'email'             => $request->admin_email,
                     'password'          => Hash::make($request->admin_password),
-                    'status'            => $requiresPayment ? 'inactive' : 'active',
+                    'status'            => 'active',
                     'admin_approval'    => true,
-                    'email_verified_at' => ($setting?->email_verification || $requiresPayment) ? null : now(),
+                    'email_verified_at' => $setting?->email_verification ? null : now(),
                 ]);
                 $newUser->assignRole($role);
             }
         }
 
-        // Link the CREATING admin to the new company via user_companies
+        // Link the creating admin to the new company
         $authUser->managedCompanies()->syncWithoutDetaching([
             $company->id => ['role' => 'admin'],
         ]);
 
-        // ── Path A: Stripe checkout ─────────────────────────────────────────
-        if ($requiresPayment) {
-            try {
-                $stripe  = new StripeService();
-                $session = $stripe->createCheckoutSession(
-                    company: $company,
-                    package: $package,           // ClientPackage — compatible duck-type
-                    billingCycle: 'monthly',
-                    successUrl: route('my-companies.payment.success')
-                        . '?session_id={CHECKOUT_SESSION_ID}&company_id=' . $company->id,
-                    cancelUrl: route('my-companies.payment.cancel', $company->id),
-                );
-
-                session([
-                    'pending_company_id'      => $company->id,
-                    'pending_company_user_id' => $newUser?->id,
-                ]);
-
-                Log::info('ClientAdmin company: redirecting to Stripe', [
-                    'company_id' => $company->id,
-                    'session_id' => $session->id,
-                ]);
-
-                return redirect($session->url);
-
-            } catch (\Throwable $e) {
-                Log::warning('Stripe checkout failed for client company creation: ' . $e->getMessage());
-                // Fall through to immediate activation
-            }
-        }
-
-        // ── Path B: Activate immediately ────────────────────────────────────
-        $this->activateCompany($company, $newUser, $package, $setting);
+        $this->activateCompany($company, $newUser, null, $setting);
 
         return redirect()->route('my-companies.index')
             ->with('success', "Company '{$company->company_name}' created successfully!");

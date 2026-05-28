@@ -5,10 +5,19 @@
 @section('content')
 
 @php
-    $managedCompanies = $managedCompanies ?? collect();
+    $managedCompanies  = $managedCompanies ?? collect();
     $connectedCount    = $connectedCount ?? 0;
     $notConnectedCount = $notConnectedCount ?? 0;
     $connectUrl        = route('quickbooks.connect');
+    $showPartnerColumn = $showPartnerColumn ?? false;
+    $adminId           = auth()->id();
+
+    // Returns the real client user for a company:
+    // 1) first direct user (company_id = company->id)
+    // 2) first manager from user_companies who isn't the logged-in admin
+    $clientOf = fn($company) =>
+        $company->users->first()
+        ?? $company->managers->first(fn($u) => $u->id !== $adminId);
 @endphp
 
 {{-- Page Header --}}
@@ -76,6 +85,9 @@
         <thead>
             <tr>
                 <th>COMPANY</th>
+                @if($showPartnerColumn)
+                <th>PARTNER</th>
+                @endif
                 <th>CLIENT</th>
                 <th>TOOL</th>
                 <th>STATUS</th>
@@ -85,77 +97,103 @@
         </thead>
         <tbody>
             @forelse($managedCompanies as $company)
-            @php
-                $conn        = $company->quickbooksConnections->first();
-                $primaryUser = $company->users->first();
-                if ($conn) {
-                    $expired  = $conn->isAccessTokenExpired();
-                    $qbStatus = $expired ? 'Auth Expired' : 'Connected';
-                    $dotColor = $expired ? 'var(--amber)' : 'var(--green)';
-                    $badgeCls = $expired ? 'b-amber' : 'b-green';
-                } else {
-                    $qbStatus = 'Not Connected';
-                    $dotColor = 'var(--red)';
-                    $badgeCls = 'b-red';
-                }
-            @endphp
-            <tr>
-                <td>
-                    <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $company->company_name }}</div>
-                </td>
-                <td>
-                    <div style="font-size:13px;color:var(--text-1)">{{ $primaryUser?->name ?? '—' }}</div>
-                </td>
-                <td>
-                    <div style="font-size:13px;color:var(--text-2)">{{ $conn ? 'QuickBooks Online' : '—' }}</div>
-                </td>
-                <td data-order="{{ $qbStatus }}" data-search="{{ strtolower($qbStatus) }}">
-                    <span class="badge {{ $badgeCls }}">
-                        <span class="badge-dot" style="background:{{ $dotColor }}"></span>
-                        {{ $qbStatus }}
-                    </span>
-                </td>
-                <td style="font-size:12.5px;color:var(--text-2)">
-                    {{ $conn?->last_synced_at?->format('M j, Y') ?? '—' }}
-                </td>
-                <td>
-                    @if($conn && !($conn->isAccessTokenExpired()))
-                        <div style="display:flex;align-items:center;gap:8px">
-                            <button onclick="syncQB({{ $conn->id }}, this)"
-                                style="padding:5px 14px;font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid #e5e7eb;background:#fff;color:var(--text-1);border-radius:6px;font-family:inherit;transition:border-color .14s,color .14s"
-                                onmouseover="this.style.borderColor='#9ca3af';this.style.color='var(--text-1)'"
-                                onmouseout="this.style.borderColor='#e5e7eb';this.style.color='var(--text-1)'">
-                                Sync
-                            </button>
-                            <button onclick="disconnectQB({{ $conn->id }})"
-                                style="padding:5px 14px;font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid var(--orange);background:#fff;color:var(--orange);border-radius:6px;font-family:inherit;transition:background .14s,color .14s"
-                                onmouseover="this.style.background='var(--orange)';this.style.color='#fff'"
-                                onmouseout="this.style.background='#fff';this.style.color='var(--orange)'">
-                                Disconnect
-                            </button>
-                        </div>
-                    @elseif($conn)
-                        <a href="{{ $connectUrl }}?company_id={{ $company->id }}"
-                           style="display:inline-flex;align-items:center;gap:5px;padding:6px 16px;background:var(--orange);color:#fff;border-radius:7px;font-size:13px;font-weight:600;text-decoration:none;transition:background .14s"
-                           onmouseover="this.style.background='var(--orange-dark)'" onmouseout="this.style.background='var(--orange)'">
-                            Reconnect
-                        </a>
-                    @else
-                        @if($qbConfigured ?? false)
-                        <a href="{{ $connectUrl }}?company_id={{ $company->id }}"
-                           style="display:inline-flex;align-items:center;gap:5px;padding:6px 16px;background:var(--orange);color:#fff;border-radius:7px;font-size:13px;font-weight:600;text-decoration:none;transition:background .14s"
-                           onmouseover="this.style.background='var(--orange-dark)'" onmouseout="this.style.background='var(--orange)'">
-                            Connect
-                        </a>
-                        @else
-                        <span style="font-size:12.5px;color:var(--text-3)">Not configured</span>
+                @if($company->quickbooksConnections->isNotEmpty())
+                    {{-- One row per QB connection --}}
+                    @foreach($company->quickbooksConnections as $conn)
+                    @php
+                        $expired    = $conn->isAccessTokenExpired();
+                        $qbStatus   = $expired ? 'Auth Expired' : 'Connected';
+                        $dotColor   = $expired ? 'var(--amber)' : 'var(--green)';
+                        $badgeCls   = $expired ? 'b-amber' : 'b-green';
+                        $clientUser = $clientOf($company);
+                    @endphp
+                    <tr>
+                        <td>
+                            <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $company->company_name }}</div>
+                        </td>
+                        @if($showPartnerColumn)
+                        <td>
+                            <div style="font-size:13px;color:var(--text-2)">{{ $company->creatorCompany?->company_name ?? '—' }}</div>
+                        </td>
                         @endif
-                    @endif
-                </td>
-            </tr>
+                        <td>
+                            <div style="font-size:13px;color:var(--text-1)">{{ $clientUser?->name ?? '—' }}</div>
+                        </td>
+                        <td>
+                            <div style="font-size:13px;color:var(--text-2)">QuickBooks Online</div>
+                        </td>
+                        <td data-order="{{ $qbStatus }}" data-search="{{ strtolower($qbStatus) }}">
+                            <span class="badge {{ $badgeCls }}">
+                                <span class="badge-dot" style="background:{{ $dotColor }}"></span>
+                                {{ $qbStatus }}
+                            </span>
+                        </td>
+                        <td style="font-size:12.5px;color:var(--text-2)">
+                            {{ $conn->last_synced_at?->format('M j, Y') ?? '—' }}
+                        </td>
+                        <td>
+                            @if(!$expired)
+                                <div style="display:flex;align-items:center;gap:8px">
+                                    <button onclick="syncQB({{ $conn->id }}, this)"
+                                        style="padding:5px 14px;font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid #e5e7eb;background:#fff;color:var(--text-1);border-radius:6px;font-family:inherit;transition:border-color .14s,color .14s"
+                                        onmouseover="this.style.borderColor='#9ca3af'" onmouseout="this.style.borderColor='#e5e7eb'">
+                                        Sync
+                                    </button>
+                                    <button onclick="disconnectQB({{ $conn->id }})"
+                                        style="padding:5px 14px;font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid var(--orange);background:#fff;color:var(--orange);border-radius:6px;font-family:inherit;transition:background .14s,color .14s"
+                                        onmouseover="this.style.background='var(--orange)';this.style.color='#fff'"
+                                        onmouseout="this.style.background='#fff';this.style.color='var(--orange)'">
+                                        Disconnect
+                                    </button>
+                                </div>
+                            @else
+                                <a href="{{ $connectUrl }}?company_id={{ $company->id }}"
+                                   style="display:inline-flex;align-items:center;gap:5px;padding:6px 16px;background:var(--orange);color:#fff;border-radius:7px;font-size:13px;font-weight:600;text-decoration:none;transition:background .14s"
+                                   onmouseover="this.style.background='var(--orange-dark)'" onmouseout="this.style.background='var(--orange)'">
+                                    Reconnect
+                                </a>
+                            @endif
+                        </td>
+                    </tr>
+                    @endforeach
+                @else
+                    {{-- No connection yet --}}
+                    <tr>
+                        <td>
+                            <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $company->company_name }}</div>
+                        </td>
+                        @if($showPartnerColumn)
+                        <td>
+                            <div style="font-size:13px;color:var(--text-2)">{{ $company->creatorCompany?->company_name ?? '—' }}</div>
+                        </td>
+                        @endif
+                        <td>
+                            <div style="font-size:13px;color:var(--text-1)">{{ $clientOf($company)?->name ?? '—' }}</div>
+                        </td>
+                        <td><div style="font-size:13px;color:var(--text-2)">—</div></td>
+                        <td data-order="Not Connected" data-search="not connected">
+                            <span class="badge b-red">
+                                <span class="badge-dot" style="background:var(--red)"></span>
+                                Not Connected
+                            </span>
+                        </td>
+                        <td style="font-size:12.5px;color:var(--text-2)">—</td>
+                        <td>
+                            @if($qbConfigured ?? false)
+                            <a href="{{ $connectUrl }}?company_id={{ $company->id }}"
+                               style="display:inline-flex;align-items:center;gap:5px;padding:6px 16px;background:var(--orange);color:#fff;border-radius:7px;font-size:13px;font-weight:600;text-decoration:none;transition:background .14s"
+                               onmouseover="this.style.background='var(--orange-dark)'" onmouseout="this.style.background='var(--orange)'">
+                                Connect
+                            </a>
+                            @else
+                            <span style="font-size:12.5px;color:var(--text-3)">Not configured</span>
+                            @endif
+                        </td>
+                    </tr>
+                @endif
             @empty
             <tr>
-                <td colspan="6" style="text-align:center;padding:48px 20px;color:var(--text-3)">
+                <td colspan="{{ $showPartnerColumn ? 7 : 6 }}" style="text-align:center;padding:48px 20px;color:var(--text-3)">
                     No client companies found.
                 </td>
             </tr>
@@ -172,11 +210,10 @@
 <script>
 const QB_CSRF = document.querySelector('meta[name=csrf-token]').content;
 
-// Connected company IDs for Sync All
+// Connected connection IDs for Sync All (all non-expired connections across all companies)
 const connectedIds = @json(
     $managedCompanies
-        ->filter(fn($co) => $co->quickbooksConnections->isNotEmpty() && !$co->quickbooksConnections->first()->isAccessTokenExpired())
-        ->map(fn($co) => $co->quickbooksConnections->first()->id)
+        ->flatMap(fn($co) => $co->quickbooksConnections->filter(fn($c) => !$c->isAccessTokenExpired())->pluck('id'))
         ->values()
 );
 
@@ -189,7 +226,7 @@ $(document).ready(function () {
         searching: true, ordering: true, info: true,
         dom: '<"dt-tscroll"t><"dt-footer"lip>',
         order: [[0, 'asc']],
-        columnDefs: [{ orderable: false, targets: [5] }],
+        columnDefs: [{ orderable: false, targets: [-1] }],
         language: {
             info: 'Showing _START_ to _END_ of _TOTAL_ entries',
             infoEmpty: 'No companies',
@@ -202,9 +239,10 @@ $(document).ready(function () {
     document.getElementById('qb-search').addEventListener('keyup', function () {
         table.search(this.value).draw();
     });
+    const statusColIndex = {{ $showPartnerColumn ? 4 : 3 }};
     document.getElementById('qb-status-filter').addEventListener('change', function () {
         const val = this.value;
-        table.column(3).search(val ? '^' + val + '$' : '', true, false, true).draw();
+        table.column(statusColIndex).search(val ? '^' + val + '$' : '', true, false, true).draw();
     });
 });
 

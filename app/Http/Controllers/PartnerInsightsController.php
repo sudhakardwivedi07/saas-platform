@@ -35,12 +35,7 @@ class PartnerInsightsController extends AccountBaseController
 
     public function index()
     {
-        $partnerCompanyId = $this->partnerCompanyId();
-
-        // All sub-companies created by this partner
-        $subCompanyIds = Company::withoutGlobalScopes()
-            ->where('created_by', $partnerCompanyId)
-            ->pluck('id');
+        $subCompanyIds = $this->allClientCompanyIds();
 
         // All reports for those sub-companies (not firm reports)
         $this->reports = Report::withTrashed()
@@ -72,30 +67,50 @@ class PartnerInsightsController extends AccountBaseController
         return view('partner.insights.index', $this->data);
     }
 
-    // ── AJAX: clients with QB connections ────────────────────────────────────
+    // ── AJAX: clients with at least one QB-connected company ─────────────────
 
     public function getClients()
     {
+        $allClientIds = $this->allClientCompanyIds();
+
+        // Partner's own company IDs — users who belong here are admins/managers, not clients
         $partnerCompanyId = $this->partnerCompanyId();
+        $partnerCompanyIds = collect([$partnerCompanyId])
+            ->merge(
+                auth()->user()->managedCompanies()
+                    ->withoutGlobalScopes()
+                    ->pluck('companies.id')
+            )
+            ->unique()->filter()->values()->all();
 
-        $subCompanyIds = Company::withoutGlobalScopes()
-            ->where('created_by', $partnerCompanyId)
-            ->pluck('id');
-
-        // QuickBooksConnection uses TenantScope — must bypass it for cross-company lookups
-        // Only "Connected" status: access token not expired (generate() refreshes it after each run)
         $qbConnectedCompanyIds = QuickBooksConnection::withoutGlobalScopes()
-            ->whereIn('company_id', $subCompanyIds)
+            ->whereIn('company_id', $allClientIds)
             ->where('is_active', true)
             ->where('access_token_expires_at', '>', now()->addMinutes(10))
             ->pluck('company_id')
             ->unique();
 
-        // Get primary client user for each QB-connected sub-company
-        $clients = User::whereIn('company_id', $qbConnectedCompanyIds)
+        // Direct users of QB-connected companies, excluding super admins
+        $directUsers = User::withoutGlobalScopes()
+            ->whereIn('company_id', $qbConnectedCompanyIds)
+            ->where('is_superadmin', false)
             ->select('id', 'name', 'email', 'company_id')
-            ->get()
-            ->unique('company_id') // one representative user per company
+            ->get();
+
+        // Users linked via user_companies, excluding super admins and partner's own users
+        $linkedUsers = User::withoutGlobalScopes()
+            ->whereIn('id', function ($q) use ($qbConnectedCompanyIds) {
+                $q->select('user_id')
+                  ->from('user_companies')
+                  ->whereIn('company_id', $qbConnectedCompanyIds);
+            })
+            ->where('is_superadmin', false)
+            ->whereNotIn('company_id', $partnerCompanyIds)
+            ->select('id', 'name', 'email', 'company_id')
+            ->get();
+
+        $clients = $directUsers->merge($linkedUsers)
+            ->unique('email')
             ->map(fn($u) => [
                 'id'    => $u->id,
                 'name'  => $u->name,
@@ -110,25 +125,30 @@ class PartnerInsightsController extends AccountBaseController
 
     public function getCompanies(int $clientId)
     {
-        $partnerCompanyId = $this->partnerCompanyId();
+        $clientUser   = User::findOrFail($clientId);
+        $allClientIds = $this->allClientCompanyIds();
 
-        $clientUser = User::findOrFail($clientId);
-
-        // Verify client belongs to this partner
-        $subCompanyIds = Company::withoutGlobalScopes()
-            ->where('created_by', $partnerCompanyId)
+        // Collect all user IDs that represent the same person (same email)
+        $samePersonUserIds = User::withoutGlobalScopes()
+            ->where('email', $clientUser->email)
             ->pluck('id');
 
-        abort_if(!$subCompanyIds->contains($clientUser->company_id), 403, 'Access denied.');
+        // Their company IDs: via company_id column + via user_companies links
+        $samePersonCompanyIds = User::withoutGlobalScopes()
+            ->where('email', $clientUser->email)
+            ->pluck('company_id')
+            ->merge(
+                DB::table('user_companies')
+                    ->whereIn('user_id', $samePersonUserIds)
+                    ->pluck('company_id')
+            )
+            ->unique();
 
-        // Companies in the client's portfolio that have an active QB connection
-        // portfolioCompanies() already uses withoutGlobalScopes internally
-        $portfolioCompanyIds = $clientUser->portfolioCompanies()->pluck('id');
+        // Restrict to companies within the partner's managed scope
+        $inScope = $samePersonCompanyIds->intersect($allClientIds);
 
-        // Only "Connected" companies: access token not expired
-        // withoutGlobalScopes() needed because QuickBooksConnection has TenantScope
         $qbConnectedIds = QuickBooksConnection::withoutGlobalScopes()
-            ->whereIn('company_id', $portfolioCompanyIds)
+            ->whereIn('company_id', $inScope)
             ->where('is_active', true)
             ->where('access_token_expires_at', '>', now()->addMinutes(10))
             ->pluck('company_id')
@@ -137,6 +157,7 @@ class PartnerInsightsController extends AccountBaseController
         $companies = Company::withoutGlobalScopes()
             ->whereIn('id', $qbConnectedIds)
             ->select('id', 'company_name')
+            ->orderBy('company_name')
             ->get()
             ->map(fn($c) => ['id' => $c->id, 'name' => $c->company_name]);
 
@@ -148,23 +169,25 @@ class PartnerInsightsController extends AccountBaseController
     public function generate(Request $request)
     {
         $request->validate([
-            'client_id'  => 'required|integer|exists:users,id',
             'company_id' => 'required|integer|exists:companies,id',
         ]);
 
-        $partnerCompanyId = $this->partnerCompanyId();
-        $clientUser       = User::findOrFail($request->client_id);
-        $companyId        = (int) $request->company_id;
+        $companyId = (int) $request->company_id;
 
-        // Verify company belongs to this partner's sub-companies
-        $subCompanyIds = Company::withoutGlobalScopes()
-            ->where('created_by', $partnerCompanyId)
-            ->pluck('id');
-
-        $portfolioIds = $clientUser->portfolioCompanies()->pluck('id');
-
-        if (!$subCompanyIds->contains($clientUser->company_id) || !$portfolioIds->contains($companyId)) {
+        if (!$this->allClientCompanyIds()->contains($companyId)) {
             return response()->json(['status' => 'error', 'message' => 'Access denied.'], 403);
+        }
+
+        // Derive the primary user for this company (used as report owner)
+        $clientUser = User::withoutGlobalScopes()->where('company_id', $companyId)->first()
+            ?? User::withoutGlobalScopes()
+                ->whereIn('id', function ($q) use ($companyId) {
+                    $q->select('user_id')->from('user_companies')->where('company_id', $companyId);
+                })
+                ->first();
+
+        if (!$clientUser) {
+            return response()->json(['status' => 'error', 'message' => 'No user found for this company.'], 422);
         }
 
         // withoutGlobalScopes() required — QuickBooksConnection has TenantScope
@@ -330,10 +353,7 @@ class PartnerInsightsController extends AccountBaseController
 
     public function checkStatus(int $reportId)
     {
-        $partnerCompanyId = $this->partnerCompanyId();
-        $subCompanyIds    = Company::withoutGlobalScopes()
-            ->where('created_by', $partnerCompanyId)
-            ->pluck('id');
+        $subCompanyIds = $this->allClientCompanyIds();
 
         $report = Report::whereIn('company_id', $subCompanyIds)
             ->where('id', $reportId)
@@ -363,10 +383,7 @@ class PartnerInsightsController extends AccountBaseController
         $reportId = Report::decryptId($encryptedId);
         if (!$reportId) abort(404);
 
-        $partnerCompanyId = $this->partnerCompanyId();
-        $subCompanyIds    = Company::withoutGlobalScopes()
-            ->where('created_by', $partnerCompanyId)
-            ->pluck('id');
+        $subCompanyIds = $this->allClientCompanyIds();
 
         $this->report = Report::with(['attachments', 'user', 'company'])
             ->whereIn('company_id', $subCompanyIds)
@@ -381,10 +398,7 @@ class PartnerInsightsController extends AccountBaseController
 
     public function getData(int $reportId)
     {
-        $partnerCompanyId = $this->partnerCompanyId();
-        $subCompanyIds    = Company::withoutGlobalScopes()
-            ->where('created_by', $partnerCompanyId)
-            ->pluck('id');
+        $subCompanyIds = $this->allClientCompanyIds();
 
         $report = Report::whereIn('company_id', $subCompanyIds)
             ->where('id', $reportId)
@@ -415,10 +429,7 @@ class PartnerInsightsController extends AccountBaseController
             'sections.*.html'  => 'present|string',
         ]);
 
-        $partnerCompanyId = $this->partnerCompanyId();
-        $subCompanyIds    = Company::withoutGlobalScopes()
-            ->where('created_by', $partnerCompanyId)
-            ->pluck('id');
+        $subCompanyIds = $this->allClientCompanyIds();
 
         $report = Report::whereIn('company_id', $subCompanyIds)
             ->where('id', $reportId)
@@ -473,10 +484,7 @@ class PartnerInsightsController extends AccountBaseController
 
     public function publish(int $reportId)
     {
-        $partnerCompanyId = $this->partnerCompanyId();
-        $subCompanyIds    = Company::withoutGlobalScopes()
-            ->where('created_by', $partnerCompanyId)
-            ->pluck('id');
+        $subCompanyIds = $this->allClientCompanyIds();
 
         $report = Report::whereIn('company_id', $subCompanyIds)
             ->where('id', $reportId)
@@ -492,10 +500,7 @@ class PartnerInsightsController extends AccountBaseController
 
     public function exportPdf(int $reportId)
     {
-        $partnerCompanyId = $this->partnerCompanyId();
-        $subCompanyIds    = Company::withoutGlobalScopes()
-            ->where('created_by', $partnerCompanyId)
-            ->pluck('id');
+        $subCompanyIds = $this->allClientCompanyIds();
 
         $report = Report::with('user.company')
             ->whereIn('company_id', $subCompanyIds)
@@ -557,10 +562,7 @@ class PartnerInsightsController extends AccountBaseController
 
     public function download(int $reportId)
     {
-        $partnerCompanyId = $this->partnerCompanyId();
-        $subCompanyIds    = Company::withoutGlobalScopes()
-            ->where('created_by', $partnerCompanyId)
-            ->pluck('id');
+        $subCompanyIds = $this->allClientCompanyIds();
 
         $report = Report::with('attachments')
             ->whereIn('company_id', $subCompanyIds)
@@ -598,10 +600,7 @@ class PartnerInsightsController extends AccountBaseController
 
     public function destroy(int $reportId)
     {
-        $partnerCompanyId = $this->partnerCompanyId();
-        $subCompanyIds    = Company::withoutGlobalScopes()
-            ->where('created_by', $partnerCompanyId)
-            ->pluck('id');
+        $subCompanyIds = $this->allClientCompanyIds();
 
         $report = Report::whereIn('company_id', $subCompanyIds)
             ->where('id', $reportId)
@@ -624,13 +623,19 @@ class PartnerInsightsController extends AccountBaseController
         $setting = CompanyQuickbooksSetting::where('company_id', $companyId)->first();
 
         if (!$setting) {
-            $parentId = Company::withoutGlobalScopes()
+            $createdBy = Company::withoutGlobalScopes()
                 ->where('id', $companyId)
                 ->value('created_by');
 
-            if ($parentId) {
-                $setting = CompanyQuickbooksSetting::where('company_id', $parentId)->first();
+            if ($createdBy) {
+                $setting = CompanyQuickbooksSetting::where('company_id', $createdBy)->first();
             }
+        }
+
+        // Final fallback: use the partner/admin company credentials directly.
+        // Needed when created_by is a user ID (client-created sub-companies).
+        if (!$setting) {
+            $setting = CompanyQuickbooksSetting::where('company_id', $this->partnerCompanyId())->first();
         }
 
         if (!$setting) return null;
@@ -641,6 +646,38 @@ class PartnerInsightsController extends AccountBaseController
             'redirect_uri'  => $setting->redirect_uri,
             'base_url'      => $setting->base_url,
         ];
+    }
+
+    /**
+     * Returns all client company IDs the partner can manage.
+     * Mirrors the same 4-step resolution used in QuickBooksController:
+     * admin companies → direct client companies → client users → user_companies links.
+     */
+    private function allClientCompanyIds(): \Illuminate\Support\Collection
+    {
+        $partnerCompanyId = $this->partnerCompanyId();
+
+        $adminCompanyIds = collect([$partnerCompanyId])
+            ->merge(
+                auth()->user()->managedCompanies()
+                    ->withoutGlobalScopes()
+                    ->pluck('companies.id')
+            )
+            ->unique()->filter()->values()->all();
+
+        $directClientIds = Company::withoutGlobalScopes()
+            ->whereIn('created_by', $adminCompanyIds)
+            ->pluck('id');
+
+        $clientUserIds = User::withoutGlobalScopes()
+            ->whereIn('company_id', $directClientIds)
+            ->pluck('id');
+
+        $linkedCompanyIds = DB::table('user_companies')
+            ->whereIn('user_id', $clientUserIds)
+            ->pluck('company_id');
+
+        return $directClientIds->merge($linkedCompanyIds)->unique()->filter()->values();
     }
 
     // ── PDF helpers ───────────────────────────────────────────────────────────

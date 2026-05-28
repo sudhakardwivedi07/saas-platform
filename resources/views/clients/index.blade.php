@@ -141,12 +141,13 @@
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                     Edit Client
                                 </a>
-                                @if($co)
-                                <a href="javascript:void(0)" class="dm-item" onclick="openAssignClientPlanModal({{ $client->id }}, '{{ addslashes($client->name) }}', {{ $co->client_package_id ?? 'null' }})">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                                    Assign Plan
-                                </a>
-                                @endif
+                                <form method="POST" action="{{ route('clients.login-as', $client->id) }}" style="margin:0;padding:0">
+                                    @csrf
+                                    <button type="submit" class="dm-item" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                                        Login as Client
+                                    </button>
+                                </form>
                                 <div class="dm-divider"></div>
                                 <a href="javascript:void(0)" class="dm-item dm-danger" onclick="toggleClientStatus({{ $client->id }}, '{{ addslashes($client->name) }}', '{{ $status }}')">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
@@ -302,10 +303,6 @@
                                     View Insights
                                 </a>
                                 @endif
-                                <a class="dm-item" href="javascript:void(0)" onclick="openAssignPlanModal({{ $company->id }}, '{{ addslashes($company->company_name) }}', {{ $company->client_package_id ?? 'null' }})">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                                    Assign Plan
-                                </a>
                                 <div class="dm-divider"></div>
                                 <form method="POST" action="{{ route('my-companies.destroy', $company->id) }}" onsubmit="return confirmCompanyDelete(this);">
                                     @csrf
@@ -487,44 +484,6 @@
                         </select>
                     </div>
                 </div>
-                <div class="mf-field">
-                    <label class="mf-label">Plan Tier <span style="color:var(--red)">*</span></label>
-                    <select name="client_package_id" id="ac-plan" class="mf-sel" style="height:40px">
-                        <option value="">— Select a Plan —</option>
-                        @foreach($clientPackages ?? [] as $pkg)
-                        <option value="{{ $pkg->id }}" {{ old('client_package_id') == $pkg->id ? 'selected' : '' }}>
-                            {{ $pkg->name }}@if(($pkg->insights_per_month ?? $pkg->max_insights_per_month ?? $pkg->max_documents ?? null)) — {{ $pkg->insights_per_month ?? $pkg->max_insights_per_month ?? $pkg->max_documents }} insights / company / month @endif
-                        </option>
-                        @endforeach
-                    </select>
-                    <div id="err-plan" class="ac-err" style="display:none"></div>
-                    <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Plan tiers are managed by the CFO Insights platform.</div>
-                </div>
-                <div class="mf-field">
-                    <label class="mf-label" style="display:flex;align-items:center;justify-content:space-between">
-                        <span>Password <span style="color:var(--red)">*</span></span>
-                    </label>
-                    <div style="position:relative;display:flex;align-items:center">
-                        <input type="password" name="password" id="ac-password" class="mf-inp"
-                            placeholder="8–20 characters" style="padding-right:88px"
-                            autocomplete="new-password" maxlength="20">
-                        <button type="button" title="Show/hide password"
-                            onclick="toggleAcPassword()"
-                            style="position:absolute;right:44px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text-3);display:flex;align-items:center">
-                            <svg id="ac-eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                        </button>
-                        <button type="button" title="Auto-generate password"
-                            onclick="generateAcPassword()"
-                            style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--blue);display:flex;align-items:center">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-                        </button>
-                    </div>
-                    <div id="err-password" class="ac-err" style="display:none"></div>
-                    <div style="font-size:11px;color:var(--text-3);margin-top:4px">Must be 8–20 characters. Click <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11" style="vertical-align:middle"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> to auto-generate a secure password.</div>
-                </div>
-                <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:11px 14px;margin-bottom:16px;font-size:12.5px;color:#3b82f6;line-height:1.5">
-                    An email invite will be sent to the client automatically after submission.
-                </div>
                 <div class="mf-foot">
                     <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-add-client').classList.remove('open')">Cancel</button>
                     <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitAddClient()">Add Client</button>
@@ -560,10 +519,10 @@
                 <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px">
                     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:10px">Your CSV must include the following columns in order:</div>
                     <div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 14px;font-family:monospace;font-size:13px;color:var(--text-1)">
-                        client_name, email, plan_tier
+                        client_name, email
                     </div>
                     <div style="font-size:12px;color:var(--text-3);margin-top:10px">
-                        Example: <em>TechCorp Inc., info@techcorp.com, Professional</em>
+                        Example: <em>TechCorp Inc., info@techcorp.com</em>
                     </div>
                     <a href="javascript:void(0)" onclick="downloadSampleCsv()" style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--blue);margin-top:10px;text-decoration:none;font-weight:500">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -572,17 +531,13 @@
                 </div>
             </div>
 
-            <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:11px 14px;margin-top:16px;margin-bottom:16px;font-size:12.5px;color:#3b82f6;line-height:1.5">
-                All clients in the CSV will receive an email invite automatically after upload.
-            </div>
-
             <div id="bulk-error" style="display:none;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 13px;margin-bottom:14px;font-size:12.5px;color:var(--red)"></div>
 
             <div class="mf-foot">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-add-client').classList.remove('open')">Cancel</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="submitBulkUpload()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    Upload &amp; Invite
+                    Upload Clients
                 </button>
             </div>
         </div>
@@ -622,7 +577,7 @@
     display: inline-block;
     width: 12px;
     height: 12px;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
     flex-shrink: 0;
 }
 .mf-inp.ac-invalid, .mf-sel.ac-invalid { border-color: var(--red) !important; }
@@ -810,36 +765,16 @@ function validateAndSubmitAddClient() {
         setErr('ac-industry', 'err-industry', 'Please select an Industry Type.');
     }
 
-    // Plan Tier
-    var plan = document.getElementById('ac-plan');
-    // clearErr('ac-plan', 'err-plan');
-    // if (!plan || !plan.value) {
-    //     setErr('ac-plan', 'err-plan', 'Please select a Plan Tier.');
-    // }
-
-    // Password
-    var pwd = document.getElementById('ac-password').value || '';
-    clearErr('ac-password', 'err-password');
-    if (!pwd) {
-        setErr('ac-password', 'err-password', 'Password is required.');
-    } else if (pwd.length < 8 || pwd.length > 20) {
-        setErr('ac-password', 'err-password', 'Password must be between 8 and 20 characters.');
-    }
-
     if (valid) {
         document.getElementById('add-client-form').submit();
     }
 }
 
-// ── Add Client password helpers ──────────────────────────────
+// ── Add Client modal open helper ─────────────────────────────
 function openAddClientModal() {
-    // Clear email and password so browser autofill does not pre-populate them
-    var emailField    = document.getElementById('ac-email');
-    var passwordField = document.getElementById('ac-password');
-    if (emailField)    { emailField.value    = ''; emailField.removeAttribute('readonly'); }
-    if (passwordField) { passwordField.value = ''; passwordField.removeAttribute('readonly'); }
+    var emailField = document.getElementById('ac-email');
+    if (emailField) { emailField.value = ''; emailField.removeAttribute('readonly'); }
     document.getElementById('modal-add-client').classList.add('open');
-    // Focus the name field, not email/password, so the browser has no reason to autofill
     setTimeout(function() {
         var nameField = document.querySelector('#modal-add-client input[name="name"]');
         if (nameField) nameField.focus();
@@ -847,7 +782,7 @@ function openAddClientModal() {
 
     // Clear all validation errors when modal opens
     [['ac-name','err-name'],['ac-email','err-email'],['ac-phone','err-phone'],
-     ['ac-company','err-company'],['ac-industry','err-industry'],['ac-plan','err-plan'],['ac-password','err-password']
+     ['ac-company','err-company'],['ac-industry','err-industry']
     ].forEach(function(pair) {
         var inp = document.getElementById(pair[0]);
         var err = document.getElementById(pair[1]);
@@ -887,7 +822,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Other fields: just clear error on input
-    [['ac-email','err-email'],['ac-company','err-company'],['ac-password','err-password']
+    [['ac-email','err-email'],['ac-company','err-company']
     ].forEach(function(pair) {
         var inp = document.getElementById(pair[0]);
         if (!inp) return;
@@ -897,55 +832,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (err) { err.textContent = ''; err.style.display = 'none'; }
         });
     });
-    ['ac-industry','ac-plan'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (!el) return;
-        el.addEventListener('change', function() {
+    var industryEl = document.getElementById('ac-industry');
+    if (industryEl) {
+        industryEl.addEventListener('change', function() {
             this.classList.remove('ac-invalid');
-            var err = document.getElementById('err-' + id.replace('ac-',''));
+            var err = document.getElementById('err-industry');
             if (err) { err.textContent = ''; err.style.display = 'none'; }
         });
-    });
+    }
 });
-
-function toggleAcPassword() {
-    var inp  = document.getElementById('ac-password');
-    var icon = document.getElementById('ac-eye-icon');
-    if (inp.type === 'password') {
-        inp.type = 'text';
-        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
-    } else {
-        inp.type = 'password';
-        icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-    }
-}
-function generateAcPassword() {
-    var upper   = 'ABCDEFGHJKMNPQRSTUVWXYZ';
-    var lower   = 'abcdefghjkmnpqrstuvwxyz';
-    var digits  = '23456789';
-    var special = '!@#$%';
-    var all     = upper + lower + digits + special;
-    // Guarantee at least one of each required type
-    var pwd = [
-        upper[Math.floor(Math.random() * upper.length)],
-        lower[Math.floor(Math.random() * lower.length)],
-        digits[Math.floor(Math.random() * digits.length)],
-        special[Math.floor(Math.random() * special.length)]
-    ];
-    for (var i = 4; i < 12; i++) pwd.push(all[Math.floor(Math.random() * all.length)]);
-    // Fisher-Yates shuffle
-    for (var j = pwd.length - 1; j > 0; j--) {
-        var k = Math.floor(Math.random() * (j + 1));
-        var t = pwd[j]; pwd[j] = pwd[k]; pwd[k] = t;
-    }
-    var inp = document.getElementById('ac-password');
-    inp.type  = 'text';
-    inp.value = pwd.join('');
-    inp.classList.remove('ac-invalid');
-    var errPwd = document.getElementById('err-password');
-    if (errPwd) { errPwd.textContent = ''; errPwd.style.display = 'none'; }
-    document.getElementById('ac-eye-icon').innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
-}
 
 // ── Add Client Modal tabs ────────────────────────────────────
 function switchAddClientTab(tab) {
@@ -976,7 +871,7 @@ function handleCsvDrop(e) {
     if (file && file.name.endsWith('.csv')) handleCsvFile(file);
 }
 function downloadSampleCsv() {
-    var csv = 'client_name,email,plan_tier\nTechCorp Inc.,info@techcorp.com,Professional\nAcme Corp,hello@acme.com,Starter\n';
+    var csv = 'client_name,email\nTechCorp Inc.,info@techcorp.com\nAcme Corp,hello@acme.com\n';
     var a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
     a.download = 'sample_clients.csv';
@@ -1165,5 +1060,26 @@ if (new URLSearchParams(window.location.search).get('add') === '1') {
     // Clean the query param from the URL without reloading
     history.replaceState(null, '', window.location.pathname);
 }
+
+// Auto-activate a specific tab when returning from Add/Edit Company with ?tab=<id>
+// Must run inside DOMContentLoaded so the layout's tab-panel toggle classes are available.
+document.addEventListener('DOMContentLoaded', function() {
+    var tabParam = new URLSearchParams(window.location.search).get('tab');
+    if (!tabParam) return;
+    var tabId    = 'tab-' + tabParam;
+    var bar      = document.querySelector('.tab-bar');
+    if (!bar) return;
+    var container = bar.parentElement;
+    // Deactivate all buttons + panels
+    bar.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    if (container) container.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+    // Activate the requested one
+    var targetBtn = bar.querySelector('[data-tab="' + tabId + '"]');
+    if (targetBtn) targetBtn.classList.add('active');
+    var panel = document.getElementById(tabId);
+    if (panel) panel.classList.add('active');
+    // Clean the query param from the URL
+    history.replaceState(null, '', window.location.pathname);
+});
 </script>
 @endpush

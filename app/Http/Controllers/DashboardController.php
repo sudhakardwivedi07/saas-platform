@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClientDashboardSetting;
 use App\Models\ClientPackage;
 use App\Models\Company;
 use App\Models\Document;
@@ -137,25 +138,56 @@ class DashboardController extends AccountBaseController
         $this->startDateInput = $startDate->format('Y-m-d');
         $this->endDateInput   = $endDate->format('Y-m-d');
 
-        // Chart: cumulative company count per month for last 6 months
-        $chartLabels    = [];
-        $chartCompanies = [];
-        $chartPayments  = [];
+        // Pending Review = Analyzed reports from the current period (insights ready for admin review)
+        $this->pendingReview = Report::withoutGlobalScopes()
+            ->whereIn('company_id', $reportCompanyIds)
+            ->where('status', 'Analyzed')
+            ->whereBetween('updated_at', [$startDate, $endDate])
+            ->count();
+
+        // Chart: insights generated per month for last 6 months
+        $chartLabels   = [];
+        $chartInsights = [];
         for ($i = 5; $i >= 0; $i--) {
             $m = now()->subMonths($i);
-            $chartLabels[]    = $m->format('M');
-            $chartCompanies[] = $allCompanies->filter(
-                fn($c) => $c->created_at->format('Y-m') <= $m->format('Y-m')
-            )->count();
-            $chartPayments[] = Payment::whereIn('company_id', $subCompanyIds)
-                ->where('status', 'complete')
-                ->whereYear('paid_at', $m->year)
-                ->whereMonth('paid_at', $m->month)
+            $chartLabels[]   = $m->format('M');
+            $chartInsights[] = Report::withoutGlobalScopes()
+                ->whereIn('company_id', $reportCompanyIds)
+                ->where('status', 'Analyzed')
+                ->whereYear('updated_at', $m->year)
+                ->whereMonth('updated_at', $m->month)
                 ->count();
         }
-        $this->chartLabels    = $chartLabels;
-        $this->chartCompanies = $chartCompanies;
-        $this->chartPayments  = $chartPayments;
+        $this->chartLabels   = $chartLabels;
+        $this->chartInsights = $chartInsights;
+
+        // Publish status per company for "View Client Portal" modal
+        // Published = has at least one Analyzed report; Draft = has a report in progress; — = none
+        $companyPublishStatus = [];
+        if ($subCompanyIds->isNotEmpty()) {
+            $analyzedCompanyIds = Report::withoutGlobalScopes()
+                ->whereIn('company_id', $subCompanyIds)
+                ->where('status', 'Analyzed')
+                ->pluck('company_id')
+                ->unique()
+                ->flip();
+            $draftCompanyIds = Report::withoutGlobalScopes()
+                ->whereIn('company_id', $subCompanyIds)
+                ->whereIn('status', ['Uploading', 'Analyzing'])
+                ->pluck('company_id')
+                ->unique()
+                ->flip();
+            foreach ($subCompanyIds as $cid) {
+                if ($analyzedCompanyIds->has($cid)) {
+                    $companyPublishStatus[$cid] = 'Published';
+                } elseif ($draftCompanyIds->has($cid)) {
+                    $companyPublishStatus[$cid] = 'Draft';
+                } else {
+                    $companyPublishStatus[$cid] = null;
+                }
+            }
+        }
+        $this->companyPublishStatus = $companyPublishStatus;
 
         // Recent activity — keep same source as Activity Log page for consistency.
         $this->recentActivities = EventLog::query()
@@ -424,6 +456,9 @@ class DashboardController extends AccountBaseController
         $this->clientAdminName  = $parentCompany?->app_name
             ?? $parentCompany?->company_name
             ?? $this->appName;
+
+        $dashSetting       = ClientDashboardSetting::where('company_id', $company->id)->first();
+        $this->hiddenKpis  = $dashSetting?->hidden_kpis ?? [];
     }
 
     private function latestAnalyzedKpiReportForUser(User $user, int $tenantCompanyId): ?Report

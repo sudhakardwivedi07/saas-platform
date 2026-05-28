@@ -820,6 +820,12 @@
 @endif {{-- end @if($isFreshUser) / @else --}}
 
 {{-- View Client Modal --}}
+{{-- Hidden form: POSTs to login-as so admin gets full client permissions --}}
+<form id="vcmLoginAsForm" method="POST" style="display:none">
+    @csrf
+    <input type="hidden" name="redirect_to" id="vcmRedirectTo" value="/dashboard">
+</form>
+
 <div id="viewClientModal" style="display:none;position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:14px;width:100%;max-width:440px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px;border-bottom:1px solid var(--border)">
@@ -893,10 +899,8 @@ if (CURRENT_PERIOD === 'custom') {
 }
 
 // View Client Modal
-const vcmRoutes = {
-    dashboard: {!! json_encode(collect($modalClients)->mapWithKeys(fn($c) => [$c->id => route('clients.dashboard', $c->id)])) !!},
-    insights:  {!! json_encode(collect($modalClients)->mapWithKeys(fn($c) => [$c->id => route('clients.insights', $c->id)])) !!},
-};
+// loginAs URLs — POST to these to impersonate the client with full permissions
+const vcmLoginAsRoutes = {!! json_encode(collect($modalClients)->mapWithKeys(fn($c) => [$c->id => route('clients.login-as', $c->id)])) !!};
 let vcmMode = 'dashboard';
 
 function openViewClientModal(mode) {
@@ -941,8 +945,15 @@ document.getElementById('vcmClientSelect')?.addEventListener('change', function 
 function goToClientPage() {
     const id = document.getElementById('vcmClientSelect').value;
     if (!id) return;
-    const url = vcmRoutes[vcmMode]?.[id];
-    if (url) window.location.href = url;
+    const actionUrl = vcmLoginAsRoutes[id];
+    if (!actionUrl) return;
+    // Set where to land after impersonation
+    const redirectTo = vcmMode === 'insights' ? '/insights' : '/dashboard';
+    document.getElementById('vcmRedirectTo').value = redirectTo;
+    // Point the hidden form at this client's login-as endpoint and submit
+    const form = document.getElementById('vcmLoginAsForm');
+    form.action = actionUrl;
+    form.submit();
 }
 
 document.getElementById('viewClientModal')?.addEventListener('click', function (e) {

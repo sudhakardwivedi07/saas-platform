@@ -198,13 +198,17 @@ Route::middleware(['auth'])->group(function () {
     // Clients
     Route::prefix('clients')->name('clients.')->group(function () {
         Route::get('/',        [ClientController::class, 'index'])->name('index');
-        Route::get('/{id}',    [ClientController::class, 'show'])->name('show');
+        // ── Literal POST routes must come BEFORE /{id} wildcard ──
+        Route::get('/stop-impersonating',    [ClientController::class, 'stopImpersonating'])->name('stop-impersonating');
+        Route::post('/bulk-upload',          [ClientController::class, 'bulkUpload'])->name('bulk-upload');
         Route::post('/',       [ClientController::class, 'store'])->name('store');
+        // ── Wildcard routes ───────────────────────────────────────
+        Route::get('/{id}',    [ClientController::class, 'show'])->name('show');
         Route::post('/{id}',   [ClientController::class, 'update'])->name('update');
         Route::delete('/{id}', [ClientController::class, 'destroy'])->name('destroy');
-        Route::post('/{id}/toggle-status', [ClientController::class, 'toggleStatus'])->name('toggle-status');
-        Route::post('/{id}/assign-plan',   [ClientController::class, 'assignPlan'])->name('assign-plan');
-        Route::post('/bulk-upload',        [ClientController::class, 'bulkUpload'])->name('bulk-upload');
+        Route::post('/{id}/toggle-status',   [ClientController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{id}/assign-plan',     [ClientController::class, 'assignPlan'])->name('assign-plan');
+        Route::post('/{id}/login-as',        [ClientController::class, 'loginAs'])->name('login-as');
         Route::get('/{id}/dashboard',      [ClientController::class, 'dashboard'])->name('dashboard');
         // KPI Dashboard
         Route::get('/{id}/kpi-dashboard', [ClientKPIController::class, 'index'])->name('kpi-dashboard');

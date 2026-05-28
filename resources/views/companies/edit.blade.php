@@ -24,58 +24,16 @@
     flex-shrink: 0;
     margin-right: 8px;
 }
-.subdomain-wrap {
-    display: flex;
-    align-items: stretch;
-    border: 1px solid var(--border);
-    border-radius: 9px;
-    overflow: hidden;
-    background: #fff;
-}
-.subdomain-wrap input {
-    flex: 1;
-    border: none !important;
-    border-radius: 0 !important;
-    background: transparent;
-    padding: 9px 12px;
-    font-size: 13.5px;
-    color: var(--text-1);
-    outline: none;
-}
-.subdomain-suffix {
-    display: flex;
-    align-items: center;
-    padding: 0 13px;
-    background: var(--bg);
-    border-left: 1px solid var(--border);
-    font-size: 13px;
-    color: var(--text-2);
-    white-space: nowrap;
-    flex-shrink: 0;
-    font-weight: 500;
-}
-.pkg-card {
-    border: 1.5px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
-    transition: border-color .13s, background .13s;
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-}
-.pkg-card.selected {
-    border-color: var(--blue);
-    background: rgba(26,106,168,.05);
-}
-.pkg-card input[type=radio] { margin-top: 3px; flex-shrink: 0; accent-color: var(--blue); }
+
+
 </style>
 @endpush
 
 @section('content')
 <div style="margin-bottom:18px">
-    <a href="{{ route('my-companies.index') }}" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text-2);text-decoration:none">
+    <a href="{{ route('clients.index') }}?tab=companies" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text-2);text-decoration:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
-        Back to My Companies
+        Back to Companies
     </a>
 </div>
 
@@ -149,15 +107,6 @@
             </div>
 
             <div class="mf-field">
-                <label class="mf-label">Subdomain</label>
-                <div class="subdomain-wrap">
-                    <input type="text" value="{{ $company->subdomain }}" disabled>
-                    <div class="subdomain-suffix">.{{ config('tenancy.root_domain', 'yourdomain.com') }}</div>
-                </div>
-                <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Subdomain cannot be changed.</div>
-            </div>
-
-            <div class="mf-field">
                 <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
                 <input type="email" name="company_email" id="company_email" class="mf-inp" required value="{{ old('company_email', $company->company_email) }}">
             </div>
@@ -202,46 +151,9 @@
             </div>
         </div>
 
-        <div class="acc-card">
-            <div style="display:flex;align-items:center;margin-bottom:6px">
-                <span class="step-num">3</span>
-                <div style="font-size:15px;font-weight:600;color:var(--text-1)">Choose a Plan</div>
-            </div>
-            <div style="font-size:12.5px;color:var(--text-3);margin-bottom:18px;padding-left:32px">
-                Plan selection is locked on edit. Current assigned plan is highlighted.
-            </div>
-
-            @if(($packages ?? collect())->isEmpty())
-            <div style="text-align:center;padding:24px 20px;border:1.5px dashed var(--border);border-radius:10px;color:var(--text-3);font-size:12.5px">
-                No plans available.
-            </div>
-            @else
-            <div style="display:flex;flex-direction:column;gap:10px">
-                @foreach($packages as $pkg)
-                @php $isSelectedPlan = (int) $company->client_package_id === (int) $pkg->id; @endphp
-                <label class="pkg-card {{ $isSelectedPlan ? 'selected' : '' }}" style="cursor:not-allowed;opacity:.88">
-                    <input type="radio" disabled {{ $isSelectedPlan ? 'checked' : '' }}>
-                    <div style="flex:1">
-                        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-                            <div style="font-size:13.5px;font-weight:600;color:var(--text-1)">{{ $pkg->name }}</div>
-                            <div style="font-size:12px;color:var(--text-2)">
-                                @if(($pkg->is_free ?? false) || ((float) ($pkg->monthly_price ?? 0) <= 0))
-                                    Free
-                                @else
-                                    ${{ number_format($pkg->monthly_price ?? 0, 0) }}/mo
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                </label>
-                @endforeach
-            </div>
-            @endif
-
-            <div style="display:flex;align-items:center;gap:10px;margin-top:20px">
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-                <a href="{{ route('my-companies.index') }}" class="btn btn-ghost">Cancel</a>
-            </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:16px">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="{{ route('my-companies.index') }}" class="btn btn-ghost">Cancel</a>
         </div>
         @endif
     </div>
@@ -255,8 +167,7 @@
             <div style="text-align:center;padding:16px 0">
                 <div id="preview-avatar" style="width:48px;height:48px;border-radius:12px;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;margin:0 auto 10px">?</div>
                 <div id="preview-name" style="font-size:14px;font-weight:600;color:var(--text-1)">Company Name</div>
-                <div id="preview-subdomain" style="font-size:12px;color:var(--text-3);margin-top:2px">{{ $company->subdomain }}.{{ config('tenancy.root_domain', 'yourdomain.com') }}</div>
-                <div id="preview-email" style="font-size:11.5px;color:var(--text-3);margin-top:2px"></div>
+<div id="preview-email" style="font-size:11.5px;color:var(--text-3);margin-top:2px"></div>
             </div>
         </div>
 
@@ -267,7 +178,6 @@
             </div>
             <ul style="font-size:12px;color:rgba(255,255,255,.75);line-height:1.7;padding-left:14px;margin:0">
                 <li>Only company details are editable here.</li>
-                <li>Subdomain is permanent and cannot be changed.</li>
                 <li>Use Save Changes to update immediately.</li>
             </ul>
         </div>

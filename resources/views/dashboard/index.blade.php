@@ -735,6 +735,12 @@
 @endif {{-- end @if($isFreshUser) / @else --}}
 
 {{-- View Client Portal Modal --}}
+{{-- Hidden form: POSTs to clients/{id}/login-as for full client impersonation --}}
+<form id="vcmLoginAsForm" method="POST" style="display:none">
+    @csrf
+    <input type="hidden" name="redirect_to" id="vcmRedirectTo" value="/dashboard">
+</form>
+
 <div id="viewClientModal" style="display:none;position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
     <div style="background:#fff;border-radius:14px;width:100%;max-width:520px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px;border-bottom:1px solid var(--border)">
@@ -827,7 +833,8 @@ if (CURRENT_PERIOD === 'custom') {
 }
 
 // View Client Portal Modal
-const vcmRoutes = {!! json_encode(collect($modalClients)->mapWithKeys(fn($c) => [$c->id => route('clients.dashboard', $c->id)])) !!};
+// loginAs URLs — POST to these to impersonate the client with full permissions
+const vcmLoginAsRoutes = {!! json_encode(collect($modalClients)->mapWithKeys(fn($c) => [$c->id => route('clients.login-as', $c->id)])) !!};
 let vcmSelectedId = null;
 
 function openViewClientModal() {
@@ -850,8 +857,12 @@ function selectVcmRow(row) {
 
 function goToClientPage() {
     if (!vcmSelectedId) return;
-    const url = vcmRoutes[vcmSelectedId];
-    if (url) window.location.href = url;
+    const actionUrl = vcmLoginAsRoutes[vcmSelectedId];
+    if (!actionUrl) return;
+    // Point the hidden form at this client's login-as endpoint and submit
+    const form = document.getElementById('vcmLoginAsForm');
+    form.action = actionUrl;
+    form.submit();
 }
 
 document.getElementById('viewClientModal')?.addEventListener('click', function (e) {

@@ -116,7 +116,7 @@
     right: 8px;
     background: rgba(0,0,0,.06);
     border: none;
-    cursor: pointer;
+    cursor: not-allowed;
     padding: 0;
     width: 28px;
     height: 28px;
@@ -126,10 +126,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background .15s;
+    transition: background .15s, opacity .15s;
+    opacity: .35;
+}
+/* Active only when dashboard is in edit mode */
+.kpi-edit-active .kpi-eye-btn {
+    cursor: pointer;
     opacity: 1;
 }
-.kpi-eye-btn:hover { background: rgba(0,0,0,.12); }
+.kpi-edit-active .kpi-eye-btn:hover { background: rgba(0,0,0,.12); }
 .kpi-card { position: relative; }
 /* Hidden state is always visible — shows regardless of edit mode */
 .kpi-card.kpi-hidden-draft {
@@ -677,6 +682,7 @@
             btn.setAttribute('data-kpi-eye', kpiType);
             btn.addEventListener('click', function (e) {
                 e.stopPropagation();
+                if (!editModeActive) return;
                 toggleKpiHidden(kpiType);
             });
             card.appendChild(btn);

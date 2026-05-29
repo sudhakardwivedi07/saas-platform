@@ -152,7 +152,7 @@
             </div>
         </div>
         <div class="pi-stat-value total">{{ $totalInsights }}</div>
-        <div class="pi-stat-sub">Total insights in subscription</div>
+        <div class="pi-stat-sub">Monthly limit from your plan</div>
     </div>
     <div class="pi-stat-card used">
         <div class="pi-stat-top">
@@ -162,7 +162,7 @@
             </div>
         </div>
         <div class="pi-stat-value used">{{ $insightsUsed }}</div>
-        <div class="pi-stat-sub">Insights generated this cycle</div>
+        <div class="pi-stat-sub">Insights generated this month</div>
     </div>
     <div class="pi-stat-card remain">
         <div class="pi-stat-top">

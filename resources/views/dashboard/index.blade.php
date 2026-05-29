@@ -385,8 +385,8 @@
 @endif
 
 @php
-    $canAddClient = ($brandingDone ?? false) && ($settingsDone ?? false);
-    $disabledTip  = 'The Add Client option will be enabled once Step 1: Branding Setup and Step 2: Settings Configuration are completed.';
+    $canAddClient = ($brandingDone ?? false);
+    $disabledTip  = 'Complete Step 1: Branding Setup to unlock Add Client.';
 @endphp
 
 @if($isFreshUser)
@@ -428,7 +428,7 @@
     <div>
         <div class="ob-badge">{{ strtoupper(company()?->company_name ?? 'YOUR PORTAL') }}</div>
         <div class="ob-title">Hi {{ explode(' ', auth()->user()->name)[0] }}, welcome to your Portal 👋</div>
-        <p class="ob-sub">Three steps stand between you and delivering AI-powered CFO insights to your clients. Follow the setup guide below to get your portal fully configured.</p>
+        <p class="ob-sub">Two steps stand between you and delivering AI-powered CFO insights to your clients. Follow the setup guide below to get your portal fully configured.</p>
     </div>
     <div class="ob-banner-btns">
         @if($canAddClient)
@@ -452,9 +452,9 @@
     </div>
 </div>
 
-{{-- 3 Setup Steps --}}
+{{-- 2 Setup Steps --}}
 @php
-    $activeStep = !($brandingDone ?? false) ? 1 : (!($settingsDone ?? false) ? 2 : 3);
+    $activeStep = !($brandingDone ?? false) ? 1 : 2;
 @endphp
 <div class="ob-steps">
 
@@ -475,34 +475,17 @@
         <span class="ob-step-link" style="color:var(--orange)">My Account → Branding</span>
     </a>
 
-    {{-- Step 2: Configure Settings — entire card is clickable --}}
-    <a href="{{ route('settings.index') }}" class="ob-step {{ $activeStep === 2 ? 'active' : '' }}" style="text-decoration:none;display:flex;flex-direction:column">
-        @if($activeStep === 2)
-        <div class="ob-step-badge">START HERE</div>
-        @elseif($settingsDone)
-        <div class="ob-step-badge" style="background:var(--green)">✓ DONE</div>
-        @endif
-
-        <div class="ob-step-ico" style="background:#ecfdf5">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8" width="22" height="22"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-        </div>
-        <div class="ob-step-num" style="color:{{ $activeStep === 2 ? '#10b981' : 'var(--text-3)' }}">STEP 2</div>
-        <div class="ob-step-title">Configure Settings</div>
-        <div class="ob-step-desc">Set up your <strong>Payment Gateway</strong>, configure <strong>Email &amp; SMS</strong> for client communications, and create your <strong>Client Plans</strong> before onboarding anyone.</div>
-        <span class="ob-step-link" style="color:#10b981">Go to Settings →</span>
-    </a>
-
-    {{-- Step 3: Add Your Clients — clickable only when steps 1 & 2 are done --}}
+    {{-- Step 2: Add Your Clients — clickable only when Step 1 is done --}}
     @if($canAddClient)
-    <a href="{{ route('clients.index') }}?add=1" class="ob-step {{ $activeStep === 3 ? 'active' : '' }}" style="text-decoration:none;display:flex;flex-direction:column">
-        @if($activeStep === 3)
+    <a href="{{ route('clients.index') }}?add=1" class="ob-step {{ $activeStep === 2 ? 'active' : '' }}" style="text-decoration:none;display:flex;flex-direction:column">
+        @if($activeStep === 2)
         <div class="ob-step-badge">START HERE</div>
         @endif
 
         <div class="ob-step-ico" style="background:#ecfdf5">
             <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8" width="22" height="22"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
         </div>
-        <div class="ob-step-num" style="color:#10b981">STEP 3</div>
+        <div class="ob-step-num" style="color:#10b981">STEP 2</div>
         <div class="ob-step-title">Add Your Clients</div>
         <div class="ob-step-desc">Add the individuals your portal serves — one at a time or bulk-import via CSV. Once added, each client receives a personalised portal invitation automatically.</div>
         <span class="ob-step-link" style="color:#10b981">Add Client →</span>
@@ -512,7 +495,7 @@
         <div class="ob-step-ico" style="background:#ecfdf5">
             <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="1.8" width="22" height="22"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
         </div>
-        <div class="ob-step-num" style="color:var(--text-3)">STEP 3</div>
+        <div class="ob-step-num" style="color:var(--text-3)">STEP 2</div>
         <div class="ob-step-title" style="opacity:.55">Add Your Clients</div>
         <div class="ob-step-desc" style="opacity:.55">Add the individuals your portal serves — one at a time or bulk-import via CSV. Once added, each client receives a personalised portal invitation automatically.</div>
         <span class="ob-step-link" style="color:#10b981;opacity:.42;pointer-events:none">Add Client →</span>

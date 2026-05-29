@@ -166,6 +166,7 @@
             <span id="cdbStatusBadge" class="cdb-status-badge cdb-status-{{ $adminPubStatus }}">{{ ucfirst($adminPubStatus) }}</span>
         </div>
     </div>
+    @if(!empty($showKpiDashboard))
     <div class="cdb-bar-right">
         <button class="cdb-btn cdb-btn-edit" id="cdbEditModeBtn" onclick="cdbToggleEditMode()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -179,6 +180,22 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Publish
         </button>
+    </div>
+    @endif
+</div>
+
+{{-- Edit Mode confirmation modal --}}
+<div id="cdbEditConfirmModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;width:100%;max-width:400px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.2);padding:28px 28px 22px;text-align:center">
+        <div style="width:48px;height:48px;border-radius:50%;background:#fff3ec;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" width="22" height="22"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:8px">Enable Edit Mode?</div>
+        <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:22px">You are about to enter edit mode. You can toggle KPI visibility and save or publish changes to the client dashboard.</div>
+        <div style="display:flex;gap:10px;justify-content:center">
+            <button onclick="cdbCancelEditMode()" style="flex:1;padding:9px 16px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+            <button onclick="cdbConfirmEditMode()" style="flex:1;padding:9px 16px;border:none;border-radius:8px;background:var(--orange);color:#fff;font-size:13px;font-weight:600;cursor:pointer">Enable Edit Mode</button>
+        </div>
     </div>
 </div>
 @endif
@@ -688,11 +705,32 @@
     }
 
     window.cdbToggleEditMode = function () {
-        editModeActive = !editModeActive;
-        const btn   = document.getElementById('cdbEditModeBtn');
-        const dash  = document.getElementById('kpiDashboard');
-        if (btn)  btn.classList.toggle('active', editModeActive);
-        if (dash) dash.classList.toggle('kpi-edit-active', editModeActive);
+        if (!editModeActive) {
+            // Show confirmation before enabling
+            var modal = document.getElementById('cdbEditConfirmModal');
+            if (modal) { modal.style.display = 'flex'; return; }
+        }
+        // Disabling — no confirmation needed
+        editModeActive = false;
+        var btn   = document.getElementById('cdbEditModeBtn');
+        var dash  = document.getElementById('kpiDashboard');
+        if (btn)  btn.classList.remove('active');
+        if (dash) dash.classList.remove('kpi-edit-active');
+    };
+
+    window.cdbConfirmEditMode = function () {
+        var modal = document.getElementById('cdbEditConfirmModal');
+        if (modal) modal.style.display = 'none';
+        editModeActive = true;
+        var btn   = document.getElementById('cdbEditModeBtn');
+        var dash  = document.getElementById('kpiDashboard');
+        if (btn)  btn.classList.add('active');
+        if (dash) dash.classList.add('kpi-edit-active');
+    };
+
+    window.cdbCancelEditMode = function () {
+        var modal = document.getElementById('cdbEditConfirmModal');
+        if (modal) modal.style.display = 'none';
     };
 
     function showCdbToast(msg, type) {

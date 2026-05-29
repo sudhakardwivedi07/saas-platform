@@ -215,6 +215,7 @@
         align-items: start;
         margin-bottom: 0;
         flex-shrink: 0;
+        margin-top: 20px;
     }
     @media (max-width: 380px) {
         .kpi-header { grid-template-columns: 1fr; }
@@ -478,6 +479,7 @@
         justify-content: space-between;
         gap: 12px;
         margin-bottom: 14px;
+        margin-top:20px;
     }
     .kpi-counter-pill {
         flex-shrink: 0;

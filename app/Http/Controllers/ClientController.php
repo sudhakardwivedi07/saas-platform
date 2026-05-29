@@ -119,6 +119,8 @@ class ClientController extends AccountBaseController
         $this->currentClientCount = $currentClientCount;
         $this->maxClientsReached  = $planMaxClients > 0 && $currentClientCount >= $planMaxClients;
 
+        $this->brandingDone = $tenant?->branding?->logo !== null;
+
         return view('clients.index', $this->data);
     }
 

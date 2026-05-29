@@ -31,6 +31,8 @@
 .rd-btn-pdf:hover { background:#d95a1a;border-color:#d95a1a;text-decoration:none; }
 .rd-btn-publish { background:#f06b25;color:#fff;border:1.5px solid #f06b25; }
 .rd-btn-publish:hover { background:#d95a1a;border-color:#d95a1a;text-decoration:none; }
+.rd-btn-share { background:#fff;color:#374151;border:1.5px solid #e2e8f0; }
+.rd-btn-share:hover { background:#f8fafc;color:#1a202c;text-decoration:none; }
 .rd-btn:disabled { opacity:.6;cursor:not-allowed; }
 
 /* ── Publish status badge ────────────────────────────────────── */
@@ -143,6 +145,12 @@
 
         @if($report->insight_json_data)
         <div class="rd-header-actions">
+            @if($report->isPublished())
+            <button class="rd-btn rd-btn-share">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                <span>Share</span>
+            </button>
+            @endif
             <button id="rdBtnEdit" class="rd-btn rd-btn-edit" onclick="rdToggleEdit()">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                 <span id="rdBtnEditLabel">Edit Insight</span>

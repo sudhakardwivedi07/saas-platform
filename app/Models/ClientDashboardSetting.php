@@ -12,11 +12,13 @@ class ClientDashboardSetting extends Model
         'hidden_kpis',
         'draft_hidden_kpis',
         'publish_status',
+        'kpi_synopsis_overrides',
     ];
 
     protected $casts = [
-        'hidden_kpis'       => 'array',
-        'draft_hidden_kpis' => 'array',
+        'hidden_kpis'             => 'array',
+        'draft_hidden_kpis'       => 'array',
+        'kpi_synopsis_overrides'  => 'array',
     ];
 
     public function company(): BelongsTo

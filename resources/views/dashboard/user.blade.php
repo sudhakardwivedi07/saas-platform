@@ -10,6 +10,29 @@
     $adminPubStatus = $dashboardPublishStatus ?? 'published';
 @endphp
 <style>
+/* ── Admin action toast ───────────────────────────────────────────── */
+.cdb-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    box-shadow: 0 8px 28px rgba(0,0,0,.18);
+    transform: translateY(16px);
+    opacity: 0;
+    transition: opacity .2s ease, transform .2s ease;
+    pointer-events: none;
+}
+.cdb-toast.show { opacity: 1; transform: translateY(0); }
+.cdb-toast.success { background: #ecfdf5; color: #065f46; border: 1.5px solid #6ee7b7; }
+.cdb-toast.error   { background: #fef2f2; color: #991b1b; border: 1.5px solid #fca5a5; }
+
 .cdb-admin-bar {
     display: flex;
     align-items: center;
@@ -89,27 +112,24 @@
 /* ── KPI Eye Icon ─────────────────────────────────────── */
 .kpi-eye-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,.06);
     border: none;
-    cursor: default;
-    padding: 4px;
-    border-radius: 6px;
+    cursor: pointer;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
     line-height: 1;
     z-index: 5;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background .1s;
-    opacity: .55;
-}
-/* In edit mode: icons are fully interactive */
-.kpi-edit-active .kpi-eye-btn {
-    cursor: pointer;
+    transition: background .15s;
     opacity: 1;
 }
-.kpi-edit-active .kpi-eye-btn:hover { background: rgba(0,0,0,.06); }
+.kpi-eye-btn:hover { background: rgba(0,0,0,.12); }
 .kpi-card { position: relative; }
 /* Hidden state is always visible — shows regardless of edit mode */
 .kpi-card.kpi-hidden-draft {
@@ -132,6 +152,7 @@
     pointer-events: none;
 }
 </style>
+<div id="cdbToast" class="cdb-toast" role="status" aria-live="polite"></div>
 <div class="cdb-admin-bar" id="cdbAdminBar">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <a href="{{ $backUrl ?? route('dashboard') }}" class="cdb-exit-btn">
@@ -145,6 +166,7 @@
             <span id="cdbStatusBadge" class="cdb-status-badge cdb-status-{{ $adminPubStatus }}">{{ ucfirst($adminPubStatus) }}</span>
         </div>
     </div>
+    @if(!empty($showKpiDashboard))
     <div class="cdb-bar-right">
         <button class="cdb-btn cdb-btn-edit" id="cdbEditModeBtn" onclick="cdbToggleEditMode()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -158,6 +180,22 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Publish
         </button>
+    </div>
+    @endif
+</div>
+
+{{-- Edit Mode confirmation modal --}}
+<div id="cdbEditConfirmModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;width:100%;max-width:400px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.2);padding:28px 28px 22px;text-align:center">
+        <div style="width:48px;height:48px;border-radius:50%;background:#fff3ec;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" width="22" height="22"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:8px">Enable Edit Mode?</div>
+        <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:22px">You are about to enter edit mode. You can toggle KPI visibility and save or publish changes to the client dashboard.</div>
+        <div style="display:flex;gap:10px;justify-content:center">
+            <button onclick="cdbCancelEditMode()" style="flex:1;padding:9px 16px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+            <button onclick="cdbConfirmEditMode()" style="flex:1;padding:9px 16px;border:none;border-radius:8px;background:var(--orange);color:#fff;font-size:13px;font-weight:600;cursor:pointer">Enable Edit Mode</button>
+        </div>
     </div>
 </div>
 @endif
@@ -560,9 +598,7 @@
                 <a href="{{ route('quickbooks.index') }}" class="cfo-btn-get-insights" style="text-decoration:none">Connect QuickBooks</a>
                 @endif
             @endif
-            @if(!empty($isAdminView) && !empty($viewingAsUser))
-            <a href="{{ route('clients.insights', $viewingAsUser->id) }}" class="cfo-btn-view-insights">View Insights</a>
-            @else
+            @if(empty($isAdminView))
             <a href="{{ route('insights.index') }}" class="cfo-btn-view-insights">View Insights</a>
             @endif
         </div>
@@ -624,7 +660,8 @@
     let editModeActive     = false;
     let draftHiddenKpis    = {!! json_encode(array_values($draftHiddenKpis ?? [])) !!};
 
-    // Inject eye icons once KPI cards are in the DOM
+    // Called by the embed after cards are in the DOM; also called immediately below
+    // in case the embed's script already ran before this one (script ordering race).
     window.__kpiReadyCallback = function () {
         injectEyeIcons();
     };
@@ -640,7 +677,6 @@
             btn.setAttribute('data-kpi-eye', kpiType);
             btn.addEventListener('click', function (e) {
                 e.stopPropagation();
-                if (!editModeActive) return;
                 toggleKpiHidden(kpiType);
             });
             card.appendChild(btn);
@@ -669,18 +705,47 @@
     }
 
     window.cdbToggleEditMode = function () {
-        editModeActive = !editModeActive;
-        const btn   = document.getElementById('cdbEditModeBtn');
-        const dash  = document.getElementById('kpiDashboard');
-        if (btn)  btn.classList.toggle('active', editModeActive);
-        if (dash) dash.classList.toggle('kpi-edit-active', editModeActive);
-        if (editModeActive) {
-            injectEyeIcons();
+        if (!editModeActive) {
+            // Show confirmation before enabling
+            var modal = document.getElementById('cdbEditConfirmModal');
+            if (modal) { modal.style.display = 'flex'; return; }
         }
+        // Disabling — no confirmation needed
+        editModeActive = false;
+        var btn   = document.getElementById('cdbEditModeBtn');
+        var dash  = document.getElementById('kpiDashboard');
+        if (btn)  btn.classList.remove('active');
+        if (dash) dash.classList.remove('kpi-edit-active');
     };
+
+    window.cdbConfirmEditMode = function () {
+        var modal = document.getElementById('cdbEditConfirmModal');
+        if (modal) modal.style.display = 'none';
+        editModeActive = true;
+        var btn   = document.getElementById('cdbEditModeBtn');
+        var dash  = document.getElementById('kpiDashboard');
+        if (btn)  btn.classList.add('active');
+        if (dash) dash.classList.add('kpi-edit-active');
+    };
+
+    window.cdbCancelEditMode = function () {
+        var modal = document.getElementById('cdbEditConfirmModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    function showCdbToast(msg, type) {
+        var t = document.getElementById('cdbToast');
+        if (!t) return;
+        t.textContent = msg;
+        t.className = 'cdb-toast ' + (type || 'success');
+        requestAnimationFrame(function () { t.classList.add('show'); });
+        clearTimeout(t._timer);
+        t._timer = setTimeout(function () { t.classList.remove('show'); }, 3200);
+    }
 
     window.cdbSaveDraft = function () {
         const btn = document.getElementById('cdbSaveDraftBtn');
+        const draftSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
         if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
         fetch(SAVE_DRAFT_URL, {
             method:  'POST',
@@ -688,19 +753,21 @@
             body:    JSON.stringify({ hidden_kpis: draftHiddenKpis }),
         })
         .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Draft'; }
+        .then(function () {
+            if (btn) { btn.disabled = false; btn.innerHTML = draftSvg + ' Save Draft'; }
             const badge = document.getElementById('cdbStatusBadge');
             if (badge) { badge.textContent = 'Draft'; badge.className = 'cdb-status-badge cdb-status-draft'; }
+            showCdbToast('✓ Draft saved successfully', 'success');
         })
         .catch(function () {
-            if (btn) { btn.disabled = false; btn.textContent = 'Save Draft'; }
-            alert('Failed to save draft. Please try again.');
+            if (btn) { btn.disabled = false; btn.innerHTML = draftSvg + ' Save Draft'; }
+            showCdbToast('Failed to save draft. Please try again.', 'error');
         });
     };
 
     window.cdbPublish = function () {
         const btn = document.getElementById('cdbPublishBtn');
+        const pubSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>';
         if (btn) { btn.disabled = true; btn.textContent = 'Publishing…'; }
         fetch(PUBLISH_URL, {
             method:  'POST',
@@ -708,16 +775,21 @@
             body:    JSON.stringify({ hidden_kpis: draftHiddenKpis }),
         })
         .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Publish'; }
+        .then(function () {
+            if (btn) { btn.disabled = false; btn.innerHTML = pubSvg + ' Publish'; }
             const badge = document.getElementById('cdbStatusBadge');
             if (badge) { badge.textContent = 'Published'; badge.className = 'cdb-status-badge cdb-status-published'; }
+            showCdbToast('✓ Dashboard published successfully', 'success');
         })
         .catch(function () {
-            if (btn) { btn.disabled = false; btn.textContent = 'Publish'; }
-            alert('Failed to publish. Please try again.');
+            if (btn) { btn.disabled = false; btn.innerHTML = pubSvg + ' Publish'; }
+            showCdbToast('Failed to publish. Please try again.', 'error');
         });
     };
+
+    // Embed's script runs before this one, so KPI cards are already in the DOM.
+    // Apply eye icons and draft-hidden state immediately without waiting for callback.
+    injectEyeIcons();
 }());
 </script>
 @endpush

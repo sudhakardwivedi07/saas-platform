@@ -98,9 +98,9 @@
             +         '<strong>Synopsis unavailable.</strong> We could not generate the synopsis at this time. Please try again later.'
             +      '</div>'
             +      '<div class="kpi-detail-synopsis-grid" id="kpiSynopsisCards" style="display:none;">'
-            +         '<div class="kpi-detail-note kpi-note-strength"><h4>Key Strengths</h4><div id="kpiSynopsisStrength" style="color:#4b5563;font-size:11px;line-height:1.6;"></div></div>'
-            +         '<div class="kpi-detail-note kpi-note-attention"><h4>Areas of Attention</h4><div id="kpiSynopsisAttention" style="color:#4b5563;font-size:11px;line-height:1.6;"></div></div>'
-            +         '<div class="kpi-detail-note kpi-note-actions"><h4>Recommended Actions</h4><div id="kpiSynopsisActions" style="color:#4b5563;font-size:11px;line-height:1.6;"></div></div>'
+            +         '<div class="kpi-detail-note kpi-note-strength"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;"><h4 style="margin:0;">Key Strengths</h4><button class="kpi-synopsis-edit-btn" data-key="strength" style="display:none;background:none;border:1px solid #d1d5db;border-radius:5px;cursor:pointer;color:#0788be;padding:2px 8px;font-size:11px;font-weight:600;">Edit</button></div><div id="kpiSynopsisStrength" style="color:#4b5563;font-size:11px;line-height:1.6;"></div></div>'
+            +         '<div class="kpi-detail-note kpi-note-attention"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;"><h4 style="margin:0;">Areas of Attention</h4><button class="kpi-synopsis-edit-btn" data-key="shortcoming" style="display:none;background:none;border:1px solid #d1d5db;border-radius:5px;cursor:pointer;color:#0788be;padding:2px 8px;font-size:11px;font-weight:600;">Edit</button></div><div id="kpiSynopsisAttention" style="color:#4b5563;font-size:11px;line-height:1.6;"></div></div>'
+            +         '<div class="kpi-detail-note kpi-note-actions"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;"><h4 style="margin:0;">Recommended Actions</h4><button class="kpi-synopsis-edit-btn" data-key="action_plan" style="display:none;background:none;border:1px solid #d1d5db;border-radius:5px;cursor:pointer;color:#0788be;padding:2px 8px;font-size:11px;font-weight:600;">Edit</button></div><div id="kpiSynopsisActions" style="color:#4b5563;font-size:11px;line-height:1.6;"></div></div>'
             +      '</div>'
             +   '</div>'
             +   (sections || '')

@@ -28,6 +28,30 @@
 .report-meta-item i { color: #94a3b8; font-size: 15px; }
 .report-meta-item.report-meta-files i { color: #eab308; }
 
+/* ── Header actions ── */
+.report-header-actions { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
+
+/* ── Edit / Save btns ── */
+.rd-btn { height:40px;padding:0 18px;border-radius:7px;font-size:13.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;border:none;transition:all .2s;white-space:nowrap; }
+.rd-btn-edit { background:#fff;color:#1a6aa8;border:1.5px solid #1a6aa8; }
+.rd-btn-edit:hover { background:#f0f7ff;text-decoration:none; }
+.rd-btn-edit.active { background:#1a6aa8;color:#fff; }
+.rd-btn-save { background:#f06b25;color:#fff;border:1.5px solid #f06b25; }
+.rd-btn-save:hover { background:#d95a1a;border-color:#d95a1a;text-decoration:none; }
+.rd-btn:disabled { opacity:.6;cursor:not-allowed; }
+
+/* ── Edit mode ── */
+.edit-mode-active .insight-slider-content [contenteditable] {
+    border-radius:6px;padding:4px 6px;margin:-4px -6px;
+    background:#fffbeb;border:1px dashed #f59e0b;outline:none;
+    cursor:text;transition:background .2s;min-height:24px;display:block;
+}
+.edit-mode-active .insight-slider-content [contenteditable]:focus {
+    background:#fefce8;border-color:#d97706;
+    box-shadow:0 0 0 3px rgba(245,158,11,.12);
+}
+.edit-mode-active .insight-slider-content li [contenteditable] { display:inline; }
+
 /* ── Export PDF btn ── */
 .export-pdf-btn {
     color: white;
@@ -180,8 +204,17 @@
             </div>
         </div>
         @if($report->insight_json_data)
-        <a href="{{ route('insights.export-pdf', $report->id) }}"
-           class="export-pdf-btn"
+        <div class="report-header-actions">
+            <button id="ciBtnEdit" class="rd-btn rd-btn-edit" onclick="ciToggleEdit()">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                <span id="ciBtnEditLabel">Edit Insight</span>
+            </button>
+            <button id="ciBtnSave" class="rd-btn rd-btn-save" onclick="ciSaveEdits()">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                <span id="ciBtnSaveLabel">Save</span>
+            </button>
+            <a href="{{ route('insights.export-pdf', $report->id) }}"
+               class="export-pdf-btn"
            id="exportPdfBtn"
            onclick="
                var btn = this;
@@ -199,6 +232,7 @@
             <span>Export to PDF</span>
             <i class="fas fa-file-pdf"></i>
         </a>
+        </div>
         @endif
     </div>
 
@@ -262,6 +296,13 @@
     function displayInsightSlider(data) {
         document.getElementById('insightLoaderShow').style.display = 'none';
 
+        // Use pre-saved HTML sections if available (from inline edit saves)
+        if (data && Array.isArray(data.sections) && data.sections.length > 0) {
+            const sections = data.sections.map(s => ({ title: s.title || '', content: s.html || s.content || '' }));
+            buildSliderHtml(sections);
+            return;
+        }
+
         let reportText = '';
         if (typeof data === 'string') {
             reportText = data;
@@ -270,7 +311,6 @@
         } else if (data && data.insight_json_data && data.insight_json_data.report) {
             reportText = data.insight_json_data.report;
         } else if (data && typeof data === 'object') {
-            // Find the longest string field — most likely the report content
             let longest = '';
             for (let key in data) {
                 if (typeof data[key] === 'string' && data[key].length > longest.length) {
@@ -288,6 +328,10 @@
         }
 
         const sections = parseInsightSections(reportText);
+        buildSliderHtml(sections);
+    }
+
+    function buildSliderHtml(sections) {
 
         let html = '<div class="insight-slider-container">';
         html += '<div class="insight-slider-wrapper">';
@@ -643,6 +687,98 @@
             if (btn) { btn.style.pointerEvents = ''; btn.style.opacity = ''; }
             if (btnText) btnText.textContent = 'Export to PDF';
         }, 300);
+    };
+
+    // ── Edit / Save ──────────────────────────────────────────────────────
+    const CI_REPORT_ID = {{ $report->id }};
+    const CI_CSRF      = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const CI_SAVE_URL  = '/insights/' + CI_REPORT_ID + '/update-content';
+    let   ciEditMode   = false;
+
+    window.ciToggleEdit = function () {
+        ciEditMode = !ciEditMode;
+        const btn      = document.getElementById('ciBtnEdit');
+        const btnLabel = document.getElementById('ciBtnEditLabel');
+        const pdfBtn   = document.getElementById('exportPdfBtn');
+        const slider   = document.getElementById('insightAccordionContentShow');
+
+        if (ciEditMode) {
+            if (btnLabel) btnLabel.textContent = 'Cancel Edit';
+            btn?.classList.add('active');
+            if (pdfBtn) { pdfBtn.style.opacity = '.4'; pdfBtn.style.pointerEvents = 'none'; }
+            slider?.classList.add('edit-mode-active');
+            ciMakeEditable(true);
+        } else {
+            if (btnLabel) btnLabel.textContent = 'Edit Insight';
+            btn?.classList.remove('active');
+            if (pdfBtn) { pdfBtn.style.opacity = ''; pdfBtn.style.pointerEvents = ''; }
+            slider?.classList.remove('edit-mode-active');
+            ciMakeEditable(false);
+        }
+    };
+
+    function ciMakeEditable(on) {
+        document.querySelectorAll('.insight-slider-content').forEach(container => {
+            if (on) {
+                container.querySelectorAll('p, li, h3, h4, td, th').forEach(el => {
+                    el.setAttribute('contenteditable', 'true');
+                    el.setAttribute('spellcheck', 'false');
+                });
+            } else {
+                container.querySelectorAll('[contenteditable]').forEach(el => {
+                    el.removeAttribute('contenteditable');
+                    el.removeAttribute('spellcheck');
+                });
+            }
+        });
+    }
+
+    window.ciSaveEdits = function () {
+        if (!window.insightSections) return;
+        const sections = window.insightSections.map((sec, i) => {
+            const slide   = document.querySelector(`.insight-slider-slide[data-slide-index="${i}"]`);
+            const content = slide?.querySelector('.insight-slider-content');
+            return { title: sec.title, html: content ? content.innerHTML : (sec.content || '') };
+        });
+
+        const btn = document.getElementById('ciBtnSave');
+        if (btn) btn.disabled = true;
+        document.getElementById('ciBtnSaveLabel').textContent = 'Saving…';
+
+        fetch(CI_SAVE_URL, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CI_CSRF, 'Accept': 'application/json' },
+            body:    JSON.stringify({ sections }),
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (btn) btn.disabled = false;
+            document.getElementById('ciBtnSaveLabel').textContent = 'Save';
+            if (data.status === 'success') {
+                window.insightSections = sections.map(s => ({ title: s.title, content: s.html }));
+                Swal.fire({
+                    html: `<div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
+                        <div style="width:70px;height:70px;background:#ecfdf5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+                            <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#10b981" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                        <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Saved Successfully</h2>
+                        <p style="font-size:14px;color:#64748b;margin:0;">Your changes have been saved.</p>
+                    </div>`,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Got it',
+                    confirmButtonColor: '#f06b25',
+                    allowOutsideClick: true,
+                });
+                ciToggleEdit();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Could not save.' });
+            }
+        })
+        .catch(() => {
+            if (btn) btn.disabled = false;
+            document.getElementById('ciBtnSaveLabel').textContent = 'Save';
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Network error. Please try again.' });
+        });
     };
 
 }());

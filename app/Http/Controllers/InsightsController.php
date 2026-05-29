@@ -319,6 +319,52 @@ class InsightsController extends AccountBaseController
         ]);
     }
 
+    public function updateContent(Request $request, int $reportId)
+    {
+        $request->validate([
+            'sections'         => 'required|array',
+            'sections.*.title' => 'required|string',
+            'sections.*.html'  => 'present|string',
+        ]);
+
+        $report = Report::where('id', $reportId)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        $sections = $request->sections;
+
+        $reportText = '';
+        foreach ($sections as $section) {
+            $title = $section['title'] ?? '';
+            $html  = $section['html']  ?? '';
+            $plain = $this->htmlToPlainText($html);
+            $reportText .= $title . "\n" . $plain . "\n\n";
+        }
+
+        $existing = is_array($report->insight_json_data) ? $report->insight_json_data : [];
+        $existing['sections'] = $sections;
+        $existing['report']   = trim($reportText);
+
+        $report->insight_json_data = $existing;
+        $report->save();
+
+        return response()->json(['status' => 'success', 'message' => 'Insight updated.']);
+    }
+
+    private function htmlToPlainText(string $html): string
+    {
+        $html = preg_replace('/<li[^>]*>\s*(.*?)\s*<\/li>/si', '- $1' . "\n", $html);
+        $html = preg_replace('/<h3[^>]*>(.*?)<\/h3>/si', '### $1' . "\n", $html);
+        $html = preg_replace('/<h4[^>]*>(.*?)<\/h4>/si', '#### $1' . "\n", $html);
+        $html = preg_replace('/<p[^>]*>(.*?)<\/p>/si', '$1' . "\n\n", $html);
+        $html = preg_replace('/<strong>(.*?)<\/strong>/si', '**$1**', $html);
+        $html = preg_replace('/<em>(.*?)<\/em>/si', '*$1*', $html);
+        $html = preg_replace('/<br\s*\/?>/i', "\n", $html);
+        $html = preg_replace('/<[^>]+>/', '', $html);
+        $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5);
+        return preg_replace('/\n{3,}/', "\n\n", trim($html));
+    }
+
     public function download(int $reportId)
     {
         $report = Report::with('attachments')

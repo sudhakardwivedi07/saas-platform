@@ -45,14 +45,6 @@ class PartnerInsightsController extends AccountBaseController
             ->orderByDesc('created_at')
             ->get();
 
-        // Stats
-        $this->totalInsights     = $this->reports->count();
-        $this->insightsUsed      = $this->reports->filter(fn($r) => !$r->trashed())->count();
-        $this->insightsRemaining = 0; // Partner portal shows portfolio total, not a cap
-        $this->avgPerClient      = $subCompanyIds->count() > 0
-            ? round($this->insightsUsed / $subCompanyIds->count(), 1)
-            : 0;
-
         // Billing-cycle usage (current month, non-deleted non-firm reports for sub-companies)
         $cycleUsed = Report::whereIn('company_id', $subCompanyIds)
             ->where('is_firm_report', false)
@@ -61,8 +53,17 @@ class PartnerInsightsController extends AccountBaseController
             ->whereNotIn('status', ['Failed'])
             ->count();
 
+        // Package limit from the admin company's subscription plan
+        $adminPlan    = $this->company?->clientPackage ?? $this->company?->package ?? $this->company?->activePlan();
+        $monthlyLimit = (int) ($adminPlan?->insights_per_month ?? $adminPlan?->max_insights_per_month ?? 0);
+
+        // Stats
+        $this->totalInsights     = $monthlyLimit;
         $this->insightsUsed      = $cycleUsed;
-        $this->insightsRemaining = max(0, $this->totalInsights - $cycleUsed);
+        $this->insightsRemaining = max(0, $monthlyLimit - $cycleUsed);
+        $this->avgPerClient      = $subCompanyIds->count() > 0
+            ? round($cycleUsed / $subCompanyIds->count(), 1)
+            : 0;
 
         return view('partner.insights.index', $this->data);
     }

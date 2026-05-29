@@ -62,10 +62,20 @@
         .kpi-explain-grid { grid-template-columns: 1fr; }
     }
     @keyframes kpiSpin { to { transform: rotate(360deg); } }
+    .kpi-synopsis-edit-area { margin-top: 2px; }
+    .kpi-synopsis-edit-area textarea { width: 100%; box-sizing: border-box; font-size: 11px; font-family: inherit; color: #374151; border: 1px solid #d1d5db; border-radius: 5px; padding: 7px; resize: vertical; line-height: 1.6; }
+    .kpi-edit-actions { display: flex; gap: 6px; margin-top: 6px; }
+    .kpi-synopsis-save-btn { background: #0788be; color: #fff; border: none; border-radius: 5px; padding: 4px 14px; font-size: 11px; font-weight: 600; cursor: pointer; }
+    .kpi-synopsis-save-btn:disabled { opacity: .6; cursor: not-allowed; }
+    .kpi-synopsis-cancel-btn { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 5px; padding: 4px 10px; font-size: 11px; cursor: pointer; }
+    #kpiDetailToast { position: fixed; bottom: 24px; right: 24px; z-index: 99999; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; opacity: 0; transform: translateY(8px); transition: opacity .2s ease, transform .2s ease; pointer-events: none; min-width: 200px; }
+    #kpiDetailToast.success { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+    #kpiDetailToast.error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
 </style>
 @endpush
 
 @section('content')
+<div id="kpiDetailToast"></div>
 <a href="{{ $kpiListBackUrl ?? route('dashboard') }}" class="kpi-generic-back">
     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
     Back
@@ -77,10 +87,11 @@
 @include('dashboard.partials.kpi-detail-markup-script')
 <script>
 (function () {
-    var kpiType   = @json($kpiType ?? ($detailKpiType ?? ''));
-    var kpiDataUrl = @json($kpiDataUrl ?? ($detailApiRoute ?? ''));
-    var companyId = @json($selectedCompanyId ?? null);
+    var kpiType      = @json($kpiType ?? ($detailKpiType ?? ''));
+    var kpiDataUrl   = @json($kpiDataUrl ?? ($detailApiRoute ?? ''));
+    var companyId    = @json($selectedCompanyId ?? null);
     var clientUserId = @json($clientId ?? null);
+    var SAVE_URL     = '{{ route("dashboard-kpi.kpi-synopsis-save") }}';
     var mount = document.getElementById('kpiStandaloneDetail');
     if (!mount || !kpiType || !kpiDataUrl) return;
 
@@ -90,12 +101,30 @@
         'ar-aging': 7, 'ap-leverage': 8, 'revenue-concentration': 9
     };
 
+    var __raw = { strength: '', shortcoming: '', action_plan: '' };
+    var __contentIds = { strength: 'kpiSynopsisStrength', shortcoming: 'kpiSynopsisAttention', action_plan: 'kpiSynopsisActions' };
+
     function textToHtml(text) {
         if (!text) return '';
         var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
             .split('\n').filter(function (l) { return l.trim(); });
         if (!lines.length) return '<p>' + text + '</p>';
         return lines.map(function (l) { return '<p style="margin:0 0 6px;">' + l.trim() + '</p>'; }).join('');
+    }
+
+    function showToast(msg, type) {
+        var el = document.getElementById('kpiDetailToast');
+        if (!el) return;
+        el.textContent = msg;
+        el.className = type || 'success';
+        requestAnimationFrame(function () {
+            el.style.opacity = '1';
+            el.style.transform = 'translateY(0)';
+        });
+        setTimeout(function () {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(8px)';
+        }, 3200);
     }
 
     function fetchKpiSynopsis(kpiId) {
@@ -123,10 +152,13 @@
                 var $s  = document.getElementById('kpiSynopsisStrength');
                 var $a  = document.getElementById('kpiSynopsisAttention');
                 var $ac = document.getElementById('kpiSynopsisActions');
-                if ($s)  $s.innerHTML  = d.strength    ? textToHtml(d.strength)    : '<p>No data available.</p>';
-                if ($a)  $a.innerHTML  = d.shortcoming ? textToHtml(d.shortcoming) : '<p>No data available.</p>';
-                if ($ac) $ac.innerHTML = d.action_plan ? textToHtml(d.action_plan) : '<p>No data available.</p>';
+                if ($s)  { $s.innerHTML  = d.strength    ? textToHtml(d.strength)    : '<p>No data available.</p>'; __raw.strength     = d.strength    || ''; }
+                if ($a)  { $a.innerHTML  = d.shortcoming ? textToHtml(d.shortcoming) : '<p>No data available.</p>'; __raw.shortcoming  = d.shortcoming || ''; }
+                if ($ac) { $ac.innerHTML = d.action_plan ? textToHtml(d.action_plan) : '<p>No data available.</p>'; __raw.action_plan  = d.action_plan || ''; }
                 if (cards) cards.style.display = '';
+                if (clientUserId) {
+                    document.querySelectorAll('.kpi-synopsis-edit-btn').forEach(function (b) { b.style.display = ''; });
+                }
             } else {
                 if (errEl) errEl.style.display = '';
             }
@@ -136,6 +168,106 @@
             if (errEl) errEl.style.display = '';
         });
     }
+
+    document.addEventListener('click', function (e) {
+        var editBtn   = e.target.closest && e.target.closest('.kpi-synopsis-edit-btn');
+        var saveBtn   = e.target.closest && e.target.closest('.kpi-synopsis-save-btn');
+        var cancelBtn = e.target.closest && e.target.closest('.kpi-synopsis-cancel-btn');
+
+        if (editBtn) {
+            var key = editBtn.dataset.key;
+            var contentEl = document.getElementById(__contentIds[key]);
+            if (!contentEl) return;
+            var cardEl = editBtn.closest('.kpi-detail-note');
+            editBtn.style.display = 'none';
+            contentEl.style.display = 'none';
+
+            var area = document.createElement('div');
+            area.className = 'kpi-synopsis-edit-area';
+            area.dataset.key = key;
+
+            var ta = document.createElement('textarea');
+            ta.rows = 6;
+            ta.value = __raw[key] || '';
+
+            var actDiv = document.createElement('div');
+            actDiv.className = 'kpi-edit-actions';
+
+            var sb = document.createElement('button');
+            sb.className = 'kpi-synopsis-save-btn';
+            sb.dataset.key = key;
+            sb.textContent = 'Save';
+
+            var cb = document.createElement('button');
+            cb.className = 'kpi-synopsis-cancel-btn';
+            cb.dataset.key = key;
+            cb.textContent = 'Cancel';
+
+            actDiv.appendChild(sb);
+            actDiv.appendChild(cb);
+            area.appendChild(ta);
+            area.appendChild(actDiv);
+            cardEl.appendChild(area);
+            ta.focus();
+        }
+
+        if (saveBtn) {
+            var key  = saveBtn.dataset.key;
+            var area = saveBtn.closest('.kpi-synopsis-edit-area');
+            var ta   = area ? area.querySelector('textarea') : null;
+            if (!ta) return;
+            __raw[key] = ta.value;
+
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Saving…';
+
+            var fd = new FormData();
+            fd.append('_token', '{{ csrf_token() }}');
+            fd.append('company_id', String(companyId || ''));
+            fd.append('kpi_type', kpiType);
+            fd.append('strength',    __raw.strength);
+            fd.append('shortcoming', __raw.shortcoming);
+            fd.append('action_plan', __raw.action_plan);
+
+            fetch(SAVE_URL, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+                if (res.success) {
+                    var contentEl = document.getElementById(__contentIds[key]);
+                    if (contentEl) {
+                        contentEl.innerHTML = __raw[key] ? textToHtml(__raw[key]) : '<p>No data available.</p>';
+                        contentEl.style.display = '';
+                    }
+                    var cardEl = area.closest('.kpi-detail-note');
+                    var eb = cardEl ? cardEl.querySelector('.kpi-synopsis-edit-btn[data-key="' + key + '"]') : null;
+                    if (eb) eb.style.display = '';
+                    area.remove();
+                    showToast('✓ Synopsis saved successfully', 'success');
+                } else {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = 'Save';
+                    showToast(res.message || 'Failed to save. Please try again.', 'error');
+                }
+            })
+            .catch(function () {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+                showToast('Failed to save. Please try again.', 'error');
+            });
+        }
+
+        if (cancelBtn) {
+            var key  = cancelBtn.dataset.key;
+            var area = cancelBtn.closest('.kpi-synopsis-edit-area');
+            if (!area) return;
+            var contentEl = document.getElementById(__contentIds[key]);
+            if (contentEl) contentEl.style.display = '';
+            var cardEl = area.closest('.kpi-detail-note');
+            var eb = cardEl ? cardEl.querySelector('.kpi-synopsis-edit-btn[data-key="' + key + '"]') : null;
+            if (eb) eb.style.display = '';
+            area.remove();
+        }
+    });
 
     mount.innerHTML = '';
     if (window.showAppLoading) window.showAppLoading('Loading KPI details', 'Fetching the latest metric data...');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ClientDashboardSetting;
 use App\Models\Company;
 use App\Models\User;
 use App\Services\Kpis\KpiFormattedDataService;
@@ -253,6 +254,23 @@ class DashboardKPIController extends AccountBaseController
             abort_unless($user, 403);
 
             $companyId = $this->resolveKpiCompany($user, $request);
+
+            // KPI type map (id → slug)
+            $kpiTypeMap = [
+                1 => 'runway-burn', 2 => 'working-capital', 3 => 'operating-cashflow',
+                4 => 'revenue', 5 => 'ebitda', 6 => 'margin-trends',
+                7 => 'ar-aging', 8 => 'ap-leverage', 9 => 'revenue-concentration',
+            ];
+            $kpiType = $kpiTypeMap[(int) $kpiId] ?? null;
+
+            // Return saved override if one exists (skip external AI call)
+            if ($kpiType && $companyId) {
+                $setting  = ClientDashboardSetting::where('company_id', $companyId)->first();
+                $override = $setting?->kpi_synopsis_overrides[$kpiType] ?? null;
+                if ($override && (($override['strength'] ?? '') || ($override['shortcoming'] ?? '') || ($override['action_plan'] ?? ''))) {
+                    return response()->json(['success' => true, 'data' => array_merge(['success' => true], $override)]);
+                }
+            }
             $this->assertCanAccessCompany($user, $companyId);
 
             // For client pages an admin passes client_user_id so we look up that user's reports
@@ -526,6 +544,52 @@ class DashboardKPIController extends AccountBaseController
                 'message' => 'API call failed: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function saveKpiSynopsis(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+        $canEdit = $user && ($user->hasAnyRole(['admin', 'manager']) || session('impersonating_client_original_id'));
+        abort_unless($canEdit, 403);
+
+        $companyId  = (int) $request->input('company_id');
+        $kpiType    = $request->input('kpi_type');
+        $strength   = $request->input('strength', '');
+        $shortcoming = $request->input('shortcoming', '');
+        $actionPlan  = $request->input('action_plan', '');
+
+        if (!$companyId || !$kpiType) {
+            return response()->json(['success' => false, 'message' => 'Missing required fields'], 422);
+        }
+
+        $setting = ClientDashboardSetting::forCompany($companyId);
+        $overrides = $setting->kpi_synopsis_overrides ?? [];
+        $overrides[$kpiType] = [
+            'strength'    => $strength,
+            'shortcoming' => $shortcoming,
+            'action_plan' => $actionPlan,
+        ];
+        $setting->update(['kpi_synopsis_overrides' => $overrides]);
+
+        return response()->json(['success' => true, 'message' => 'Synopsis saved successfully']);
+    }
+
+    public function getKpiSynopsisOverride(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+        abort_unless($user, 403);
+
+        $companyId = (int) $request->input('company_id');
+        $kpiType   = $request->input('kpi_type');
+
+        if (!$companyId || !$kpiType) {
+            return response()->json(['success' => false, 'data' => null]);
+        }
+
+        $setting = ClientDashboardSetting::where('company_id', $companyId)->first();
+        $override = $setting?->kpi_synopsis_overrides[$kpiType] ?? null;
+
+        return response()->json(['success' => true, 'data' => $override]);
     }
 }
 

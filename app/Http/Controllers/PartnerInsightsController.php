@@ -321,6 +321,7 @@ class PartnerInsightsController extends AccountBaseController
                     'report_name'  => $report->report_name,
                     'client_name'  => $clientUser->name,
                     'company_name' => $company->company_name,
+                    'user_id'      => $clientUser->id,
                 ]);
 
             } catch (\Exception $e) {

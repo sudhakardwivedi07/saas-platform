@@ -77,6 +77,8 @@
 .pi-btn-view { background:#1a6aa8;color:#fff;padding:5px 14px;border-radius:6px;font-weight:500;font-size:12.5px;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:background .2s;white-space:nowrap; }
 .pi-btn-view:hover { background:#155a8a;color:#fff;text-decoration:none; }
 .pi-btn-view:disabled { background:#9ca3af;cursor:not-allowed; }
+.pi-btn-portal { background:#f06b25;color:#fff;padding:5px 14px;border-radius:6px;font-weight:500;font-size:12.5px;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:background .2s;white-space:nowrap; }
+.pi-btn-portal:hover { background:#d95a1a;color:#fff;text-decoration:none; }
 .pi-btn-retry { background:#f06b25;color:#fff;padding:5px 14px;border-radius:6px;font-weight:500;font-size:12.5px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .2s; }
 .pi-btn-retry:hover { background:#d95a1a; }
 .pi-btn-icon { width:30px;height:30px;border-radius:6px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0; }
@@ -237,6 +239,7 @@
                     data-search="{{ strtolower($report->report_name . ' ' . $clientName . ' ' . $companyName) }}"
                     data-status="{{ $rowStatus }}"
                     data-company-id="{{ $report->company_id }}"
+                    data-user-id="{{ $report->user_id }}"
                     style="{{ $isDeleted ? 'opacity:0.65;' : '' }}">
                     <td>
                         <div class="pi-name-cell">
@@ -282,7 +285,13 @@
                                 @elseif($isFailed)
                                     <button class="pi-btn-retry" onclick="piRetry({{ $report->id }})">Retry</button>
                                 @else
-                                    <a href="{{ route('partner-insights.view', $report->encrypted_id) }}" class="pi-btn-view">View</a>
+                                    <a href="{{ route('partner-insights.view', $report->encrypted_id) }}" class="pi-btn-view">View Insights</a>
+                                    @if($report->user_id)
+                                    <form method="POST" action="{{ route('clients.login-as', $report->user_id) }}" style="display:inline;">
+                                        @csrf
+                                        <button type="submit" class="pi-btn-portal">View Client Portal</button>
+                                    </form>
+                                    @endif
                                 @endif
                             </div>
                         @endif
@@ -643,7 +652,7 @@
         .then(data => {
             if (data.status === 'processing') {
                 Swal.close();
-                prependRow(data.report_id, data.report_name, data.client_name || clientName, data.company_name || companyName, companyId);
+                prependRow(data.report_id, data.report_name, data.client_name || clientName, data.company_name || companyName, companyId, data.user_id || '');
                 pollStatus(data.report_id);
             } else {
                 Swal.fire({ icon:'error', title:'Error', text: data.message || 'Failed to generate insights.' });
@@ -670,7 +679,7 @@
         .catch(() => setTimeout(() => pollStatus(id), 15000));
     }
 
-    function prependRow(id, name, clientName, companyName, companyId) {
+    function prependRow(id, name, clientName, companyName, companyId, userId) {
         const tbody = document.getElementById('piTableBody');
         const empty = document.getElementById('pi-empty-row');
         if (empty) empty.style.display = 'none';
@@ -679,6 +688,7 @@
         tr.id = 'pi-row-' + id;
         tr.dataset.status    = 'processing';
         tr.dataset.companyId = companyId || '';
+        tr.dataset.userId    = userId || '';
         tr.dataset.search    = (name + ' ' + clientName + ' ' + companyName).toLowerCase();
         tr.innerHTML = `
             <td><div class="pi-name-cell">
@@ -713,7 +723,14 @@
         }
         const actions = row.querySelector('.pi-actions');
         if (actions) {
-            actions.innerHTML = `<a href="${viewUrl}" class="pi-btn-view">View</a>`;
+            const userId = row.dataset.userId || '';
+            const portalBtn = userId
+                ? `<form method="POST" action="/clients/${userId}/login-as" style="display:inline;">
+                       <input type="hidden" name="_token" value="${CSRF}">
+                       <button type="submit" class="pi-btn-portal">View Client Portal</button>
+                   </form>`
+                : '';
+            actions.innerHTML = `<a href="${viewUrl}" class="pi-btn-view">View Insights</a>${portalBtn}`;
         }
 
         // Refresh the Generate button and header button

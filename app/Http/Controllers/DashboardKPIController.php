@@ -96,9 +96,11 @@ class DashboardKPIController extends AccountBaseController
             'kpiPageTitle' => self::KPI_TITLE_MAP[$kpiType] ?? 'KPI',
             'selectedCompanyId' => $companyId,
             'kpiDataUrl' => route('dashboard-kpi.' . $routeName),
-            'kpiListBackUrl' => auth()->user()->hasRole('client_admin')
-                ? route('my-financials.index')
-                : route('dashboard'),
+            'kpiListBackUrl' => session('impersonating_client_original_id')
+                ? route('dashboard')
+                : (auth()->user()->hasRole('client_admin')
+                    ? route('my-financials.index')
+                    : route('dashboard')),
         ]));
     }
 

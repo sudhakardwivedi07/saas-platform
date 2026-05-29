@@ -438,7 +438,12 @@ class ClientController extends AccountBaseController
         abort_403(!$canEdit);
 
         $clientUser = User::findOrFail($id);
-        $company    = $clientUser->company;
+        $requestedCompanyId = (int) $request->input('company_id', 0);
+        if ($requestedCompanyId && $clientUser->portfolioCompanies()->contains(fn ($c) => (int) $c->id === $requestedCompanyId)) {
+            $company = Company::withoutGlobalScopes()->find($requestedCompanyId);
+        } else {
+            $company = $clientUser->company;
+        }
         abort_if(!$company, 404);
 
         $hiddenKpis = array_values(array_filter((array) $request->input('hidden_kpis', [])));
@@ -458,7 +463,12 @@ class ClientController extends AccountBaseController
         abort_403(!$canEdit);
 
         $clientUser = User::findOrFail($id);
-        $company    = $clientUser->company;
+        $requestedCompanyId = (int) $request->input('company_id', 0);
+        if ($requestedCompanyId && $clientUser->portfolioCompanies()->contains(fn ($c) => (int) $c->id === $requestedCompanyId)) {
+            $company = Company::withoutGlobalScopes()->find($requestedCompanyId);
+        } else {
+            $company = $clientUser->company;
+        }
         abort_if(!$company, 404);
 
         $hiddenKpis = array_values(array_filter((array) $request->input('hidden_kpis', [])));

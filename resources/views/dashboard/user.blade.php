@@ -5,11 +5,9 @@
 
 @if(!empty($isAdminView))
 @php
-    $adminViewUser  = $viewingAsUser ?? auth()->user();
-    $adminCompany   = $adminViewUser->company;
-    $adminPubStatus = $dashboardPublishStatus ?? 'published';
+    $adminViewUser = $viewingAsUser ?? auth()->user();
 
-    // Preload per-company dashboard settings for dynamic admin bar updates
+    // Preload per-company dashboard settings FIRST so admin bar can reference them
     $kpiCoSettingsMap = [];
     foreach(($kpiCompanies ?? collect()) as $__co) {
         $__s = \App\Models\ClientDashboardSetting::forCompany($__co->id);
@@ -19,6 +17,15 @@
             'publish_status' => $__s->publish_status ?? 'published',
         ];
     }
+
+    // Admin bar should reflect the SELECTED entity, not the client's primary company
+    $_selCoId     = $selectedKpiCompanyId ?? null;
+    $adminCompany = $_selCoId
+        ? (($kpiCompanies ?? collect())->firstWhere('id', $_selCoId) ?? $adminViewUser->company)
+        : $adminViewUser->company;
+    $adminPubStatus = ($_selCoId && isset($kpiCoSettingsMap[$_selCoId]))
+        ? $kpiCoSettingsMap[$_selCoId]['publish_status']
+        : ($dashboardPublishStatus ?? 'published');
 @endphp
 <style>
 /* ── Admin action toast ───────────────────────────────────────────── */

@@ -27,10 +27,17 @@ class QuickBooksController extends AccountBaseController
     {
         // User role: show personal connect / disconnect page
         if (auth()->user()->hasRole('client')) {
-            $this->connection  = QuickBooksConnection::where('user_id', auth()->id())
+            $clientUser = auth()->user();
+            // Check all portfolio companies (QB may have been connected by admin on client's behalf)
+            $portfolioIds = $clientUser->portfolioCompanies()->pluck('id');
+            if ($portfolioIds->isEmpty()) {
+                $portfolioIds = collect([$clientUser->company_id])->filter();
+            }
+            $this->connection = QuickBooksConnection::withoutGlobalScopes()
+                ->whereIn('company_id', $portfolioIds)
                 ->where('is_active', true)
                 ->first();
-            $this->qbConfigured = $this->resolveCredentials(auth()->user()->company_id) !== null;
+            $this->qbConfigured = $this->resolveCredentials($clientUser->company_id) !== null;
             return view('quickbooks.user-connection', $this->data);
         }
 

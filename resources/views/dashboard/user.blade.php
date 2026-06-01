@@ -785,7 +785,7 @@
             if (badge) { badge.textContent = 'Draft'; badge.className = 'cdb-status-badge cdb-status-draft'; }
             if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].publish_status = 'draft';
             if (typeof Swal !== 'undefined') {
-                Swal.fire({ icon: 'success', title: 'Draft Saved', text: 'Changes have been saved as a draft.', timer: 2200, showConfirmButton: false });
+                Swal.fire({ icon: 'success', title: 'Draft Saved', text: 'Changes have been saved as a draft.', confirmButtonText: 'View Dashboard', confirmButtonColor: '#0788be', showCancelButton: false}).then(function(r) { if (r.isConfirmed) window.location.reload(); });
             }
         })
         .catch(function () {
@@ -810,7 +810,7 @@
             if (badge) { badge.textContent = 'Published'; badge.className = 'cdb-status-badge cdb-status-published'; }
             if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].publish_status = 'published';
             if (typeof Swal !== 'undefined') {
-                Swal.fire({ icon: 'success', title: 'Published!', text: 'Dashboard has been published to the client.', timer: 2200, showConfirmButton: false });
+                Swal.fire({ icon: 'success', title: 'Published!', text: 'Successfully published! The client can now see all reviewed content.', confirmButtonText: 'View Dashboard', confirmButtonColor: '#0788be', showCancelButton: false, }).then(function(r) { if (r.isConfirmed) window.location.reload(); });
             }
         })
         .catch(function () {

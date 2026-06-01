@@ -85,13 +85,15 @@ class ClientController extends AccountBaseController
                 'package',
                 'quickbooksConnections',
                 'users' => fn($q) => $q->orderBy('id')->limit(1),
+                // managers covers existing clients assigned via pivot (company_id not changed)
+                'managers' => fn($q) => $q->whereHas('roles', fn($r) => $r->whereIn('name', ['client', 'client_admin'])),
             ])
             ->orderByDesc('created_at')
             ->get();
 
-        // All unique clients (first user of each sub-company) for the filter dropdown
+        // All unique clients for the filter dropdown — check users first, fall back to managers
         $this->clientsList = $this->companies
-            ->map(fn($c) => $c->users->first())
+            ->map(fn($c) => $c->users->first() ?? $c->managers->first())
             ->filter()
             ->unique('id')
             ->values();

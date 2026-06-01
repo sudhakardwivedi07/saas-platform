@@ -278,9 +278,8 @@ class ClientCompanyController extends AccountBaseController
                     403,
                     'You cannot assign this user.'
                 );
-                // Update primary company so adminUser/users relationships resolve on the new company
-                $existingUser->company_id = $company->id;
-                $existingUser->save();
+                // Link the existing user to the new company via pivot WITHOUT changing their
+                // primary company_id — preserving their association with existing companies.
                 $existingUser->managedCompanies()->syncWithoutDetaching([
                     $company->id => ['role' => 'admin'],
                 ]);
@@ -307,7 +306,7 @@ class ClientCompanyController extends AccountBaseController
 
         $this->activateCompany($company, $newUser, null, $setting);
 
-        return redirect()->route('my-companies.index')
+        return redirect()->to(route('clients.index') . '?tab=companies')
             ->with('success', "Company '{$company->company_name}' created successfully!");
     }
 

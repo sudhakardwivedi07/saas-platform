@@ -234,7 +234,7 @@
             <tbody>
                 @forelse($companies as $company)
                 @php
-                    $owner        = $company->users->first();
+                    $owner        = $company->users->first() ?? $company->managers->first();
                     $isQB         = $company->quickbooksConnections->where('is_active', true)->isNotEmpty();
                     $plan         = $company->clientPackage ?? $company->package;
                     $maxDocs      = $plan

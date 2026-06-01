@@ -404,7 +404,11 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 
     <nav class="ca-nav">
     @php
-        $__navRole  = auth()->user()->getRoleNames()->first() ?? 'client';
+        // When admin is impersonating a client always render the client nav,
+        // regardless of what role the client user happens to have.
+        $__navRole  = session('impersonating_client_original_id')
+            ? 'client'
+            : (auth()->user()->getRoleNames()->first() ?? 'client');
         $__navItems = \App\Models\NavItem::getForRole($__navRole, auth()->user());
     @endphp
 

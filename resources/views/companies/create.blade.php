@@ -147,7 +147,7 @@
                 <button type="button" id="btn-admin-new"
                     onclick="setAdminType('new')"
                     style="flex:1;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:all .12s;background:var(--orange);color:#fff">
-                    New Admin
+                    New Client
                 </button>
                 <button type="button" id="btn-admin-existing"
                     onclick="setAdminType('existing')"
@@ -164,7 +164,7 @@
                     Create login credentials for this company's administrator.
                 </div>
                 <div class="mf-field">
-                    <label class="mf-label">Admin Full Name <span style="color:var(--red)">*</span></label>
+                    <label class="mf-label">Client Full Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="admin_name" id="co-admin-name" class="mf-inp"
                            placeholder="Jane Smith" value="{{ old('admin_name') }}" maxlength="100">
                     @error('admin_name')
@@ -173,7 +173,7 @@
                     <div id="err-co-admin-name" class="co-err" style="display:none"></div>
                 </div>
                 <div class="mf-field">
-                    <label class="mf-label">Admin Email <span style="color:var(--red)">*</span></label>
+                    <label class="mf-label">Client Email <span style="color:var(--red)">*</span></label>
                     <input type="email" name="admin_email" id="co-admin-email" class="mf-inp"
                            placeholder="jane@acme.com" value="{{ old('admin_email') }}" maxlength="100">
                     @error('admin_email')

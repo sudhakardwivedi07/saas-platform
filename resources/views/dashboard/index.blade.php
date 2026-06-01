@@ -743,12 +743,12 @@
                 <tbody>
                     @foreach($modalClients as $mc)
                     @php
-                        $cid    = $mc->company_id;
+                        $cid    = $mc->display_company_id ?? $mc->company_id;
                         $status = $companyPublishStatus[$cid] ?? null;
                     @endphp
                     <tr style="border-bottom:1px solid var(--bg)">
                         <td style="padding:10px 0;font-size:13px;color:var(--text-1);font-weight:500">{{ $mc->name }}</td>
-                        <td style="padding:10px 8px;font-size:13px;color:var(--text-2)">{{ $mc->company?->company_name ?? '—' }}</td>
+                        <td style="padding:10px 8px;font-size:13px;color:var(--text-2)">{{ $mc->display_company_name ?? $mc->company?->company_name ?? '—' }}</td>
                         <td style="padding:10px 8px">
                             @if($status === 'Published')
                                 <span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11.5px;font-weight:600;background:rgba(16,185,129,.12);color:#059669">Published</span>

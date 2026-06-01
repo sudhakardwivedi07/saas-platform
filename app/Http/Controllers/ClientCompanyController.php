@@ -278,12 +278,15 @@ class ClientCompanyController extends AccountBaseController
                     403,
                     'You cannot assign this user.'
                 );
+                // Update primary company so adminUser/users relationships resolve on the new company
+                $existingUser->company_id = $company->id;
+                $existingUser->save();
                 $existingUser->managedCompanies()->syncWithoutDetaching([
                     $company->id => ['role' => 'admin'],
                 ]);
                 $newUser = $existingUser;
             } else {
-                $role    = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+                $role    = Role::firstOrCreate(['name' => 'client', 'guard_name' => 'web']);
                 $newUser = User::create([
                     'company_id'        => $company->id,
                     'name'              => $request->admin_name,

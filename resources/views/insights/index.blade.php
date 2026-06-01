@@ -397,8 +397,8 @@
     <!-- <div class="viewing-company">{{ $selectedCompany?->company_name ?? 'Your Company' }}</div> -->
 
     {{-- Company selector (always visible when there are companies) --}}
-    @if($companies->count() > 0)
-    <!-- <div class="company-selector-wrap">
+    @if($companies->count() > 1)
+    <div class="company-selector-wrap">
         <select class="bar-select" onchange="switchCompany(this.value)">
             @foreach($companies as $co)
                 <option value="{{ $co->id }}" {{ $co->id == $selectedCompanyId ? 'selected' : '' }}>
@@ -406,7 +406,7 @@
                 </option>
             @endforeach
         </select>
-    </div> -->
+    </div>
     @endif
 
     {{-- Right: usage bar + status filter + search --}}

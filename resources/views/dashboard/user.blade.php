@@ -5,9 +5,27 @@
 
 @if(!empty($isAdminView))
 @php
-    $adminViewUser  = $viewingAsUser ?? auth()->user();
-    $adminCompany   = $adminViewUser->company;
-    $adminPubStatus = $dashboardPublishStatus ?? 'published';
+    $adminViewUser = $viewingAsUser ?? auth()->user();
+
+    // Preload per-company dashboard settings FIRST so admin bar can reference them
+    $kpiCoSettingsMap = [];
+    foreach(($kpiCompanies ?? collect()) as $__co) {
+        $__s = \App\Models\ClientDashboardSetting::forCompany($__co->id);
+        $kpiCoSettingsMap[$__co->id] = [
+            'name'           => $__co->company_name,
+            'hidden_kpis'    => array_values($__s->draft_hidden_kpis ?? []),
+            'publish_status' => $__s->publish_status ?? 'published',
+        ];
+    }
+
+    // Admin bar should reflect the SELECTED entity, not the client's primary company
+    $_selCoId     = $selectedKpiCompanyId ?? null;
+    $adminCompany = $_selCoId
+        ? (($kpiCompanies ?? collect())->firstWhere('id', $_selCoId) ?? $adminViewUser->company)
+        : $adminViewUser->company;
+    $adminPubStatus = ($_selCoId && isset($kpiCoSettingsMap[$_selCoId]))
+        ? $kpiCoSettingsMap[$_selCoId]['publish_status']
+        : ($dashboardPublishStatus ?? 'published');
 @endphp
 <style>
 /* ── Admin action toast ───────────────────────────────────────────── */
@@ -662,7 +680,9 @@
     const CSRF             = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     const SAVE_DRAFT_URL   = '{{ route("clients.dashboard.save-draft", $viewingAsUser->id) }}';
     const PUBLISH_URL      = '{{ route("clients.dashboard.publish",    $viewingAsUser->id) }}';
+    const KPI_CO_SETTINGS  = {!! json_encode($kpiCoSettingsMap ?? []) !!};
     let editModeActive     = false;
+    let currentCompanyId   = {{ $selectedKpiCompanyId ?? 'null' }};
     let draftHiddenKpis    = {!! json_encode(array_values($draftHiddenKpis ?? [])) !!};
 
     // Called by the embed after cards are in the DOM; also called immediately below
@@ -750,20 +770,23 @@
     }
 
     window.cdbSaveDraft = function () {
-        const btn = document.getElementById('cdbSaveDraftBtn');
-        const draftSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
+        var btn = document.getElementById('cdbSaveDraftBtn');
+        var draftSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
         if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
         fetch(SAVE_DRAFT_URL, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            body:    JSON.stringify({ hidden_kpis: draftHiddenKpis }),
+            body:    JSON.stringify({ hidden_kpis: draftHiddenKpis, company_id: currentCompanyId }),
         })
         .then(function (r) { return r.json(); })
         .then(function () {
             if (btn) { btn.disabled = false; btn.innerHTML = draftSvg + ' Save Draft'; }
-            const badge = document.getElementById('cdbStatusBadge');
+            var badge = document.getElementById('cdbStatusBadge');
             if (badge) { badge.textContent = 'Draft'; badge.className = 'cdb-status-badge cdb-status-draft'; }
-            showCdbToast('✓ Draft saved successfully', 'success');
+            if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].publish_status = 'draft';
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'success', title: 'Draft Saved', text: 'Changes have been saved as a draft.', timer: 2200, showConfirmButton: false });
+            }
         })
         .catch(function () {
             if (btn) { btn.disabled = false; btn.innerHTML = draftSvg + ' Save Draft'; }
@@ -772,26 +795,57 @@
     };
 
     window.cdbPublish = function () {
-        const btn = document.getElementById('cdbPublishBtn');
-        const pubSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>';
+        var btn = document.getElementById('cdbPublishBtn');
+        var pubSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>';
         if (btn) { btn.disabled = true; btn.textContent = 'Publishing…'; }
         fetch(PUBLISH_URL, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            body:    JSON.stringify({ hidden_kpis: draftHiddenKpis }),
+            body:    JSON.stringify({ hidden_kpis: draftHiddenKpis, company_id: currentCompanyId }),
         })
         .then(function (r) { return r.json(); })
         .then(function () {
             if (btn) { btn.disabled = false; btn.innerHTML = pubSvg + ' Publish'; }
-            const badge = document.getElementById('cdbStatusBadge');
+            var badge = document.getElementById('cdbStatusBadge');
             if (badge) { badge.textContent = 'Published'; badge.className = 'cdb-status-badge cdb-status-published'; }
-            showCdbToast('✓ Dashboard published successfully', 'success');
+            if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].publish_status = 'published';
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'success', title: 'Published!', text: 'Dashboard has been published to the client.', timer: 2200, showConfirmButton: false });
+            }
         })
         .catch(function () {
             if (btn) { btn.disabled = false; btn.innerHTML = pubSvg + ' Publish'; }
             showCdbToast('Failed to publish. Please try again.', 'error');
         });
     };
+
+    // Wrap company change to keep admin bar in sync with embed's company selector
+    (function () {
+        var _orig = window.__kpiEmbedChangeCompany;
+        window.__kpiEmbedChangeCompany = function (id) {
+            id = parseInt(String(id), 10);
+            currentCompanyId = id;
+            var s = KPI_CO_SETTINGS[id];
+            if (s) {
+                var nameEl = document.querySelector('.cdb-company-name');
+                if (nameEl) nameEl.textContent = s.name;
+                draftHiddenKpis = (s.hidden_kpis || []).slice();
+                var badge = document.getElementById('cdbStatusBadge');
+                if (badge) {
+                    var st = s.publish_status || 'published';
+                    badge.textContent = st.charAt(0).toUpperCase() + st.slice(1);
+                    badge.className = 'cdb-status-badge cdb-status-' + st;
+                }
+            }
+            // Exit edit mode on company switch
+            editModeActive = false;
+            var editBtn = document.getElementById('cdbEditModeBtn');
+            var dash    = document.getElementById('kpiDashboard');
+            if (editBtn) editBtn.classList.remove('active');
+            if (dash)    dash.classList.remove('kpi-edit-active');
+            if (_orig) _orig(id);
+        };
+    }());
 
     // Embed's script runs before this one, so KPI cards are already in the DOM.
     // Apply eye icons and draft-hidden state immediately without waiting for callback.

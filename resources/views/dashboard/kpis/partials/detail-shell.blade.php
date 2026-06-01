@@ -169,57 +169,35 @@
         });
     }
 
+    var sectionTitles = { strength: 'Key Strengths', shortcoming: 'Areas of Attention', action_plan: 'Recommended Actions' };
+
     document.addEventListener('click', function (e) {
-        var editBtn   = e.target.closest && e.target.closest('.kpi-synopsis-edit-btn');
-        var saveBtn   = e.target.closest && e.target.closest('.kpi-synopsis-save-btn');
-        var cancelBtn = e.target.closest && e.target.closest('.kpi-synopsis-cancel-btn');
+        var editBtn = e.target.closest && e.target.closest('.kpi-synopsis-edit-btn');
+        if (!editBtn) return;
 
-        if (editBtn) {
-            var key = editBtn.dataset.key;
-            var contentEl = document.getElementById(__contentIds[key]);
-            if (!contentEl) return;
-            var cardEl = editBtn.closest('.kpi-detail-note');
-            editBtn.style.display = 'none';
-            contentEl.style.display = 'none';
+        var key = editBtn.dataset.key;
+        var currentText = __raw[key] || '';
 
-            var area = document.createElement('div');
-            area.className = 'kpi-synopsis-edit-area';
-            area.dataset.key = key;
+        Swal.fire({
+            title: 'Edit ' + (sectionTitles[key] || key),
+            html: '<textarea id="synopsisEditTa" rows="10" style="width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:6px;padding:10px;font-size:13px;font-family:inherit;line-height:1.6;resize:vertical;color:#374151;outline:none;"></textarea>',
+            showCancelButton: true,
+            confirmButtonText: 'Save Changes',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#0788be',
+            width: 640,
+            didOpen: function () {
+                document.getElementById('synopsisEditTa').value = currentText;
+                document.getElementById('synopsisEditTa').focus();
+            },
+            preConfirm: function () {
+                return document.getElementById('synopsisEditTa').value;
+            }
+        }).then(function (result) {
+            if (!result.isConfirmed) return;
+            __raw[key] = result.value;
 
-            var ta = document.createElement('textarea');
-            ta.rows = 6;
-            ta.value = __raw[key] || '';
-
-            var actDiv = document.createElement('div');
-            actDiv.className = 'kpi-edit-actions';
-
-            var sb = document.createElement('button');
-            sb.className = 'kpi-synopsis-save-btn';
-            sb.dataset.key = key;
-            sb.textContent = 'Save';
-
-            var cb = document.createElement('button');
-            cb.className = 'kpi-synopsis-cancel-btn';
-            cb.dataset.key = key;
-            cb.textContent = 'Cancel';
-
-            actDiv.appendChild(sb);
-            actDiv.appendChild(cb);
-            area.appendChild(ta);
-            area.appendChild(actDiv);
-            cardEl.appendChild(area);
-            ta.focus();
-        }
-
-        if (saveBtn) {
-            var key  = saveBtn.dataset.key;
-            var area = saveBtn.closest('.kpi-synopsis-edit-area');
-            var ta   = area ? area.querySelector('textarea') : null;
-            if (!ta) return;
-            __raw[key] = ta.value;
-
-            saveBtn.disabled = true;
-            saveBtn.textContent = 'Saving…';
+            Swal.fire({ title: 'Saving…', allowOutsideClick: false, didOpen: function () { Swal.showLoading(); } });
 
             var fd = new FormData();
             fd.append('_token', '{{ csrf_token() }}');
@@ -234,39 +212,16 @@
             .then(function (res) {
                 if (res.success) {
                     var contentEl = document.getElementById(__contentIds[key]);
-                    if (contentEl) {
-                        contentEl.innerHTML = __raw[key] ? textToHtml(__raw[key]) : '<p>No data available.</p>';
-                        contentEl.style.display = '';
-                    }
-                    var cardEl = area.closest('.kpi-detail-note');
-                    var eb = cardEl ? cardEl.querySelector('.kpi-synopsis-edit-btn[data-key="' + key + '"]') : null;
-                    if (eb) eb.style.display = '';
-                    area.remove();
-                    showToast('✓ Synopsis saved successfully', 'success');
+                    if (contentEl) contentEl.innerHTML = __raw[key] ? textToHtml(__raw[key]) : '<p>No data available.</p>';
+                    Swal.fire({ icon: 'success', title: 'Saved!', text: 'Synopsis updated successfully.', timer: 1800, showConfirmButton: false });
                 } else {
-                    saveBtn.disabled = false;
-                    saveBtn.textContent = 'Save';
-                    showToast(res.message || 'Failed to save. Please try again.', 'error');
+                    Swal.fire({ icon: 'error', title: 'Error', text: res.message || 'Failed to save. Please try again.' });
                 }
             })
             .catch(function () {
-                saveBtn.disabled = false;
-                saveBtn.textContent = 'Save';
-                showToast('Failed to save. Please try again.', 'error');
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to save. Please try again.' });
             });
-        }
-
-        if (cancelBtn) {
-            var key  = cancelBtn.dataset.key;
-            var area = cancelBtn.closest('.kpi-synopsis-edit-area');
-            if (!area) return;
-            var contentEl = document.getElementById(__contentIds[key]);
-            if (contentEl) contentEl.style.display = '';
-            var cardEl = area.closest('.kpi-detail-note');
-            var eb = cardEl ? cardEl.querySelector('.kpi-synopsis-edit-btn[data-key="' + key + '"]') : null;
-            if (eb) eb.style.display = '';
-            area.remove();
-        }
+        });
     });
 
     mount.innerHTML = '';

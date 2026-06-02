@@ -11,30 +11,46 @@
     </div>
 </div>
 
+@php
+// Determine which My Account tabs this user may see, and which is first/active.
+$_atabs = [
+    'tab-profile'      => auth()->user()->can('view_account_profile'),
+    'tab-branding'     => auth()->user()->can('view_account_branding'),
+    'tab-login-page'   => auth()->user()->can('view_account_login_page'),
+    'tab-subscription' => auth()->user()->can('view_account_subscription'),
+    'tab-activity'     => auth()->user()->can('view_account_activity'),
+];
+$_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
+@endphp
+
 {{-- Tab Bar --}}
 <div class="tab-bar">
-    <button class="tab-btn active" data-tab="tab-profile">
+    @if($_atabs['tab-profile'])
+    <button class="tab-btn {{ $_afirst === 'tab-profile' ? 'active' : '' }}" data-tab="tab-profile">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Profile
     </button>
-    <button class="tab-btn" data-tab="tab-branding">
+    @endif
+    @if($_atabs['tab-branding'])
+    <button class="tab-btn {{ $_afirst === 'tab-branding' ? 'active' : '' }}" data-tab="tab-branding">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><path d="M17 21H7a4 4 0 01-4-4 3 3 0 013-3h.5a2.5 2.5 0 002.5-2.5v-1A2.5 2.5 0 0111.5 8h1"/><path d="M14 21v-4a2 2 0 012-2h4"/></svg>
         Branding
     </button>
-    @if(auth()->user()->can('edit_branding'))
-    <button class="tab-btn" data-tab="tab-login-page">
+    @endif
+    @if($_atabs['tab-login-page'])
+    <button class="tab-btn {{ $_afirst === 'tab-login-page' ? 'active' : '' }}" data-tab="tab-login-page">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
         Login Page
     </button>
     @endif
-    @if(auth()->user()->can('view_billing'))
-    <button class="tab-btn" data-tab="tab-subscription">
+    @if($_atabs['tab-subscription'])
+    <button class="tab-btn {{ $_afirst === 'tab-subscription' ? 'active' : '' }}" data-tab="tab-subscription">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
         Subscription
     </button>
     @endif
-    @if(auth()->user()->hasAnyRole(['admin','manager']))
-    <button class="tab-btn" data-tab="tab-activity">
+    @if($_atabs['tab-activity'])
+    <button class="tab-btn {{ $_afirst === 'tab-activity' ? 'active' : '' }}" data-tab="tab-activity">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Activity Log
     </button>
@@ -42,7 +58,8 @@
 </div>
 
 {{-- Tab 1: Profile --}}
-<div class="tab-panel active" id="tab-profile">
+@if($_atabs['tab-profile'])
+<div class="tab-panel {{ $_afirst === 'tab-profile' ? 'active' : '' }}" id="tab-profile">
     <div class="acc-card">
         {{-- Avatar + Name --}}
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
@@ -117,9 +134,11 @@
         </div>
     </div>
 </div>
+@endif {{-- /tab-profile --}}
 
 {{-- Tab 2: Branding --}}
-<div class="tab-panel" id="tab-branding">
+@if($_atabs['tab-branding'])
+<div class="tab-panel {{ $_afirst === 'tab-branding' ? 'active' : '' }}" id="tab-branding">
     <form method="POST" action="{{ route('settings.branding.update') }}" enctype="multipart/form-data" id="branding-form">
         @csrf
         <div class="brand-layout">
@@ -346,10 +365,11 @@
         </div>
     </form>
 </div>
+@endif {{-- /tab-branding --}}
 
 {{-- Tab 3: Login Page --}}
-@if(auth()->user()->can('edit_branding'))
-<div class="tab-panel" id="tab-login-page">
+@if($_atabs['tab-login-page'])
+<div class="tab-panel {{ $_afirst === 'tab-login-page' ? 'active' : '' }}" id="tab-login-page">
     <div class="acc-card" style="max-width:1200px">
         <div class="acc-section-title" style="margin-bottom:24px">
             <h3 style="font-size:16px;font-weight:700;color:#1a202c;margin:0 0 4px">Login Page</h3>
@@ -509,11 +529,11 @@
         </div>
     </div>
 </div>
-@endif
+@endif {{-- /tab-login-page --}}
 
 {{-- Tab 4: Subscription --}}
-@if(auth()->user()->can('view_billing'))
-<div class="tab-panel" id="tab-subscription">
+@if($_atabs['tab-subscription'])
+<div class="tab-panel {{ $_afirst === 'tab-subscription' ? 'active' : '' }}" id="tab-subscription">
 @php
     $subPkg      = $subscription?->package;
     $subStatus   = $subscription?->status ?? 'none';
@@ -695,11 +715,11 @@
 @endif
 
 </div>
-@endif
+@endif {{-- /tab-subscription --}}
 
 {{-- Tab 5: Activity Log --}}
-@if(auth()->user()->hasAnyRole(['admin','manager']))
-<div class="tab-panel" id="tab-activity">
+@if($_atabs['tab-activity'])
+<div class="tab-panel {{ $_afirst === 'tab-activity' ? 'active' : '' }}" id="tab-activity">
     <div class="info-banner" style="margin-bottom:1.25rem;">
         <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--blue);">
             <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -805,7 +825,7 @@
         @endif
     </div>
 </div>
-@endif
+@endif {{-- /tab-activity --}}
 
 @endsection
 
@@ -997,7 +1017,7 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // ── Activity Log ──────────────────────────────────────────────────────────────
-@if(auth()->user()->hasAnyRole(['admin','manager']))
+@if($_atabs['tab-activity'])
 $(document).ready(function () {
     if (!document.getElementById('activity-table')) return;
 
@@ -1042,7 +1062,7 @@ function actClearFilters() {
 @endif
 
 // ── Login Page ────────────────────────────────────────────────────────────────
-@if(auth()->user()->can('edit_branding'))
+@if($_atabs['tab-login-page'])
 document.addEventListener('DOMContentLoaded', function () {
     var lpBtn = document.querySelector('[data-tab="tab-login-page"]');
     if (lpBtn) {
@@ -1164,7 +1184,7 @@ function submitLoginPageForm(e) {
 @endif
 
 // ── Subscription Tab ──────────────────────────────────────────────────────────
-@if(auth()->user()->can('view_billing'))
+@if($_atabs['tab-subscription'])
 async function subStartCheckout(packageId, btn) {
     const orig = btn.textContent.trim();
     btn.disabled = true;
@@ -1409,7 +1429,7 @@ function validateAndSubmitPassword() {
 .ac-err::before {
     content: '';
     display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 .f-inp.ac-invalid { border-color: var(--red) !important; }
 </style>

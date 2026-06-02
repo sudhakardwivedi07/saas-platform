@@ -11,40 +11,69 @@
     </div>
 </div>
 
+@php
+// Determine which settings tabs this user may see, and which is first/active.
+$_stabs = [
+    'tab-payment'        => auth()->user()->can('view_settings_payment'),
+    'tab-email'          => auth()->user()->can('view_settings_email'),
+    'tab-sms'            => auth()->user()->can('view_settings_sms'),
+    'tab-quickbooks'     => auth()->user()->can('view_settings_quickbooks'),
+    'tab-plans'          => auth()->user()->can('view_settings_plans'),
+    'tab-insight-limits' => auth()->user()->can('view_settings_insight_limits'),
+    'tab-roles'          => auth()->user()->can('view_settings_roles'),
+];
+$_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
+@endphp
+
 {{-- Tab Bar --}}
 <div class="tab-bar">
-    <button class="tab-btn active" data-tab="tab-payment">
+    @if($_stabs['tab-payment'])
+    <button class="tab-btn {{ $_sfirst === 'tab-payment' ? 'active' : '' }}" data-tab="tab-payment">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
         Payment
     </button>
-    <button class="tab-btn" data-tab="tab-email">
+    @endif
+    @if($_stabs['tab-email'])
+    <button class="tab-btn {{ $_sfirst === 'tab-email' ? 'active' : '' }}" data-tab="tab-email">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
         Email
     </button>
-    <button class="tab-btn" data-tab="tab-sms">
+    @endif
+    @if($_stabs['tab-sms'])
+    <button class="tab-btn {{ $_sfirst === 'tab-sms' ? 'active' : '' }}" data-tab="tab-sms">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
         SMS
     </button>
-    <button class="tab-btn" data-tab="tab-quickbooks">
+    @endif
+    @if($_stabs['tab-quickbooks'])
+    <button class="tab-btn {{ $_sfirst === 'tab-quickbooks' ? 'active' : '' }}" data-tab="tab-quickbooks">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
         QuickBooks
     </button>
-    <button class="tab-btn" data-tab="tab-plans">
+    @endif
+    @if($_stabs['tab-plans'])
+    <button class="tab-btn {{ $_sfirst === 'tab-plans' ? 'active' : '' }}" data-tab="tab-plans">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         Plan Management
     </button>
-    <button class="tab-btn" data-tab="tab-insight-limits">
+    @endif
+    @if($_stabs['tab-insight-limits'])
+    <button class="tab-btn {{ $_sfirst === 'tab-insight-limits' ? 'active' : '' }}" data-tab="tab-insight-limits">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
         Insight Limits
     </button>
-    <button class="tab-btn" data-tab="tab-roles">
+    @endif
+    @if($_stabs['tab-roles'])
+    <button class="tab-btn {{ $_sfirst === 'tab-roles' ? 'active' : '' }}" data-tab="tab-roles">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
         Roles &amp; Permissions
     </button>
+    @endif
 </div>
 
 {{-- Tab 1: Payment --}}
-<div class="tab-panel active" id="tab-payment">
+@if($_stabs['tab-payment'])
+<div class="tab-panel {{ $_sfirst === 'tab-payment' ? 'active' : '' }}" id="tab-payment">
     <div class="acc-card">
         <div class="acc-section-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
@@ -107,8 +136,11 @@
     </div>
 </div>
 
+@endif {{-- /tab-payment --}}
+
 {{-- Tab 2: Email --}}
-<div class="tab-panel" id="tab-email">
+@if($_stabs['tab-email'])
+<div class="tab-panel {{ $_sfirst === 'tab-email' ? 'active' : '' }}" id="tab-email">
     <div class="acc-card">
         <div class="acc-section-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
@@ -166,8 +198,11 @@
     </div>
 </div>
 
+@endif {{-- /tab-email --}}
+
 {{-- Tab 3: SMS --}}
-<div class="tab-panel" id="tab-sms">
+@if($_stabs['tab-sms'])
+<div class="tab-panel {{ $_sfirst === 'tab-sms' ? 'active' : '' }}" id="tab-sms">
     <div class="acc-card">
         <div class="acc-section-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
@@ -205,8 +240,11 @@
     </div>
 </div>
 
+@endif {{-- /tab-sms --}}
+
 {{-- Tab 4: QuickBooks --}}
-<div class="tab-panel" id="tab-quickbooks">
+@if($_stabs['tab-quickbooks'])
+<div class="tab-panel {{ $_sfirst === 'tab-quickbooks' ? 'active' : '' }}" id="tab-quickbooks">
     <div class="acc-card">
         <div class="acc-section-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
@@ -258,8 +296,11 @@
     </div>
 </div>
 
+@endif {{-- /tab-quickbooks --}}
+
 {{-- Tab 5: Plan Management --}}
-<div class="tab-panel" id="tab-plans">
+@if($_stabs['tab-plans'])
+<div class="tab-panel {{ $_sfirst === 'tab-plans' ? 'active' : '' }}" id="tab-plans">
     <div class="tc">
         <div class="tc-head">
             <div class="tc-filters">
@@ -362,8 +403,11 @@
     </div>
 </div>
 
-{{-- Tab: Insight Limits --}}
-<div class="tab-panel" id="tab-insight-limits">
+@endif {{-- /tab-plans --}}
+
+{{-- Tab 6: Insight Limits --}}
+@if($_stabs['tab-insight-limits'])
+<div class="tab-panel {{ $_sfirst === 'tab-insight-limits' ? 'active' : '' }}" id="tab-insight-limits">
 
     {{-- Sub-tab bar --}}
     <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px">
@@ -523,8 +567,11 @@
     </div>
 </div>
 
-{{-- Tab 5: Roles & Permissions --}}
-<div class="tab-panel" id="tab-roles">
+@endif {{-- /tab-insight-limits --}}
+
+{{-- Tab 7: Roles & Permissions --}}
+@if($_stabs['tab-roles'])
+<div class="tab-panel {{ $_sfirst === 'tab-roles' ? 'active' : '' }}" id="tab-roles">
 
     {{-- Roles DataTable --}}
     <div class="tc">
@@ -627,6 +674,7 @@
         </div>
     </div>
 </div>
+@endif {{-- /tab-roles --}}
 
 {{-- Create Role Modal --}}
 <div class="modal-overlay" id="create-role-modal" onclick="if(event.target===this)this.classList.remove('open')">

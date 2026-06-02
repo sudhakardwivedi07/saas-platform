@@ -34,7 +34,7 @@ class NavItemSeeder extends Seeder
                         'route_name'            => $cfg['route'],
                         'active_route_pattern'  => $cfg['active'] ?? '',
                         'required_permission'   => $cfg['permission'] ?? null,
-                        'is_visible'            => true,
+                        'is_visible'            => $cfg['visible'] ?? true,
                     ]
                 );
             }
@@ -78,7 +78,8 @@ class NavItemSeeder extends Seeder
                 'label'    => 'Subscription & Usage',
                 'icon_svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>',
                 'roles' => [
-                    'admin' => ['route' => 'billing.index', 'active' => 'billing.*', 'permission' => 'view_billing'],
+                    // Subscription is surfaced as a tab in My Account — hidden from sidebar.
+                    'admin' => ['route' => 'billing.index', 'active' => 'billing.*', 'permission' => 'view_billing', 'visible' => false],
                 ],
             ],
             [

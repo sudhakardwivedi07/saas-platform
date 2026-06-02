@@ -27,6 +27,12 @@
         Login Page
     </button>
     @endif
+    @if(auth()->user()->can('view_billing'))
+    <button class="tab-btn" data-tab="tab-subscription">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+        Subscription
+    </button>
+    @endif
     @if(auth()->user()->hasAnyRole(['admin','manager']))
     <button class="tab-btn" data-tab="tab-activity">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -505,7 +511,193 @@
 </div>
 @endif
 
-{{-- Tab 4: Activity Log --}}
+{{-- Tab 4: Subscription --}}
+@if(auth()->user()->can('view_billing'))
+<div class="tab-panel" id="tab-subscription">
+@php
+    $subPkg      = $subscription?->package;
+    $subStatus   = $subscription?->status ?? 'none';
+    $renewsAt    = $subscription?->current_period_end;
+    $planName    = $subPkg?->name ?? 'No Plan';
+    $maxClients  = $subPkg?->max_users ?? 0;
+    $maxInsights = $subPkg?->max_documents ?? 0;
+    $planPrice   = $subPkg ? ($subscription?->billing_cycle === 'annual'
+                    ? ($subPkg->annual_price ?? $subPkg->monthly_price * 12)
+                    : $subPkg->monthly_price) : 0;
+    $priceLabel  = $subPkg ? ('$' . number_format($planPrice, 2) . '/' . ($subscription?->billing_cycle === 'annual' ? 'year' : 'month')) : '—';
+    $billingLabel= ucfirst($subscription?->billing_cycle ?? 'monthly');
+    $nextBilling = $renewsAt ? $renewsAt->format('M j, Y') : '—';
+    $planDesc    = $subPkg?->description ?? 'Your current subscription plan';
+@endphp
+
+{{-- ── Subscription Summary Card ──────────────────────────────── --}}
+@if($subscription && $subPkg)
+<div style="background:#fff;border:1.5px solid var(--border);border-left:4px solid var(--blue);border-radius:12px;padding:22px 24px 18px;margin-bottom:16px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:18px">
+        <div>
+            <div style="font-size:19px;font-weight:700;color:var(--text-1);margin-bottom:3px">{{ $planName }}</div>
+            <div style="font-size:12.5px;color:var(--text-3)">Your current subscription plan</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            @if($subStatus === 'active')
+                <span style="background:rgba(16,185,129,.12);color:#059669;border:1px solid rgba(16,185,129,.3);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600">Active</span>
+            @elseif($subStatus === 'trialing')
+                <span style="background:rgba(245,158,11,.12);color:#d97706;border:1px solid rgba(245,158,11,.3);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600">Trial</span>
+            @elseif($subStatus === 'past_due')
+                <span style="background:rgba(239,68,68,.12);color:#dc2626;border:1px solid rgba(239,68,68,.3);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600">Past Due</span>
+            @elseif($subStatus === 'canceled')
+                <span style="background:rgba(239,68,68,.10);color:#dc2626;border:1px solid rgba(239,68,68,.25);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600">Canceled</span>
+            @endif
+        </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px">
+        <div>
+            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:5px">Plan Price</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text-1)">{{ $priceLabel }}</div>
+        </div>
+        <div>
+            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:5px">Billing Cycle</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text-1)">{{ $billingLabel }}</div>
+        </div>
+        <div>
+            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:5px">Next Billing Date</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text-1)">{{ $nextBilling }}</div>
+        </div>
+        <div>
+            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:5px">Plan Features</div>
+            <div style="font-size:13.5px;color:var(--text-2)">{{ $planDesc }}</div>
+        </div>
+    </div>
+    @if($subStatus === 'canceled' && $subscription?->ends_at && $subscription->ends_at->isFuture())
+    <button class="btn btn-sm" style="border:1.5px solid var(--green);color:var(--green);background:transparent" onclick="subReactivate()">Reactivate Subscription</button>
+    @elseif(in_array($subStatus, ['active','trialing','past_due']))
+    <button class="btn btn-sm" style="border:1.5px solid var(--red);color:var(--red);background:transparent" onclick="subCancel()">Cancel Subscription</button>
+    @endif
+</div>
+@endif
+
+{{-- ── Payment Method Card ─────────────────────────────────────── --}}
+@if($subscription?->pm_last4)
+<div style="background:#fff;border:1.5px solid var(--border);border-left:4px solid var(--green);border-radius:12px;padding:18px 24px;margin-bottom:16px">
+    <div style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:10px">Payment Method</div>
+    <div style="display:flex;align-items:center;gap:14px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.8" width="32" height="32"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+        <div>
+            <div style="font-size:15px;font-weight:600;color:var(--text-1);letter-spacing:.08em">
+                •••• •••• •••• {{ $subscription->pm_last4 }}
+                &nbsp;&nbsp;
+                <span style="font-size:13px;font-weight:400;color:var(--text-3)">Expire:
+                    {{ str_pad($subscription->pm_exp_month, 2, '0', STR_PAD_LEFT) }}/{{ substr($subscription->pm_exp_year, -2) }}
+                </span>
+            </div>
+            @if($subscription->pm_brand)
+            <div style="font-size:11.5px;color:var(--text-3);margin-top:2px;text-transform:capitalize">{{ $subscription->pm_brand }}</div>
+            @endif
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- ── Current Plan Banner ─────────────────────────────────────── --}}
+@if($subscription)
+<div class="plan-banner" style="margin-bottom:20px">
+    <div class="plan-banner-left">
+        <div class="plan-label">Current Plan</div>
+        <div class="plan-name">{{ $planName }}</div>
+        <div class="plan-meta">
+            @if($maxClients) {{ $maxClients }} clients · @endif
+            @if($maxInsights) {{ number_format($maxInsights) }} insights / month · @endif
+            @if($subPkg?->monthly_price) ${{ number_format($subPkg->monthly_price, 0) }} / month @endif
+            @if($subStatus === 'canceled' && $subscription?->ends_at)
+                · Access until {{ $subscription->ends_at->format('M j, Y') }}
+            @elseif($renewsAt)
+                · Renews {{ $renewsAt->format('M j, Y') }}
+            @endif
+        </div>
+    </div>
+    <div class="plan-banner-right">
+        @if($subStatus === 'active')
+            <span class="plan-status-badge">Active</span>
+        @elseif($subStatus === 'trialing')
+            <span class="plan-status-badge" style="background:rgba(245,158,11,.2);border-color:rgba(245,158,11,.5)">Trial</span>
+        @elseif($subStatus === 'past_due')
+            <span class="plan-status-badge" style="background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.5)">Past Due</span>
+        @elseif($subStatus === 'canceled')
+            <span class="plan-status-badge" style="background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.5)">Canceled</span>
+        @endif
+        @if($subStatus === 'canceled' && $subscription?->ends_at && $subscription->ends_at->isFuture())
+            <button class="plan-reactivate-btn" onclick="subReactivate()">Reactivate Subscription</button>
+        @elseif(in_array($subStatus, ['active','trialing','past_due']))
+            <button class="plan-cancel-btn" onclick="subCancel()">Cancel Subscription</button>
+        @endif
+    </div>
+</div>
+@else
+<div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:22px 24px;margin-bottom:20px;text-align:center">
+    <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:6px">No Active Subscription</div>
+    <div style="font-size:13px;color:var(--text-3)">Choose a plan below to get started.</div>
+</div>
+@endif
+
+{{-- ── Available Plans ─────────────────────────────────────────── --}}
+@if($packages->isNotEmpty())
+<div style="margin-bottom:16px">
+    <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:4px">Available Plans</div>
+    @if($subPkg)
+    <div style="font-size:13px;color:var(--text-3)">You are on the <strong>{{ $planName }}</strong> plan. You can switch to any plan below. A switch takes effect from the next billing cycle.</div>
+    @else
+    <div style="font-size:13px;color:var(--text-3)">Choose a plan to get started.</div>
+    @endif
+</div>
+<div class="plans-grid" style="margin-bottom:0">
+    @foreach($packages as $p)
+    @php $isCurrent = $subscription?->package_id === $p->id; @endphp
+    <div class="plan-card {{ $isCurrent ? 'is-current' : '' }}">
+        @if($isCurrent)<div class="plan-card-badge">Current Plan</div>@endif
+        <div class="plan-card-label">{{ strtoupper($p->name) }}</div>
+        <div class="plan-card-price">${{ number_format($p->monthly_price ?? 0, 0) }}<span>/month</span></div>
+        <div class="plan-card-sub">@if($p->max_users) Up to {{ $p->max_users }} clients @else Unlimited clients @endif</div>
+        <ul class="plan-card-features">
+            @if($p->max_users)
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>{{ $p->max_users }} clients</li>
+            @endif
+            @if($p->max_documents)
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>{{ number_format($p->max_documents) }} insights / month</li>
+            @endif
+            @if(!empty($p->features) && is_array($p->features))
+                @foreach(array_slice($p->features, 0, 5) as $feat)
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>{{ Str::title(str_replace('_', ' ', $feat)) }}</li>
+                @endforeach
+            @else
+                @if($p->max_storage_gb)
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>{{ $p->max_storage_gb }}GB storage</li>
+                @endif
+                @if($p->is_trial_allowed)
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>{{ $p->trial_days }}-day free trial</li>
+                @endif
+            @endif
+        </ul>
+        @php $isFreePackage = ($p->is_free ?? false) || ((float)($p->monthly_price ?? 0) <= 0); @endphp
+        @php $isCurrentPaid = $subscription && !(!empty($subPkg?->is_free) || ((float)($subPkg?->monthly_price ?? 0) <= 0)); @endphp
+        <div style="margin-top:auto">
+            @if($isCurrent)
+            <button disabled class="btn btn-primary" style="width:100%;justify-content:center;cursor:not-allowed;opacity:.85">Current Plan</button>
+            @elseif(!$isFreePackage || !$isCurrentPaid)
+            <button class="btn {{ $subscription ? 'btn-ghost' : 'btn-primary' }}" style="width:100%;justify-content:center"
+                    onclick="subStartCheckout({{ $p->id }}, this)">
+                {{ $subscription ? ($p->monthly_price > ($subPkg?->monthly_price ?? 0) ? 'Upgrade to ' : 'Switch to ') . $p->name : 'Get ' . $p->name }}
+            </button>
+            @endif
+        </div>
+    </div>
+    @endforeach
+</div>
+@endif
+
+</div>
+@endif
+
+{{-- Tab 5: Activity Log --}}
 @if(auth()->user()->hasAnyRole(['admin','manager']))
 <div class="tab-panel" id="tab-activity">
     <div class="info-banner" style="margin-bottom:1.25rem;">
@@ -971,6 +1163,95 @@ function submitLoginPageForm(e) {
 }
 @endif
 
+// ── Subscription Tab ──────────────────────────────────────────────────────────
+@if(auth()->user()->can('view_billing'))
+async function subStartCheckout(packageId, btn) {
+    const orig = btn.textContent.trim();
+    btn.disabled = true;
+    btn.textContent = 'Redirecting…';
+    try {
+        const res = await fetch('{{ route("billing.checkout") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+            body: JSON.stringify({ package_id: packageId, billing_cycle: 'monthly' }),
+        });
+        const json = await res.json();
+        if (json.checkout_url) {
+            window.location.href = json.checkout_url;
+        } else {
+            showToast(json.message || 'Could not start checkout.', 'error');
+            btn.disabled = false; btn.textContent = orig;
+        }
+    } catch (e) {
+        showToast('Network error. Please try again.', 'error');
+        btn.disabled = false; btn.textContent = orig;
+    }
+}
+
+function subCancel() {
+    Swal.fire({
+        title: 'Cancel Subscription?',
+        text: 'Your plan will remain active until the end of the current billing period. You can re-subscribe at any time.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Cancel Subscription',
+        cancelButtonText: 'Keep Subscription',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    }).then(async function(result) {
+        if (!result.isConfirmed) return;
+        Swal.fire({ title: 'Canceling…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const resp = await fetch('{{ route("billing.cancel-subscription") }}', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            });
+            const res = await resp.json();
+            if (res.status === 'success') {
+                await Swal.fire({ icon: 'success', title: 'Subscription Canceled', text: res.message || 'You will retain access until the end of the current billing period.', confirmButtonText: 'OK' });
+                window.location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Cancellation Failed', text: res.message || 'Something went wrong.' });
+            }
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Network Error', text: 'Could not reach the server. Please try again.' });
+        }
+    });
+}
+
+async function subReactivate() {
+    const result = await Swal.fire({
+        title: 'Reactivate Subscription?',
+        text: 'Your subscription will be restored.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Reactivate',
+        cancelButtonText: 'Not Now',
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+    Swal.fire({ title: 'Reactivating…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    try {
+        const resp = await fetch('{{ route("billing.reactivate-subscription") }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+        });
+        const res = await resp.json();
+        if (res.status === 'success') {
+            await Swal.fire({ icon: 'success', title: 'Subscription Reactivated', text: res.message || 'Welcome back!', confirmButtonText: 'Go to Dashboard' });
+            window.location.reload();
+        } else {
+            Swal.fire({ icon: 'error', title: 'Reactivation Failed', text: res.message || 'Something went wrong.' });
+        }
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Network Error', text: 'Could not reach the server. Please try again.' });
+    }
+}
+@endif
+
 // ── Profile & Password Validation ─────────────────────────────────────────────
 function acErr(id, msg) {
     var el = document.getElementById(id);
@@ -1055,6 +1336,64 @@ function validateAndSubmitPassword() {
 
 @push('styles')
 <style>
+/* ── Plan banner & plan cards (Subscription tab) ── */
+.plan-banner {
+    background: linear-gradient(135deg, #1a3a5c 0%, #1a6aa8 100%);
+    border-radius: 14px;
+    padding: 24px 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.plan-banner-left .plan-label {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .12em; color: rgba(255,255,255,.65); margin-bottom: 5px;
+}
+.plan-banner-left .plan-name  { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 5px; }
+.plan-banner-left .plan-meta  { font-size: 13px; color: rgba(255,255,255,.75); }
+.plan-banner-right            { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.plan-status-badge {
+    background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.35);
+    color: #fff; border-radius: 8px; padding: 5px 14px; font-size: 13px; font-weight: 600;
+}
+.plan-cancel-btn {
+    background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.4);
+    color: #fff; border-radius: 8px; padding: 7px 16px; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: background .13s;
+}
+.plan-cancel-btn:hover { background: rgba(255,255,255,.22); }
+.plan-reactivate-btn {
+    background: rgba(22,163,74,.2); border: 1.5px solid rgba(22,163,74,.6);
+    color: #fff; border-radius: 8px; padding: 7px 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background .13s;
+}
+.plan-reactivate-btn:hover { background: rgba(22,163,74,.35); }
+.plans-grid {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 24px;
+}
+.plan-card {
+    background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 22px 20px 18px; position: relative; display: flex; flex-direction: column;
+}
+.plan-card.is-current { border-color: var(--orange); box-shadow: 0 0 0 1px var(--orange); }
+.plan-card-badge {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--orange); color: #fff; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em; padding: 3px 12px;
+    border-radius: 20px; white-space: nowrap;
+}
+.plan-card-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--text-3); margin-bottom: 8px; }
+.plan-card.is-current .plan-card-label { color: var(--orange); }
+.plan-card-price { font-size: 32px; font-weight: 700; color: var(--text-1); margin-bottom: 4px; line-height: 1; }
+.plan-card-price span { font-size: 14px; font-weight: 400; color: var(--text-3); }
+.plan-card-sub { font-size: 12.5px; color: var(--text-3); margin-bottom: 16px; }
+.plan-card-features { list-style: none; margin-bottom: 20px; flex: 1; }
+.plan-card-features li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); margin-bottom: 8px; }
+.plan-card-features li svg { flex-shrink: 0; }
+@media(max-width:960px) { .plans-grid { grid-template-columns: 1fr; } }
+
 .activity-dot-success,.activity-dot-danger,.activity-dot-info,.activity-dot-warning,.activity-dot-muted {
     width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;
 }

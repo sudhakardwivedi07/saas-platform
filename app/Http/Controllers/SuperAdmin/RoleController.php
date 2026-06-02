@@ -32,12 +32,17 @@ class RoleController extends AccountBaseController
     public function store(Request $request)
     {
         $request->validate([
-            'name'        => 'required|string|max:100|unique:roles,name',
-            'permissions' => 'nullable|array',
+            'name'          => 'required|string|max:100|unique:roles,name',
+            'alias'         => 'nullable|string|max:100',
+            'permissions'   => 'nullable|array',
             'permissions.*' => 'exists:permissions,name',
         ]);
 
-        $role = Role::create(['name' => $request->name, 'guard_name' => 'web']);
+        $role = Role::create([
+            'name'       => $request->name,
+            'alias'      => $request->filled('alias') ? $request->alias : null,
+            'guard_name' => 'web',
+        ]);
 
         if ($request->permissions) {
             $role->syncPermissions($request->permissions);
@@ -59,11 +64,15 @@ class RoleController extends AccountBaseController
 
         $request->validate([
             'name'          => 'required|string|max:100|unique:roles,name,' . $id,
+            'alias'         => 'nullable|string|max:100',
             'permissions'   => 'nullable|array',
             'permissions.*' => 'exists:permissions,name',
         ]);
 
-        $role->update(['name' => $request->name]);
+        $role->update([
+            'name'  => $request->name,
+            'alias' => $request->filled('alias') ? $request->alias : null,
+        ]);
         $role->syncPermissions($request->permissions ?? []);
 
         return Reply::success('Role updated.');

@@ -427,7 +427,7 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         <!-- <div class="ca-sfoot-av">{{ strtoupper(substr($authUser->name ?? 'U', 0, 2)) }}</div> -->
         <!-- <div style="flex:1;min-width:0">
             <div class="ca-sfoot-name">{{ $authUser->name }}</div>
-            <div class="ca-sfoot-role">{{ $authUser->getRoleNames()->first() ?? 'Admin' }}</div>
+            <div class="ca-sfoot-role">{{ $authUser->roleDisplayName('Admin') }}</div>
         </div> -->
         <!-- <form method="POST" action="{{ route('logout') }}" style="margin:0">
             @csrf
@@ -456,7 +456,7 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
                 <div class="ca-tb-av">{{ strtoupper(substr($authUser->name ?? 'U', 0, 2)) }}</div>
                 <div>
                     <div class="ca-tb-uname">{{ $authUser->name }}</div>
-                    <div class="ca-tb-urole">{{ $authUser->getRoleNames()->first() ?? 'Admin' }}</div>
+                    <div class="ca-tb-urole">{{ $authUser->roleDisplayName('Admin') }}</div>
                 </div>
             </div>
             <form method="POST" action="{{ route('logout') }}" style="margin:0">

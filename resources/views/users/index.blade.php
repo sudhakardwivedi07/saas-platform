@@ -64,7 +64,7 @@
             <select class="sel" id="user-role-filter" autocomplete="off">
                 <option value="">All Roles</option>
                 @foreach($roles as $role)
-                <option value="{{ $role->name }}">{{ ucwords(str_replace('_',' ',$role->name)) }}</option>
+                <option value="{{ $role->name }}">{{ $role->display_name }}</option>
                 @endforeach
             </select>
             <select class="sel" id="user-status-filter" autocomplete="off">
@@ -221,7 +221,7 @@
                         <option value="">e.g. Manager, Analyst, Viewer</option>
                         @foreach($roles as $role)
                         <option value="{{ $role->name }}" {{ old('role') === $role->name ? 'selected' : '' }}>
-                            {{ ucwords(str_replace('_',' ',$role->name)) }}
+                            {{ $role->display_name }}
                         </option>
                         @endforeach
                     </select>
@@ -280,7 +280,7 @@
                 <label class="mf-label">Role <span style="color:var(--red)">*</span></label>
                 <select name="role" id="edit-role" class="mf-sel" style="height:40px" required>
                     @foreach($roles as $role)
-                    <option value="{{ $role->name }}">{{ ucwords(str_replace('_',' ',$role->name)) }}</option>
+                    <option value="{{ $role->name }}">{{ $role->display_name }}</option>
                     @endforeach
                 </select>
             </div>

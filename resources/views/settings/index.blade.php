@@ -617,8 +617,10 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                     @endphp
                     <tr>
                         <td>
-                            <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ ucwords(str_replace('_', ' ', $role->name)) }}</div>
-                            <div style="font-size:11px;color:var(--text-3);margin-top:1px">{{ $role->name }}</div>
+                            <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $role->display_name }}</div>
+                            @if($role->alias)
+                            <div style="font-size:11px;color:var(--text-3);margin-top:1px;font-family:monospace">{{ $role->name }}</div>
+                            @endif
                         </td>
                         <td data-search="{{ strtolower($typeLabel) }}">
                             <span class="badge {{ $typeClass }}" style="font-size:11.5px">{{ $typeLabel }}</span>
@@ -639,7 +641,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                                     Edit
                                 </button>
                                 <button class="btn btn-xs" style="background:rgba(239,68,68,.07);color:var(--red);border:1px solid rgba(239,68,68,.2)"
-                                    onclick="deleteRole({{ $role->id }}, '{{ addslashes($role->name) }}')">
+                                    onclick="deleteRole({{ $role->id }}, '{{ addslashes($role->display_name) }}')">
                                     Delete
                                 </button>
                                 @else

@@ -70,7 +70,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                 <div style="font-size:15px;font-weight:600;color:var(--text-1)">{{ $authUser->name }}</div>
                 <div style="font-size:13px;color:var(--text-3);margin-top:2px">{{ $authUser->email }}</div>
                 <div style="margin-top:5px">
-                    <span class="badge b-orange" style="font-size:11px">{{ $authUser->getRoleNames()->first() ?? 'Admin' }}</span>
+                    <span class="badge b-orange" style="font-size:11px">{{ $authUser->roleDisplayName('Admin') }}</span>
                 </div>
             </div>
         </div>

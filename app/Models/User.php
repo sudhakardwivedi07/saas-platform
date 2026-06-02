@@ -104,6 +104,20 @@ class User extends Authenticatable
     }
 
     /**
+     * Returns the role's alias (display name) for this user.
+     * Falls back to the technical role name if no alias has been set,
+     * and to the given $default if the user has no role at all.
+     *
+     * Use this everywhere the role name is rendered in the UI so that
+     * a SuperAdmin-defined alias propagates across the whole application
+     * without touching any backend permission logic.
+     */
+    public function roleDisplayName(string $default = 'User'): string
+    {
+        return $this->roles->first()?->display_name ?? $default;
+    }
+
+    /**
      * Same company list as My Companies (owned + linked + primary when in ownership chain).
      * Keeps Insights / KPI company pickers aligned with my-companies.
      */

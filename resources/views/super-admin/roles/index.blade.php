@@ -81,7 +81,10 @@ table.dataTable thead th:after { font-size: 10px; }
                 @forelse($roles as $role)
                 <tr>
                     <td style="padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle">
-                        <div style="font-weight:600;font-size:13.5px">{{ $role->name }}</div>
+                        <div style="font-weight:600;font-size:13.5px">{{ $role->display_name }}</div>
+                        @if($role->alias)
+                        <div style="font-size:11.5px;color:var(--text-3);margin-top:2px;font-family:monospace">{{ $role->name }}</div>
+                        @endif
                     </td>
                     <td style="padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle">
                         <span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:#f3f4f6;color:#374151">

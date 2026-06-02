@@ -15,6 +15,9 @@
             'name'           => $__co->company_name,
             'hidden_kpis'    => array_values($__s->draft_hidden_kpis ?? []),
             'publish_status' => $__s->publish_status ?? 'published',
+            'has_insights'   => \App\Models\Report::where('company_id', $__co->id)
+                ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
+                ->exists(),
         ];
     }
 
@@ -154,13 +157,16 @@
 }
 .kpi-edit-active .kpi-eye-btn:hover { background: rgba(0,0,0,.12); }
 .kpi-card { position: relative; }
-/* Hidden state is always visible — shows regardless of edit mode */
-.kpi-card.kpi-hidden-draft {
+/* Hidden cards are completely invisible outside edit mode */
+.kpi-card.kpi-hidden-draft { display: none; }
+/* In edit mode: show greyed out so admin can toggle visibility */
+.kpi-edit-active .kpi-card.kpi-hidden-draft {
+    display: block;
     opacity: .42;
     outline: 2px dashed rgba(240,107,33,.5);
     outline-offset: -2px;
 }
-.kpi-card.kpi-hidden-draft::after {
+.kpi-edit-active .kpi-card.kpi-hidden-draft::after {
     content: 'Hidden from client';
     position: absolute;
     bottom: 8px;
@@ -635,6 +641,17 @@
         <p>We could not resolve a company for KPI metrics. Ask your administrator to link your account to a company.</p>
     </div>
 @else
+@php
+    $_initHasInsights = \App\Models\Report::where('company_id', $selectedKpiCompanyId)
+        ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
+        ->exists();
+@endphp
+    <div id="kpiNoInsightsPlaceholder" style="{{ $_initHasInsights ? 'display:none;' : '' }}padding:40px 24px;text-align:center;background:#fff;border:1px solid #e5e7eb;border-radius:10px;margin-top:10px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" width="40" height="40" style="margin-bottom:12px"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <h3 style="margin:0 0 6px;font-size:17px;font-weight:700;color:#111827">No Insights Yet</h3>
+        <p style="margin:0;font-size:13px;color:#6b7280">No financial insights have been generated for this company. Upload reports or connect QuickBooks to get started.</p>
+    </div>
+    <div id="kpiEmbedWrap" style="{{ $_initHasInsights ? '' : 'display:none;' }}">
     @include('dashboard.partials.kpi-dashboard-embed', [
         'kpiDataUrl'        => $kpiDataUrl,
         'kpiDetailBaseUrl'  => $kpiDetailBaseUrl,
@@ -642,6 +659,7 @@
         'selectedCompanyId' => $selectedKpiCompanyId,
         'clientHiddenKpis'  => !empty($isAdminView) ? [] : ($hiddenKpis ?? []),
     ])
+    </div>
 @endif
 </div>{{-- .user-kpi-fullbleed --}}
 
@@ -784,6 +802,11 @@
             var badge = document.getElementById('cdbStatusBadge');
             if (badge) { badge.textContent = 'Draft'; badge.className = 'cdb-status-badge cdb-status-draft'; }
             if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].publish_status = 'draft';
+            // Exit edit mode so hidden cards are completely hidden (not just greyed out)
+            editModeActive = false;
+            var _eb = document.getElementById('cdbEditModeBtn'), _db = document.getElementById('kpiDashboard');
+            if (_eb) _eb.classList.remove('active');
+            if (_db) _db.classList.remove('kpi-edit-active');
             if (typeof Swal !== 'undefined') {
                 Swal.fire({ icon: 'success', title: 'Draft Saved', text: 'Changes have been saved as a draft.', confirmButtonText: 'View Dashboard', confirmButtonColor: '#0788be', showCancelButton: false}).then(function(r) { if (r.isConfirmed) window.location.reload(); });
             }
@@ -809,6 +832,11 @@
             var badge = document.getElementById('cdbStatusBadge');
             if (badge) { badge.textContent = 'Published'; badge.className = 'cdb-status-badge cdb-status-published'; }
             if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].publish_status = 'published';
+            // Exit edit mode so hidden cards are completely hidden (not just greyed out)
+            editModeActive = false;
+            var _eb2 = document.getElementById('cdbEditModeBtn'), _db2 = document.getElementById('kpiDashboard');
+            if (_eb2) _eb2.classList.remove('active');
+            if (_db2) _db2.classList.remove('kpi-edit-active');
             if (typeof Swal !== 'undefined') {
                 Swal.fire({ icon: 'success', title: 'Published!', text: 'Successfully published! The client can now see all reviewed content.', confirmButtonText: 'View Dashboard', confirmButtonColor: '#0788be', showCancelButton: false, }).then(function(r) { if (r.isConfirmed) window.location.reload(); });
             }
@@ -839,11 +867,19 @@
             }
             // Exit edit mode on company switch
             editModeActive = false;
-            var editBtn = document.getElementById('cdbEditModeBtn');
-            var dash    = document.getElementById('kpiDashboard');
+            var editBtn   = document.getElementById('cdbEditModeBtn');
+            var dash      = document.getElementById('kpiDashboard');
             if (editBtn) editBtn.classList.remove('active');
             if (dash)    dash.classList.remove('kpi-edit-active');
-            if (_orig) _orig(id);
+
+            // Show/hide KPI embed based on whether the selected company has insights
+            var hasInsights = s ? (s.has_insights !== false) : true;
+            var embedWrap   = document.getElementById('kpiEmbedWrap');
+            var noInsights  = document.getElementById('kpiNoInsightsPlaceholder');
+            if (embedWrap)  embedWrap.style.display  = hasInsights ? '' : 'none';
+            if (noInsights) noInsights.style.display = hasInsights ? 'none' : '';
+
+            if (hasInsights && _orig) _orig(id);
         };
     }());
 

@@ -105,8 +105,15 @@ class ClientController extends AccountBaseController
             ->where('is_active', true)->orderBy('sort')->get();
 
         // Clients = users whose company_id is one of those sub-companies
+        $subCompanyIdsArray = $subCompanyIds->toArray();
         $this->clients = User::whereIn('company_id', $subCompanyIds)
-            ->with(['company.quickbooksConnections', 'company.clientPackage', 'company.package'])
+            ->with([
+                'company.quickbooksConnections',
+                'company.clientPackage',
+                'company.package',
+                // Load only managed companies that belong to this admin's portfolio
+                'managedCompanies' => fn($q) => $q->withoutGlobalScopes()->whereIn('companies.id', $subCompanyIdsArray),
+            ])
             ->orderByDesc('created_at')
             ->get();
 

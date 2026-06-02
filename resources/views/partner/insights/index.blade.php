@@ -74,9 +74,9 @@
 
 /* ── Action buttons ──────────────────────────────── */
 .pi-actions { display:flex;gap:6px;align-items:center; }
-.pi-btn-view { background:var(--blue);color:#fff;padding:5px 14px;border-radius:6px;font-weight:500;font-size:12.5px;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:background .2s;white-space:nowrap; }
-.pi-btn-view:hover { background:var(--blue);opacity:.85;color:#fff;text-decoration:none; }
-.pi-btn-view:disabled { background:#9ca3af;cursor:not-allowed; }
+.pi-btn-view { background:#fff;color:var(--orange);padding:5px 14px;border-radius:6px;font-weight:500;font-size:12.5px;border:1.5px solid var(--orange);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:background .2s,color .2s;white-space:nowrap; }
+.pi-btn-view:hover { background:var(--orange);color:#fff;text-decoration:none; }
+.pi-btn-view:disabled { background:#f3f4f6;color:#9ca3af;border-color:#d1d5db;cursor:not-allowed; }
 .pi-btn-portal { background:var(--orange);color:#fff;padding:5px 14px;border-radius:6px;font-weight:500;font-size:12.5px;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:background .2s;white-space:nowrap; }
 .pi-btn-portal:hover { background:var(--orange-dark);color:#fff;text-decoration:none; }
 .pi-btn-retry { background:var(--orange);color:#fff;padding:5px 14px;border-radius:6px;font-weight:500;font-size:12.5px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .2s; }

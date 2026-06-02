@@ -396,7 +396,7 @@
     </div> -->
     <!-- <div class="viewing-company">{{ $selectedCompany?->company_name ?? 'Your Company' }}</div> -->
 
-    {{-- Company selector (always visible when there are companies) --}}
+    {{-- Company selector: dropdown for multiple companies, label for single --}}
     @if($companies->count() > 1)
     <div class="company-selector-wrap">
         <select class="bar-select" onchange="switchCompany(this.value)">
@@ -406,6 +406,12 @@
                 </option>
             @endforeach
         </select>
+    </div>
+    @elseif($companies->count() === 1)
+    <div class="company-selector-wrap">
+        <span style="display:inline-flex;align-items:center;height:34px;padding:0 14px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;font-weight:500;color:#1a202c;white-space:nowrap">
+            {{ $companies->first()->company_name }}
+        </span>
     </div>
     @endif
 

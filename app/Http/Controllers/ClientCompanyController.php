@@ -90,6 +90,8 @@ class ClientCompanyController extends AccountBaseController
             'package',
             'clientPackage',
             'subscription',
+            // withoutGlobalScopes bypasses HasTenant scope so connections created by admin are visible
+            'quickbooksConnections' => fn ($q) => $q->withoutGlobalScopes()->where('is_active', true),
         ]);
 
         // Check company limit — no plan means unlimited

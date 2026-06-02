@@ -85,6 +85,10 @@
                     $co           = $client->company;
                     $qbConnected  = $co && $co->quickbooksConnections->where('is_active', true)->isNotEmpty() ? 1 : 0;
                     $qbTotal      = $co ? 1 : 0;
+                    // Count unique companies this client owns: primary company + pivot-linked companies
+                    $_managedIds  = $client->managedCompanies->pluck('id');
+                    $_primaryCounted = $client->company_id && $_managedIds->contains($client->company_id);
+                    $companiesCount = $_managedIds->count() + ($client->company_id && !$_primaryCounted ? 1 : 0);
                     $plan         = $co ? ($co->clientPackage ?? $co->package) : null;
                     $insightsUsed = $co?->insights_used ?? 0;
                     $maxInsights  = $plan
@@ -103,7 +107,7 @@
                             </div>
                         </div>
                     </td>
-                    <td style="text-align:center;font-size:13px;color:var(--text-2)">{{ $qbTotal }}</td>
+                    <td style="text-align:center;font-size:13px;color:var(--text-2)">{{ $companiesCount }}</td>
                     <td style="text-align:center">
                         @if($qbTotal > 0)
                             <span style="display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500;color:{{ $qbConnected === $qbTotal ? 'var(--green)' : ($qbConnected > 0 ? '#f59e0b' : 'var(--red)') }}">

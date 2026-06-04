@@ -253,7 +253,6 @@
     <h1>My Account</h1>
     <div class="ua-tabs">
         <button class="ua-tab active" data-tab="tab-account">Account Details</button>
-        <button class="ua-tab" data-tab="tab-subscription">Subscription</button>
         <button class="ua-tab" data-tab="tab-support">Support</button>
     </div>
 </div>
@@ -275,25 +274,7 @@
             </div>
         </div>
 
-        {{-- Account Info Grid --}}
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:26px">
-            <div>
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:4px">Company</div>
-                <div style="font-size:13.5px;font-weight:500;color:var(--text-1)">{{ $tenantCompany?->company_name ?? '—' }}</div>
-            </div>
-            <div>
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:4px">Member Since</div>
-                <div style="font-size:13.5px;font-weight:500;color:var(--text-1)">{{ $authUser->created_at?->format('M j, Y') ?? '—' }}</div>
-            </div>
-            <div>
-                <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:4px">Status</div>
-                <div><span class="badge b-green" style="font-size:11px"><span class="badge-dot" style="background:var(--green)"></span> Active</span></div>
-            </div>
-        </div>
-
-        <div style="height:1px;background:var(--border);margin:0 -22px 22px"></div>
-
-        {{-- Profile Form --}}
+        {{-- 1. Personal Information --}}
         <div style="margin-bottom:26px">
             <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:16px">Personal Information</div>
             <form method="POST" action="{{ route('account.profile') }}">
@@ -308,6 +289,12 @@
                         <input type="email" name="email" class="f-inp" value="{{ old('email', $authUser->email) }}" required>
                     </div>
                 </div>
+                <div class="form-2col">
+                    <div class="f-group">
+                        <label class="f-label">Phone Number</label>
+                        <input type="tel" name="mobile" class="f-inp" value="{{ old('mobile', $authUser->mobile) }}" placeholder="e.g. +1 555 000 0000">
+                    </div>
+                </div>
                 <button type="submit" class="btn btn-primary btn-sm">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                     Save Profile
@@ -317,7 +304,7 @@
 
         <div style="height:1px;background:var(--border);margin:0 -22px 22px"></div>
 
-        {{-- Password Form --}}
+        {{-- 2. Change Password --}}
         <div>
             <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:4px">Change Password</div>
             <div style="font-size:12.5px;color:var(--text-3);margin-bottom:16px">Use a strong password that you don't use elsewhere.</div>
@@ -346,8 +333,8 @@
     </div>
 </div>
 
-{{-- ── Tab 2: Subscription ───────────────────────────────────────── --}}
-<div class="ua-tab-panel" id="tab-subscription">
+{{-- ── Tab 2: Subscription (hidden — removed from client portal) ── --}}
+<div class="ua-tab-panel" id="tab-subscription" style="display:none!important">
 
     {{-- Subscription Status Card --}}
     @php

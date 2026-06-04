@@ -40,17 +40,39 @@
 .rd-btn-save:hover { background:#d95a1a;border-color:#d95a1a;text-decoration:none; }
 .rd-btn:disabled { opacity:.6;cursor:not-allowed; }
 
-/* ── Edit mode ── */
-.edit-mode-active .insight-slider-content [contenteditable] {
-    border-radius:6px;padding:4px 6px;margin:-4px -6px;
-    background:#fffbeb;border:1px dashed #f59e0b;outline:none;
-    cursor:text;transition:background .2s;min-height:24px;display:block;
+/* ── Edit mode content area ── */
+.edit-mode-active .insight-slider-content[contenteditable] {
+    border:2px solid #f59e0b;border-radius:8px;padding:14px 16px;
+    outline:none;cursor:text;min-height:180px;
+    transition:border-color .15s,box-shadow .15s;
 }
-.edit-mode-active .insight-slider-content [contenteditable]:focus {
-    background:#fefce8;border-color:#d97706;
-    box-shadow:0 0 0 3px rgba(245,158,11,.12);
+.edit-mode-active .insight-slider-content[contenteditable]:focus {
+    border-color:#d97706;box-shadow:0 0 0 3px rgba(245,158,11,.14);
 }
-.edit-mode-active .insight-slider-content li [contenteditable] { display:inline; }
+
+/* ── Rich-text toolbar ── */
+#ciEditToolbar {
+    display:none;background:#fff;border:1px solid #e2e8f0;border-radius:9px;
+    padding:7px 12px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.07);
+    align-items:center;gap:3px;flex-wrap:wrap;
+}
+#ciEditToolbar.visible { display:flex; }
+.ci-tb-sep { width:1px;height:22px;background:#e2e8f0;margin:0 5px;flex-shrink:0; }
+.ci-tb-btn {
+    width:30px;height:30px;border:none;border-radius:5px;background:transparent;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:background .13s,color .13s;color:#374151;flex-shrink:0;
+}
+.ci-tb-btn:hover { background:#f1f5f9; }
+.ci-tb-btn.active { background:#dbeafe;color:#1d4ed8; }
+.ci-tb-btn svg { pointer-events:none; }
+.ci-tb-select {
+    height:30px;border:1px solid #e2e8f0;border-radius:5px;padding:0 22px 0 8px;
+    font-size:12.5px;font-family:inherit;color:#374151;background:#fff
+    url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%2394a3b8' stroke-width='1.3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 6px center;
+    -webkit-appearance:none;appearance:none;outline:none;cursor:pointer;min-width:96px;
+}
+.ci-tb-select:focus { border-color:#0788be; }
 
 /* ── Export PDF btn ── */
 .export-pdf-btn {
@@ -234,6 +256,51 @@
         </a>
         </div>
         @endif
+    </div>
+
+    {{-- Rich-text toolbar (shown in edit mode) --}}
+    <div id="ciEditToolbar">
+        <select class="ci-tb-select" id="ciTbStyleSel" title="Text style" onchange="ciFormatBlock(this.value)">
+            <option value="p">Normal</option>
+            <option value="h2">Heading 2</option>
+            <option value="h3">Heading 3</option>
+            <option value="h4">Sub-heading</option>
+        </select>
+        <div class="ci-tb-sep"></div>
+        <button class="ci-tb-btn" id="ciTbBold"      onclick="ciExecCmd('bold')"           title="Bold">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"/><path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"/></svg>
+        </button>
+        <button class="ci-tb-btn" id="ciTbItalic"    onclick="ciExecCmd('italic')"         title="Italic">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+        </button>
+        <button class="ci-tb-btn" id="ciTbUnderline" onclick="ciExecCmd('underline')"      title="Underline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 3v7a6 6 0 006 6 6 6 0 006-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
+        </button>
+        <div class="ci-tb-sep"></div>
+        <button class="ci-tb-btn" onclick="ciInsertLink()" title="Insert link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        </button>
+        <div class="ci-tb-sep"></div>
+        <button class="ci-tb-btn" onclick="ciExecCmd('insertUnorderedList')" title="Bullet list">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <button class="ci-tb-btn" onclick="ciExecCmd('insertOrderedList')" title="Numbered list">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M4 10h2" stroke="currentColor" stroke-width="1.8"/><path d="M6 14H4c0-1 2-2 2-3s-1-1.5-2-1" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+        </button>
+        <div class="ci-tb-sep"></div>
+        <button class="ci-tb-btn" id="ciTbAlignL" onclick="ciExecCmd('justifyLeft')"   title="Align left">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+        </button>
+        <button class="ci-tb-btn" id="ciTbAlignC" onclick="ciExecCmd('justifyCenter')" title="Align center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        </button>
+        <button class="ci-tb-btn" id="ciTbAlignR" onclick="ciExecCmd('justifyRight')"  title="Align right">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="ci-tb-sep"></div>
+        <button class="ci-tb-btn" onclick="ciExecCmd('removeFormat')" title="Clear formatting">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/><line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="1.8" opacity=".5"/></svg>
+        </button>
     </div>
 
     {{-- ── Slider Content ──────────────────────────────────────────────────── --}}
@@ -693,26 +760,30 @@
     const CI_REPORT_ID = {{ $report->id }};
     const CI_CSRF      = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     const CI_SAVE_URL  = '/insights/' + CI_REPORT_ID + '/update-content';
-    let   ciEditMode   = false;
+    let ciEditMode = false;
 
     window.ciToggleEdit = function () {
         ciEditMode = !ciEditMode;
+
         const btn      = document.getElementById('ciBtnEdit');
         const btnLabel = document.getElementById('ciBtnEditLabel');
         const pdfBtn   = document.getElementById('exportPdfBtn');
         const slider   = document.getElementById('insightAccordionContentShow');
+        const toolbar  = document.getElementById('ciEditToolbar');
 
         if (ciEditMode) {
             if (btnLabel) btnLabel.textContent = 'Cancel Edit';
             btn?.classList.add('active');
             if (pdfBtn) { pdfBtn.style.opacity = '.4'; pdfBtn.style.pointerEvents = 'none'; }
             slider?.classList.add('edit-mode-active');
+            toolbar?.classList.add('visible');
             ciMakeEditable(true);
         } else {
             if (btnLabel) btnLabel.textContent = 'Edit Insight';
             btn?.classList.remove('active');
             if (pdfBtn) { pdfBtn.style.opacity = ''; pdfBtn.style.pointerEvents = ''; }
             slider?.classList.remove('edit-mode-active');
+            toolbar?.classList.remove('visible');
             ciMakeEditable(false);
         }
     };
@@ -720,18 +791,56 @@
     function ciMakeEditable(on) {
         document.querySelectorAll('.insight-slider-content').forEach(container => {
             if (on) {
-                container.querySelectorAll('p, li, h3, h4, td, th').forEach(el => {
-                    el.setAttribute('contenteditable', 'true');
-                    el.setAttribute('spellcheck', 'false');
-                });
+                container.setAttribute('contenteditable', 'true');
+                container.setAttribute('spellcheck', 'false');
+                container.style.outline = 'none';
             } else {
-                container.querySelectorAll('[contenteditable]').forEach(el => {
-                    el.removeAttribute('contenteditable');
-                    el.removeAttribute('spellcheck');
-                });
+                container.removeAttribute('contenteditable');
+                container.removeAttribute('spellcheck');
+                container.style.outline = '';
             }
         });
     }
+
+    // ── Toolbar commands ──────────────────────────────────────────────────
+    window.ciExecCmd = function (cmd, value) {
+        document.execCommand(cmd, false, value || null);
+        ciUpdateToolbarState();
+        const active = document.querySelector('.insight-slider-slide.active .insight-slider-content[contenteditable]');
+        if (active) active.focus();
+    };
+
+    window.ciFormatBlock = function (tag) {
+        document.execCommand('formatBlock', false, tag);
+        setTimeout(() => {
+            const sel = document.getElementById('ciTbStyleSel');
+            if (sel) sel.value = 'p';
+        }, 50);
+        const active = document.querySelector('.insight-slider-slide.active .insight-slider-content[contenteditable]');
+        if (active) active.focus();
+    };
+
+    window.ciInsertLink = function () {
+        const url = window.prompt('Enter URL:', 'https://');
+        if (url && url !== 'https://') {
+            document.execCommand('createLink', false, url);
+        }
+        const active = document.querySelector('.insight-slider-slide.active .insight-slider-content[contenteditable]');
+        if (active) active.focus();
+    };
+
+    function ciUpdateToolbarState() {
+        const cmds = { ciTbBold:'bold', ciTbItalic:'italic', ciTbUnderline:'underline',
+                       ciTbAlignL:'justifyLeft', ciTbAlignC:'justifyCenter', ciTbAlignR:'justifyRight' };
+        Object.entries(cmds).forEach(([id, cmd]) => {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('active', document.queryCommandState(cmd));
+        });
+    }
+
+    document.addEventListener('selectionchange', function () {
+        if (ciEditMode && !ciPreviewMode) ciUpdateToolbarState();
+    });
 
     window.ciSaveEdits = function () {
         if (!window.insightSections) return;

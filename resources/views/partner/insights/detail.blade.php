@@ -84,19 +84,41 @@
 
 @keyframes rdSpin { to { transform: rotate(360deg); } }
 
-/* ── Edit mode ───────────────────────────────────────────────── */
-.edit-mode-active .insight-slider-content [contenteditable] {
-    border-radius:6px;padding:4px 6px;margin:-4px -6px;
-    background:#fffbeb;border:1px dashed #f59e0b;outline:none;
-    cursor:text;transition:background .2s;min-height:24px;display:block;
+/* ── Edit mode content area ──────────────────────────────────── */
+.edit-mode-active .insight-slider-content[contenteditable] {
+    border:2px solid #f59e0b;
+    border-radius:8px;padding:14px 16px;
+    outline:none;cursor:text;min-height:180px;
+    transition:border-color .15s,box-shadow .15s;
+    /* background:#fffdf0; */
 }
-.edit-mode-active .insight-slider-content [contenteditable]:focus {
-    background:#fefce8;border-color:#d97706;
-    box-shadow:0 0 0 3px rgba(245,158,11,.12);
+.edit-mode-active .insight-slider-content[contenteditable]:focus {
+    border-color:#d97706;box-shadow:0 0 0 3px rgba(245,158,11,.14);
 }
-.edit-mode-active .insight-slider-content li [contenteditable] {
-    display:inline;
+
+/* ── Rich-text toolbar ───────────────────────────────────────── */
+#rdEditToolbar {
+    display:none;background:#fff;border:1px solid #e2e8f0;border-radius:9px;
+    padding:7px 12px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.07);
+    align-items:center;gap:3px;flex-wrap:wrap;
 }
+#rdEditToolbar.visible { display:flex; }
+.tb-sep { width:1px;height:22px;background:#e2e8f0;margin:0 5px;flex-shrink:0; }
+.tb-btn {
+    width:30px;height:30px;border:none;border-radius:5px;background:transparent;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:background .13s,color .13s;color:#374151;flex-shrink:0;
+}
+.tb-btn:hover { background:#f1f5f9; }
+.tb-btn.active { background:#dbeafe;color:#1d4ed8; }
+.tb-btn svg { pointer-events:none; }
+.tb-select {
+    height:30px;border:1px solid #e2e8f0;border-radius:5px;padding:0 22px 0 8px;
+    font-size:12.5px;font-family:inherit;color:#374151;background:#fff
+    url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%2394a3b8' stroke-width='1.3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 6px center;
+    -webkit-appearance:none;appearance:none;outline:none;cursor:pointer;min-width:96px;
+}
+.tb-select:focus { border-color:var(--blue,#1a6aa8); }
 </style>
 @endpush
 
@@ -111,7 +133,7 @@
     {{-- Edit mode toast --}}
     <div id="rdEditToast" class="rd-edit-toast">
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        Edit mode toggled. Click on text to edit.
+        Edit mode on — use the toolbar to format selected text.
     </div>
 
     {{-- Header --}}
@@ -172,6 +194,51 @@
             </a>
         </div>
         @endif
+    </div>
+
+    {{-- Rich-text toolbar (shown in edit mode) --}}
+    <div id="rdEditToolbar">
+        <select class="tb-select" id="tbStyleSel" title="Text style" onchange="rdFormatBlock(this.value)">
+            <option value="p">Normal</option>
+            <option value="h2">Heading 2</option>
+            <option value="h3">Heading 3</option>
+            <option value="h4">Sub-heading</option>
+        </select>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" id="tbBold"      onclick="rdExecCmd('bold')"           title="Bold">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"/><path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"/></svg>
+        </button>
+        <button class="tb-btn" id="tbItalic"    onclick="rdExecCmd('italic')"         title="Italic">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+        </button>
+        <button class="tb-btn" id="tbUnderline" onclick="rdExecCmd('underline')"      title="Underline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 3v7a6 6 0 006 6 6 6 0 006-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
+        </button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" onclick="rdInsertLink()" title="Insert link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        </button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" onclick="rdExecCmd('insertUnorderedList')" title="Bullet list">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <button class="tb-btn" onclick="rdExecCmd('insertOrderedList')" title="Numbered list">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M4 10h2" stroke="currentColor" stroke-width="1.8"/><path d="M6 14H4c0-1 2-2 2-3s-1-1.5-2-1" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+        </button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" id="tbAlignL" onclick="rdExecCmd('justifyLeft')"   title="Align left">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+        </button>
+        <button class="tb-btn" id="tbAlignC" onclick="rdExecCmd('justifyCenter')" title="Align center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        </button>
+        <button class="tb-btn" id="tbAlignR" onclick="rdExecCmd('justifyRight')"  title="Align right">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" onclick="rdExecCmd('removeFormat')" title="Clear formatting">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/><line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="1.8" opacity=".5"/></svg>
+        </button>
     </div>
 
     {{-- Slider container --}}
@@ -346,49 +413,119 @@
     }
 
     // ── Edit mode ─────────────────────────────────────────────────────────────
+    let previewMode = false; // preview while in edit mode (hides toolbar temporarily)
+
     window.rdToggleEdit = function () {
         editMode = !editMode;
+        previewMode = false;
 
-        const btn      = document.getElementById('rdBtnEdit');
-        const btnLabel = document.getElementById('rdBtnEditLabel');
-        const pdfBtn   = document.getElementById('rdBtnPdf');
-        const slider   = document.getElementById('insightSliderContent');
-        const toast    = document.getElementById('rdEditToast');
+        const btn         = document.getElementById('rdBtnEdit');
+        const btnLabel    = document.getElementById('rdBtnEditLabel');
+        const previewBtn  = document.getElementById('rdBtnPreview');
+        const pdfBtn      = document.getElementById('rdBtnPdf');
+        const slider      = document.getElementById('insightSliderContent');
+        const toast       = document.getElementById('rdEditToast');
+        const toolbar     = document.getElementById('rdEditToolbar');
 
         if (editMode) {
             if (btnLabel) btnLabel.textContent = 'Cancel Edit';
             btn?.classList.add('active');
-            if (pdfBtn)  { pdfBtn.style.opacity = '.4'; pdfBtn.style.pointerEvents = 'none'; }
+            if (pdfBtn)   { pdfBtn.style.opacity = '.4'; pdfBtn.style.pointerEvents = 'none'; }
+            if (previewBtn) previewBtn.style.display = '';
             slider?.classList.add('edit-mode-active');
+            toolbar?.classList.add('visible');
             makeContentEditable(true);
             toast?.classList.add('show');
             setTimeout(() => toast?.classList.remove('show'), 4000);
         } else {
             if (btnLabel) btnLabel.textContent = 'Edit Insight';
             btn?.classList.remove('active');
-            if (pdfBtn)  { pdfBtn.style.opacity = ''; pdfBtn.style.pointerEvents = ''; }
+            if (pdfBtn)   { pdfBtn.style.opacity = ''; pdfBtn.style.pointerEvents = ''; }
+            if (previewBtn) previewBtn.style.display = 'none';
             slider?.classList.remove('edit-mode-active');
+            toolbar?.classList.remove('visible');
             makeContentEditable(false);
         }
     };
 
+    // Preview toggle: temporarily hides toolbar + edit chrome while in edit mode
+    window.rdTogglePreview = function () {
+        if (!editMode) return;
+        previewMode = !previewMode;
+        const toolbar    = document.getElementById('rdEditToolbar');
+        const slider     = document.getElementById('insightSliderContent');
+        const previewBtn = document.getElementById('rdBtnPreview');
+        const previewSpan = previewBtn?.querySelector('span');
+
+        if (previewMode) {
+            toolbar?.classList.remove('visible');
+            slider?.classList.remove('edit-mode-active');
+            makeContentEditable(false);
+            if (previewSpan) previewSpan.textContent = 'Back to Edit';
+            previewBtn?.classList.add('active');
+        } else {
+            toolbar?.classList.add('visible');
+            slider?.classList.add('edit-mode-active');
+            makeContentEditable(true);
+            if (previewSpan) previewSpan.textContent = 'Preview';
+            previewBtn?.classList.remove('active');
+        }
+    };
+
     function makeContentEditable(on) {
-        // Wrap text-containing elements inside .insight-slider-content with contenteditable
         document.querySelectorAll('.insight-slider-content').forEach(container => {
             if (on) {
-                // Make each <p>, <li>, <h3>, <h4>, <td>, <th> editable
-                container.querySelectorAll('p, li, h3, h4, td, th').forEach(el => {
-                    el.setAttribute('contenteditable', 'true');
-                    el.setAttribute('spellcheck', 'false');
-                });
+                container.setAttribute('contenteditable', 'true');
+                container.setAttribute('spellcheck', 'false');
+                container.style.outline = 'none';
             } else {
-                container.querySelectorAll('[contenteditable]').forEach(el => {
-                    el.removeAttribute('contenteditable');
-                    el.removeAttribute('spellcheck');
-                });
+                container.removeAttribute('contenteditable');
+                container.removeAttribute('spellcheck');
+                container.style.outline = '';
             }
         });
     }
+
+    // ── Toolbar commands ──────────────────────────────────────────────────────
+    window.rdExecCmd = function (cmd, value) {
+        document.execCommand(cmd, false, value || null);
+        rdUpdateToolbarState();
+        // Return focus to the active editable area
+        const active = document.querySelector('.insight-slider-slide.active .insight-slider-content[contenteditable]');
+        if (active) active.focus();
+    };
+
+    window.rdFormatBlock = function (tag) {
+        document.execCommand('formatBlock', false, tag);
+        const sel = document.getElementById('tbStyleSel');
+        // Reset selector back to current after a tick
+        setTimeout(() => { if (sel) sel.value = 'p'; }, 50);
+        const active = document.querySelector('.insight-slider-slide.active .insight-slider-content[contenteditable]');
+        if (active) active.focus();
+    };
+
+    window.rdInsertLink = function () {
+        const url = window.prompt('Enter URL:', 'https://');
+        if (url && url !== 'https://') {
+            document.execCommand('createLink', false, url);
+        }
+        const active = document.querySelector('.insight-slider-slide.active .insight-slider-content[contenteditable]');
+        if (active) active.focus();
+    };
+
+    function rdUpdateToolbarState() {
+        const cmds = { tbBold:'bold', tbItalic:'italic', tbUnderline:'underline',
+                       tbAlignL:'justifyLeft', tbAlignC:'justifyCenter', tbAlignR:'justifyRight' };
+        Object.entries(cmds).forEach(([id, cmd]) => {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('active', document.queryCommandState(cmd));
+        });
+    }
+
+    // Update toolbar state on selection change
+    document.addEventListener('selectionchange', function () {
+        if (editMode && !previewMode) rdUpdateToolbarState();
+    });
 
     window.rdSaveEdits = function () {
         // Collect innerHTML so all formatting (bullets, bold, headings) is preserved exactly

@@ -137,24 +137,20 @@
     right: 8px;
     background: rgba(0,0,0,.06);
     border: none;
-    cursor: not-allowed;
+    cursor: pointer;
     padding: 0;
     width: 28px;
     height: 28px;
     border-radius: 50%;
     line-height: 1;
     z-index: 5;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
-    transition: background .15s, opacity .15s;
-    opacity: .35;
+    transition: background .15s;
 }
-/* Active only when dashboard is in edit mode */
-.kpi-edit-active .kpi-eye-btn {
-    cursor: pointer;
-    opacity: 1;
-}
+/* Only visible in edit mode */
+.kpi-edit-active .kpi-eye-btn { display: flex; }
 .kpi-edit-active .kpi-eye-btn:hover { background: rgba(0,0,0,.12); }
 .kpi-card { position: relative; }
 /* Hidden cards are completely invisible outside edit mode */

@@ -149,6 +149,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <option value="Medium">Medium</option>
                 <option value="Low">Low</option>
             </select>
+            <button class="btn btn-danger" onclick="resetCtFilters()">Reset</button>
         </div>
 
         <div class="dt-tscroll">
@@ -241,6 +242,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <option value="Medium">Medium</option>
                 <option value="Low">Low</option>
             </select>
+            <button class="btn btn-danger" onclick="resetMtFilters()">Reset</button>
         </div>
 
         <div class="dt-tscroll">
@@ -847,5 +849,23 @@ Swal.fire({
     allowOutsideClick: false,
 });
 @endif
+
+function resetCtFilters() {
+    document.getElementById('ct-search').value         = '';
+    document.getElementById('ct-status-filter').value  = '';
+    document.getElementById('ct-priority-filter').value = '';
+    if (window.$ && $('#client-tickets-table').length) {
+        $('#client-tickets-table').DataTable().search('').columns().search('').draw();
+    }
+}
+
+function resetMtFilters() {
+    document.getElementById('mt-search').value         = '';
+    document.getElementById('mt-status-filter').value  = '';
+    document.getElementById('mt-priority-filter').value = '';
+    if (window.$ && $('#my-tickets-table').length) {
+        $('#my-tickets-table').DataTable().search('').columns().search('').draw();
+    }
+}
 </script>
 @endpush

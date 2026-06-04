@@ -833,6 +833,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                     @endforeach
                 </select>
             </div>
+            <button class="btn btn-danger" onclick="actClearFilters()">Reset</button>
         </div>
     </div>
 
@@ -1099,8 +1100,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // ── Activity Log ──────────────────────────────────────────────────────────────
 @if($_atabs['tab-activity'])
-$(document).ready(function () {
-    if (!document.getElementById('activity-table')) return;
+var _actDtSearchFn = null;
+
+function initActivityTable() {
+    if (!window.$ || !document.getElementById('activity-table')) return;
+
+    // Remove any previously registered date-range search fn to avoid duplicates
+    if (_actDtSearchFn) {
+        var idx = $.fn.dataTable.ext.search.indexOf(_actDtSearchFn);
+        if (idx > -1) $.fn.dataTable.ext.search.splice(idx, 1);
+        _actDtSearchFn = null;
+    }
+    // Destroy existing DataTable instance if present
+    if ($.fn.DataTable && $.fn.DataTable.isDataTable('#activity-table')) {
+        try { $('#activity-table').DataTable().destroy(); } catch (ex) {}
+    }
 
     var actTable = $('#activity-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
@@ -1114,7 +1128,7 @@ $(document).ready(function () {
             emptyTable: '<div style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No activity yet</div>',
         },
         drawCallback: function () {
-            var info = this.api().page.info();
+            var info  = this.api().page.info();
             var badge = document.getElementById('activity-count-badge');
             if (badge) badge.textContent = info.recordsDisplay + ' event' + (info.recordsDisplay !== 1 ? 's' : '');
         }
@@ -1128,23 +1142,26 @@ $(document).ready(function () {
         actTable.column(0).search(this.value ? this.value : '', false, false).draw();
     });
 
-    // Date range filter — read from picker inputs, compare against data-date attribute on td
-    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+    // Date range filter — stored so it can be removed before the next re-init
+    _actDtSearchFn = function (settings, data, dataIndex) {
         if (!settings.nTable || settings.nTable.id !== 'activity-table') return true;
         var from = document.getElementById('act-log-dr-from') ? document.getElementById('act-log-dr-from').value : '';
         var to   = document.getElementById('act-log-dr-to')   ? document.getElementById('act-log-dr-to').value   : '';
         if (!from && !to) return true;
         var row = actTable.row(dataIndex).node();
         if (!row) return true;
-        var dateTd = row.querySelector('td[data-date]');
+        var dateTd  = row.querySelector('td[data-date]');
         var dateVal = dateTd ? dateTd.getAttribute('data-date') : '';
         if (!dateVal) return true;
         if (from && dateVal < from) return false;
         if (to   && dateVal > to)   return false;
         return true;
-    });
-    _drCbs['act-log-dr'] = function(from, to) { actTable.draw(); };
-});
+    };
+    $.fn.dataTable.ext.search.push(_actDtSearchFn);
+    _drCbs['act-log-dr'] = function (from, to) { actTable.draw(); };
+}
+
+$(document).ready(function () { initActivityTable(); });
 
 function actClearFilters() {
     document.getElementById('activitySearch').value    = '';
@@ -1155,6 +1172,60 @@ function actClearFilters() {
     }
 }
 @endif
+
+// ── Tab auto-refresh (Activity Log & Subscription tabs) ───────────────────────
+// Fires whenever the global tab-switcher dispatches 'tabActivated'.
+// Only the two live-data tabs are refreshed; edit-form tabs (Profile, Branding,
+// Login Page) are intentionally skipped so unsaved changes are not lost.
+document.addEventListener('tabActivated', function (e) {
+    var tabId = e.detail.tabId;
+    // Guard: only run on the My Account page
+    if (!document.getElementById('tab-profile')) return;
+    if (['tab-activity', 'tab-subscription'].indexOf(tabId) === -1) return;
+    _refreshAccountTab(tabId);
+});
+
+function _refreshAccountTab(tabId) {
+    var panel = document.getElementById(tabId);
+    if (!panel) return;
+
+    // Dim the panel while loading
+    panel.style.opacity       = '0.45';
+    panel.style.pointerEvents = 'none';
+
+    fetch(window.location.pathname, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+            var doc   = new DOMParser().parseFromString(html, 'text/html');
+            var fresh = doc.getElementById(tabId);
+            if (fresh) {
+                // Tear down Activity Log DataTable before swapping HTML
+                if (tabId === 'tab-activity' && typeof _actDtSearchFn !== 'undefined') {
+                    if (_actDtSearchFn) {
+                        var idx = $.fn.dataTable.ext.search.indexOf(_actDtSearchFn);
+                        if (idx > -1) $.fn.dataTable.ext.search.splice(idx, 1);
+                        _actDtSearchFn = null;
+                    }
+                    if (window.$ && $.fn.DataTable && $.fn.DataTable.isDataTable('#activity-table')) {
+                        try { $('#activity-table').DataTable().destroy(); } catch (ex) {}
+                    }
+                }
+
+                panel.innerHTML = fresh.innerHTML;
+
+                // Re-initialise tab-specific JS after new HTML is in the DOM
+                if (tabId === 'tab-activity' && typeof initActivityTable === 'function') {
+                    initActivityTable();
+                }
+            }
+            panel.style.opacity       = '';
+            panel.style.pointerEvents = '';
+        })
+        .catch(function () {
+            panel.style.opacity       = '';
+            panel.style.pointerEvents = '';
+        });
+}
 
 // ── Login Page ────────────────────────────────────────────────────────────────
 @if($_atabs['tab-login-page'])

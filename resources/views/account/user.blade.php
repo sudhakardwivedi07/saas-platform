@@ -519,6 +519,7 @@
                     </div>
                 </div>
             </div>
+            <button class="btn btn-danger" onclick="resetUaFilters()">Reset</button>
         </div>
 
         {{-- Table --}}
@@ -766,6 +767,15 @@ function applyDateFilter(from, to) {
 
 // Register DR picker callback
 _drCbs['ua-dr'] = applyDateFilter;
+
+function resetUaFilters() {
+    document.getElementById('ua-search').value = '';
+    drClear('ua-dr'); // fires applyDateFilter('', '') → shows all rows
+    // Also reset any rows hidden by text search
+    document.querySelectorAll('#ua-tickets-body tr').forEach(function(row) {
+        row.style.display = '';
+    });
+}
 
 // ── Priority toggle ───────────────────────────────────────────────
 function uaSelectPriority(btn) {

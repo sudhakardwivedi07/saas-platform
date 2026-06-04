@@ -407,6 +407,7 @@
                 <option value="quota full">Quota Full</option>
                 <option value="no usage">No Usage</option>
             </select>
+            <button class="btn btn-danger" onclick="resetUsageFilters()">Reset</button>
         </div>
     </div>
     <table id="usage-table" style="width:100%;border-collapse:collapse">
@@ -689,6 +690,14 @@ function cancelSubscription() {
             });
         }
     });
+}
+
+function resetUsageFilters() {
+    document.getElementById('usage-search').value        = '';
+    document.getElementById('usage-status-filter').value = '';
+    if (window.$ && $('#usage-table').length) {
+        $('#usage-table').DataTable().search('').columns().search('').draw();
+    }
 }
 </script>
 @endpush

@@ -63,6 +63,7 @@
                     <option value="inactive">Inactive</option>
                     <option value="suspended">Suspended</option>
                 </select>
+                <button class="btn btn-danger" onclick="resetClientTabFilters()">Reset</button>
             </div>
             <span class="badge b-gray" id="client-count-badge">{{ $clients->count() }} clients</span>
         </div>
@@ -224,6 +225,7 @@
                         </div>
                     </div>
                 </div>
+                <button class="btn btn-danger" onclick="resetCompanyTabFilters()">Reset</button>
             </div>
             @if($hasActivePlan ?? false)
             <a href="{{ route('my-companies.create') }}" class="btn btn-primary btn-sm">
@@ -1132,5 +1134,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // Clean the query param from the URL
     history.replaceState(null, '', window.location.pathname);
 });
+
+function resetClientTabFilters() {
+    document.getElementById('client-search').value       = '';
+    document.getElementById('client-status-filter').value = '';
+    if (window.$ && $('#clients-table').length) {
+        $('#clients-table').DataTable().search('').columns().search('').draw();
+    }
+}
+
+function resetCompanyTabFilters() {
+    document.getElementById('company-search').value        = '';
+    document.getElementById('company-status-filter').value = '';
+    document.getElementById('company-qb-filter').value     = '';
+    document.getElementById('company-client-filter').value = '';
+    drClear('co-dr');
+    if (window.$ && $('#companies-table').length) {
+        $('#companies-table').DataTable().search('').columns().search('').draw();
+    }
+}
 </script>
 @endpush

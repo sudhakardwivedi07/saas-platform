@@ -50,7 +50,7 @@ button{cursor:pointer}
 
 /* ── SIDEBAR ──────────────────────────────────────────── */
 .ca-sidebar{width:var(--sidebar-w);background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;box-shadow:2px 0 8px rgba(0,0,0,.04)}
-.ca-logo-zone{padding:16px 20px 14px;border-bottom:1px solid var(--border);flex-shrink:0;background:#fff}
+.ca-logo-zone{height:var(--topbar-h);box-sizing:border-box;padding:0 20px;display:flex;align-items:center;border-bottom:1px solid var(--border);flex-shrink:0;background:#fff}
 .ca-logo-img{display:block;max-height:36px;max-width:180px;object-fit:contain}
 .ca-logo-placeholder{display:flex;align-items:center;justify-content:center;height:38px;border:2px dashed var(--border);border-radius:9px;background:#fafbff;color:var(--text-3);font-size:12px;font-weight:500;letter-spacing:.04em;cursor:pointer;transition:border-color .14s}
 .ca-logo-placeholder:hover{border-color:var(--blue);color:var(--blue)}
@@ -451,7 +451,6 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
                 Your Logo
             </a>
         @endif
-        <span class="ca-partner-tag">{{ $appName ?? config('app.name') }}</span>
     </div>
 
     <nav class="ca-nav">
@@ -694,10 +693,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => {
             const bar = btn.closest('.tab-bar');
             const container = bar?.parentElement;
+            const tabId = btn.dataset.tab;
             bar?.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             container?.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-            container?.querySelector('#' + btn.dataset.tab)?.classList.add('active');
+            container?.querySelector('#' + tabId)?.classList.add('active');
+            // Notify page-level scripts so they can refresh the tab's data
+            document.dispatchEvent(new CustomEvent('tabActivated', { detail: { tabId } }));
         });
     });
 });

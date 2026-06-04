@@ -313,6 +313,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </select>
+                <button class="btn btn-danger" onclick="resetPlanFilters()">Reset</button>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
                 <span class="badge b-gray" id="plan-count-badge">0 plans</span>
@@ -586,6 +587,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                     <option value="system">System</option>
                     <option value="custom">Custom</option>
                 </select>
+                <button class="btn btn-danger" onclick="resetRoleFilters()">Reset</button>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
                 <span class="badge b-gray" id="role-count-badge">{{ $roles->count() }} roles</span>
@@ -1181,6 +1183,20 @@ function saveCustomLimit() {
     });
 }
 
+function resetPlanFilters() {
+    document.getElementById('plan-search').value        = '';
+    document.getElementById('plan-status-filter').value = '';
+    if (window.$ && $('#plans-table').length) {
+        $('#plans-table').DataTable().search('').columns().search('').draw();
+    }
+}
 
+function resetRoleFilters() {
+    document.getElementById('role-search').value        = '';
+    document.getElementById('role-type-filter').value   = '';
+    if (window.$ && $('#roles-table').length) {
+        $('#roles-table').DataTable().search('').columns().search('').draw();
+    }
+}
 </script>
 @endpush

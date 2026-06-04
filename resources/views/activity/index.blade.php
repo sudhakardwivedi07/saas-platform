@@ -70,7 +70,7 @@
         </div>
 
         <button class="btn btn-primary btn-sm" onclick="applyFilters()">Apply</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear</button>
+        <button class="btn btn-danger btn-sm" onclick="clearFilters()">Reset</button>
     </div>
 </div>
 

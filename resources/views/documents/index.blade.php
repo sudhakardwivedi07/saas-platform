@@ -33,6 +33,7 @@
                     <option value="word"  {{ request('type')==='word'  ? 'selected':'' }}>Word Docs</option>
                 </select>
                 <button type="submit" class="btn btn-ghost btn-sm">Filter</button>
+                <a href="{{ route('documents.index') }}" class="btn btn-danger btn-sm">Reset</a>
             </form>
         </div>
     </div>

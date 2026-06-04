@@ -72,6 +72,7 @@
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
             </select>
+            <button class="btn btn-danger" onclick="resetUsersFilters()">Reset</button>
         </div>
         <span class="badge b-gray" id="user-count-badge">{{ $users->count() }} user{{ $users->count() !== 1 ? 's' : '' }}</span>
     </div>
@@ -559,6 +560,15 @@ function removeUser(id, name) {
         form.action = '{{ route("users.destroy", ":id") }}'.replace(':id', id);
         form.submit();
     });
+}
+
+function resetUsersFilters() {
+    document.getElementById('user-search').value        = '';
+    document.getElementById('user-role-filter').value   = '';
+    document.getElementById('user-status-filter').value = '';
+    if (window.$ && $('#users-table').length) {
+        $('#users-table').DataTable().search('').columns().search('').draw();
+    }
 }
 </script>
 @endpush

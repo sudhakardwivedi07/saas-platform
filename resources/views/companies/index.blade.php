@@ -52,6 +52,7 @@
                 <option value="suspended">Suspended</option>
                 <option value="pending payment">Pending Payment</option>
             </select>
+            <button class="btn btn-danger" onclick="resetCoFilters()">Reset</button>
         </div>
         <span class="badge b-gray" id="co-count-badge">{{ $companies->count() }} companies</span>
     </div>
@@ -229,6 +230,14 @@ function confirmCompanyDelete(formEl) {
     });
 
     return false;
+}
+
+function resetCoFilters() {
+    document.getElementById('co-search').value        = '';
+    document.getElementById('co-status-filter').value = '';
+    if (window.$ && $('#co-table').length) {
+        $('#co-table').DataTable().search('').columns().search('').draw();
+    }
 }
 </script>
 @endpush

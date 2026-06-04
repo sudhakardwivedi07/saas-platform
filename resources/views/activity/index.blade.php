@@ -30,16 +30,31 @@
             <input type="text" class="srch-inp" id="activitySearch" placeholder="Search activity..." autocomplete="off">
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:4px;">
-            <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">From</label>
-            <input type="date" class="f-inp" id="filterFrom" style="min-width:150px;"
-                   value="{{ request('from', '') }}">
-        </div>
-
-        <div style="display:flex;flex-direction:column;gap:4px;">
-            <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">To</label>
-            <input type="date" class="f-inp" id="filterTo" style="min-width:150px;"
-                   value="{{ request('to', '') }}">
+        {{-- Date range filter --}}
+        <div class="dr-wrap" id="act-dr">
+            <div class="dr-field" onclick="drOpen('act-dr')">
+                <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span class="dr-text" id="act-dr-text">Start Date To End Date</span>
+                <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('act-dr')" title="Clear date filter">&#x2715;</button>
+            </div>
+            <div class="dr-menu" id="act-dr-menu">
+                <ul class="dr-list">
+                    <li class="dr-opt" onclick="drPickPreset('act-dr','today',this)">Today</li>
+                    <li class="dr-opt" onclick="drPickPreset('act-dr','last30',this)">Last 30 Days</li>
+                    <li class="dr-opt" onclick="drPickPreset('act-dr','thisMonth',this)">This Month</li>
+                    <li class="dr-opt" onclick="drPickPreset('act-dr','lastMonth',this)">Last Month</li>
+                    <li class="dr-opt" onclick="drPickPreset('act-dr','last90',this)">Last 90 Days</li>
+                    <li class="dr-opt" onclick="drPickPreset('act-dr','last6m',this)">Last 6 Months</li>
+                    <li class="dr-opt" onclick="drPickPreset('act-dr','last1y',this)">Last 1 Year</li>
+                    <li class="dr-opt" onclick="drPickPreset('act-dr','custom',this)">Custom Range</li>
+                </ul>
+                <div class="dr-custom-row" id="act-dr-custom">
+                    <input type="date" class="dr-date-inp" id="act-dr-from" value="{{ request('from', '') }}">
+                    <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                    <input type="date" class="dr-date-inp" id="act-dr-to" value="{{ request('to', '') }}">
+                    <button class="dr-apply-btn" onclick="drApplyCustom('act-dr')">Apply</button>
+                </div>
+            </div>
         </div>
 
         <div style="display:flex;flex-direction:column;gap:4px;">
@@ -55,7 +70,7 @@
         </div>
 
         <button class="btn btn-primary btn-sm" onclick="applyFilters()">Apply</button>
-        <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear</button>
+        <button class="btn btn-danger btn-sm" onclick="clearFilters()">Reset</button>
     </div>
 </div>
 
@@ -128,7 +143,7 @@
                             </div>
                         </td>
                         <td style="font-size:0.8125rem;color:var(--text-2);" data-order="{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->timestamp : 0 }}">
-                            <div>{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format('M j, Y') : '—' }}</div>
+                            <div>{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format(active_date_format()) : '—' }}</div>
                             <div style="color:var(--text-3);">{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format('g:i A') : '' }}</div>
                         </td>
                     </tr>
@@ -147,8 +162,8 @@
 var activityTable;
 
 function applyFilters() {
-    var from = document.getElementById('filterFrom').value;
-    var to   = document.getElementById('filterTo').value;
+    var from = document.getElementById('act-dr-from') ? document.getElementById('act-dr-from').value : '';
+    var to   = document.getElementById('act-dr-to')   ? document.getElementById('act-dr-to').value   : '';
     var type = document.getElementById('filterEventType').value;
     var url  = new URL(window.location.href);
     if (from) url.searchParams.set('from', from); else url.searchParams.delete('from');
@@ -157,8 +172,43 @@ function applyFilters() {
     window.location.href = url.toString();
 }
 function clearFilters() {
+    drClear('act-dr');
+    document.getElementById('filterEventType').value = '';
     window.location.href = window.location.pathname;
 }
+
+// Register callback — navigates with URL params (server-side filter)
+_drCbs['act-dr'] = function(from, to) {
+    if (!from && !to) {
+        window.location.href = window.location.pathname +
+            (document.getElementById('filterEventType').value ? '?event_type=' + encodeURIComponent(document.getElementById('filterEventType').value) : '');
+        return;
+    }
+    var url = new URL(window.location.href);
+    if (from) url.searchParams.set('from', from); else url.searchParams.delete('from');
+    if (to)   url.searchParams.set('to', to);     else url.searchParams.delete('to');
+    window.location.href = url.toString();
+};
+
+// Pre-populate from URL params on page load
+(function() {
+    var from = '{{ request('from', '') }}';
+    var to   = '{{ request('to', '') }}';
+    if (from || to) {
+        document.addEventListener('DOMContentLoaded', function() {
+            var fromEl = document.getElementById('act-dr-from');
+            var toEl   = document.getElementById('act-dr-to');
+            if (fromEl) fromEl.value = from;
+            if (toEl)   toEl.value   = to;
+            // Show custom row and mark Custom Range active
+            var customRow = document.getElementById('act-dr-custom');
+            if (customRow) customRow.style.display = 'flex';
+            var customOpt = document.querySelector('#act-dr .dr-opt:last-child');
+            if (customOpt) customOpt.classList.add('active');
+            drSetLabel('act-dr', from, to);
+        });
+    }
+})();
 
 $(document).ready(function() {
     if (document.getElementById('activity-table')) {

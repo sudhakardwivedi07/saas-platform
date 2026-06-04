@@ -11,24 +11,46 @@
     </div>
 </div>
 
+@php
+// Determine which My Account tabs this user may see, and which is first/active.
+$_atabs = [
+    'tab-profile'      => auth()->user()->can('view_account_profile'),
+    'tab-branding'     => auth()->user()->can('view_account_branding'),
+    'tab-login-page'   => auth()->user()->can('view_account_login_page'),
+    'tab-subscription' => auth()->user()->can('view_account_subscription'),
+    'tab-activity'     => auth()->user()->can('view_account_activity'),
+];
+$_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
+@endphp
+
 {{-- Tab Bar --}}
 <div class="tab-bar">
-    <button class="tab-btn active" data-tab="tab-profile">
+    @if($_atabs['tab-profile'])
+    <button class="tab-btn {{ $_afirst === 'tab-profile' ? 'active' : '' }}" data-tab="tab-profile">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Profile
     </button>
-    <button class="tab-btn" data-tab="tab-branding">
+    @endif
+    @if($_atabs['tab-branding'])
+    <button class="tab-btn {{ $_afirst === 'tab-branding' ? 'active' : '' }}" data-tab="tab-branding">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13.5" cy="6.5" r="2.5"/><path d="M17 21H7a4 4 0 01-4-4 3 3 0 013-3h.5a2.5 2.5 0 002.5-2.5v-1A2.5 2.5 0 0111.5 8h1"/><path d="M14 21v-4a2 2 0 012-2h4"/></svg>
         Branding
     </button>
-    @if(auth()->user()->can('edit_branding'))
-    <button class="tab-btn" data-tab="tab-login-page">
+    @endif
+    @if($_atabs['tab-login-page'])
+    <button class="tab-btn {{ $_afirst === 'tab-login-page' ? 'active' : '' }}" data-tab="tab-login-page">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
         Login Page
     </button>
     @endif
-    @if(auth()->user()->hasAnyRole(['admin','manager']))
-    <button class="tab-btn" data-tab="tab-activity">
+    @if($_atabs['tab-subscription'])
+    <button class="tab-btn {{ $_afirst === 'tab-subscription' ? 'active' : '' }}" data-tab="tab-subscription">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+        Subscription
+    </button>
+    @endif
+    @if($_atabs['tab-activity'])
+    <button class="tab-btn {{ $_afirst === 'tab-activity' ? 'active' : '' }}" data-tab="tab-activity">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
         Activity Log
     </button>
@@ -36,7 +58,8 @@
 </div>
 
 {{-- Tab 1: Profile --}}
-<div class="tab-panel active" id="tab-profile">
+@if($_atabs['tab-profile'])
+<div class="tab-panel {{ $_afirst === 'tab-profile' ? 'active' : '' }}" id="tab-profile">
     <div class="acc-card">
         {{-- Avatar + Name --}}
         <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)">
@@ -47,7 +70,7 @@
                 <div style="font-size:15px;font-weight:600;color:var(--text-1)">{{ $authUser->name }}</div>
                 <div style="font-size:13px;color:var(--text-3);margin-top:2px">{{ $authUser->email }}</div>
                 <div style="margin-top:5px">
-                    <span class="badge b-orange" style="font-size:11px">{{ $authUser->getRoleNames()->first() ?? 'Admin' }}</span>
+                    <span class="badge b-orange" style="font-size:11px">{{ $authUser->roleDisplayName('Admin') }}</span>
                 </div>
             </div>
         </div>
@@ -111,9 +134,11 @@
         </div>
     </div>
 </div>
+@endif {{-- /tab-profile --}}
 
 {{-- Tab 2: Branding --}}
-<div class="tab-panel" id="tab-branding">
+@if($_atabs['tab-branding'])
+<div class="tab-panel {{ $_afirst === 'tab-branding' ? 'active' : '' }}" id="tab-branding">
     <form method="POST" action="{{ route('settings.branding.update') }}" enctype="multipart/form-data" id="branding-form">
         @csrf
         <div class="brand-layout">
@@ -339,11 +364,76 @@
 
         </div>
     </form>
+
+    {{-- ── Date Format (separate card, not part of branding form) ── --}}
+    @php
+    $companyDateFormat = company()?->date_format;
+    $globalDateFormat  = global_setting()?->date_format ?? 'M j, Y';
+    $effectiveFmt      = $companyDateFormat ?: $globalDateFormat;
+    $today             = \Carbon\Carbon::now();
+    @endphp
+    <div class="acc-card" style="margin-top:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div>
+                <div style="font-size:15px;font-weight:700;color:var(--text-1)">Date Format</div>
+                <div style="font-size:12.5px;color:var(--text-3);margin-top:2px">
+                    Override the platform-wide date format for your account and your users.
+                    Leave as default to use the Super Admin's setting
+                    (<strong>{{ $today->format($globalDateFormat) }}</strong>).
+                </div>
+            </div>
+            @if($companyDateFormat)
+            <span style="background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.25);border-radius:20px;padding:3px 12px;font-size:11.5px;font-weight:600;flex-shrink:0;margin-left:16px">Custom</span>
+            @else
+            <span style="background:var(--bg);color:var(--text-3);border:1px solid var(--border);border-radius:20px;padding:3px 12px;font-size:11.5px;font-weight:600;flex-shrink:0;margin-left:16px">Using Default</span>
+            @endif
+        </div>
+
+        <div style="height:1px;background:var(--border);margin:14px 0"></div>
+
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:18px" id="adf-grid">
+            @foreach(DATE_FORMAT_PRESETS as $fmt => $example)
+            <label id="adf-opt-{{ str_replace(['/', '.', ' '], ['-', '-', '-'], $fmt) }}"
+                   style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid {{ $effectiveFmt === $fmt ? 'var(--blue)' : 'var(--border)' }};border-radius:10px;cursor:pointer;background:{{ $effectiveFmt === $fmt ? 'var(--blue-pale)' : '#fff' }};transition:border-color .13s,background .13s"
+                   onmouseenter="if(!this.querySelector('input').checked){this.style.borderColor='var(--blue)';this.style.background='var(--blue-pale)'}"
+                   onmouseleave="if(!this.querySelector('input').checked){this.style.borderColor='var(--border)';this.style.background='#fff'}">
+                <input type="radio" name="adf_pick" value="{{ $fmt }}"
+                       style="accent-color:var(--blue);width:15px;height:15px;flex-shrink:0"
+                       {{ $effectiveFmt === $fmt ? 'checked' : '' }}
+                       onchange="adfPickFormat(this.value)">
+                <div>
+                    <div style="font-size:13.5px;font-weight:600;color:var(--text-1);font-family:monospace">{{ $today->format($fmt) }}</div>
+                    <div style="font-size:11px;color:var(--text-3);margin-top:1px"><code style="background:var(--bg);padding:1px 4px;border-radius:4px;font-size:10.5px">{{ $fmt }}</code></div>
+                </div>
+            </label>
+            @endforeach
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div style="font-size:12.5px;color:var(--text-3)">
+                Preview:
+                <span id="adf-preview" style="font-weight:600;color:var(--text-1);margin-left:4px">{{ $today->format($effectiveFmt) }}</span>
+            </div>
+            <div style="display:flex;gap:8px">
+                @if($companyDateFormat)
+                <button class="btn btn-ghost btn-sm" onclick="adfClear()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                    Reset to Default
+                </button>
+                @endif
+                <button class="btn btn-primary btn-sm" id="adf-save-btn" onclick="adfSave()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Save Date Format
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
+@endif {{-- /tab-branding --}}
 
 {{-- Tab 3: Login Page --}}
-@if(auth()->user()->can('edit_branding'))
-<div class="tab-panel" id="tab-login-page">
+@if($_atabs['tab-login-page'])
+<div class="tab-panel {{ $_afirst === 'tab-login-page' ? 'active' : '' }}" id="tab-login-page">
     <div class="acc-card" style="max-width:1200px">
         <div class="acc-section-title" style="margin-bottom:24px">
             <h3 style="font-size:16px;font-weight:700;color:#1a202c;margin:0 0 4px">Login Page</h3>
@@ -503,11 +593,197 @@
         </div>
     </div>
 </div>
+@endif {{-- /tab-login-page --}}
+
+{{-- Tab 4: Subscription --}}
+@if($_atabs['tab-subscription'])
+<div class="tab-panel {{ $_afirst === 'tab-subscription' ? 'active' : '' }}" id="tab-subscription">
+@php
+    $subPkg      = $subscription?->package;
+    $subStatus   = $subscription?->status ?? 'none';
+    $renewsAt    = $subscription?->current_period_end;
+    $planName    = $subPkg?->name ?? 'No Plan';
+    $maxClients  = $subPkg?->max_users ?? 0;
+    $maxInsights = $subPkg?->max_documents ?? 0;
+    $planPrice   = $subPkg ? ($subscription?->billing_cycle === 'annual'
+                    ? ($subPkg->annual_price ?? $subPkg->monthly_price * 12)
+                    : $subPkg->monthly_price) : 0;
+    $priceLabel  = $subPkg ? ('$' . number_format($planPrice, 2) . '/' . ($subscription?->billing_cycle === 'annual' ? 'year' : 'month')) : '—';
+    $billingLabel= ucfirst($subscription?->billing_cycle ?? 'monthly');
+    $nextBilling = $renewsAt ? $renewsAt->format(active_date_format()) : '—';
+    $planDesc    = $subPkg?->description ?? 'Your current subscription plan';
+@endphp
+
+{{-- ── Subscription Summary Card ──────────────────────────────── --}}
+@if($subscription && $subPkg)
+<div style="background:#fff;border:1.5px solid var(--border);border-left:4px solid var(--blue);border-radius:12px;padding:22px 24px 18px;margin-bottom:16px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid var(--border);margin-bottom:18px">
+        <div>
+            <div style="font-size:19px;font-weight:700;color:var(--text-1);margin-bottom:3px">{{ $planName }}</div>
+            <div style="font-size:12.5px;color:var(--text-3)">Your current subscription plan</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            @if($subStatus === 'active')
+                <span style="background:rgba(16,185,129,.12);color:#059669;border:1px solid rgba(16,185,129,.3);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600">Active</span>
+            @elseif($subStatus === 'trialing')
+                <span style="background:rgba(245,158,11,.12);color:#d97706;border:1px solid rgba(245,158,11,.3);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600">Trial</span>
+            @elseif($subStatus === 'past_due')
+                <span style="background:rgba(239,68,68,.12);color:#dc2626;border:1px solid rgba(239,68,68,.3);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600">Past Due</span>
+            @elseif($subStatus === 'canceled')
+                <span style="background:rgba(239,68,68,.10);color:#dc2626;border:1px solid rgba(239,68,68,.25);border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600">Canceled</span>
+            @endif
+        </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px">
+        <div>
+            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:5px">Plan Price</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text-1)">{{ $priceLabel }}</div>
+        </div>
+        <div>
+            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:5px">Billing Cycle</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text-1)">{{ $billingLabel }}</div>
+        </div>
+        <div>
+            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:5px">Next Billing Date</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text-1)">{{ $nextBilling }}</div>
+        </div>
+        <div>
+            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:5px">Plan Features</div>
+            <div style="font-size:13.5px;color:var(--text-2)">{{ $planDesc }}</div>
+        </div>
+    </div>
+    @if($subStatus === 'canceled' && $subscription?->ends_at && $subscription->ends_at->isFuture())
+    <button class="btn btn-sm" style="border:1.5px solid var(--green);color:var(--green);background:transparent" onclick="subReactivate()">Reactivate Subscription</button>
+    @elseif(in_array($subStatus, ['active','trialing','past_due']))
+    <button class="btn btn-sm" style="border:1.5px solid var(--red);color:var(--red);background:transparent" onclick="subCancel()">Cancel Subscription</button>
+    @endif
+</div>
 @endif
 
-{{-- Tab 4: Activity Log --}}
-@if(auth()->user()->hasAnyRole(['admin','manager']))
-<div class="tab-panel" id="tab-activity">
+{{-- ── Payment Method Card ─────────────────────────────────────── --}}
+@if($subscription?->pm_last4)
+<div style="background:#fff;border:1.5px solid var(--border);border-left:4px solid var(--green);border-radius:12px;padding:18px 24px;margin-bottom:16px">
+    <div style="font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:10px">Payment Method</div>
+    <div style="display:flex;align-items:center;gap:14px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-2)" stroke-width="1.8" width="32" height="32"><rect x="1" y="4" width="22" height="16" rx="2"/><path d="M1 10h22"/></svg>
+        <div>
+            <div style="font-size:15px;font-weight:600;color:var(--text-1);letter-spacing:.08em">
+                •••• •••• •••• {{ $subscription->pm_last4 }}
+                &nbsp;&nbsp;
+                <span style="font-size:13px;font-weight:400;color:var(--text-3)">Expire:
+                    {{ str_pad($subscription->pm_exp_month, 2, '0', STR_PAD_LEFT) }}/{{ substr($subscription->pm_exp_year, -2) }}
+                </span>
+            </div>
+            @if($subscription->pm_brand)
+            <div style="font-size:11.5px;color:var(--text-3);margin-top:2px;text-transform:capitalize">{{ $subscription->pm_brand }}</div>
+            @endif
+        </div>
+    </div>
+</div>
+@endif
+
+{{-- ── Current Plan Banner ─────────────────────────────────────── --}}
+@if($subscription)
+<div class="plan-banner" style="margin-bottom:20px">
+    <div class="plan-banner-left">
+        <div class="plan-label">Current Plan</div>
+        <div class="plan-name">{{ $planName }}</div>
+        <div class="plan-meta">
+            @if($maxClients) {{ $maxClients }} clients · @endif
+            @if($maxInsights) {{ number_format($maxInsights) }} insights / month · @endif
+            @if($subPkg?->monthly_price) ${{ number_format($subPkg->monthly_price, 0) }} / month @endif
+            @if($subStatus === 'canceled' && $subscription?->ends_at)
+                · Access until {{ $subscription->ends_at->format(active_date_format()) }}
+            @elseif($renewsAt)
+                · Renews {{ $renewsAt->format(active_date_format()) }}
+            @endif
+        </div>
+    </div>
+    <div class="plan-banner-right">
+        @if($subStatus === 'active')
+            <span class="plan-status-badge">Active</span>
+        @elseif($subStatus === 'trialing')
+            <span class="plan-status-badge" style="background:rgba(245,158,11,.2);border-color:rgba(245,158,11,.5)">Trial</span>
+        @elseif($subStatus === 'past_due')
+            <span class="plan-status-badge" style="background:rgba(239,68,68,.2);border-color:rgba(239,68,68,.5)">Past Due</span>
+        @elseif($subStatus === 'canceled')
+            <span class="plan-status-badge" style="background:rgba(239,68,68,.18);border-color:rgba(239,68,68,.5)">Canceled</span>
+        @endif
+        @if($subStatus === 'canceled' && $subscription?->ends_at && $subscription->ends_at->isFuture())
+            <button class="plan-reactivate-btn" onclick="subReactivate()">Reactivate Subscription</button>
+        @elseif(in_array($subStatus, ['active','trialing','past_due']))
+            <button class="plan-cancel-btn" onclick="subCancel()">Cancel Subscription</button>
+        @endif
+    </div>
+</div>
+@else
+<div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:22px 24px;margin-bottom:20px;text-align:center">
+    <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:6px">No Active Subscription</div>
+    <div style="font-size:13px;color:var(--text-3)">Choose a plan below to get started.</div>
+</div>
+@endif
+
+{{-- ── Available Plans ─────────────────────────────────────────── --}}
+@if($packages->isNotEmpty())
+<div style="margin-bottom:16px">
+    <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:4px">Available Plans</div>
+    @if($subPkg)
+    <div style="font-size:13px;color:var(--text-3)">You are on the <strong>{{ $planName }}</strong> plan. You can switch to any plan below. A switch takes effect from the next billing cycle.</div>
+    @else
+    <div style="font-size:13px;color:var(--text-3)">Choose a plan to get started.</div>
+    @endif
+</div>
+<div class="plans-grid" style="margin-bottom:0">
+    @foreach($packages as $p)
+    @php $isCurrent = $subscription?->package_id === $p->id; @endphp
+    <div class="plan-card {{ $isCurrent ? 'is-current' : '' }}">
+        @if($isCurrent)<div class="plan-card-badge">Current Plan</div>@endif
+        <div class="plan-card-label">{{ strtoupper($p->name) }}</div>
+        <div class="plan-card-price">${{ number_format($p->monthly_price ?? 0, 0) }}<span>/month</span></div>
+        <div class="plan-card-sub">@if($p->max_users) Up to {{ $p->max_users }} clients @else Unlimited clients @endif</div>
+        <ul class="plan-card-features">
+            @if($p->max_users)
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>{{ $p->max_users }} clients</li>
+            @endif
+            @if($p->max_documents)
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>{{ number_format($p->max_documents) }} insights / month</li>
+            @endif
+            @if(!empty($p->features) && is_array($p->features))
+                @foreach(array_slice($p->features, 0, 5) as $feat)
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>{{ Str::title(str_replace('_', ' ', $feat)) }}</li>
+                @endforeach
+            @else
+                @if($p->max_storage_gb)
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>{{ $p->max_storage_gb }}GB storage</li>
+                @endif
+                @if($p->is_trial_allowed)
+                <li><svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="14" height="14"><polyline points="20 6 9 17 4 12"/></svg>{{ $p->trial_days }}-day free trial</li>
+                @endif
+            @endif
+        </ul>
+        @php $isFreePackage = ($p->is_free ?? false) || ((float)($p->monthly_price ?? 0) <= 0); @endphp
+        @php $isCurrentPaid = $subscription && !(!empty($subPkg?->is_free) || ((float)($subPkg?->monthly_price ?? 0) <= 0)); @endphp
+        <div style="margin-top:auto">
+            @if($isCurrent)
+            <button disabled class="btn btn-primary" style="width:100%;justify-content:center;cursor:not-allowed;opacity:.85">Current Plan</button>
+            @elseif(!$isFreePackage || !$isCurrentPaid)
+            <button class="btn {{ $subscription ? 'btn-ghost' : 'btn-primary' }}" style="width:100%;justify-content:center"
+                    onclick="subStartCheckout({{ $p->id }}, this)">
+                {{ $subscription ? ($p->monthly_price > ($subPkg?->monthly_price ?? 0) ? 'Upgrade to ' : 'Switch to ') . $p->name : 'Get ' . $p->name }}
+            </button>
+            @endif
+        </div>
+    </div>
+    @endforeach
+</div>
+@endif
+
+</div>
+@endif {{-- /tab-subscription --}}
+
+{{-- Tab 5: Activity Log --}}
+@if($_atabs['tab-activity'])
+<div class="tab-panel {{ $_afirst === 'tab-activity' ? 'active' : '' }}" id="tab-activity">
     <div class="info-banner" style="margin-bottom:1.25rem;">
         <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;color:var(--blue);">
             <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
@@ -522,13 +798,31 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" class="srch-inp" id="activitySearch" placeholder="Search activity..." autocomplete="off">
             </div>
-            <div style="display:flex;flex-direction:column;gap:4px;">
-                <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">From</label>
-                <input type="date" class="f-inp" id="actFilterFrom" style="min-width:150px;">
-            </div>
-            <div style="display:flex;flex-direction:column;gap:4px;">
-                <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">To</label>
-                <input type="date" class="f-inp" id="actFilterTo" style="min-width:150px;">
+            {{-- Date range filter --}}
+            <div class="dr-wrap" id="act-log-dr">
+                <div class="dr-field" onclick="drOpen('act-log-dr')">
+                    <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span class="dr-text" id="act-log-dr-text">Start Date To End Date</span>
+                    <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('act-log-dr')" title="Clear date filter">&#x2715;</button>
+                </div>
+                <div class="dr-menu" id="act-log-dr-menu">
+                    <ul class="dr-list">
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','today',this)">Today</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','last30',this)">Last 30 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','thisMonth',this)">This Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','lastMonth',this)">Last Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','last90',this)">Last 90 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','last6m',this)">Last 6 Months</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','last1y',this)">Last 1 Year</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','custom',this)">Custom Range</li>
+                    </ul>
+                    <div class="dr-custom-row" id="act-log-dr-custom">
+                        <input type="date" class="dr-date-inp" id="act-log-dr-from">
+                        <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                        <input type="date" class="dr-date-inp" id="act-log-dr-to">
+                        <button class="dr-apply-btn" onclick="drApplyCustom('act-log-dr')">Apply</button>
+                    </div>
+                </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;">
                 <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">Event Type</label>
@@ -539,7 +833,7 @@
                     @endforeach
                 </select>
             </div>
-            <button class="btn btn-ghost btn-sm" onclick="actClearFilters()">Clear</button>
+            <button class="btn btn-danger" onclick="actClearFilters()">Reset</button>
         </div>
     </div>
 
@@ -601,8 +895,8 @@
                                 <div style="font-size:0.875rem;font-weight:500;color:var(--text-1);">{{ optional($activity->user)->name ?? 'System' }}</div>
                                 <div style="font-size:0.75rem;color:var(--text-2);">{{ optional($activity->user)->email ?? '' }}</div>
                             </td>
-                            <td style="font-size:0.8125rem;color:var(--text-2);" data-order="{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->timestamp : 0 }}">
-                                <div>{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format('M j, Y') : '—' }}</div>
+                            <td style="font-size:0.8125rem;color:var(--text-2);" data-order="{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->timestamp : 0 }}" data-date="{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format('Y-m-d') : '' }}">
+                                <div>{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format(active_date_format()) : '—' }}</div>
                                 <div style="color:var(--text-3);">{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format('g:i A') : '' }}</div>
                             </td>
                         </tr>
@@ -613,7 +907,7 @@
         @endif
     </div>
 </div>
-@endif
+@endif {{-- /tab-activity --}}
 
 @endsection
 
@@ -805,9 +1099,22 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // ── Activity Log ──────────────────────────────────────────────────────────────
-@if(auth()->user()->hasAnyRole(['admin','manager']))
-$(document).ready(function () {
-    if (!document.getElementById('activity-table')) return;
+@if($_atabs['tab-activity'])
+var _actDtSearchFn = null;
+
+function initActivityTable() {
+    if (!window.$ || !document.getElementById('activity-table')) return;
+
+    // Remove any previously registered date-range search fn to avoid duplicates
+    if (_actDtSearchFn) {
+        var idx = $.fn.dataTable.ext.search.indexOf(_actDtSearchFn);
+        if (idx > -1) $.fn.dataTable.ext.search.splice(idx, 1);
+        _actDtSearchFn = null;
+    }
+    // Destroy existing DataTable instance if present
+    if ($.fn.DataTable && $.fn.DataTable.isDataTable('#activity-table')) {
+        try { $('#activity-table').DataTable().destroy(); } catch (ex) {}
+    }
 
     var actTable = $('#activity-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
@@ -821,7 +1128,7 @@ $(document).ready(function () {
             emptyTable: '<div style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No activity yet</div>',
         },
         drawCallback: function () {
-            var info = this.api().page.info();
+            var info  = this.api().page.info();
             var badge = document.getElementById('activity-count-badge');
             if (badge) badge.textContent = info.recordsDisplay + ' event' + (info.recordsDisplay !== 1 ? 's' : '');
         }
@@ -831,17 +1138,34 @@ $(document).ready(function () {
         actTable.search(this.value).draw();
     });
 
-    document.getElementById('actFilterFrom').addEventListener('change', function () { actTable.draw(); });
-    document.getElementById('actFilterTo').addEventListener('change', function () { actTable.draw(); });
     document.getElementById('actFilterEventType').addEventListener('change', function () {
         actTable.column(0).search(this.value ? this.value : '', false, false).draw();
     });
-});
+
+    // Date range filter — stored so it can be removed before the next re-init
+    _actDtSearchFn = function (settings, data, dataIndex) {
+        if (!settings.nTable || settings.nTable.id !== 'activity-table') return true;
+        var from = document.getElementById('act-log-dr-from') ? document.getElementById('act-log-dr-from').value : '';
+        var to   = document.getElementById('act-log-dr-to')   ? document.getElementById('act-log-dr-to').value   : '';
+        if (!from && !to) return true;
+        var row = actTable.row(dataIndex).node();
+        if (!row) return true;
+        var dateTd  = row.querySelector('td[data-date]');
+        var dateVal = dateTd ? dateTd.getAttribute('data-date') : '';
+        if (!dateVal) return true;
+        if (from && dateVal < from) return false;
+        if (to   && dateVal > to)   return false;
+        return true;
+    };
+    $.fn.dataTable.ext.search.push(_actDtSearchFn);
+    _drCbs['act-log-dr'] = function (from, to) { actTable.draw(); };
+}
+
+$(document).ready(function () { initActivityTable(); });
 
 function actClearFilters() {
     document.getElementById('activitySearch').value    = '';
-    document.getElementById('actFilterFrom').value     = '';
-    document.getElementById('actFilterTo').value       = '';
+    drClear('act-log-dr');
     document.getElementById('actFilterEventType').value = '';
     if (window.$.fn && $('#activity-table').length) {
         $('#activity-table').DataTable().search('').columns().search('').draw();
@@ -849,8 +1173,62 @@ function actClearFilters() {
 }
 @endif
 
+// ── Tab auto-refresh (Activity Log & Subscription tabs) ───────────────────────
+// Fires whenever the global tab-switcher dispatches 'tabActivated'.
+// Only the two live-data tabs are refreshed; edit-form tabs (Profile, Branding,
+// Login Page) are intentionally skipped so unsaved changes are not lost.
+document.addEventListener('tabActivated', function (e) {
+    var tabId = e.detail.tabId;
+    // Guard: only run on the My Account page
+    if (!document.getElementById('tab-profile')) return;
+    if (['tab-activity', 'tab-subscription'].indexOf(tabId) === -1) return;
+    _refreshAccountTab(tabId);
+});
+
+function _refreshAccountTab(tabId) {
+    var panel = document.getElementById(tabId);
+    if (!panel) return;
+
+    // Dim the panel while loading
+    panel.style.opacity       = '0.45';
+    panel.style.pointerEvents = 'none';
+
+    fetch(window.location.pathname, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { return r.text(); })
+        .then(function (html) {
+            var doc   = new DOMParser().parseFromString(html, 'text/html');
+            var fresh = doc.getElementById(tabId);
+            if (fresh) {
+                // Tear down Activity Log DataTable before swapping HTML
+                if (tabId === 'tab-activity' && typeof _actDtSearchFn !== 'undefined') {
+                    if (_actDtSearchFn) {
+                        var idx = $.fn.dataTable.ext.search.indexOf(_actDtSearchFn);
+                        if (idx > -1) $.fn.dataTable.ext.search.splice(idx, 1);
+                        _actDtSearchFn = null;
+                    }
+                    if (window.$ && $.fn.DataTable && $.fn.DataTable.isDataTable('#activity-table')) {
+                        try { $('#activity-table').DataTable().destroy(); } catch (ex) {}
+                    }
+                }
+
+                panel.innerHTML = fresh.innerHTML;
+
+                // Re-initialise tab-specific JS after new HTML is in the DOM
+                if (tabId === 'tab-activity' && typeof initActivityTable === 'function') {
+                    initActivityTable();
+                }
+            }
+            panel.style.opacity       = '';
+            panel.style.pointerEvents = '';
+        })
+        .catch(function () {
+            panel.style.opacity       = '';
+            panel.style.pointerEvents = '';
+        });
+}
+
 // ── Login Page ────────────────────────────────────────────────────────────────
-@if(auth()->user()->can('edit_branding'))
+@if($_atabs['tab-login-page'])
 document.addEventListener('DOMContentLoaded', function () {
     var lpBtn = document.querySelector('[data-tab="tab-login-page"]');
     if (lpBtn) {
@@ -952,7 +1330,7 @@ function submitLoginPageForm(e) {
     var btn  = document.getElementById('lp-submit');
     var data = new FormData(form);
     btn.disabled = true;
-    fetch('{{ route("settings.login-page.update") }}', {
+    fetch('{{ parse_url(route("settings.login-page.update"), PHP_URL_PATH) }}', {
         method: 'POST',
         headers: {'X-Requested-With': 'XMLHttpRequest'},
         body: data,
@@ -970,6 +1348,160 @@ function submitLoginPageForm(e) {
     .catch(function () { btn.disabled = false; showToast('Request failed.', 'error'); });
 }
 @endif
+
+// ── Subscription Tab ──────────────────────────────────────────────────────────
+@if($_atabs['tab-subscription'])
+async function subStartCheckout(packageId, btn) {
+    const orig = btn.textContent.trim();
+    btn.disabled = true;
+    btn.textContent = 'Redirecting…';
+    try {
+        const res = await fetch('{{ parse_url(route("billing.checkout"), PHP_URL_PATH) }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+            body: JSON.stringify({ package_id: packageId, billing_cycle: 'monthly' }),
+        });
+        const json = await res.json();
+        if (json.checkout_url) {
+            window.location.href = json.checkout_url;
+        } else {
+            showToast(json.message || 'Could not start checkout.', 'error');
+            btn.disabled = false; btn.textContent = orig;
+        }
+    } catch (e) {
+        showToast('Network error. Please try again.', 'error');
+        btn.disabled = false; btn.textContent = orig;
+    }
+}
+
+function subCancel() {
+    Swal.fire({
+        title: 'Cancel Subscription?',
+        text: 'Your plan will remain active until the end of the current billing period. You can re-subscribe at any time.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Cancel Subscription',
+        cancelButtonText: 'Keep Subscription',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    }).then(async function(result) {
+        if (!result.isConfirmed) return;
+        Swal.fire({ title: 'Canceling…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        try {
+            const resp = await fetch('{{ parse_url(route("billing.cancel-subscription"), PHP_URL_PATH) }}', {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+            });
+            const res = await resp.json();
+            if (res.status === 'success') {
+                await Swal.fire({ icon: 'success', title: 'Subscription Canceled', text: res.message || 'You will retain access until the end of the current billing period.', confirmButtonText: 'OK' });
+                window.location.reload();
+            } else {
+                Swal.fire({ icon: 'error', title: 'Cancellation Failed', text: res.message || 'Something went wrong.' });
+            }
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Network Error', text: 'Could not reach the server. Please try again.' });
+        }
+    });
+}
+
+async function subReactivate() {
+    const result = await Swal.fire({
+        title: 'Reactivate Subscription?',
+        text: 'Your subscription will be restored.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, Reactivate',
+        cancelButtonText: 'Not Now',
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true,
+    });
+    if (!result.isConfirmed) return;
+    Swal.fire({ title: 'Reactivating…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    try {
+        const resp = await fetch('{{ parse_url(route("billing.reactivate-subscription"), PHP_URL_PATH) }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+        });
+        const res = await resp.json();
+        if (res.status === 'success') {
+            await Swal.fire({ icon: 'success', title: 'Subscription Reactivated', text: res.message || 'Welcome back!', confirmButtonText: 'Go to Dashboard' });
+            window.location.reload();
+        } else {
+            Swal.fire({ icon: 'error', title: 'Reactivation Failed', text: res.message || 'Something went wrong.' });
+        }
+    } catch (e) {
+        Swal.fire({ icon: 'error', title: 'Network Error', text: 'Could not reach the server. Please try again.' });
+    }
+}
+@endif
+
+// ── Admin Date Format (Branding tab) ─────────────────────────────────────────
+// Use var (not let/const) so there is no temporal dead zone if a script error
+// above this line prevents initialization from completing.
+var adfSamples = {!! json_encode(array_map(fn($fmt) => \Carbon\Carbon::now()->format($fmt), array_keys(DATE_FORMAT_PRESETS))) !!};
+var adfKeys    = {!! json_encode(array_keys(DATE_FORMAT_PRESETS)) !!};
+var adfCurrent = '{{ $effectiveFmt ?? active_date_format() }}';
+
+function adfPickFormat(fmt) {
+    adfCurrent = fmt;
+    const idx = adfKeys.indexOf(fmt);
+    document.getElementById('adf-preview').textContent = idx >= 0 ? adfSamples[idx] : fmt;
+
+    document.querySelectorAll('#adf-grid label').forEach(function(lbl) {
+        const inp = lbl.querySelector('input');
+        if (inp.value === fmt) {
+            lbl.style.borderColor = 'var(--blue)';
+            lbl.style.background  = 'var(--blue-pale)';
+        } else {
+            lbl.style.borderColor = 'var(--border)';
+            lbl.style.background  = '#fff';
+        }
+    });
+}
+
+async function adfSave() {
+    const btn = document.getElementById('adf-save-btn');
+    if (!btn) return;
+    const orig = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = 'Saving…';
+    try {
+        const fd = new FormData();
+        fd.append('date_format', adfCurrent);
+        const r = await fetch('{{ parse_url(route("account.date-format"), PHP_URL_PATH) }}', {
+            method: 'POST', body: fd,
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+        });
+        let j;
+        try { j = await r.json(); } catch(_) { j = { status: 'fail', message: 'Server error (HTTP ' + r.status + ').' }; }
+        if (j.status === 'success') {
+            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+            Swal.fire({ icon: 'success', text: j.message, confirmButtonText: 'OK', confirmButtonColor: btnColor })
+                .then(() => window.location.reload());
+        } else { showToast(j.message || 'Error saving.', 'error'); }
+    } catch(e) { showToast('Request failed. Please try again.', 'error'); }
+    btn.disabled = false; btn.innerHTML = orig;
+}
+
+async function adfClear() {
+    try {
+        const fd = new FormData();
+        fd.append('date_format', '');   // empty = clear override
+        const r = await fetch('{{ parse_url(route("account.date-format"), PHP_URL_PATH) }}', {
+            method: 'POST', body: fd,
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+        });
+        let j;
+        try { j = await r.json(); } catch(_) { j = { status: 'fail', message: 'Server error (HTTP ' + r.status + ').' }; }
+        if (j.status === 'success') {
+            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+            Swal.fire({ icon: 'success', text: 'Reset to platform default.', confirmButtonText: 'OK', confirmButtonColor: btnColor })
+                .then(() => window.location.reload());
+        } else { showToast(j.message || 'Error.', 'error'); }
+    } catch(e) { showToast('Request failed. Please try again.', 'error'); }
+}
 
 // ── Profile & Password Validation ─────────────────────────────────────────────
 function acErr(id, msg) {
@@ -1055,6 +1587,64 @@ function validateAndSubmitPassword() {
 
 @push('styles')
 <style>
+/* ── Plan banner & plan cards (Subscription tab) ── */
+.plan-banner {
+    background: linear-gradient(135deg, #1a3a5c 0%, #1a6aa8 100%);
+    border-radius: 14px;
+    padding: 24px 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.plan-banner-left .plan-label {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .12em; color: rgba(255,255,255,.65); margin-bottom: 5px;
+}
+.plan-banner-left .plan-name  { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 5px; }
+.plan-banner-left .plan-meta  { font-size: 13px; color: rgba(255,255,255,.75); }
+.plan-banner-right            { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.plan-status-badge {
+    background: rgba(255,255,255,.15); border: 1.5px solid rgba(255,255,255,.35);
+    color: #fff; border-radius: 8px; padding: 5px 14px; font-size: 13px; font-weight: 600;
+}
+.plan-cancel-btn {
+    background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.4);
+    color: #fff; border-radius: 8px; padding: 7px 16px; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: background .13s;
+}
+.plan-cancel-btn:hover { background: rgba(255,255,255,.22); }
+.plan-reactivate-btn {
+    background: rgba(22,163,74,.2); border: 1.5px solid rgba(22,163,74,.6);
+    color: #fff; border-radius: 8px; padding: 7px 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: background .13s;
+}
+.plan-reactivate-btn:hover { background: rgba(22,163,74,.35); }
+.plans-grid {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 24px;
+}
+.plan-card {
+    background: #fff; border: 1.5px solid var(--border); border-radius: 12px;
+    padding: 22px 20px 18px; position: relative; display: flex; flex-direction: column;
+}
+.plan-card.is-current { border-color: var(--orange); box-shadow: 0 0 0 1px var(--orange); }
+.plan-card-badge {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--orange); color: #fff; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em; padding: 3px 12px;
+    border-radius: 20px; white-space: nowrap;
+}
+.plan-card-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--text-3); margin-bottom: 8px; }
+.plan-card.is-current .plan-card-label { color: var(--orange); }
+.plan-card-price { font-size: 32px; font-weight: 700; color: var(--text-1); margin-bottom: 4px; line-height: 1; }
+.plan-card-price span { font-size: 14px; font-weight: 400; color: var(--text-3); }
+.plan-card-sub { font-size: 12.5px; color: var(--text-3); margin-bottom: 16px; }
+.plan-card-features { list-style: none; margin-bottom: 20px; flex: 1; }
+.plan-card-features li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); margin-bottom: 8px; }
+.plan-card-features li svg { flex-shrink: 0; }
+@media(max-width:960px) { .plans-grid { grid-template-columns: 1fr; } }
+
 .activity-dot-success,.activity-dot-danger,.activity-dot-info,.activity-dot-warning,.activity-dot-muted {
     width:8px;height:8px;border-radius:50%;flex-shrink:0;display:inline-block;
 }
@@ -1070,7 +1660,7 @@ function validateAndSubmitPassword() {
 .ac-err::before {
     content: '';
     display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 .f-inp.ac-invalid { border-color: var(--red) !important; }
 </style>

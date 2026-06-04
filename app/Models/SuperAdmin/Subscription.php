@@ -20,6 +20,10 @@ class Subscription extends BaseModel
         'client_package_id',        // set when the plan is a client-defined plan
         'stripe_subscription_id',
         'stripe_customer_id',
+        'pm_brand',
+        'pm_last4',
+        'pm_exp_month',
+        'pm_exp_year',
         'status',
         'billing_cycle',
         'current_period_start',

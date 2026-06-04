@@ -287,11 +287,27 @@ class StripeService
             return;
         }
 
-        $stripeSub = StripeSubscription::retrieve($stripeSubId);
+        // Expand default_payment_method so we can persist card details to DB.
+        $stripeSub = StripeSubscription::retrieve([
+            'id'     => $stripeSubId,
+            'expand' => ['default_payment_method'],
+        ]);
+
+        // Extract card details from the default payment method (if card).
+        $pmData = [];
+        $pm = $stripeSub->default_payment_method;
+        if ($pm && $pm->type === 'card' && $pm->card) {
+            $pmData = [
+                'pm_brand'     => $pm->card->brand,
+                'pm_last4'     => $pm->card->last4,
+                'pm_exp_month' => $pm->card->exp_month,
+                'pm_exp_year'  => $pm->card->exp_year,
+            ];
+        }
 
         $sub = Subscription::updateOrCreate(
             ['stripe_subscription_id' => $stripeSubId],
-            [
+            array_merge([
                 'company_id'           => $companyId,
                 'package_id'           => $packageId,
                 'stripe_customer_id'   => $session['customer'],
@@ -302,7 +318,7 @@ class StripeService
                 'trial_ends_at'        => $stripeSub->trial_end
                     ? now()->createFromTimestamp($stripeSub->trial_end)
                     : null,
-            ]
+            ], $pmData)
         );
 
         Log::channel('stripe')->info('[StripeService] handleCheckoutCompleted — subscription upserted', [

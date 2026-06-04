@@ -83,7 +83,7 @@
                         <div>
                             <div style="font-weight:600;font-size:13.5px">{{ $user->name }}</div>
                             @if($firstRole)
-                            <div style="font-size:11.5px;color:var(--text-3)">{{ $firstRole->name }}</div>
+                            <div style="font-size:11.5px;color:var(--text-3)">{{ $firstRole->display_name }}</div>
                             @endif
                         </div>
                     </div>
@@ -92,11 +92,11 @@
                 <td>
                     @foreach($user->roles as $role)
                     @php
-                        $rk = strtolower($role->name);
+                        $rk = strtolower($role->name);  {{-- colour lookup always uses the technical name --}}
                         $rc = $roleColorMap[$rk] ?? ['bg'=>'#f3f4f6','text'=>'#374151'];
                     @endphp
                     <span class="badge" style="background:{{ $rc['bg'] }};color:{{ $rc['text'] }};font-weight:600">
-                        {{ $role->name }}
+                        {{ $role->display_name }}
                     </span>
                     @endforeach
                 </td>

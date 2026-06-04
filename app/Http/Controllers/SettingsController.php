@@ -54,12 +54,15 @@ class SettingsController extends AccountBaseController
             ->get();
         $this->allPermissions = Permission::all()->groupBy(function ($p) {
             return match (true) {
-                str_contains($p->name, '_users')            => 'Users',
+                // Tab-visibility permissions — checked first to avoid partial matches below
+                str_starts_with($p->name, 'view_settings_')   => 'Settings Tabs',
+                str_starts_with($p->name, 'view_account_')    => 'My Account Tabs',
+                str_contains($p->name, '_users')              => 'Users',
                 str_contains($p->name, '_documents') ||
                     str_contains($p->name, 'upload_documents') ||
                     str_contains($p->name, 'download_documents') => 'Documents',
                 str_contains($p->name, '_quickbooks') ||
-                    str_contains($p->name, 'connect_quickbooks') => 'QuickBooks',
+                    str_contains($p->name, 'connect_quickbooks')  => 'QuickBooks',
                 str_contains($p->name, '_email_templates') ||
                     str_contains($p->name, 'add_email_templates') => 'Email Templates',
                 str_contains($p->name, '_settings') ||

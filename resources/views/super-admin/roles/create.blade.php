@@ -17,9 +17,17 @@
     <div class="acc-title">Role Details</div>
     <form id="createRoleForm">
         @csrf
-        <div class="f-group" style="max-width:300px;margin-bottom:22px">
-            <label class="f-label">Role Name *</label>
-            <input name="name" class="f-inp" placeholder="e.g. manager, accountant" required>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:620px;margin-bottom:22px">
+            <div class="f-group">
+                <label class="f-label">Role Name *</label>
+                <input name="name" class="f-inp" placeholder="e.g. manager, accountant" required>
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Internal identifier — used for permission logic. Cannot contain spaces.</div>
+            </div>
+            <div class="f-group">
+                <label class="f-label">Alias <span style="font-weight:400;color:var(--text-3)">(Display Name)</span></label>
+                <input name="alias" class="f-inp" placeholder="e.g. Account Manager">
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Shown in the UI everywhere the role name appears. Leave blank to use the role name.</div>
+            </div>
         </div>
 
         <div style="font-size:13px;font-weight:600;margin-bottom:12px">Assign Permissions</div>
@@ -52,7 +60,7 @@ document.getElementById('createRoleForm').addEventListener('submit', async funct
     const btn = this.querySelector('[type=submit]');
     btn.disabled = true;
     const fd = new FormData(this);
-    const body = { name: fd.get('name'), permissions: fd.getAll('permissions[]') };
+    const body = { name: fd.get('name'), alias: fd.get('alias') || null, permissions: fd.getAll('permissions[]') };
     const res = await apiCall('{{ route("superadmin.roles.store") }}', 'POST', body);
     if (res.status === 'success') {
         showToast(res.message);

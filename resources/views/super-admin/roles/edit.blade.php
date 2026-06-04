@@ -5,7 +5,7 @@
 @section('content')
 <div class="ph">
     <div>
-        <h1>Edit Role: {{ $role->name }}</h1>
+        <h1>Edit Role: {{ $role->display_name }}</h1>
         <p>Update permissions for this role</p>
     </div>
     <div class="ph-actions">
@@ -17,9 +17,17 @@
     <div class="acc-title">Role Details</div>
     <form id="editRoleForm">
         @csrf @method('PUT')
-        <div class="f-group" style="max-width:300px;margin-bottom:22px">
-            <label class="f-label">Role Name *</label>
-            <input name="name" value="{{ $role->name }}" class="f-inp" required>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:620px;margin-bottom:22px">
+            <div class="f-group">
+                <label class="f-label">Role Name *</label>
+                <input name="name" value="{{ $role->name }}" class="f-inp" required>
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Internal identifier — used for permission logic.</div>
+            </div>
+            <div class="f-group">
+                <label class="f-label">Alias <span style="font-weight:400;color:var(--text-3)">(Display Name)</span></label>
+                <input name="alias" value="{{ $role->alias }}" class="f-inp" placeholder="e.g. Account Manager">
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Shown in the UI instead of the role name. Leave blank to use the role name.</div>
+            </div>
         </div>
 
         <div style="font-size:13px;font-weight:600;margin-bottom:12px">Permissions</div>
@@ -54,7 +62,7 @@ document.getElementById('editRoleForm').addEventListener('submit', async functio
     const btn = this.querySelector('[type=submit]');
     btn.disabled = true;
     const fd = new FormData(this);
-    const body = { name: fd.get('name'), permissions: fd.getAll('permissions[]') };
+    const body = { name: fd.get('name'), alias: fd.get('alias') || null, permissions: fd.getAll('permissions[]') };
     const res = await apiCall('{{ route("superadmin.roles.update", $role->id) }}', 'PUT', body);
     if (res.status === 'success') { showToast(res.message); }
     else { showToast(res.message || 'Error', 'error'); }

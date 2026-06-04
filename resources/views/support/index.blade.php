@@ -89,7 +89,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 .tk-err::before {
     content: '';
     display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 .mf-inp.tk-invalid, .mf-textarea.tk-invalid { border-color: var(--red) !important; }
 </style>
@@ -149,6 +149,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <option value="Medium">Medium</option>
                 <option value="Low">Low</option>
             </select>
+            <button class="btn btn-danger" onclick="resetCtFilters()">Reset</button>
         </div>
 
         <div class="dt-tscroll">
@@ -190,7 +191,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                     <td><span class="pri-{{ $pri }}">{{ ucfirst($pri) }}</span></td>
                     <td><span class="st-badge st-{{ $st }}">{{ $stLabel }}</span></td>
                     <td>
-                        <div class="raised-date">{{ $ticket->created_at->format('M j, Y') }}</div>
+                        <div class="raised-date">{{ $ticket->created_at->format(active_date_format()) }}</div>
                         <div class="raised-time">{{ $ticket->created_at->format('g:i A') }}</div>
                     </td>
                     <td style="position:relative">
@@ -241,6 +242,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <option value="Medium">Medium</option>
                 <option value="Low">Low</option>
             </select>
+            <button class="btn btn-danger" onclick="resetMtFilters()">Reset</button>
         </div>
 
         <div class="dt-tscroll">
@@ -277,7 +279,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                     <td><span class="pri-{{ $pri }}">{{ ucfirst($pri) }}</span></td>
                     <td><span class="st-badge st-{{ $st }}">{{ $stLabel }}</span></td>
                     <td>
-                        <div class="raised-date">{{ $ticket->created_at->format('M j, Y') }}</div>
+                        <div class="raised-date">{{ $ticket->created_at->format(active_date_format()) }}</div>
                         <div class="raised-time">{{ $ticket->created_at->format('g:i A') }}</div>
                     </td>
                     <td style="position:relative">
@@ -847,5 +849,23 @@ Swal.fire({
     allowOutsideClick: false,
 });
 @endif
+
+function resetCtFilters() {
+    document.getElementById('ct-search').value         = '';
+    document.getElementById('ct-status-filter').value  = '';
+    document.getElementById('ct-priority-filter').value = '';
+    if (window.$ && $('#client-tickets-table').length) {
+        $('#client-tickets-table').DataTable().search('').columns().search('').draw();
+    }
+}
+
+function resetMtFilters() {
+    document.getElementById('mt-search').value         = '';
+    document.getElementById('mt-status-filter').value  = '';
+    document.getElementById('mt-priority-filter').value = '';
+    if (window.$ && $('#my-tickets-table').length) {
+        $('#my-tickets-table').DataTable().search('').columns().search('').draw();
+    }
+}
 </script>
 @endpush

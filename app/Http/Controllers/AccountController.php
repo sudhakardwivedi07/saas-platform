@@ -3,10 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClientPackage;
+use App\Models\Company;
 use App\Models\EventLog;
+use App\Models\SuperAdmin\GlobalPaymentGatewayCredentials;
+use App\Models\SuperAdmin\Subscription;
 use App\Models\SupportTicket;
+use App\Models\SuperAdmin\Package;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Stripe\Stripe;
+use Stripe\Subscription as StripeSubscription;
 
 class AccountController extends AccountBaseController
 {
@@ -59,7 +66,116 @@ class AccountController extends AccountBaseController
         // Branding for the Login Page tab
         $this->branding = company()?->branding;
 
+        // ── Subscription tab data ──────────────────────────────────────────────
+        $company   = company();
+        $companyId = $company?->id;
+
+        $this->subscription = $company?->subscription;
+        $this->packages     = Package::active()->orderBy('sort')->get();
+
+        // Lazy-sync payment method from Stripe for subscriptions that pre-date
+        // the pm_* columns (i.e. pm_last4 is null but a Stripe sub ID exists).
+        $this->syncPaymentMethodIfMissing($this->subscription);
+
+        // Sub-companies for usage stats
+        $subCompanies = Company::withoutGlobalScopes()
+            ->where('created_by', $companyId)
+            ->with(['clientPackage', 'package', 'quickbooksConnections',
+                    'users' => fn($q) => $q->orderBy('id')->limit(1)])
+            ->get();
+        $this->subCompanies = $subCompanies;
+
+        $maxInsights = $this->subscription?->package?->max_documents ?? 0;
+        $this->totalInsightsUsed      = $subCompanies->sum('insights_used');
+        $this->totalInsightsRemaining = $maxInsights > 0
+            ? max(0, $maxInsights - $this->totalInsightsUsed)
+            : 0;
+
+        $quotaFull = $subCompanies->filter(fn($c) => $c->clientPackage && $c->clientPackage->max_documents > 0 && $c->insights_used >= $c->clientPackage->max_documents)->count();
+        $inactive  = $subCompanies->where('status', 'inactive')->count();
+        $noQB      = $subCompanies->filter(fn($c) => $c->quickbooksConnections->where('is_active', true)->isEmpty())->count();
+
+        $this->companiesAtRisk = $subCompanies->filter(fn($c) =>
+            $c->status === 'inactive' ||
+            $c->quickbooksConnections->where('is_active', true)->isEmpty() ||
+            ($c->clientPackage && $c->clientPackage->max_documents > 0 && $c->insights_used >= $c->clientPackage->max_documents)
+        )->count();
+        $this->atRiskContext = collect([
+            $quotaFull ? $quotaFull . ' quota full' : null,
+            $inactive  ? $inactive  . ' inactive'   : null,
+            $noQB      ? $noQB      . ' no QB'       : null,
+        ])->filter()->implode(' · ');
+        $this->uniqueClients = $subCompanies->map(fn($c) => $c->users->first()?->id)->filter()->unique()->count();
+
         return view('account.index', $this->data);
+    }
+
+    /**
+     * For subscriptions that existed before the pm_* columns were added,
+     * fetch the default payment method from Stripe once and persist it so
+     * the Payment Method card displays on the next page load.
+     */
+    private function syncPaymentMethodIfMissing(?Subscription $sub): void
+    {
+        if (!$sub || $sub->pm_last4 || !$sub->stripe_subscription_id) {
+            return;
+        }
+
+        try {
+            $creds  = GlobalPaymentGatewayCredentials::first();
+            $secret = $creds?->getActiveSecret();
+            if (!$secret) {
+                return;
+            }
+            Stripe::setApiKey($secret);
+
+            $stripeSub = StripeSubscription::retrieve([
+                'id'     => $sub->stripe_subscription_id,
+                'expand' => ['default_payment_method'],
+            ]);
+
+            $pm = $stripeSub->default_payment_method;
+            if ($pm && $pm->type === 'card' && $pm->card) {
+                $sub->update([
+                    'pm_brand'     => $pm->card->brand,
+                    'pm_last4'     => $pm->card->last4,
+                    'pm_exp_month' => $pm->card->exp_month,
+                    'pm_exp_year'  => $pm->card->exp_year,
+                ]);
+                // Refresh the in-memory model so the view sees the new values.
+                $sub->refresh();
+            }
+        } catch (\Throwable $e) {
+            // Non-fatal — if Stripe is unavailable or keys aren't configured,
+            // just skip; the Payment Method card will remain hidden.
+            Log::channel('stripe')->warning('[AccountController] syncPaymentMethodIfMissing failed', [
+                'subscription_id' => $sub->id,
+                'error'           => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function updateDateFormat(Request $request)
+    {
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
+
+        $request->validate([
+            'date_format' => 'nullable|string|max:30',
+        ]);
+
+        $company = company();
+        if (!$company) {
+            return \App\Helper\Reply::error('No company context found.');
+        }
+
+        // null / empty string = clear override and fall back to SuperAdmin default
+        $company->update(['date_format' => $request->filled('date_format') ? $request->date_format : null]);
+
+        // Bust the per-company date format cache used by active_date_format()
+        cache()->forget('company_date_format_' . $company->id);
+        cache()->forget('company_' . $company->id);
+
+        return \App\Helper\Reply::success('Date format saved. This format will now be used for your account and your users.');
     }
 
     public function updateProfile(Request $request)

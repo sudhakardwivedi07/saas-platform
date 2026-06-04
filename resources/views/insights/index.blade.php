@@ -599,7 +599,7 @@
                                 @endif
                             </div>
                         </td>
-                        <td style="color:#64748b;">{{ $report->created_at->format('M d, Y') }}</td>
+                        <td style="color:#64748b;">{{ $report->created_at->format(active_date_format()) }}</td>
                         <td style="color:#64748b;">{{ $report->formatted_file_size }}</td>
                         <td>
                             @if($isDeleted)

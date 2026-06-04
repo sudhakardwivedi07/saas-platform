@@ -21,8 +21,12 @@ class PermissionSeeder extends Seeder
             'connect_quickbooks', 'sync_quickbooks', 'view_quickbooks',
             // Email templates
             'view_email_templates', 'edit_email_templates', 'add_email_templates',
-            // Settings
+            // Settings (page-level)
             'view_settings', 'edit_settings', 'edit_branding', 'manage_payment_gateway',
+            // Settings — tab visibility (controlled by SuperAdmin per role)
+            'view_settings_payment', 'view_settings_email', 'view_settings_sms',
+            'view_settings_quickbooks', 'view_settings_plans', 'view_settings_insight_limits',
+            'view_settings_roles',
             // Billing
             'view_billing', 'manage_billing',
             // Reports
@@ -31,6 +35,9 @@ class PermissionSeeder extends Seeder
             'add_company', 'manage_company',
             // Plans (admin's own plans for sub-companies)
             'view_plan', 'add_plan', 'edit_plan', 'delete_plan',
+            // My Account — tab visibility (controlled by SuperAdmin per role)
+            'view_account_profile', 'view_account_branding', 'view_account_login_page',
+            'view_account_subscription', 'view_account_activity',
         ];
 
         foreach ($permissions as $permission) {

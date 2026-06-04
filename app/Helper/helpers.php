@@ -4,6 +4,21 @@ use App\Models\Company;
 use App\Models\GlobalSetting;
 use App\Models\User;
 
+/**
+ * The preset date formats offered in the SuperAdmin and Admin UI.
+ * Key = PHP date() format string, Value = human-readable label shown in the picker.
+ */
+const DATE_FORMAT_PRESETS = [
+    'M j, Y'  => 'Jun 2, 2026',
+    'd M Y'   => '02 Jun 2026',
+    'm/d/Y'   => '06/02/2026',
+    'd/m/Y'   => '02/06/2026',
+    'd.m.Y'   => '02.06.2026',
+    'Y-m-d'   => '2026-06-02',
+    'F j, Y'  => 'June 2, 2026',
+    'j F Y'   => '2 June 2026',
+];
+
 if (!function_exists('company')) {
     /**
      * Get the current tenant company.
@@ -91,6 +106,64 @@ if (!function_exists('tenant_url')) {
         $rootDomain = config('tenancy.root_domain', env('ROOT_DOMAIN', 'yourdomain.com'));
         $base = 'https://' . $subdomain . '.' . $rootDomain;
         return $path ? $base . '/' . ltrim($path, '/') : $base;
+    }
+}
+
+if (!function_exists('active_date_format')) {
+    /**
+     * Resolve the effective date format for the current request.
+     *
+     * Resolution chain (first non-empty value wins):
+     *   1. Admin company's own override  (companies.date_format, set via My Account → Branding)
+     *   2. Parent company override       (for sub-company users whose admin set a format)
+     *   3. SuperAdmin global default     (global_settings.date_format)
+     *   4. Hard-coded fallback           ('M j, Y')
+     *
+     * The result is request-scoped via the service container so the DB/cache
+     * is only queried once per request regardless of how many dates are formatted.
+     */
+    function active_date_format(): string
+    {
+        if (app()->bound('_active_date_format')) {
+            return app('_active_date_format');
+        }
+
+        $format = _resolve_active_date_format();
+        app()->instance('_active_date_format', $format);
+        return $format;
+    }
+}
+
+if (!function_exists('_resolve_active_date_format')) {
+    /** @internal Called once per request by active_date_format(). */
+    function _resolve_active_date_format(): string
+    {
+        $fallback = global_setting()?->date_format ?: 'M j, Y';
+
+        $company = company();
+        if (!$company) {
+            // SuperAdmin context — use global setting directly.
+            return $fallback;
+        }
+
+        // Does the current company have an explicit override?
+        if ($company->date_format) {
+            return $company->date_format;
+        }
+
+        // For sub-company users, check the parent admin company's override.
+        if ($company->created_by) {
+            $parentFormat = cache()->remember(
+                'company_date_format_' . $company->created_by,
+                now()->addMinutes(10),
+                fn () => Company::withoutGlobalScopes()->find($company->created_by)?->date_format
+            );
+            if ($parentFormat) {
+                return $parentFormat;
+            }
+        }
+
+        return $fallback;
     }
 }
 

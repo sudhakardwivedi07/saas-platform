@@ -48,14 +48,14 @@
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;flex-wrap:wrap;gap:.5rem;">
     <a href="{{ route('superadmin.companies.index') }}" class="btn btn-ghost btn-sm"
        style="display:inline-flex;align-items:center;gap:.35rem;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
              stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
         Back to Firms
     </a>
     <div style="display:flex;gap:.6rem;align-items:center;">
         <a href="{{ route('superadmin.companies.edit', $company) }}" class="btn btn-ghost btn-sm"
            style="display:inline-flex;align-items:center;gap:.4rem;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                  stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Edit Firm
         </a>
@@ -63,7 +63,7 @@
             @csrf
             <button class="btn btn-primary btn-sm" type="submit"
                     style="display:inline-flex;align-items:center;gap:.4rem;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                      stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                 Login as Firm
             </button>

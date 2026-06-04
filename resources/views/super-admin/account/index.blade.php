@@ -59,7 +59,7 @@
                     </div>
                     <div class="f-group">
                         <label class="f-label">Website</label>
-                        <input type="url" name="website" class="f-inp" placeholder="https://yoursite.com">
+                        <input type="url" name="website" class="f-inp" placeholder="Enter website URL">
                     </div>
                 </div>
                 <button type="submit" class="btn btn-primary">Save Profile</button>

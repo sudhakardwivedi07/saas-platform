@@ -143,7 +143,7 @@
             @if($type && str_starts_with($type, 'b-'))
                 <span class="badge {{ $type }}">{{ $value }}</span>
             @elseif($type === 'link' && $value)
-                <a href="http://{{ $value }}" target="_blank"
+                <a href="{{ str_starts_with($value, 'http') ? $value : 'https://' . $value }}" target="_blank"
                    style="font-size:.85rem;font-weight:500;color:#0C84BC;text-decoration:none;text-align:right;">{{ $value }}</a>
             @else
                 <span style="font-size:.85rem;font-weight:500;color:#1e293b;text-align:right;">{{ $value ?? '—' }}</span>

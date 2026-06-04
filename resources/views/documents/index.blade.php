@@ -63,7 +63,7 @@
             <div style="font-size:11.5px;color:var(--text-3);margin-top:2px">
                 {{ $doc->uploader?->name ?? '—' }} ·
                 {{ format_bytes($doc->size ?? 0) }} ·
-                {{ $doc->created_at->format('M d, Y') }} ·
+                {{ $doc->created_at->format(active_date_format()) }} ·
                 v{{ $doc->versions()->max('version_number') ?? 1 }}
             </div>
         </div>

@@ -364,6 +364,70 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
 
         </div>
     </form>
+
+    {{-- ── Date Format (separate card, not part of branding form) ── --}}
+    @php
+    $companyDateFormat = company()?->date_format;
+    $globalDateFormat  = global_setting()?->date_format ?? 'M j, Y';
+    $effectiveFmt      = $companyDateFormat ?: $globalDateFormat;
+    $today             = \Carbon\Carbon::now();
+    @endphp
+    <div class="acc-card" style="margin-top:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div>
+                <div style="font-size:15px;font-weight:700;color:var(--text-1)">Date Format</div>
+                <div style="font-size:12.5px;color:var(--text-3);margin-top:2px">
+                    Override the platform-wide date format for your account and your users.
+                    Leave as default to use the Super Admin's setting
+                    (<strong>{{ $today->format($globalDateFormat) }}</strong>).
+                </div>
+            </div>
+            @if($companyDateFormat)
+            <span style="background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.25);border-radius:20px;padding:3px 12px;font-size:11.5px;font-weight:600;flex-shrink:0;margin-left:16px">Custom</span>
+            @else
+            <span style="background:var(--bg);color:var(--text-3);border:1px solid var(--border);border-radius:20px;padding:3px 12px;font-size:11.5px;font-weight:600;flex-shrink:0;margin-left:16px">Using Default</span>
+            @endif
+        </div>
+
+        <div style="height:1px;background:var(--border);margin:14px 0"></div>
+
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:18px" id="adf-grid">
+            @foreach(DATE_FORMAT_PRESETS as $fmt => $example)
+            <label id="adf-opt-{{ str_replace(['/', '.', ' '], ['-', '-', '-'], $fmt) }}"
+                   style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid {{ $effectiveFmt === $fmt ? 'var(--blue)' : 'var(--border)' }};border-radius:10px;cursor:pointer;background:{{ $effectiveFmt === $fmt ? 'var(--blue-pale)' : '#fff' }};transition:border-color .13s,background .13s"
+                   onmouseenter="if(!this.querySelector('input').checked){this.style.borderColor='var(--blue)';this.style.background='var(--blue-pale)'}"
+                   onmouseleave="if(!this.querySelector('input').checked){this.style.borderColor='var(--border)';this.style.background='#fff'}">
+                <input type="radio" name="adf_pick" value="{{ $fmt }}"
+                       style="accent-color:var(--blue);width:15px;height:15px;flex-shrink:0"
+                       {{ $effectiveFmt === $fmt ? 'checked' : '' }}
+                       onchange="adfPickFormat(this.value)">
+                <div>
+                    <div style="font-size:13.5px;font-weight:600;color:var(--text-1);font-family:monospace">{{ $today->format($fmt) }}</div>
+                    <div style="font-size:11px;color:var(--text-3);margin-top:1px"><code style="background:var(--bg);padding:1px 4px;border-radius:4px;font-size:10.5px">{{ $fmt }}</code></div>
+                </div>
+            </label>
+            @endforeach
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div style="font-size:12.5px;color:var(--text-3)">
+                Preview:
+                <span id="adf-preview" style="font-weight:600;color:var(--text-1);margin-left:4px">{{ $today->format($effectiveFmt) }}</span>
+            </div>
+            <div style="display:flex;gap:8px">
+                @if($companyDateFormat)
+                <button class="btn btn-ghost btn-sm" onclick="adfClear()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+                    Reset to Default
+                </button>
+                @endif
+                <button class="btn btn-primary btn-sm" id="adf-save-btn" onclick="adfSave()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    Save Date Format
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 @endif {{-- /tab-branding --}}
 
@@ -546,7 +610,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                     : $subPkg->monthly_price) : 0;
     $priceLabel  = $subPkg ? ('$' . number_format($planPrice, 2) . '/' . ($subscription?->billing_cycle === 'annual' ? 'year' : 'month')) : '—';
     $billingLabel= ucfirst($subscription?->billing_cycle ?? 'monthly');
-    $nextBilling = $renewsAt ? $renewsAt->format('M j, Y') : '—';
+    $nextBilling = $renewsAt ? $renewsAt->format(active_date_format()) : '—';
     $planDesc    = $subPkg?->description ?? 'Your current subscription plan';
 @endphp
 
@@ -629,9 +693,9 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
             @if($maxInsights) {{ number_format($maxInsights) }} insights / month · @endif
             @if($subPkg?->monthly_price) ${{ number_format($subPkg->monthly_price, 0) }} / month @endif
             @if($subStatus === 'canceled' && $subscription?->ends_at)
-                · Access until {{ $subscription->ends_at->format('M j, Y') }}
+                · Access until {{ $subscription->ends_at->format(active_date_format()) }}
             @elseif($renewsAt)
-                · Renews {{ $renewsAt->format('M j, Y') }}
+                · Renews {{ $renewsAt->format(active_date_format()) }}
             @endif
         </div>
     </div>
@@ -734,13 +798,31 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" class="srch-inp" id="activitySearch" placeholder="Search activity..." autocomplete="off">
             </div>
-            <div style="display:flex;flex-direction:column;gap:4px;">
-                <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">From</label>
-                <input type="date" class="f-inp" id="actFilterFrom" style="min-width:150px;">
-            </div>
-            <div style="display:flex;flex-direction:column;gap:4px;">
-                <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">To</label>
-                <input type="date" class="f-inp" id="actFilterTo" style="min-width:150px;">
+            {{-- Date range filter --}}
+            <div class="dr-wrap" id="act-log-dr">
+                <div class="dr-field" onclick="drOpen('act-log-dr')">
+                    <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span class="dr-text" id="act-log-dr-text">Start Date To End Date</span>
+                    <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('act-log-dr')" title="Clear date filter">&#x2715;</button>
+                </div>
+                <div class="dr-menu" id="act-log-dr-menu">
+                    <ul class="dr-list">
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','today',this)">Today</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','last30',this)">Last 30 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','thisMonth',this)">This Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','lastMonth',this)">Last Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','last90',this)">Last 90 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','last6m',this)">Last 6 Months</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','last1y',this)">Last 1 Year</li>
+                        <li class="dr-opt" onclick="drPickPreset('act-log-dr','custom',this)">Custom Range</li>
+                    </ul>
+                    <div class="dr-custom-row" id="act-log-dr-custom">
+                        <input type="date" class="dr-date-inp" id="act-log-dr-from">
+                        <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                        <input type="date" class="dr-date-inp" id="act-log-dr-to">
+                        <button class="dr-apply-btn" onclick="drApplyCustom('act-log-dr')">Apply</button>
+                    </div>
+                </div>
             </div>
             <div style="display:flex;flex-direction:column;gap:4px;">
                 <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">Event Type</label>
@@ -751,7 +833,6 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                     @endforeach
                 </select>
             </div>
-            <button class="btn btn-ghost btn-sm" onclick="actClearFilters()">Clear</button>
         </div>
     </div>
 
@@ -813,8 +894,8 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                                 <div style="font-size:0.875rem;font-weight:500;color:var(--text-1);">{{ optional($activity->user)->name ?? 'System' }}</div>
                                 <div style="font-size:0.75rem;color:var(--text-2);">{{ optional($activity->user)->email ?? '' }}</div>
                             </td>
-                            <td style="font-size:0.8125rem;color:var(--text-2);" data-order="{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->timestamp : 0 }}">
-                                <div>{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format('M j, Y') : '—' }}</div>
+                            <td style="font-size:0.8125rem;color:var(--text-2);" data-order="{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->timestamp : 0 }}" data-date="{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format('Y-m-d') : '' }}">
+                                <div>{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format(active_date_format()) : '—' }}</div>
                                 <div style="color:var(--text-3);">{{ $activity->created_at ? \Carbon\Carbon::parse($activity->created_at)->format('g:i A') : '' }}</div>
                             </td>
                         </tr>
@@ -1043,17 +1124,31 @@ $(document).ready(function () {
         actTable.search(this.value).draw();
     });
 
-    document.getElementById('actFilterFrom').addEventListener('change', function () { actTable.draw(); });
-    document.getElementById('actFilterTo').addEventListener('change', function () { actTable.draw(); });
     document.getElementById('actFilterEventType').addEventListener('change', function () {
         actTable.column(0).search(this.value ? this.value : '', false, false).draw();
     });
+
+    // Date range filter — read from picker inputs, compare against data-date attribute on td
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (!settings.nTable || settings.nTable.id !== 'activity-table') return true;
+        var from = document.getElementById('act-log-dr-from') ? document.getElementById('act-log-dr-from').value : '';
+        var to   = document.getElementById('act-log-dr-to')   ? document.getElementById('act-log-dr-to').value   : '';
+        if (!from && !to) return true;
+        var row = actTable.row(dataIndex).node();
+        if (!row) return true;
+        var dateTd = row.querySelector('td[data-date]');
+        var dateVal = dateTd ? dateTd.getAttribute('data-date') : '';
+        if (!dateVal) return true;
+        if (from && dateVal < from) return false;
+        if (to   && dateVal > to)   return false;
+        return true;
+    });
+    _drCbs['act-log-dr'] = function(from, to) { actTable.draw(); };
 });
 
 function actClearFilters() {
     document.getElementById('activitySearch').value    = '';
-    document.getElementById('actFilterFrom').value     = '';
-    document.getElementById('actFilterTo').value       = '';
+    drClear('act-log-dr');
     document.getElementById('actFilterEventType').value = '';
     if (window.$.fn && $('#activity-table').length) {
         $('#activity-table').DataTable().search('').columns().search('').draw();
@@ -1164,7 +1259,7 @@ function submitLoginPageForm(e) {
     var btn  = document.getElementById('lp-submit');
     var data = new FormData(form);
     btn.disabled = true;
-    fetch('{{ route("settings.login-page.update") }}', {
+    fetch('{{ parse_url(route("settings.login-page.update"), PHP_URL_PATH) }}', {
         method: 'POST',
         headers: {'X-Requested-With': 'XMLHttpRequest'},
         body: data,
@@ -1190,7 +1285,7 @@ async function subStartCheckout(packageId, btn) {
     btn.disabled = true;
     btn.textContent = 'Redirecting…';
     try {
-        const res = await fetch('{{ route("billing.checkout") }}', {
+        const res = await fetch('{{ parse_url(route("billing.checkout"), PHP_URL_PATH) }}', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
             body: JSON.stringify({ package_id: packageId, billing_cycle: 'monthly' }),
@@ -1223,7 +1318,7 @@ function subCancel() {
         if (!result.isConfirmed) return;
         Swal.fire({ title: 'Canceling…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
         try {
-            const resp = await fetch('{{ route("billing.cancel-subscription") }}', {
+            const resp = await fetch('{{ parse_url(route("billing.cancel-subscription"), PHP_URL_PATH) }}', {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
             });
@@ -1255,7 +1350,7 @@ async function subReactivate() {
     if (!result.isConfirmed) return;
     Swal.fire({ title: 'Reactivating…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     try {
-        const resp = await fetch('{{ route("billing.reactivate-subscription") }}', {
+        const resp = await fetch('{{ parse_url(route("billing.reactivate-subscription"), PHP_URL_PATH) }}', {
             method: 'POST',
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
         });
@@ -1271,6 +1366,71 @@ async function subReactivate() {
     }
 }
 @endif
+
+// ── Admin Date Format (Branding tab) ─────────────────────────────────────────
+// Use var (not let/const) so there is no temporal dead zone if a script error
+// above this line prevents initialization from completing.
+var adfSamples = {!! json_encode(array_map(fn($fmt) => \Carbon\Carbon::now()->format($fmt), array_keys(DATE_FORMAT_PRESETS))) !!};
+var adfKeys    = {!! json_encode(array_keys(DATE_FORMAT_PRESETS)) !!};
+var adfCurrent = '{{ $effectiveFmt ?? active_date_format() }}';
+
+function adfPickFormat(fmt) {
+    adfCurrent = fmt;
+    const idx = adfKeys.indexOf(fmt);
+    document.getElementById('adf-preview').textContent = idx >= 0 ? adfSamples[idx] : fmt;
+
+    document.querySelectorAll('#adf-grid label').forEach(function(lbl) {
+        const inp = lbl.querySelector('input');
+        if (inp.value === fmt) {
+            lbl.style.borderColor = 'var(--blue)';
+            lbl.style.background  = 'var(--blue-pale)';
+        } else {
+            lbl.style.borderColor = 'var(--border)';
+            lbl.style.background  = '#fff';
+        }
+    });
+}
+
+async function adfSave() {
+    const btn = document.getElementById('adf-save-btn');
+    if (!btn) return;
+    const orig = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = 'Saving…';
+    try {
+        const fd = new FormData();
+        fd.append('date_format', adfCurrent);
+        const r = await fetch('{{ parse_url(route("account.date-format"), PHP_URL_PATH) }}', {
+            method: 'POST', body: fd,
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+        });
+        let j;
+        try { j = await r.json(); } catch(_) { j = { status: 'fail', message: 'Server error (HTTP ' + r.status + ').' }; }
+        if (j.status === 'success') {
+            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+            Swal.fire({ icon: 'success', text: j.message, confirmButtonText: 'OK', confirmButtonColor: btnColor })
+                .then(() => window.location.reload());
+        } else { showToast(j.message || 'Error saving.', 'error'); }
+    } catch(e) { showToast('Request failed. Please try again.', 'error'); }
+    btn.disabled = false; btn.innerHTML = orig;
+}
+
+async function adfClear() {
+    try {
+        const fd = new FormData();
+        fd.append('date_format', '');   // empty = clear override
+        const r = await fetch('{{ parse_url(route("account.date-format"), PHP_URL_PATH) }}', {
+            method: 'POST', body: fd,
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+        });
+        let j;
+        try { j = await r.json(); } catch(_) { j = { status: 'fail', message: 'Server error (HTTP ' + r.status + ').' }; }
+        if (j.status === 'success') {
+            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+            Swal.fire({ icon: 'success', text: 'Reset to platform default.', confirmButtonText: 'OK', confirmButtonColor: btnColor })
+                .then(() => window.location.reload());
+        } else { showToast(j.message || 'Error.', 'error'); }
+    } catch(e) { showToast('Request failed. Please try again.', 'error'); }
+}
 
 // ── Profile & Password Validation ─────────────────────────────────────────────
 function acErr(id, msg) {

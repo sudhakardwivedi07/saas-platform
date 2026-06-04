@@ -123,9 +123,9 @@
                             <td style="font-weight:600">${{ number_format($total, 0) }}</td>
                             <td style="color:var(--text-3)">Monthly</td>
                             <td style="color:var(--text-2)">
-                                {{ $lastPayment ? $lastPayment->paid_at?->copy()->addMonth()->format('M d, Y') : '—' }}
+                                {{ $lastPayment ? $lastPayment->paid_at?->copy()->addMonth()->format(active_date_format()) : '—' }}
                             </td>
-                            <td style="color:var(--text-3)">{{ $co->created_at?->format('M d, Y') }}</td>
+                            <td style="color:var(--text-3)">{{ $co->created_at?->format(active_date_format()) }}</td>
                             <td><span class="badge {{ $payBadge }}">{{ $payStatus }}</span></td>
                         </tr>
                         @empty
@@ -195,7 +195,7 @@
                             </td>
                             <td style="color:{{ $daysLeft !== null && $daysLeft <= 15 ? 'var(--orange)' : 'var(--text-2)' }};white-space:nowrap">
                                 @if($renewal)
-                                    {{ $renewal->format('M j, Y') }}
+                                    {{ $renewal->format(active_date_format()) }}
                                     @if($daysLeft !== null)
                                         &middot; {{ $daysLeft }} days
                                     @endif

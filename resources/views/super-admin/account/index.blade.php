@@ -212,14 +212,6 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="f-group">
-                        <label class="f-label">Date Format</label>
-                        <select name="date_format" class="f-sel">
-                            @foreach(['Y-m-d'=>'YYYY-MM-DD','d/m/Y'=>'DD/MM/YYYY','m/d/Y'=>'MM/DD/YYYY'] as $v=>$l)
-                            <option value="{{ $v }}" {{ ($setting?->date_format ?? 'Y-m-d') === $v ? 'selected':'' }}>{{ $l }}</option>
-                            @endforeach
-                        </select>
-                    </div>
                 </div>
 
                 <input type="hidden" name="locale" value="{{ $setting?->locale ?? 'en' }}">
@@ -304,6 +296,52 @@
             </div>
         </div>
 
+    </div>
+
+    {{-- ── Date Format Card ──────────────────────────────────────────────────────── --}}
+    @php
+    $saDateFormat = $setting?->date_format ?? 'M j, Y';
+    $saToday      = \Carbon\Carbon::now();
+    @endphp
+    <div class="acc-card" style="margin-top:14px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
+            <div>
+                <div style="font-size:15px;font-weight:700;color:var(--text-1)">Date Format</div>
+                <div style="font-size:12.5px;color:var(--text-3);margin-top:2px">
+                    Choose the platform-wide default date format. Admins can override this for their own account from their <strong>My Account → Branding</strong> page.
+                </div>
+            </div>
+        </div>
+
+        <div style="height:1px;background:var(--border);margin:14px 0"></div>
+
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:18px" id="sa-adf-grid">
+            @foreach(DATE_FORMAT_PRESETS as $fmt => $example)
+            <label id="sa-adf-opt-{{ str_replace(['/', '.', ' '], ['-', '-', '-'], $fmt) }}"
+                   style="display:flex;align-items:center;gap:12px;padding:12px 14px;border:2px solid {{ $saDateFormat === $fmt ? 'var(--blue)' : 'var(--border)' }};border-radius:10px;cursor:pointer;background:{{ $saDateFormat === $fmt ? 'var(--blue-pale)' : '#fff' }};transition:border-color .13s,background .13s"
+                   onmouseenter="if(!this.querySelector('input').checked){this.style.borderColor='var(--blue)';this.style.background='var(--blue-pale)'}"
+                   onmouseleave="if(!this.querySelector('input').checked){this.style.borderColor='var(--border)';this.style.background='#fff'}">
+                <input type="radio" name="sa_adf_pick" value="{{ $fmt }}"
+                       style="accent-color:var(--blue);width:15px;height:15px;flex-shrink:0"
+                       {{ $saDateFormat === $fmt ? 'checked' : '' }}
+                       onchange="saAdfPick(this.value)">
+                <div>
+                    <div style="font-size:13.5px;font-weight:600;color:var(--text-1);font-family:monospace">{{ $saToday->format($fmt) }}</div>
+                    <div style="font-size:11px;color:var(--text-3);margin-top:1px"><code style="background:var(--bg);padding:1px 4px;border-radius:4px;font-size:10.5px">{{ $fmt }}</code></div>
+                </div>
+            </label>
+            @endforeach
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+            <div style="font-size:12.5px;color:var(--text-3)">
+                Preview: <span id="sa-adf-preview" style="font-weight:600;color:var(--text-1);margin-left:4px">{{ $saToday->format($saDateFormat) }}</span>
+            </div>
+            <button class="btn btn-primary btn-sm" id="sa-adf-save-btn" onclick="saAdfSave()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                Save Date Format
+            </button>
+        </div>
     </div>
 </div>
 
@@ -417,6 +455,51 @@ function previewLogo(input) {
     reader.readAsDataURL(input.files[0]);
 }
 
+// ── Date Format (Global Settings tab) ─────────────────────────────────────────
+var saAdfSamples = {!! json_encode(array_map(fn($fmt) => \Carbon\Carbon::now()->format($fmt), array_keys(DATE_FORMAT_PRESETS))) !!};
+var saAdfKeys    = {!! json_encode(array_keys(DATE_FORMAT_PRESETS)) !!};
+var saAdfCurrent = '{{ $setting?->date_format ?? "M j, Y" }}';
+
+function saAdfPick(fmt) {
+    saAdfCurrent = fmt;
+    const idx = saAdfKeys.indexOf(fmt);
+    const preview = document.getElementById('sa-adf-preview');
+    if (preview) preview.textContent = idx >= 0 ? saAdfSamples[idx] : fmt;
+
+    document.querySelectorAll('#sa-adf-grid label').forEach(function(lbl) {
+        const inp = lbl.querySelector('input');
+        if (inp.value === fmt) {
+            lbl.style.borderColor = 'var(--blue)';
+            lbl.style.background  = 'var(--blue-pale)';
+        } else {
+            lbl.style.borderColor = 'var(--border)';
+            lbl.style.background  = '#fff';
+        }
+    });
+}
+
+async function saAdfSave() {
+    const btn = document.getElementById('sa-adf-save-btn');
+    if (!btn) return;
+    const orig = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = 'Saving…';
+    try {
+        const fd = new FormData();
+        fd.append('date_format', saAdfCurrent);
+        const r = await fetch('{{ parse_url(route("superadmin.settings.date_format.update"), PHP_URL_PATH) }}', {
+            method: 'POST', body: fd,
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
+        });
+        const j = await r.json();
+        if (j.status === 'success') {
+            showToast(j.message, 'success');
+        } else {
+            showToast(j.message || 'Error saving.', 'error');
+        }
+    } catch(e) { showToast('Request failed.', 'error'); }
+    btn.disabled = false; btn.innerHTML = orig;
+}
+
 document.getElementById('global-settings-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     if (!validateGlobalForm()) return;
@@ -426,7 +509,7 @@ document.getElementById('global-settings-form')?.addEventListener('submit', asyn
     ['allow_registration','email_verification','maintenance_mode'].forEach(f => {
         fd.set(f, fd.has(f) ? '1' : '0');
     });
-    const r = await fetch('{{ route("superadmin.settings.update") }}', {
+    const r = await fetch('{{ parse_url(route("superadmin.settings.update"), PHP_URL_PATH) }}', {
         method: 'POST',
         headers: {'X-CSRF-TOKEN': csrf, 'Accept': 'application/json'},
         body: fd,

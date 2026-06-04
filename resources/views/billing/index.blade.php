@@ -222,9 +222,9 @@
             @if($maxInsights) {{ number_format($maxInsights) }} insights / month · @endif
             @if($price) ${{ number_format($price, 0) }} / month @endif
             @if($subStatus === 'canceled' && $subscription?->ends_at)
-                · Access until {{ $subscription->ends_at->format('M j, Y') }}
+                · Access until {{ $subscription->ends_at->format(active_date_format()) }}
             @elseif($renewsAt)
-                · Renews {{ $renewsAt->format('M j, Y') }}
+                · Renews {{ $renewsAt->format(active_date_format()) }}
             @endif
         </div>
     </div>
@@ -379,7 +379,7 @@
     <div class="usage-kpi or">
         <div class="usage-kpi-lbl">Total Insights Remaining</div>
         <div class="usage-kpi-val orange">{{ $totalInsightsRemaining ?? 0 }}</div>
-        <div class="usage-kpi-ctx">Resets {{ now()->startOfMonth()->addMonth()->format('F j, Y') }}</div>
+        <div class="usage-kpi-ctx">Resets {{ now()->startOfMonth()->addMonth()->format(active_date_format()) }}</div>
     </div>
     <div class="usage-kpi rd">
         <div class="usage-kpi-lbl">Companies at Risk</div>

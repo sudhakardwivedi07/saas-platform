@@ -68,7 +68,7 @@
             <div class="report-meta">
                 <div class="report-meta-item">
                     <i class="fas fa-calendar-alt"></i>
-                    <span>{{ $report->created_at->format('M d, Y') }}</span>
+                    <span>{{ $report->created_at->format(active_date_format()) }}</span>
                 </div>
                 <div class="report-meta-item">
                     <i class="fas fa-chart-bar"></i>

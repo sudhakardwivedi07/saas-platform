@@ -155,6 +155,29 @@ class AccountController extends AccountBaseController
         }
     }
 
+    public function updateDateFormat(Request $request)
+    {
+        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
+
+        $request->validate([
+            'date_format' => 'nullable|string|max:30',
+        ]);
+
+        $company = company();
+        if (!$company) {
+            return \App\Helper\Reply::error('No company context found.');
+        }
+
+        // null / empty string = clear override and fall back to SuperAdmin default
+        $company->update(['date_format' => $request->filled('date_format') ? $request->date_format : null]);
+
+        // Bust the per-company date format cache used by active_date_format()
+        cache()->forget('company_date_format_' . $company->id);
+        cache()->forget('company_' . $company->id);
+
+        return \App\Helper\Reply::success('Date format saved. This format will now be used for your account and your users.');
+    }
+
     public function updateProfile(Request $request)
     {
         $user = auth()->user();

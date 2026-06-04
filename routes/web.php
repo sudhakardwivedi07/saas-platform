@@ -242,8 +242,9 @@ Route::middleware(['auth'])->group(function () {
 
     // My Account
     Route::get('my-account',          [AccountController::class, 'index'])->name('account.index');
-    Route::post('my-account/profile',  [AccountController::class, 'updateProfile'])->name('account.profile');
-    Route::post('my-account/password', [AccountController::class, 'updatePassword'])->name('account.password');
+    Route::post('my-account/profile',     [AccountController::class, 'updateProfile'])->name('account.profile');
+    Route::post('my-account/password',    [AccountController::class, 'updatePassword'])->name('account.password');
+    Route::post('my-account/date-format', [AccountController::class, 'updateDateFormat'])->name('account.date-format');
 
     // Activity Log
     Route::get('activity', fn() => redirect()->route('account.index', ['tab' => 'tab-activity']))->name('activity.index');

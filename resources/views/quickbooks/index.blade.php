@@ -129,7 +129,7 @@
                             </span>
                         </td>
                         <td style="font-size:12.5px;color:var(--text-2)">
-                            {{ $conn->last_synced_at?->format('M j, Y') ?? '—' }}
+                            {{ $conn->last_synced_at?->format(active_date_format()) ?? '—' }}
                         </td>
                         <td>
                             @if(!$expired)

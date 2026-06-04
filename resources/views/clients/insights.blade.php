@@ -90,7 +90,7 @@
                         </td>
                         <td style="font-size:0.875rem;color:var(--text-1);">{{ $client->name }}</td>
                         <td style="font-size:0.8125rem;color:var(--text-2);">
-                            {{ $insight->created_at ? \Carbon\Carbon::parse($insight->created_at)->format('M j, Y') : '—' }}
+                            {{ $insight->created_at ? \Carbon\Carbon::parse($insight->created_at)->format(active_date_format()) : '—' }}
                         </td>
                         <td>
                             <span class="badge b-green">Ready</span>

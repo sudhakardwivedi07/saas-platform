@@ -205,7 +205,7 @@ table.dataTable thead th:after { font-size: 10px; }
                     {{-- Onboarded On --}}
                     <td style="padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:12.5px;color:var(--text-2)"
                         data-sort="{{ $co->created_at ? $co->created_at->timestamp : 0 }}">
-                        {{ $co->created_at ? $co->created_at->format('M d, Y') : '—' }}
+                        {{ $co->created_at ? $co->created_at->format(active_date_format()) : '—' }}
                     </td>
 
                     {{-- Actions --}}

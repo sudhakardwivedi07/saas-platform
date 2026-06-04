@@ -117,32 +117,10 @@
 .custom-range-row {
     display: none;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
 }
 .custom-range-row.visible { display: flex; }
-.custom-range-row input[type="date"] {
-    padding: 5px 10px;
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    font-size: 13px;
-    color: var(--text-1);
-    background: #fff;
-    outline: none;
-}
-.custom-range-row input[type="date"]:focus {
-    border-color: var(--orange);
-}
-.custom-range-row .btn-apply {
-    padding: 5px 14px;
-    background: var(--orange);
-    color: #fff;
-    border: none;
-    border-radius: 7px;
-    font-size: 12.5px;
-    font-weight: 600;
-    cursor: pointer;
-}
 
 /* ── Bottom row ──────────────────────────────────────── */
 .db-bottom {
@@ -572,12 +550,32 @@
 </div>
 
 {{-- Custom date range picker (shown only when custom is active) --}}
-<div class="custom-range-row {{ $period === 'custom' ? 'visible' : '' }}" id="customRangeRow" style="margin-bottom:12px">
-    <span style="font-size:12.5px;color:var(--text-2);font-weight:500">From</span>
-    <input type="date" id="startDate" value="{{ $startDateInput }}">
-    <span style="font-size:12.5px;color:var(--text-2);font-weight:500">To</span>
-    <input type="date" id="endDate" value="{{ $endDateInput }}">
-    <button class="btn-apply" onclick="applyCustomRange()">Apply</button>
+<div class="custom-range-row {{ $period === 'custom' ? 'visible' : '' }}" id="customRangeRow" style="margin-bottom:12px;align-items:center;gap:10px">
+    <div class="dr-wrap" id="db-dr">
+        <div class="dr-field" onclick="drOpen('db-dr')">
+            <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span class="dr-text" id="db-dr-text">Start Date To End Date</span>
+            <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('db-dr')" title="Clear date filter">&#x2715;</button>
+        </div>
+        <div class="dr-menu" id="db-dr-menu">
+            <ul class="dr-list">
+                <li class="dr-opt" onclick="drPickPreset('db-dr','today',this)">Today</li>
+                <li class="dr-opt" onclick="drPickPreset('db-dr','last30',this)">Last 30 Days</li>
+                <li class="dr-opt" onclick="drPickPreset('db-dr','thisMonth',this)">This Month</li>
+                <li class="dr-opt" onclick="drPickPreset('db-dr','lastMonth',this)">Last Month</li>
+                <li class="dr-opt" onclick="drPickPreset('db-dr','last90',this)">Last 90 Days</li>
+                <li class="dr-opt" onclick="drPickPreset('db-dr','last6m',this)">Last 6 Months</li>
+                <li class="dr-opt" onclick="drPickPreset('db-dr','last1y',this)">Last 1 Year</li>
+                <li class="dr-opt" onclick="drPickPreset('db-dr','custom',this)">Custom Range</li>
+            </ul>
+            <div class="dr-custom-row" id="db-dr-custom">
+                <input type="date" class="dr-date-inp" id="db-dr-from" value="{{ $startDateInput }}">
+                <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                <input type="date" class="dr-date-inp" id="db-dr-to" value="{{ $endDateInput }}">
+                <button class="dr-apply-btn" onclick="drApplyCustom('db-dr')">Apply</button>
+            </div>
+        </div>
+    </div>
     <span style="font-size:12px;color:var(--text-3)">
         Showing: <strong>{{ $periodLabel }}</strong>
     </span>
@@ -656,7 +654,7 @@
                 ?? 0);
         @endphp
         <div class="db-kpi-val orange">{{ $insAvail }}</div>
-        <div class="db-kpi-ctx">Of {{ $insPkg }} total · resets {{ now()->endOfMonth()->format('M j, Y') }}</div>
+        <div class="db-kpi-ctx">Of {{ $insPkg }} total · resets {{ now()->endOfMonth()->format(active_date_format()) }}</div>
     </div>
 
     {{-- Pending Review --}}
@@ -807,29 +805,47 @@ function setTP(el, period) {
     if (period === 'custom') {
         document.querySelectorAll('.tp').forEach(b => b.classList.remove('active'));
         el.classList.add('active');
-        document.getElementById('customRangeRow').classList.add('visible');
+        var row = document.getElementById('customRangeRow');
+        row.classList.add('visible');
+        // Auto-open the date picker
+        setTimeout(function() { drOpen('db-dr'); }, 50);
         return;
     }
     window.location.href = '{{ url()->current() }}?period=' + period;
 }
 
-function applyCustomRange() {
-    const start = document.getElementById('startDate').value;
-    const end   = document.getElementById('endDate').value;
+function applyCustomRange(from, to) {
+    var start = from !== undefined ? from : (document.getElementById('db-dr-from') ? document.getElementById('db-dr-from').value : '');
+    var end   = to   !== undefined ? to   : (document.getElementById('db-dr-to')   ? document.getElementById('db-dr-to').value   : '');
     if (!start || !end) {
-        alert('Please select both start and end dates.');
+        Swal.fire({ icon: 'warning', title: 'Select both dates', text: 'Please select both a start and end date.', confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21' });
         return;
     }
     if (start > end) {
-        alert('Start date must be before end date.');
+        Swal.fire({ icon: 'warning', title: 'Invalid range', text: 'Start date must be before end date.', confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21' });
         return;
     }
     window.location.href = '{{ url()->current() }}?period=custom&start_date=' + start + '&end_date=' + end;
 }
 
-// Show custom range row if currently active
+// Register DR picker callback — navigates with custom period params
+_drCbs['db-dr'] = function(from, to) { applyCustomRange(from, to); };
+
+// Show custom range row if currently active and pre-populate label
 if (CURRENT_PERIOD === 'custom') {
     document.getElementById('customRangeRow').classList.add('visible');
+    var _dbFrom = '{{ $startDateInput }}';
+    var _dbTo   = '{{ $endDateInput }}';
+    if (_dbFrom || _dbTo) {
+        document.addEventListener('DOMContentLoaded', function() {
+            drSetLabel('db-dr', _dbFrom, _dbTo);
+            // Also mark Custom Range option as active
+            var customOpt = document.querySelector('#db-dr .dr-opt:last-child');
+            if (customOpt) customOpt.classList.add('active');
+            var customRow = document.getElementById('db-dr-custom');
+            if (customRow) customRow.style.display = 'flex';
+        });
+    }
 }
 
 // View Client Portal Modal

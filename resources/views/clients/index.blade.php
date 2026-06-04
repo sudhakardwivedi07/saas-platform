@@ -192,15 +192,29 @@
                     @endforeach
                 </select>
                 {{-- Date range filter --}}
-                <div style="display:flex;align-items:center;gap:6px">
-                    <div style="position:relative;display:flex;align-items:center">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" width="13" height="13" style="position:absolute;left:9px;pointer-events:none"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        <input type="date" id="co-date-from" class="f-inp" style="height:34px;padding-left:28px;width:140px;font-size:12.5px" autocomplete="off">
+                <div class="dr-wrap" id="co-dr">
+                    <div class="dr-field" onclick="drOpen('co-dr')">
+                        <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span class="dr-text" id="co-dr-text">Start Date To End Date</span>
+                        <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('co-dr')" title="Clear date filter">&#x2715;</button>
                     </div>
-                    <span style="color:var(--text-3);font-size:13px">–</span>
-                    <div style="position:relative;display:flex;align-items:center">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="2" width="13" height="13" style="position:absolute;left:9px;pointer-events:none"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        <input type="date" id="co-date-to" class="f-inp" style="height:34px;padding-left:28px;width:140px;font-size:12.5px" autocomplete="off">
+                    <div class="dr-menu" id="co-dr-menu">
+                        <ul class="dr-list">
+                            <li class="dr-opt" onclick="drPickPreset('co-dr','today',this)">Today</li>
+                            <li class="dr-opt" onclick="drPickPreset('co-dr','last30',this)">Last 30 Days</li>
+                            <li class="dr-opt" onclick="drPickPreset('co-dr','thisMonth',this)">This Month</li>
+                            <li class="dr-opt" onclick="drPickPreset('co-dr','lastMonth',this)">Last Month</li>
+                            <li class="dr-opt" onclick="drPickPreset('co-dr','last90',this)">Last 90 Days</li>
+                            <li class="dr-opt" onclick="drPickPreset('co-dr','last6m',this)">Last 6 Months</li>
+                            <li class="dr-opt" onclick="drPickPreset('co-dr','last1y',this)">Last 1 Year</li>
+                            <li class="dr-opt" onclick="drPickPreset('co-dr','custom',this)">Custom Range</li>
+                        </ul>
+                        <div class="dr-custom-row" id="co-dr-custom">
+                            <input type="date" class="dr-date-inp" id="co-dr-from">
+                            <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                            <input type="date" class="dr-date-inp" id="co-dr-to">
+                            <button class="dr-apply-btn" onclick="drApplyCustom('co-dr')">Apply</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -631,8 +645,7 @@ $(document).ready(function() {
 
     // Reset company filters
     document.getElementById('company-client-filter').value = '';
-    document.getElementById('co-date-from').value = '';
-    document.getElementById('co-date-to').value = '';
+    drClear('co-dr');  // clears without firing callback since table not yet initialized
 
     var coTable = $('#companies-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
@@ -682,23 +695,19 @@ $(document).ready(function() {
     });
 
     // Date range filter — filter by data-created on tr
-    function applyDateFilter() {
-        var from = document.getElementById('co-date-from').value;
-        var to   = document.getElementById('co-date-to').value;
-        $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-            if (settings.nTable.id !== 'companies-table') return true;
-            var row = coTable.row(dataIndex).node();
-            var created = row ? row.getAttribute('data-created') : null;
-            if (!created) return true;
-            if (from && created < from) return false;
-            if (to   && created > to)   return false;
-            return true;
-        });
-        coTable.draw();
-        $.fn.dataTable.ext.search.pop();
-    }
-    document.getElementById('co-date-from').addEventListener('change', applyDateFilter);
-    document.getElementById('co-date-to').addEventListener('change', applyDateFilter);
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (settings.nTable.id !== 'companies-table') return true;
+        var from = document.getElementById('co-dr-from') ? document.getElementById('co-dr-from').value : '';
+        var to   = document.getElementById('co-dr-to')   ? document.getElementById('co-dr-to').value   : '';
+        if (!from && !to) return true;
+        var row = coTable.row(dataIndex).node();
+        var created = row ? row.getAttribute('data-created') : null;
+        if (!created) return true;
+        if (from && created < from) return false;
+        if (to   && created > to)   return false;
+        return true;
+    });
+    _drCbs['co-dr'] = function(from, to) { coTable.draw(); };
 });
 
 // ── Add Client validation ────────────────────────────────────

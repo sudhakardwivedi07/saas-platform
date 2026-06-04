@@ -190,7 +190,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                     <td><span class="pri-{{ $pri }}">{{ ucfirst($pri) }}</span></td>
                     <td><span class="st-badge st-{{ $st }}">{{ $stLabel }}</span></td>
                     <td>
-                        <div class="raised-date">{{ $ticket->created_at->format('M j, Y') }}</div>
+                        <div class="raised-date">{{ $ticket->created_at->format(active_date_format()) }}</div>
                         <div class="raised-time">{{ $ticket->created_at->format('g:i A') }}</div>
                     </td>
                     <td style="position:relative">
@@ -277,7 +277,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                     <td><span class="pri-{{ $pri }}">{{ ucfirst($pri) }}</span></td>
                     <td><span class="st-badge st-{{ $st }}">{{ $stLabel }}</span></td>
                     <td>
-                        <div class="raised-date">{{ $ticket->created_at->format('M j, Y') }}</div>
+                        <div class="raised-date">{{ $ticket->created_at->format(active_date_format()) }}</div>
                         <div class="raised-time">{{ $ticket->created_at->format('g:i A') }}</div>
                     </td>
                     <td style="position:relative">

@@ -29,7 +29,7 @@
     };
 
     $nextBilling  = $company->subscription?->current_period_end
-                        ? $company->subscription->current_period_end->format('M d, Y')
+                        ? $company->subscription->current_period_end->format(active_date_format())
                         : 'N/A';
     $billingCycle = $company->subscription?->billing_cycle
                         ? ucfirst($company->subscription->billing_cycle)
@@ -134,7 +134,7 @@
             ['Portal URL',   $portalUrl,                      'link'],
             ['Status',       ucfirst($company->status),       $statusBadge],
             ['Onboarded By', $company->onboardedBy?->name ?? '—', null],
-            ['Onboarded On', $company->created_at->format('M d, Y'), null],
+            ['Onboarded On', $company->created_at->format(active_date_format()), null],
         ];
         @endphp
         @foreach($detailRows as [$label, $value, $type])
@@ -231,7 +231,7 @@
                         <span class="badge {{ $uBadge }}">{{ ucfirst($uStatus) }}</span>
                     </td>
                     <td style="padding:.7rem 1.25rem;border-bottom:1px solid var(--border);color:#94a3b8;font-size:.8rem;">
-                        {{ $user->last_login_at ? \Carbon\Carbon::parse($user->last_login_at)->format('M d, Y') : 'Never' }}
+                        {{ $user->last_login_at ? \Carbon\Carbon::parse($user->last_login_at)->format(active_date_format()) : 'Never' }}
                     </td>
                 </tr>
                 @empty

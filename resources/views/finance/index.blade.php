@@ -259,7 +259,7 @@
             <td>{{ $planName }}</td>
             <td style="font-weight:600;color:var(--text-1)">${{ number_format($amt, 2) }}</td>
             <td><span class="badge {{ $badgeClass }}">{{ ucfirst($status) }}</span></td>
-            <td style="color:var(--text-2);font-size:12.5px">{{ $payment->paid_at?->format('M j, Y') ?? '—' }}</td>
+            <td style="color:var(--text-2);font-size:12.5px">{{ $payment->paid_at?->format(active_date_format()) ?? '—' }}</td>
             <td style="text-align:right">
                 <div class="dm-wrap">
                     <button type="button" class="dot-menu" data-menu="fin-pay-{{ $payment->id }}" title="Actions">•••</button>
@@ -332,7 +332,7 @@
             <td>{{ $planName }}</td>
             <td style="font-weight:600;color:var(--text-1)">{{ $priceLabel }}</td>
             <td><span class="badge {{ $badgeClass }}">{{ str_replace('_', ' ', ucfirst($subStatus)) }}</span></td>
-            <td style="color:var(--text-2);font-size:12.5px">{{ $rowDate?->format('M j, Y') ?? '—' }}</td>
+            <td style="color:var(--text-2);font-size:12.5px">{{ $rowDate?->format(active_date_format()) ?? '—' }}</td>
             <td style="text-align:right">
                 <div class="dm-wrap">
                     <button type="button" class="dot-menu" data-menu="fin-sub-{{ $co->id }}" title="Actions">•••</button>

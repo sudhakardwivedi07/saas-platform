@@ -214,7 +214,7 @@
                                 </span>
                             </td>
                             <td style="font-size:0.8125rem;color:var(--text-2);">
-                                {{ $company->created_at?->format('M j, Y') ?? '—' }}
+                                {{ $company->created_at?->format(active_date_format()) ?? '—' }}
                             </td>
                             <td>
                                 <div style="display:flex;align-items:center;gap:8px;">

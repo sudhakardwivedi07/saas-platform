@@ -398,5 +398,6 @@ document.getElementById('gateway-form')?.addEventListener('submit', async (e) =>
     const j = await r.json();
     showToast(j.message, j.status === 'success' ? 'success' : 'error');
 });
+
 </script>
 @endpush

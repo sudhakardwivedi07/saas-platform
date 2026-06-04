@@ -114,7 +114,7 @@
         </div>
         <div>
             <div style="font-size:11.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Member Since</div>
-            <div style="font-size:13.5px;color:var(--text-1);font-weight:500">{{ $clientUser->created_at->format('M j, Y') }}</div>
+            <div style="font-size:13.5px;color:var(--text-1);font-weight:500">{{ $clientUser->created_at->format(active_date_format()) }}</div>
         </div>
         <div>
             <div style="font-size:11.5px;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Last Active</div>

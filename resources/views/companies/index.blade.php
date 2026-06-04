@@ -136,7 +136,7 @@
                             @endphp
                             <span class="badge {{ $subBadge }}" style="font-size:11.5px">{{ $subStatus }}</span>
                             @if($co->trial_ends_at && $co->trial_ends_at->isFuture())
-                            <div style="font-size:11px;color:var(--amber);margin-top:2px">Ends {{ $co->trial_ends_at->format('M j, Y') }}</div>
+                            <div style="font-size:11px;color:var(--amber);margin-top:2px">Ends {{ $co->trial_ends_at->format(active_date_format()) }}</div>
                             @endif
                         @else
                             <span style="color:var(--text-3);font-size:13px">None</span>
@@ -159,7 +159,7 @@
                         </span>
                     </td>
                     <td style="font-size:12.5px;color:var(--text-2)">
-                        {{ $co->created_at?->format('M j, Y') ?? '—' }}
+                        {{ $co->created_at?->format(active_date_format()) ?? '—' }}
                     </td>
                     <td>
                         <div class="dm-wrap">

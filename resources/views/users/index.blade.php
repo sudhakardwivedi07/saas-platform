@@ -20,7 +20,7 @@
 .au-err::before {
     content: '';
     display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 .mf-inp.au-invalid, .mf-sel.au-invalid { border-color: var(--red) !important; }
 </style>
@@ -64,7 +64,7 @@
             <select class="sel" id="user-role-filter" autocomplete="off">
                 <option value="">All Roles</option>
                 @foreach($roles as $role)
-                <option value="{{ $role->name }}">{{ ucwords(str_replace('_',' ',$role->name)) }}</option>
+                <option value="{{ $role->name }}">{{ $role->display_name }}</option>
                 @endforeach
             </select>
             <select class="sel" id="user-status-filter" autocomplete="off">
@@ -72,6 +72,7 @@
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
             </select>
+            <button class="btn btn-danger" onclick="resetUsersFilters()">Reset</button>
         </div>
         <span class="badge b-gray" id="user-count-badge">{{ $users->count() }} user{{ $users->count() !== 1 ? 's' : '' }}</span>
     </div>
@@ -221,7 +222,7 @@
                         <option value="">e.g. Manager, Analyst, Viewer</option>
                         @foreach($roles as $role)
                         <option value="{{ $role->name }}" {{ old('role') === $role->name ? 'selected' : '' }}>
-                            {{ ucwords(str_replace('_',' ',$role->name)) }}
+                            {{ $role->display_name }}
                         </option>
                         @endforeach
                     </select>
@@ -280,7 +281,7 @@
                 <label class="mf-label">Role <span style="color:var(--red)">*</span></label>
                 <select name="role" id="edit-role" class="mf-sel" style="height:40px" required>
                     @foreach($roles as $role)
-                    <option value="{{ $role->name }}">{{ ucwords(str_replace('_',' ',$role->name)) }}</option>
+                    <option value="{{ $role->name }}">{{ $role->display_name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -559,6 +560,15 @@ function removeUser(id, name) {
         form.action = '{{ route("users.destroy", ":id") }}'.replace(':id', id);
         form.submit();
     });
+}
+
+function resetUsersFilters() {
+    document.getElementById('user-search').value        = '';
+    document.getElementById('user-role-filter').value   = '';
+    document.getElementById('user-status-filter').value = '';
+    if (window.$ && $('#users-table').length) {
+        $('#users-table').DataTable().search('').columns().search('').draw();
+    }
 }
 </script>
 @endpush

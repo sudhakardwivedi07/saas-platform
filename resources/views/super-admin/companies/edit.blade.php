@@ -278,7 +278,7 @@
                     </div>
                     <div style="display:flex;justify-content:space-between;font-size:12.5px">
                         <span style="color:var(--text-3)">Joined</span>
-                        <span style="font-weight:500">{{ $company->created_at?->format('M d, Y') }}</span>
+                        <span style="font-weight:500">{{ $company->created_at?->format(active_date_format()) }}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;font-size:12.5px">
                         <span style="color:var(--text-3)">Plan</span>
@@ -295,7 +295,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
                     <div>
                         <div style="font-size:12.5px;font-weight:600;color:#166534">Verified</div>
-                        <div style="font-size:11px;color:#166534;opacity:.8">{{ $company->domain_verified_at->format('M d, Y') }}</div>
+                        <div style="font-size:11px;color:#166534;opacity:.8">{{ $company->domain_verified_at->format(active_date_format()) }}</div>
                     </div>
                 </div>
                 @else

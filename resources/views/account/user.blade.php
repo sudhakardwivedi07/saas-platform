@@ -270,7 +270,7 @@
                 <div style="font-size:15px;font-weight:600;color:var(--text-1)">{{ $authUser->name }}</div>
                 <div style="font-size:13px;color:var(--text-3);margin-top:2px">{{ $authUser->email }}</div>
                 <div style="margin-top:5px">
-                    <span class="badge b-orange" style="font-size:11px">{{ ucfirst($authUser->getRoleNames()->first() ?? 'User') }}</span>
+                    <span class="badge b-orange" style="font-size:11px">{{ $authUser->roleDisplayName('User') }}</span>
                 </div>
             </div>
         </div>
@@ -283,7 +283,7 @@
             </div>
             <div>
                 <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:4px">Member Since</div>
-                <div style="font-size:13.5px;font-weight:500;color:var(--text-1)">{{ $authUser->created_at?->format('M j, Y') ?? '—' }}</div>
+                <div style="font-size:13.5px;font-weight:500;color:var(--text-1)">{{ $authUser->created_at?->format(active_date_format()) ?? '—' }}</div>
             </div>
             <div>
                 <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);margin-bottom:4px">Status</div>
@@ -383,7 +383,7 @@
             <div class="sub-info-box">
                 <div class="sub-info-lbl">Next Invoice</div>
                 <div class="sub-info-val" @if(!$subscription?->current_period_end) style="color:var(--text-3)" @endif>
-                    {{ $subscription?->current_period_end?->format('M d, Y') ?? 'Not Set Up' }}
+                    {{ $subscription?->current_period_end?->format(active_date_format()) ?? 'Not Set Up' }}
                 </div>
             </div>
         </div>
@@ -493,14 +493,33 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" class="srch-inp" id="ua-search" placeholder="Search tickets…" autocomplete="off">
             </div>
-            <div class="date-inp-wrap">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                <input type="date" class="sup-date-inp" id="ua-date-from" title="From date">
+            {{-- Date range filter --}}
+            <div class="dr-wrap" id="ua-dr">
+                <div class="dr-field" onclick="drOpen('ua-dr')">
+                    <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span class="dr-text" id="ua-dr-text">Start Date To End Date</span>
+                    <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('ua-dr')" title="Clear date filter">&#x2715;</button>
+                </div>
+                <div class="dr-menu" id="ua-dr-menu">
+                    <ul class="dr-list">
+                        <li class="dr-opt" onclick="drPickPreset('ua-dr','today',this)">Today</li>
+                        <li class="dr-opt" onclick="drPickPreset('ua-dr','last30',this)">Last 30 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('ua-dr','thisMonth',this)">This Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('ua-dr','lastMonth',this)">Last Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('ua-dr','last90',this)">Last 90 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('ua-dr','last6m',this)">Last 6 Months</li>
+                        <li class="dr-opt" onclick="drPickPreset('ua-dr','last1y',this)">Last 1 Year</li>
+                        <li class="dr-opt" onclick="drPickPreset('ua-dr','custom',this)">Custom Range</li>
+                    </ul>
+                    <div class="dr-custom-row" id="ua-dr-custom">
+                        <input type="date" class="dr-date-inp" id="ua-date-from">
+                        <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                        <input type="date" class="dr-date-inp" id="ua-date-to">
+                        <button class="dr-apply-btn" onclick="drApplyCustom('ua-dr')">Apply</button>
+                    </div>
+                </div>
             </div>
-            <div class="date-inp-wrap">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                <input type="date" class="sup-date-inp" id="ua-date-to" title="To date">
-            </div>
+            <button class="btn btn-danger" onclick="resetUaFilters()">Reset</button>
         </div>
 
         {{-- Table --}}
@@ -544,7 +563,7 @@
                         default   => 'pri-low',
                     };
                 @endphp
-                <tr>
+                <tr data-date="{{ $ticket->created_at->format('Y-m-d') }}">
                     <td>
                         <span class="tk-id-lnk"
                             data-show="{{ route('support.show', $ticket->id) }}"
@@ -556,11 +575,11 @@
                     <td><span class="pri-badge {{ $priClass }}">{{ ucfirst($pri) }}</span></td>
                     <td><span class="st-badge2 {{ $stClass }}">{{ $stLabel }}</span></td>
                     <td>
-                        <div style="font-size:13px;color:var(--text-1)">{{ $ticket->created_at->format('M j, Y') }}</div>
+                        <div style="font-size:13px;color:var(--text-1)">{{ $ticket->created_at->format(active_date_format()) }}</div>
                         <div style="font-size:11.5px;color:var(--text-3)">{{ $ticket->created_at->format('g:i A') }}</div>
                     </td>
                     <td>
-                        <div style="font-size:13px;color:var(--text-1)">{{ $ticket->updated_at->format('M j, Y') }}</div>
+                        <div style="font-size:13px;color:var(--text-1)">{{ $ticket->updated_at->format(active_date_format()) }}</div>
                         <div style="font-size:11.5px;color:var(--text-3)">{{ $ticket->updated_at->format('g:i A') }}</div>
                     </td>
                     <td>
@@ -732,22 +751,31 @@ document.getElementById('ua-search').addEventListener('keyup', function() {
 });
 
 // ── Date range filter ─────────────────────────────────────────────
-function applyDateFilter() {
-    var from = document.getElementById('ua-date-from').value;
-    var to   = document.getElementById('ua-date-to').value;
+function applyDateFilter(from, to) {
+    // Accept arguments from drApply/drClear, or read from inputs as fallback
+    if (from === undefined) from = document.getElementById('ua-date-from') ? document.getElementById('ua-date-from').value : '';
+    if (to   === undefined) to   = document.getElementById('ua-date-to')   ? document.getElementById('ua-date-to').value   : '';
     document.querySelectorAll('#ua-tickets-body tr').forEach(function(row) {
-        var dateCell = row.querySelector('td:nth-child(5)');
-        if (!dateCell) return;
-        var dateText = dateCell.textContent.trim().split('\n')[0].trim();
-        var rowDate  = new Date(dateText);
+        var rowDate = row.getAttribute('data-date') || '';
+        if (!rowDate) { row.style.display = ''; return; }
         var show = true;
-        if (from && rowDate < new Date(from)) show = false;
-        if (to   && rowDate > new Date(to))   show = false;
+        if (from && rowDate < from) show = false;
+        if (to   && rowDate > to)   show = false;
         row.style.display = show ? '' : 'none';
     });
 }
-document.getElementById('ua-date-from').addEventListener('change', applyDateFilter);
-document.getElementById('ua-date-to').addEventListener('change', applyDateFilter);
+
+// Register DR picker callback
+_drCbs['ua-dr'] = applyDateFilter;
+
+function resetUaFilters() {
+    document.getElementById('ua-search').value = '';
+    drClear('ua-dr'); // fires applyDateFilter('', '') → shows all rows
+    // Also reset any rows hidden by text search
+    document.querySelectorAll('#ua-tickets-body tr').forEach(function(row) {
+        row.style.display = '';
+    });
+}
 
 // ── Priority toggle ───────────────────────────────────────────────
 function uaSelectPriority(btn) {

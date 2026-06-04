@@ -60,8 +60,9 @@ Route::middleware(['auth', 'super-admin'])
         // Global Settings
         Route::get('settings',       [GlobalSettingController::class, 'index'])->name('settings');
         Route::post('settings',      [GlobalSettingController::class, 'update'])->name('settings.update');
-        Route::post('smtp-settings', [GlobalSettingController::class, 'updateSmtp'])->name('smtp_settings.update');
-        Route::post('sms-settings',  [GlobalSettingController::class, 'updateSms'])->name('sms_settings.update');
+        Route::post('smtp-settings',  [GlobalSettingController::class, 'updateSmtp'])->name('smtp_settings.update');
+        Route::post('sms-settings',   [GlobalSettingController::class, 'updateSms'])->name('sms_settings.update');
+        Route::post('date-format',    [GlobalSettingController::class, 'updateDateFormat'])->name('settings.date_format.update');
 
         // Finance
         Route::get('finance', [FinanceController::class, 'index'])->name('finance');

@@ -51,7 +51,7 @@ body{margin:0;padding:0;background:#f0f4f8;font-family:'Helvetica Neue',Helvetic
             </div>
             <div class="creds-row">
                 <span class="creds-label">Role</span>
-                <span class="creds-value">{{ ucwords(str_replace('_', ' ', $user->getRoleNames()->first() ?? 'user')) }}</span>
+                <span class="creds-value">{{ $user->roleDisplayName('User') }}</span>
             </div>
         </div>
 

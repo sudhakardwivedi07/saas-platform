@@ -38,7 +38,7 @@ class GlobalSettingController extends AccountBaseController
             'global_app_name' => 'required|string|max:255',
             'company_email'   => 'required|email|max:255',
             'timezone'        => 'required|string',
-            'date_format'     => 'required|string',
+            'date_format'     => 'nullable|string|max:30',
             'locale'          => 'required|string|max:10',
             'currency_code'   => 'required|string|max:10',
             'primary_color'   => 'nullable|string|max:20',
@@ -51,10 +51,16 @@ class GlobalSettingController extends AccountBaseController
 
         $data = $request->only([
             'global_app_name', 'company_email', 'timezone',
-            'date_format', 'time_format', 'locale',
+            'time_format', 'locale',
             'currency_code', 'primary_color', 'accent_color',
             'allow_registration', 'email_verification', 'maintenance_mode',
         ]);
+
+        // date_format is managed via its own dedicated endpoint; only include
+        // it when explicitly sent (e.g., future forms that still pass it).
+        if ($request->filled('date_format')) {
+            $data['date_format'] = $request->date_format;
+        }
 
         if ($request->hasFile('logo')) {
             if ($setting->logo) {
@@ -107,6 +113,20 @@ class GlobalSettingController extends AccountBaseController
         EmailSmtpSetting::updateOrCreate(['company_id' => null], $dbData);
 
         return Reply::success('SMTP settings saved successfully.');
+    }
+
+    public function updateDateFormat(Request $request)
+    {
+        $request->validate([
+            'date_format' => 'required|string|max:30',
+        ]);
+
+        $setting = GlobalSetting::firstOrCreate([]);
+        $setting->update(['date_format' => $request->date_format]);
+
+        Cache::forget('global_setting');
+
+        return Reply::success('Date format updated. Changes will be visible across the entire platform.');
     }
 
     public function updateSms(Request $request)

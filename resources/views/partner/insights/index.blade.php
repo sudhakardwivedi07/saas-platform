@@ -174,7 +174,7 @@
             </div>
         </div>
         <div class="pi-stat-value remain">{{ $insightsRemaining }}</div>
-        <div class="pi-stat-sub">Resets {{ now()->endOfMonth()->format('M d, Y') }}</div>
+        <div class="pi-stat-sub">Resets {{ now()->endOfMonth()->format(active_date_format()) }}</div>
     </div>
     <div class="pi-stat-card avg">
         <div class="pi-stat-top">
@@ -257,7 +257,7 @@
                     </td>
                     <td style="color:#64748b;">{{ $clientName }}</td>
                     <td style="color:#64748b;">{{ $companyName }}</td>
-                    <td style="color:#64748b;">{{ $report->created_at->format('M d, Y') }}</td>
+                    <td style="color:#64748b;">{{ $report->created_at->format(active_date_format()) }}</td>
                     <td>
                         @if($isDeleted)
                             <span class="badge badge-deleted">Deleted</span>

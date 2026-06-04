@@ -222,9 +222,9 @@
             @if($maxInsights) {{ number_format($maxInsights) }} insights / month · @endif
             @if($price) ${{ number_format($price, 0) }} / month @endif
             @if($subStatus === 'canceled' && $subscription?->ends_at)
-                · Access until {{ $subscription->ends_at->format('M j, Y') }}
+                · Access until {{ $subscription->ends_at->format(active_date_format()) }}
             @elseif($renewsAt)
-                · Renews {{ $renewsAt->format('M j, Y') }}
+                · Renews {{ $renewsAt->format(active_date_format()) }}
             @endif
         </div>
     </div>
@@ -379,7 +379,7 @@
     <div class="usage-kpi or">
         <div class="usage-kpi-lbl">Total Insights Remaining</div>
         <div class="usage-kpi-val orange">{{ $totalInsightsRemaining ?? 0 }}</div>
-        <div class="usage-kpi-ctx">Resets {{ now()->startOfMonth()->addMonth()->format('F j, Y') }}</div>
+        <div class="usage-kpi-ctx">Resets {{ now()->startOfMonth()->addMonth()->format(active_date_format()) }}</div>
     </div>
     <div class="usage-kpi rd">
         <div class="usage-kpi-lbl">Companies at Risk</div>
@@ -407,6 +407,7 @@
                 <option value="quota full">Quota Full</option>
                 <option value="no usage">No Usage</option>
             </select>
+            <button class="btn btn-danger" onclick="resetUsageFilters()">Reset</button>
         </div>
     </div>
     <table id="usage-table" style="width:100%;border-collapse:collapse">
@@ -689,6 +690,14 @@ function cancelSubscription() {
             });
         }
     });
+}
+
+function resetUsageFilters() {
+    document.getElementById('usage-search').value        = '';
+    document.getElementById('usage-status-filter').value = '';
+    if (window.$ && $('#usage-table').length) {
+        $('#usage-table').DataTable().search('').columns().search('').draw();
+    }
 }
 </script>
 @endpush

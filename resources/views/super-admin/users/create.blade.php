@@ -45,7 +45,7 @@
                 <select name="role" class="f-sel">
                     <option value="">— Select Role —</option>
                     @foreach($roles as $role)
-                        <option value="{{ $role->name }}">{{ $role->name }}</option>
+                        <option value="{{ $role->name }}">{{ $role->display_name }}</option>
                     @endforeach
                 </select>
                 <div class="f-error-msg" style="color:red;font-size:0.82em;margin-top:4px"></div>

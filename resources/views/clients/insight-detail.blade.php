@@ -34,7 +34,7 @@
                 <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:3px;">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                 </svg>
-                {{ isset($insight->created_at) ? \Carbon\Carbon::parse($insight->created_at)->format('F j, Y') : 'N/A' }}
+                {{ isset($insight->created_at) ? \Carbon\Carbon::parse($insight->created_at)->format(active_date_format()) : 'N/A' }}
             </span>
             <span style="font-size:0.8125rem;color:var(--text-2);">
                 <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:-2px;margin-right:3px;">

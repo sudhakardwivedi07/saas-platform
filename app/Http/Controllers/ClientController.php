@@ -85,13 +85,15 @@ class ClientController extends AccountBaseController
                 'package',
                 'quickbooksConnections',
                 'users' => fn($q) => $q->orderBy('id')->limit(1),
+                // managers covers existing clients assigned via pivot (company_id not changed)
+                'managers' => fn($q) => $q->whereHas('roles', fn($r) => $r->whereIn('name', ['client', 'client_admin'])),
             ])
             ->orderByDesc('created_at')
             ->get();
 
-        // All unique clients (first user of each sub-company) for the filter dropdown
+        // All unique clients for the filter dropdown — check users first, fall back to managers
         $this->clientsList = $this->companies
-            ->map(fn($c) => $c->users->first())
+            ->map(fn($c) => $c->users->first() ?? $c->managers->first())
             ->filter()
             ->unique('id')
             ->values();
@@ -103,8 +105,15 @@ class ClientController extends AccountBaseController
             ->where('is_active', true)->orderBy('sort')->get();
 
         // Clients = users whose company_id is one of those sub-companies
+        $subCompanyIdsArray = $subCompanyIds->toArray();
         $this->clients = User::whereIn('company_id', $subCompanyIds)
-            ->with(['company.quickbooksConnections', 'company.clientPackage', 'company.package'])
+            ->with([
+                'company.quickbooksConnections',
+                'company.clientPackage',
+                'company.package',
+                // Load only managed companies that belong to this admin's portfolio
+                'managedCompanies' => fn($q) => $q->withoutGlobalScopes()->whereIn('companies.id', $subCompanyIdsArray),
+            ])
             ->orderByDesc('created_at')
             ->get();
 
@@ -118,6 +127,8 @@ class ClientController extends AccountBaseController
         $this->planMaxClients    = $planMaxClients;
         $this->currentClientCount = $currentClientCount;
         $this->maxClientsReached  = $planMaxClients > 0 && $currentClientCount >= $planMaxClients;
+
+        $this->brandingDone = $tenant?->branding?->logo !== null;
 
         return view('clients.index', $this->data);
     }
@@ -432,10 +443,16 @@ class ClientController extends AccountBaseController
 
     public function saveDashboardDraft(Request $request, $id)
     {
-        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
+        $canEdit = auth()->user()->hasAnyRole(['admin', 'manager']) || session('impersonating_client_original_id');
+        abort_403(!$canEdit);
 
         $clientUser = User::findOrFail($id);
-        $company    = $clientUser->company;
+        $requestedCompanyId = (int) $request->input('company_id', 0);
+        if ($requestedCompanyId && $clientUser->portfolioCompanies()->contains(fn ($c) => (int) $c->id === $requestedCompanyId)) {
+            $company = Company::withoutGlobalScopes()->find($requestedCompanyId);
+        } else {
+            $company = $clientUser->company;
+        }
         abort_if(!$company, 404);
 
         $hiddenKpis = array_values(array_filter((array) $request->input('hidden_kpis', [])));
@@ -451,10 +468,16 @@ class ClientController extends AccountBaseController
 
     public function publishDashboard(Request $request, $id)
     {
-        abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
+        $canEdit = auth()->user()->hasAnyRole(['admin', 'manager']) || session('impersonating_client_original_id');
+        abort_403(!$canEdit);
 
         $clientUser = User::findOrFail($id);
-        $company    = $clientUser->company;
+        $requestedCompanyId = (int) $request->input('company_id', 0);
+        if ($requestedCompanyId && $clientUser->portfolioCompanies()->contains(fn ($c) => (int) $c->id === $requestedCompanyId)) {
+            $company = Company::withoutGlobalScopes()->find($requestedCompanyId);
+        } else {
+            $company = $clientUser->company;
+        }
         abort_if(!$company, 404);
 
         $hiddenKpis = array_values(array_filter((array) $request->input('hidden_kpis', [])));

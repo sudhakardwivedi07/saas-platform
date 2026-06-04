@@ -12,27 +12,27 @@
 /* ── Stats Cards ─────────────────────────────────── */
 .pi-stats-row { display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px; }
 .pi-stat-card { background:#fff;border-radius:12px;padding:20px 22px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid transparent; }
-.pi-stat-card.total  { border-left-color:#1a6aa8; }
+.pi-stat-card.total  { border-left-color:var(--blue); }
 .pi-stat-card.used   { border-left-color:#10b981; }
-.pi-stat-card.remain { border-left-color:#f06b25; }
-.pi-stat-card.avg    { border-left-color:#1a6aa8; }
+.pi-stat-card.remain { border-left-color:var(--orange); }
+.pi-stat-card.avg    { border-left-color:var(--blue); }
 .pi-stat-top { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px; }
 .pi-stat-label { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em; }
 .pi-stat-label.total  { color:#64748b; }
 .pi-stat-label.used   { color:#10b981; }
-.pi-stat-label.remain { color:#f06b25; }
+.pi-stat-label.remain { color:var(--orange); }
 .pi-stat-label.avg    { color:#64748b; }
 .pi-stat-value { font-size:34px;font-weight:700;line-height:1;margin-bottom:6px; }
 .pi-stat-value.total  { color:#1a202c; }
 .pi-stat-value.used   { color:#10b981; }
-.pi-stat-value.remain { color:#f06b25; }
+.pi-stat-value.remain { color:var(--orange); }
 .pi-stat-value.avg    { color:#1a202c; }
 .pi-stat-sub { font-size:12px;color:#94a3b8; }
 .pi-stat-icon { width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
-.pi-stat-icon.total  { background:#e8f2fb; color:#1a6aa8; }
+.pi-stat-icon.total  { background:var(--blue-light); color:var(--blue); }
 .pi-stat-icon.used   { background:#ecfdf5; color:#10b981; }
-.pi-stat-icon.remain { background:#fff3e6; color:#f06b25; }
-.pi-stat-icon.avg    { background:#e8f2fb; color:#1a6aa8; }
+.pi-stat-icon.remain { background:var(--orange-light); color:var(--orange); }
+.pi-stat-icon.avg    { background:var(--blue-light); color:var(--blue); }
 
 /* ── Toolbar ─────────────────────────────────────── */
 .pi-toolbar { background:#fff;border-radius:12px;padding:14px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap; }
@@ -40,13 +40,13 @@
 .pi-search-wrap { position:relative;display:flex;align-items:center; }
 .pi-search-wrap svg { position:absolute;left:10px;color:#94a3b8;pointer-events:none; }
 .pi-search-inp { height:34px;padding:0 12px 0 32px;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;font-family:inherit;color:#1a202c;background:#f8fafc;outline:none;width:210px;transition:border-color .2s; }
-.pi-search-inp:focus { border-color:#1a6aa8; }
+.pi-search-inp:focus { border-color:var(--blue); }
 .pi-status-sel { height:34px;border:1px solid #e2e8f0;border-radius:7px;padding:0 28px 0 10px;font-size:13px;font-family:inherit;color:#1a202c;background:#f8fafc url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;-webkit-appearance:none;appearance:none;outline:none;cursor:pointer;min-width:140px; }
-.pi-status-sel:focus { border-color:#1a6aa8; }
+.pi-status-sel:focus { border-color:var(--blue); }
 .pi-btn-reset { height:34px;padding:0 14px;border:1px solid #ef4444;border-radius:7px;background:#fff;color:#ef4444;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s; }
 .pi-btn-reset:hover { background:#fef2f2; }
-.pi-btn-generate { height:38px;padding:0 20px;background:#f06b25;color:#fff;border:none;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .2s;white-space:nowrap; }
-.pi-btn-generate:hover:not(:disabled) { background:#d95a1a; }
+.pi-btn-generate { height:38px;padding:0 20px;background:var(--orange);color:#fff;border:none;border-radius:8px;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .2s;white-space:nowrap; }
+.pi-btn-generate:hover:not(:disabled) { background:var(--orange-dark); }
 .pi-btn-generate:disabled { background:#9ca3af !important;cursor:not-allowed;pointer-events:none; }
 .pi-btn-export { height:38px;padding:0 16px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;color:#374151;font-size:13.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s; }
 .pi-btn-export:hover { background:#f8fafc;color:#1a202c; }
@@ -60,7 +60,7 @@
 .pi-table tr:hover td { background:#fafbfc; }
 .pi-name-cell { display:flex;align-items:center;gap:10px; }
 .pi-name-icon { color:#94a3b8;flex-shrink:0; }
-.pi-name-link { color:#1a6aa8;text-decoration:none;font-weight:500; }
+.pi-name-link { color:var(--blue);text-decoration:none;font-weight:500; }
 .pi-name-link:hover { text-decoration:underline; }
 .pi-name-deleted { color:#9ca3af;font-weight:500;text-decoration:line-through; }
 
@@ -74,13 +74,15 @@
 
 /* ── Action buttons ──────────────────────────────── */
 .pi-actions { display:flex;gap:6px;align-items:center; }
-.pi-btn-view { background:#1a6aa8;color:#fff;padding:5px 14px;border-radius:6px;font-weight:500;font-size:12.5px;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:background .2s;white-space:nowrap; }
-.pi-btn-view:hover { background:#155a8a;color:#fff;text-decoration:none; }
-.pi-btn-view:disabled { background:#9ca3af;cursor:not-allowed; }
-.pi-btn-retry { background:#f06b25;color:#fff;padding:5px 14px;border-radius:6px;font-weight:500;font-size:12.5px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .2s; }
-.pi-btn-retry:hover { background:#d95a1a; }
+.pi-btn-view { background:#fff;color:var(--orange);padding:5px 14px;border-radius:6px;font-weight:500;font-size:12.5px;border:1.5px solid var(--orange);cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:background .2s,color .2s;white-space:nowrap; }
+.pi-btn-view:hover { background:var(--orange);color:#fff;text-decoration:none; }
+.pi-btn-view:disabled { background:#f3f4f6;color:#9ca3af;border-color:#d1d5db;cursor:not-allowed; }
+.pi-btn-portal { background:var(--orange);color:#fff;padding:5px 14px;border-radius:6px;font-weight:500;font-size:12.5px;border:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:5px;transition:background .2s;white-space:nowrap; }
+.pi-btn-portal:hover { background:var(--orange-dark);color:#fff;text-decoration:none; }
+.pi-btn-retry { background:var(--orange);color:#fff;padding:5px 14px;border-radius:6px;font-weight:500;font-size:12.5px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:background .2s; }
+.pi-btn-retry:hover { background:var(--orange-dark); }
 .pi-btn-icon { width:30px;height:30px;border-radius:6px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0; }
-.pi-btn-icon.dl  { background:#fff3e6;color:#f06b25;border:1px solid #fddbb5; }
+.pi-btn-icon.dl  { background:var(--orange-light);color:var(--orange);border:1px solid #fddbb5; }
 .pi-btn-icon.del { background:#fee2e2;color:#ef4444; }
 .pi-btn-icon:hover { transform:scale(1.08); }
 
@@ -90,7 +92,7 @@
 .pi-page-btns { display:flex;align-items:center;gap:4px; }
 .pi-page-btn { height:32px;min-width:32px;padding:0 8px;border-radius:6px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:12.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .2s;white-space:nowrap; }
 .pi-page-btn:hover:not(:disabled) { background:#f1f5f9;border-color:#cbd5e0; }
-.pi-page-btn.active { background:#1a6aa8;color:#fff;border-color:#1a6aa8; }
+.pi-page-btn.active { background:var(--blue);color:#fff;border-color:var(--blue); }
 .pi-page-btn:disabled { opacity:.45;cursor:not-allowed; }
 .pi-page-btn.pi-page-nav { padding:0 14px;color:#374151; }
 .pi-per-page { display:flex;align-items:center;gap:6px;font-size:12.5px;color:#64748b; }
@@ -107,12 +109,12 @@
 .pi-modal .pi-modal-sub { font-size:13.5px;color:#6b7280;margin:0 0 22px; }
 .pi-modal label { display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:6px; }
 .pi-modal select { width:100%;height:42px;padding:0 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13.5px;font-family:inherit;color:#1a202c;background:#fff;outline:none;cursor:pointer;transition:border-color .2s;margin-bottom:16px; }
-.pi-modal select:focus { border-color:#f06b25; }
+.pi-modal select:focus { border-color:var(--orange); }
 .pi-modal select:disabled { background:#f8fafc;color:#9ca3af;cursor:not-allowed; }
-.pi-modal-note { background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12.5px;color:#1e40af;margin-bottom:22px;line-height:1.5; }
+.pi-modal-note { background:var(--blue-pale);border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--blue);margin-bottom:22px;line-height:1.5; }
 .pi-modal-actions { display:flex;gap:10px; }
-.pi-modal-btn-generate { flex:1;background:#f06b25;color:#fff;border:none;padding:12px 20px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px; }
-.pi-modal-btn-generate:hover { background:#d95a1a; }
+.pi-modal-btn-generate { flex:1;background:var(--orange);color:#fff;border:none;padding:12px 20px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px; }
+.pi-modal-btn-generate:hover { background:var(--orange-dark); }
 .pi-modal-btn-generate:disabled { opacity:.6;cursor:not-allowed; }
 .pi-modal-btn-cancel { flex:1;background:#fff;color:#374151;border:1.5px solid #e2e8f0;padding:11px 20px;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s; }
 .pi-modal-btn-cancel:hover { background:#f8fafc; }
@@ -152,7 +154,7 @@
             </div>
         </div>
         <div class="pi-stat-value total">{{ $totalInsights }}</div>
-        <div class="pi-stat-sub">Total insights in subscription</div>
+        <div class="pi-stat-sub">Monthly limit from your plan</div>
     </div>
     <div class="pi-stat-card used">
         <div class="pi-stat-top">
@@ -162,7 +164,7 @@
             </div>
         </div>
         <div class="pi-stat-value used">{{ $insightsUsed }}</div>
-        <div class="pi-stat-sub">Insights generated this cycle</div>
+        <div class="pi-stat-sub">Insights generated this month</div>
     </div>
     <div class="pi-stat-card remain">
         <div class="pi-stat-top">
@@ -237,6 +239,7 @@
                     data-search="{{ strtolower($report->report_name . ' ' . $clientName . ' ' . $companyName) }}"
                     data-status="{{ $rowStatus }}"
                     data-company-id="{{ $report->company_id }}"
+                    data-user-id="{{ $report->user_id }}"
                     style="{{ $isDeleted ? 'opacity:0.65;' : '' }}">
                     <td>
                         <div class="pi-name-cell">
@@ -282,7 +285,13 @@
                                 @elseif($isFailed)
                                     <button class="pi-btn-retry" onclick="piRetry({{ $report->id }})">Retry</button>
                                 @else
-                                    <a href="{{ route('partner-insights.view', $report->encrypted_id) }}" class="pi-btn-view">View</a>
+                                    <a href="{{ route('partner-insights.view', $report->encrypted_id) }}" class="pi-btn-view">View Insights</a>
+                                    @if($report->user_id)
+                                    <form method="POST" action="{{ route('clients.login-as', $report->user_id) }}" style="display:inline;">
+                                        @csrf
+                                        <button type="submit" class="pi-btn-portal">View Client Portal</button>
+                                    </form>
+                                    @endif
                                 @endif
                             </div>
                         @endif
@@ -643,7 +652,7 @@
         .then(data => {
             if (data.status === 'processing') {
                 Swal.close();
-                prependRow(data.report_id, data.report_name, data.client_name || clientName, data.company_name || companyName, companyId);
+                prependRow(data.report_id, data.report_name, data.client_name || clientName, data.company_name || companyName, companyId, data.user_id || '');
                 pollStatus(data.report_id);
             } else {
                 Swal.fire({ icon:'error', title:'Error', text: data.message || 'Failed to generate insights.' });
@@ -670,7 +679,7 @@
         .catch(() => setTimeout(() => pollStatus(id), 15000));
     }
 
-    function prependRow(id, name, clientName, companyName, companyId) {
+    function prependRow(id, name, clientName, companyName, companyId, userId) {
         const tbody = document.getElementById('piTableBody');
         const empty = document.getElementById('pi-empty-row');
         if (empty) empty.style.display = 'none';
@@ -679,6 +688,7 @@
         tr.id = 'pi-row-' + id;
         tr.dataset.status    = 'processing';
         tr.dataset.companyId = companyId || '';
+        tr.dataset.userId    = userId || '';
         tr.dataset.search    = (name + ' ' + clientName + ' ' + companyName).toLowerCase();
         tr.innerHTML = `
             <td><div class="pi-name-cell">
@@ -713,7 +723,14 @@
         }
         const actions = row.querySelector('.pi-actions');
         if (actions) {
-            actions.innerHTML = `<a href="${viewUrl}" class="pi-btn-view">View</a>`;
+            const userId = row.dataset.userId || '';
+            const portalBtn = userId
+                ? `<form method="POST" action="/clients/${userId}/login-as" style="display:inline;">
+                       <input type="hidden" name="_token" value="${CSRF}">
+                       <button type="submit" class="pi-btn-portal">View Client Portal</button>
+                   </form>`
+                : '';
+            actions.innerHTML = `<a href="${viewUrl}" class="pi-btn-view">View Insights</a>${portalBtn}`;
         }
 
         // Refresh the Generate button and header button
@@ -721,18 +738,16 @@
         piSyncHeaderBtn();
 
         // Success popup
+        const companyName = row?.cells[2]?.textContent?.trim() || '';
         Swal.fire({
             title: 'Insight Generated!',
             html: `<p style="color:#6b7280;font-size:14px;line-height:1.6">
-                       Your CFO financial insight is ready to view.
+                       Your CFO level Financial Insight is ready to view for <strong>"${companyName}"</strong>.
                    </p>`,
             icon: 'success',
             confirmButtonText: 'View Insight',
-            showCancelButton: true,
-            cancelButtonText: 'Later',
+            showCancelButton: false,
             confirmButtonColor: '#f06b25',
-            cancelButtonColor: '#6b7280',
-            reverseButtons: false,
         }).then(result => {
             if (result.isConfirmed) window.location.href = viewUrl;
         });

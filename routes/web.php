@@ -84,6 +84,8 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/kpi-synopsis-files/{kpiId}', [DashboardKPIController::class, 'getKpiSynopsisFiles'])->name('kpi-synopsis-files');
         Route::post('/kpi-synopsis-api', [DashboardKPIController::class, 'callKpiSynopsisApi'])->name('kpi-synopsis-api');
+        Route::post('/kpi-synopsis-save', [DashboardKPIController::class, 'saveKpiSynopsis'])->name('kpi-synopsis-save');
+        Route::get('/kpi-synopsis-get', [DashboardKPIController::class, 'getKpiSynopsisOverride'])->name('kpi-synopsis-get');
     });
 
     // Profile
@@ -257,6 +259,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/status/{id}',                 [InsightsController::class, 'checkStatus'])->name('status');
         Route::get('/{encryptedId}/view',          [InsightsController::class, 'view'])->name('view');
         Route::get('/{id}/data',                   [InsightsController::class, 'getData'])->name('data');
+        Route::post('/{id}/update-content',        [InsightsController::class, 'updateContent'])->name('update-content');
         Route::get('/{id}/export-pdf',             [InsightsController::class, 'exportPdf'])->name('export-pdf');
         Route::get('/{id}/download',               [InsightsController::class, 'download'])->name('download');
         Route::delete('/{id}',                     [InsightsController::class, 'destroy'])->name('destroy');

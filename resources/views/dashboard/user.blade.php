@@ -5,11 +5,55 @@
 
 @if(!empty($isAdminView))
 @php
-    $adminViewUser  = $viewingAsUser ?? auth()->user();
-    $adminCompany   = $adminViewUser->company;
-    $adminPubStatus = $dashboardPublishStatus ?? 'published';
+    $adminViewUser = $viewingAsUser ?? auth()->user();
+
+    // Preload per-company dashboard settings FIRST so admin bar can reference them
+    $kpiCoSettingsMap = [];
+    foreach(($kpiCompanies ?? collect()) as $__co) {
+        $__s = \App\Models\ClientDashboardSetting::forCompany($__co->id);
+        $kpiCoSettingsMap[$__co->id] = [
+            'name'           => $__co->company_name,
+            'hidden_kpis'    => array_values($__s->draft_hidden_kpis ?? []),
+            'publish_status' => $__s->publish_status ?? 'published',
+            'has_insights'   => \App\Models\Report::where('company_id', $__co->id)
+                ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
+                ->exists(),
+        ];
+    }
+
+    // Admin bar should reflect the SELECTED entity, not the client's primary company
+    $_selCoId     = $selectedKpiCompanyId ?? null;
+    $adminCompany = $_selCoId
+        ? (($kpiCompanies ?? collect())->firstWhere('id', $_selCoId) ?? $adminViewUser->company)
+        : $adminViewUser->company;
+    $adminPubStatus = ($_selCoId && isset($kpiCoSettingsMap[$_selCoId]))
+        ? $kpiCoSettingsMap[$_selCoId]['publish_status']
+        : ($dashboardPublishStatus ?? 'published');
 @endphp
 <style>
+/* ── Admin action toast ───────────────────────────────────────────── */
+.cdb-toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 18px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 600;
+    box-shadow: 0 8px 28px rgba(0,0,0,.18);
+    transform: translateY(16px);
+    opacity: 0;
+    transition: opacity .2s ease, transform .2s ease;
+    pointer-events: none;
+}
+.cdb-toast.show { opacity: 1; transform: translateY(0); }
+.cdb-toast.success { background: #ecfdf5; color: #065f46; border: 1.5px solid #6ee7b7; }
+.cdb-toast.error   { background: #fef2f2; color: #991b1b; border: 1.5px solid #fca5a5; }
+
 .cdb-admin-bar {
     display: flex;
     align-items: center;
@@ -89,35 +133,40 @@
 /* ── KPI Eye Icon ─────────────────────────────────────── */
 .kpi-eye-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    background: none;
+    top: 8px;
+    right: 8px;
+    background: rgba(0,0,0,.06);
     border: none;
-    cursor: default;
-    padding: 4px;
-    border-radius: 6px;
+    cursor: pointer;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
     line-height: 1;
     z-index: 5;
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
-    transition: background .1s;
-    opacity: .55;
+    transition: background .15s;
 }
-/* In edit mode: icons are fully interactive */
-.kpi-edit-active .kpi-eye-btn {
-    cursor: pointer;
-    opacity: 1;
-}
-.kpi-edit-active .kpi-eye-btn:hover { background: rgba(0,0,0,.06); }
+/* Only visible in edit mode */
+.kpi-edit-active .kpi-eye-btn { display: flex; }
+.kpi-edit-active .kpi-eye-btn:hover { background: rgba(0,0,0,.12); }
 .kpi-card { position: relative; }
-/* Hidden state is always visible — shows regardless of edit mode */
-.kpi-card.kpi-hidden-draft {
+/* Hidden cards are completely invisible outside edit mode */
+.kpi-card.kpi-hidden-draft { display: none; }
+/* Hide entire section block when all its KPI cards are draft-hidden */
+.kpi-tier-block.kpi-section-all-hidden { display: none; }
+/* In edit mode: keep section visible so admin can still toggle cards */
+.kpi-edit-active .kpi-tier-block.kpi-section-all-hidden { display: block; }
+/* In edit mode: show greyed out so admin can toggle visibility */
+.kpi-edit-active .kpi-card.kpi-hidden-draft {
+    display: block;
     opacity: .42;
     outline: 2px dashed rgba(240,107,33,.5);
     outline-offset: -2px;
 }
-.kpi-card.kpi-hidden-draft::after {
+.kpi-edit-active .kpi-card.kpi-hidden-draft::after {
     content: 'Hidden from client';
     position: absolute;
     bottom: 8px;
@@ -132,6 +181,7 @@
     pointer-events: none;
 }
 </style>
+<div id="cdbToast" class="cdb-toast" role="status" aria-live="polite"></div>
 <div class="cdb-admin-bar" id="cdbAdminBar">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <a href="{{ $backUrl ?? route('dashboard') }}" class="cdb-exit-btn">
@@ -145,6 +195,7 @@
             <span id="cdbStatusBadge" class="cdb-status-badge cdb-status-{{ $adminPubStatus }}">{{ ucfirst($adminPubStatus) }}</span>
         </div>
     </div>
+    @if(!empty($showKpiDashboard))
     <div class="cdb-bar-right">
         <button class="cdb-btn cdb-btn-edit" id="cdbEditModeBtn" onclick="cdbToggleEditMode()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -158,6 +209,22 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Publish
         </button>
+    </div>
+    @endif
+</div>
+
+{{-- Edit Mode confirmation modal --}}
+<div id="cdbEditConfirmModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;width:100%;max-width:400px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.2);padding:28px 28px 22px;text-align:center">
+        <div style="width:48px;height:48px;border-radius:50%;background:#fff3ec;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2" width="22" height="22"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </div>
+        <div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:8px">Enable Edit Mode?</div>
+        <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:22px">You are about to enter edit mode. You can toggle KPI visibility and save or publish changes to the client dashboard.</div>
+        <div style="display:flex;gap:10px;justify-content:center">
+            <button onclick="cdbCancelEditMode()" style="flex:1;padding:9px 16px;border:1px solid #d1d5db;border-radius:8px;background:#fff;color:#374151;font-size:13px;font-weight:600;cursor:pointer">Cancel</button>
+            <button onclick="cdbConfirmEditMode()" style="flex:1;padding:9px 16px;border:none;border-radius:8px;background:var(--orange);color:#fff;font-size:13px;font-weight:600;cursor:pointer">Enable Edit Mode</button>
+        </div>
     </div>
 </div>
 @endif
@@ -560,9 +627,7 @@
                 <a href="{{ route('quickbooks.index') }}" class="cfo-btn-get-insights" style="text-decoration:none">Connect QuickBooks</a>
                 @endif
             @endif
-            @if(!empty($isAdminView) && !empty($viewingAsUser))
-            <a href="{{ route('clients.insights', $viewingAsUser->id) }}" class="cfo-btn-view-insights">View Insights</a>
-            @else
+            @if(empty($isAdminView))
             <a href="{{ route('insights.index') }}" class="cfo-btn-view-insights">View Insights</a>
             @endif
         </div>
@@ -576,6 +641,17 @@
         <p>We could not resolve a company for KPI metrics. Ask your administrator to link your account to a company.</p>
     </div>
 @else
+@php
+    $_initHasInsights = \App\Models\Report::where('company_id', $selectedKpiCompanyId)
+        ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
+        ->exists();
+@endphp
+    <div id="kpiNoInsightsPlaceholder" style="{{ $_initHasInsights ? 'display:none;' : '' }}padding:40px 24px;text-align:center;background:#fff;border:1px solid #e5e7eb;border-radius:10px;margin-top:10px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" width="40" height="40" style="margin-bottom:12px"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        <h3 style="margin:0 0 6px;font-size:17px;font-weight:700;color:#111827">No Insights Yet</h3>
+        <p style="margin:0;font-size:13px;color:#6b7280">No financial insights have been generated for this company. Upload reports or connect QuickBooks to get started.</p>
+    </div>
+    <div id="kpiEmbedWrap" style="{{ $_initHasInsights ? '' : 'display:none;' }}">
     @include('dashboard.partials.kpi-dashboard-embed', [
         'kpiDataUrl'        => $kpiDataUrl,
         'kpiDetailBaseUrl'  => $kpiDetailBaseUrl,
@@ -583,6 +659,7 @@
         'selectedCompanyId' => $selectedKpiCompanyId,
         'clientHiddenKpis'  => !empty($isAdminView) ? [] : ($hiddenKpis ?? []),
     ])
+    </div>
 @endif
 </div>{{-- .user-kpi-fullbleed --}}
 
@@ -621,10 +698,13 @@
     const CSRF             = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     const SAVE_DRAFT_URL   = '{{ route("clients.dashboard.save-draft", $viewingAsUser->id) }}';
     const PUBLISH_URL      = '{{ route("clients.dashboard.publish",    $viewingAsUser->id) }}';
+    const KPI_CO_SETTINGS  = {!! json_encode($kpiCoSettingsMap ?? []) !!};
     let editModeActive     = false;
+    let currentCompanyId   = {{ $selectedKpiCompanyId ?? 'null' }};
     let draftHiddenKpis    = {!! json_encode(array_values($draftHiddenKpis ?? [])) !!};
 
-    // Inject eye icons once KPI cards are in the DOM
+    // Called by the embed after cards are in the DOM; also called immediately below
+    // in case the embed's script already ran before this one (script ordering race).
     window.__kpiReadyCallback = function () {
         injectEyeIcons();
     };
@@ -646,6 +726,7 @@
             card.appendChild(btn);
             refreshEyeIcon(kpiType);
         });
+        refreshSectionTitleVisibility();
     }
 
     function refreshEyeIcon(kpiType) {
@@ -661,63 +742,162 @@
         }
     }
 
+    function refreshSectionTitleVisibility() {
+        document.querySelectorAll('.kpi-tier-block').forEach(function (block) {
+            var cards = block.querySelectorAll('[data-kpi-card]');
+            var allHidden = cards.length > 0 && Array.from(cards).every(function (c) {
+                return c.classList.contains('kpi-hidden-draft');
+            });
+            block.classList.toggle('kpi-section-all-hidden', allHidden);
+        });
+    }
+
     function toggleKpiHidden(kpiType) {
         const idx = draftHiddenKpis.indexOf(kpiType);
         if (idx === -1) draftHiddenKpis.push(kpiType);
         else draftHiddenKpis.splice(idx, 1);
         refreshEyeIcon(kpiType);
+        refreshSectionTitleVisibility();
     }
 
     window.cdbToggleEditMode = function () {
-        editModeActive = !editModeActive;
-        const btn   = document.getElementById('cdbEditModeBtn');
-        const dash  = document.getElementById('kpiDashboard');
-        if (btn)  btn.classList.toggle('active', editModeActive);
-        if (dash) dash.classList.toggle('kpi-edit-active', editModeActive);
-        if (editModeActive) {
-            injectEyeIcons();
+        if (!editModeActive) {
+            // Show confirmation before enabling
+            var modal = document.getElementById('cdbEditConfirmModal');
+            if (modal) { modal.style.display = 'flex'; return; }
         }
+        // Disabling — no confirmation needed
+        editModeActive = false;
+        var btn   = document.getElementById('cdbEditModeBtn');
+        var dash  = document.getElementById('kpiDashboard');
+        if (btn)  btn.classList.remove('active');
+        if (dash) dash.classList.remove('kpi-edit-active');
     };
 
+    window.cdbConfirmEditMode = function () {
+        var modal = document.getElementById('cdbEditConfirmModal');
+        if (modal) modal.style.display = 'none';
+        editModeActive = true;
+        var btn   = document.getElementById('cdbEditModeBtn');
+        var dash  = document.getElementById('kpiDashboard');
+        if (btn)  btn.classList.add('active');
+        if (dash) dash.classList.add('kpi-edit-active');
+    };
+
+    window.cdbCancelEditMode = function () {
+        var modal = document.getElementById('cdbEditConfirmModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    function showCdbToast(msg, type) {
+        var t = document.getElementById('cdbToast');
+        if (!t) return;
+        t.textContent = msg;
+        t.className = 'cdb-toast ' + (type || 'success');
+        requestAnimationFrame(function () { t.classList.add('show'); });
+        clearTimeout(t._timer);
+        t._timer = setTimeout(function () { t.classList.remove('show'); }, 3200);
+    }
+
     window.cdbSaveDraft = function () {
-        const btn = document.getElementById('cdbSaveDraftBtn');
+        var btn = document.getElementById('cdbSaveDraftBtn');
+        var draftSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
         if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
         fetch(SAVE_DRAFT_URL, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            body:    JSON.stringify({ hidden_kpis: draftHiddenKpis }),
+            body:    JSON.stringify({ hidden_kpis: draftHiddenKpis, company_id: currentCompanyId }),
         })
         .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Draft'; }
-            const badge = document.getElementById('cdbStatusBadge');
+        .then(function () {
+            if (btn) { btn.disabled = false; btn.innerHTML = draftSvg + ' Save Draft'; }
+            var badge = document.getElementById('cdbStatusBadge');
             if (badge) { badge.textContent = 'Draft'; badge.className = 'cdb-status-badge cdb-status-draft'; }
+            if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].publish_status = 'draft';
+            // Exit edit mode so hidden cards are completely hidden (not just greyed out)
+            editModeActive = false;
+            var _eb = document.getElementById('cdbEditModeBtn'), _db = document.getElementById('kpiDashboard');
+            if (_eb) _eb.classList.remove('active');
+            if (_db) _db.classList.remove('kpi-edit-active');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'success', title: 'Draft Saved', text: 'Changes have been saved as a draft.', confirmButtonText: 'View Dashboard', confirmButtonColor: '#0788be', showCancelButton: false}).then(function(r) { if (r.isConfirmed) window.location.reload(); });
+            }
         })
         .catch(function () {
-            if (btn) { btn.disabled = false; btn.textContent = 'Save Draft'; }
-            alert('Failed to save draft. Please try again.');
+            if (btn) { btn.disabled = false; btn.innerHTML = draftSvg + ' Save Draft'; }
+            showCdbToast('Failed to save draft. Please try again.', 'error');
         });
     };
 
     window.cdbPublish = function () {
-        const btn = document.getElementById('cdbPublishBtn');
+        var btn = document.getElementById('cdbPublishBtn');
+        var pubSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>';
         if (btn) { btn.disabled = true; btn.textContent = 'Publishing…'; }
         fetch(PUBLISH_URL, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            body:    JSON.stringify({ hidden_kpis: draftHiddenKpis }),
+            body:    JSON.stringify({ hidden_kpis: draftHiddenKpis, company_id: currentCompanyId }),
         })
         .then(function (r) { return r.json(); })
-        .then(function (data) {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Publish'; }
-            const badge = document.getElementById('cdbStatusBadge');
+        .then(function () {
+            if (btn) { btn.disabled = false; btn.innerHTML = pubSvg + ' Publish'; }
+            var badge = document.getElementById('cdbStatusBadge');
             if (badge) { badge.textContent = 'Published'; badge.className = 'cdb-status-badge cdb-status-published'; }
+            if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].publish_status = 'published';
+            // Exit edit mode so hidden cards are completely hidden (not just greyed out)
+            editModeActive = false;
+            var _eb2 = document.getElementById('cdbEditModeBtn'), _db2 = document.getElementById('kpiDashboard');
+            if (_eb2) _eb2.classList.remove('active');
+            if (_db2) _db2.classList.remove('kpi-edit-active');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'success', title: 'Published!', text: 'Successfully published! The client can now see all reviewed content.', confirmButtonText: 'View Dashboard', confirmButtonColor: '#0788be', showCancelButton: false, }).then(function(r) { if (r.isConfirmed) window.location.reload(); });
+            }
         })
         .catch(function () {
-            if (btn) { btn.disabled = false; btn.textContent = 'Publish'; }
-            alert('Failed to publish. Please try again.');
+            if (btn) { btn.disabled = false; btn.innerHTML = pubSvg + ' Publish'; }
+            showCdbToast('Failed to publish. Please try again.', 'error');
         });
     };
+
+    // Wrap company change to keep admin bar in sync with embed's company selector
+    (function () {
+        var _orig = window.__kpiEmbedChangeCompany;
+        window.__kpiEmbedChangeCompany = function (id) {
+            id = parseInt(String(id), 10);
+            currentCompanyId = id;
+            var s = KPI_CO_SETTINGS[id];
+            if (s) {
+                var nameEl = document.querySelector('.cdb-company-name');
+                if (nameEl) nameEl.textContent = s.name;
+                draftHiddenKpis = (s.hidden_kpis || []).slice();
+                var badge = document.getElementById('cdbStatusBadge');
+                if (badge) {
+                    var st = s.publish_status || 'published';
+                    badge.textContent = st.charAt(0).toUpperCase() + st.slice(1);
+                    badge.className = 'cdb-status-badge cdb-status-' + st;
+                }
+            }
+            // Exit edit mode on company switch
+            editModeActive = false;
+            var editBtn   = document.getElementById('cdbEditModeBtn');
+            var dash      = document.getElementById('kpiDashboard');
+            if (editBtn) editBtn.classList.remove('active');
+            if (dash)    dash.classList.remove('kpi-edit-active');
+
+            // Show/hide KPI embed based on whether the selected company has insights
+            var hasInsights = s ? (s.has_insights !== false) : true;
+            var embedWrap   = document.getElementById('kpiEmbedWrap');
+            var noInsights  = document.getElementById('kpiNoInsightsPlaceholder');
+            if (embedWrap)  embedWrap.style.display  = hasInsights ? '' : 'none';
+            if (noInsights) noInsights.style.display = hasInsights ? 'none' : '';
+
+            if (hasInsights && _orig) _orig(id);
+        };
+    }());
+
+    // Embed's script runs before this one, so KPI cards are already in the DOM.
+    // Apply eye icons and draft-hidden state immediately without waiting for callback.
+    injectEyeIcons();
 }());
 </script>
 @endpush

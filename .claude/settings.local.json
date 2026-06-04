@@ -74,7 +74,8 @@
       "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\whitelabel-saas\\\\resources\\\\views\" -Recurse -Filter \"*dashboard*\")",
       "Bash(Select-Object FullName)",
       "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\whitelabel-saas\" -Name)",
-      "Bash(Select-Object -First 20)"
+      "Bash(Select-Object -First 20)",
+      "Bash(php -r ' *)"
     ]
   }
 }

@@ -60,7 +60,6 @@
             <thead>
                 <tr>
                     <th>Company</th>
-                    <th>Plan</th>
                     <th>Subscription</th>
                     <th>QB</th>
                     <th>Status</th>
@@ -72,7 +71,6 @@
                 @foreach($companies as $co)
                 @php
                     $sub       = $co->subscription;
-                    $planName  = $co->clientPackage?->name ?? $co->package?->name ?? '—';
                     $rawStatus = $co->status ?? 'inactive';
                     $displayStatus = match($rawStatus) {
                         'active'    => 'active',
@@ -116,13 +114,6 @@
                                 @endif
                             </div>
                         </div>
-                    </td>
-                    <td>
-                        @if($planName !== '—')
-                            <span class="badge b-blue" style="font-size:11.5px">{{ $planName }}</span>
-                        @else
-                            <span style="color:var(--text-3);font-size:13px">—</span>
-                        @endif
                     </td>
                     <td>
                         @if($sub)
@@ -200,8 +191,8 @@ $(document).ready(function() {
     var table = $('#co-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
-        order: [[5, 'desc']],
-        columnDefs: [{ orderable: false, targets: [6] }],
+        order: [[4, 'desc']],
+        columnDefs: [{ orderable: false, targets: [5] }],
         language: {
             info: 'Showing _START_–_END_ of _TOTAL_ companies',
             infoEmpty: 'No companies found',
@@ -216,7 +207,7 @@ $(document).ready(function() {
 
     document.getElementById('co-search').addEventListener('keyup', function() { table.search(this.value).draw(); });
     document.getElementById('co-status-filter').addEventListener('change', function() {
-        table.column(4).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+        table.column(3).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
     });
 });
 

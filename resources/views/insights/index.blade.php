@@ -112,22 +112,37 @@
     align-items: center;
     gap: 8px;
 }
+.bar-select-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+.bar-select-wrap svg.bar-select-arrow {
+    position: absolute;
+    right: 10px;
+    pointer-events: none;
+    color: #94a3b8;
+    flex-shrink: 0;
+}
 .bar-select {
-    height: 34px;
-    border: 1px solid #e2e8f0;
-    border-radius: 7px;
-    padding: 0 28px 0 10px;
+    height: 36px;
+    border: 1.5px solid #d1d5db;
+    border-radius: 8px;
+    padding: 0 32px 0 12px;
     font-size: 13px;
     font-family: inherit;
     color: #1a202c;
-    background: #f8fafc url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;
+    background: #fff;
     -webkit-appearance: none;
     appearance: none;
     outline: none;
     cursor: pointer;
     min-width: 160px;
+    font-weight: 500;
+    transition: border-color .15s;
 }
-.bar-select:focus { border-color: #1a6aa8; }
+.bar-select:hover { border-color: #9ca3af; }
+.bar-select:focus { border-color: var(--blue, #1a6aa8); box-shadow: 0 0 0 3px rgba(26,106,168,.12); }
 .bar-right {
     margin-left: auto;
     display: flex;
@@ -396,17 +411,29 @@
     </div> -->
     <!-- <div class="viewing-company">{{ $selectedCompany?->company_name ?? 'Your Company' }}</div> -->
 
-    {{-- Company selector (always visible when there are companies) --}}
-    @if($companies->count() > 0)
-    <!-- <div class="company-selector-wrap">
-        <select class="bar-select" onchange="switchCompany(this.value)">
-            @foreach($companies as $co)
-                <option value="{{ $co->id }}" {{ $co->id == $selectedCompanyId ? 'selected' : '' }}>
-                    {{ $co->company_name }}
-                </option>
-            @endforeach
-        </select>
-    </div> -->
+    {{-- Company selector: dropdown for multiple companies, label for single --}}
+    @if($companies->count() > 1)
+    <div class="company-selector-wrap">
+        <div class="bar-select-wrap">
+            <select class="bar-select" onchange="switchCompany(this.value)">
+                @foreach($companies as $co)
+                    <option value="{{ $co->id }}" {{ $co->id == $selectedCompanyId ? 'selected' : '' }}>
+                        {{ $co->company_name }}
+                    </option>
+                @endforeach
+            </select>
+            <svg class="bar-select-arrow" width="12" height="7" viewBox="0 0 12 7" fill="none">
+                <path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+    </div>
+    @elseif($companies->count() === 1)
+    <div class="company-selector-wrap">
+        <span style="display:inline-flex;align-items:center;height:36px;padding:0 14px;background:#f1f5f9;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;font-weight:500;color:#1a202c;white-space:nowrap;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+            {{ $companies->first()->company_name }}
+        </span>
+    </div>
     @endif
 
     {{-- Right: usage bar + status filter + search --}}

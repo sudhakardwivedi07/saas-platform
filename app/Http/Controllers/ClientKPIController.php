@@ -65,7 +65,7 @@ class ClientKPIController extends AccountBaseController
             'kpiType' => $kpiType,
             'clientId' => $clientId,
             'kpiDataUrl' => route('clients.kpi-data', $clientId),
-            'kpiListBackUrl' => route('clients.kpi-dashboard', $clientId),
+            'kpiListBackUrl' => route('dashboard'),
             'kpiPageTitle' => $this->getKpiTitle($kpiType),
         ]);
 

@@ -90,6 +90,8 @@ class ClientCompanyController extends AccountBaseController
             'package',
             'clientPackage',
             'subscription',
+            // withoutGlobalScopes bypasses HasTenant scope so connections created by admin are visible
+            'quickbooksConnections' => fn ($q) => $q->withoutGlobalScopes()->where('is_active', true),
         ]);
 
         // Check company limit — no plan means unlimited
@@ -278,12 +280,14 @@ class ClientCompanyController extends AccountBaseController
                     403,
                     'You cannot assign this user.'
                 );
+                // Link the existing user to the new company via pivot WITHOUT changing their
+                // primary company_id — preserving their association with existing companies.
                 $existingUser->managedCompanies()->syncWithoutDetaching([
                     $company->id => ['role' => 'admin'],
                 ]);
                 $newUser = $existingUser;
             } else {
-                $role    = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
+                $role    = Role::firstOrCreate(['name' => 'client', 'guard_name' => 'web']);
                 $newUser = User::create([
                     'company_id'        => $company->id,
                     'name'              => $request->admin_name,
@@ -304,7 +308,7 @@ class ClientCompanyController extends AccountBaseController
 
         $this->activateCompany($company, $newUser, null, $setting);
 
-        return redirect()->route('my-companies.index')
+        return redirect()->to(route('clients.index') . '?tab=companies')
             ->with('success', "Company '{$company->company_name}' created successfully!");
     }
 

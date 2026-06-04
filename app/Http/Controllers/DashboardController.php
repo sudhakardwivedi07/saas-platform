@@ -39,6 +39,43 @@ class DashboardController extends AccountBaseController
         // Simple dashboard for basic users — no access to management stats
         if (!auth()->user()->hasAnyRole(['admin', 'manager'])) {
             $this->loadUserPlanData($company);
+
+            // If an admin is impersonating this client, inject the admin bar data
+            // so Edit Mode / Save Draft / Publish remain available.
+            if (session('impersonating_client_original_id')) {
+                $clientUser = auth()->user();
+
+                // Filter kpiCompanies to only show companies owned by this admin,
+                // so the entity dropdown doesn't include companies from other admins.
+                $adminUser        = User::withoutGlobalScopes()->find(session('impersonating_client_original_id'));
+                $adminCompanyId   = $adminUser?->company_id;
+                if ($adminCompanyId) {
+                    $adminSubIds = Company::withoutGlobalScopes()
+                        ->where('created_by', $adminCompanyId)
+                        ->pluck('id');
+                    $filtered = ($this->kpiCompanies ?? collect())->filter(
+                        fn ($c) => $adminSubIds->contains($c->id)
+                    )->values();
+                    if ($filtered->isNotEmpty()) {
+                        $this->kpiCompanies = $filtered;
+                        // Re-anchor selectedKpiCompanyId if it's no longer in the filtered list
+                        if (!$this->kpiCompanies->contains(fn ($c) => (int) $c->id === (int) ($this->selectedKpiCompanyId ?? 0))) {
+                            $this->selectedKpiCompanyId = $this->kpiCompanies->first()->id;
+                        }
+                    }
+                }
+
+                // dashSetting should reflect the SELECTED entity, not the client's primary company
+                $selectedCompanyId = $this->selectedKpiCompanyId ?? $company->id;
+                $dashSetting = ClientDashboardSetting::forCompany($selectedCompanyId);
+
+                $this->isAdminView            = true;
+                $this->viewingAsUser          = $clientUser;
+                $this->dashboardPublishStatus = $dashSetting->publish_status ?? 'published';
+                $this->draftHiddenKpis        = $dashSetting->draft_hidden_kpis ?? [];
+                $this->backUrl                = route('clients.stop-impersonating');
+            }
+
             return view('dashboard.user', $this->data);
         }
 
@@ -71,9 +108,14 @@ class DashboardController extends AccountBaseController
         $this->activeClientCount  = $allClients->where('status', 'active')->count();
         $this->companyCount       = $allCompanies->count();
         $this->activeCompanyCount = $allCompanies->where('status', 'active')->count();
-        $this->qbConnectedCount   = $allCompanies->filter(
-            fn($c) => $c->quickbooksConnections->where('is_active', true)->isNotEmpty()
-        )->count();
+        // Count via direct query to bypass any global scopes on the relation
+        $this->qbConnectedCount = $subCompanyIds->isNotEmpty()
+            ? QuickBooksConnection::withoutGlobalScopes()
+                ->whereIn('company_id', $subCompanyIds)
+                ->where('is_active', true)
+                ->distinct('company_id')
+                ->count('company_id')
+            : 0;
 
         // Active subscriptions = companies with an active/trial subscription or a client plan assigned without a subscription record
         $this->activeSubscriptions = $allCompanies->filter(
@@ -138,12 +180,12 @@ class DashboardController extends AccountBaseController
         $this->startDateInput = $startDate->format('Y-m-d');
         $this->endDateInput   = $endDate->format('Y-m-d');
 
-        // Pending Review = Analyzed reports from the current period (insights ready for admin review)
-        $this->pendingReview = Report::withoutGlobalScopes()
-            ->whereIn('company_id', $reportCompanyIds)
-            ->where('status', 'Analyzed')
-            ->whereBetween('updated_at', [$startDate, $endDate])
-            ->count();
+        // Pending Review = client companies whose dashboard publish_status is 'draft'
+        $this->pendingReview = $subCompanyIds->isNotEmpty()
+            ? ClientDashboardSetting::whereIn('company_id', $subCompanyIds)
+                ->where('publish_status', 'draft')
+                ->count()
+            : 0;
 
         // Chart: insights generated per month for last 6 months
         $chartLabels   = [];
@@ -161,30 +203,15 @@ class DashboardController extends AccountBaseController
         $this->chartLabels   = $chartLabels;
         $this->chartInsights = $chartInsights;
 
-        // Publish status per company for "View Client Portal" modal
-        // Published = has at least one Analyzed report; Draft = has a report in progress; — = none
+        // Publish status per company for "View Client Portal" modal — read from client_dashboard_settings
         $companyPublishStatus = [];
         if ($subCompanyIds->isNotEmpty()) {
-            $analyzedCompanyIds = Report::withoutGlobalScopes()
-                ->whereIn('company_id', $subCompanyIds)
-                ->where('status', 'Analyzed')
-                ->pluck('company_id')
-                ->unique()
-                ->flip();
-            $draftCompanyIds = Report::withoutGlobalScopes()
-                ->whereIn('company_id', $subCompanyIds)
-                ->whereIn('status', ['Uploading', 'Analyzing'])
-                ->pluck('company_id')
-                ->unique()
-                ->flip();
+            $settings = ClientDashboardSetting::whereIn('company_id', $subCompanyIds)
+                ->get(['company_id', 'publish_status'])
+                ->keyBy('company_id');
             foreach ($subCompanyIds as $cid) {
-                if ($analyzedCompanyIds->has($cid)) {
-                    $companyPublishStatus[$cid] = 'Published';
-                } elseif ($draftCompanyIds->has($cid)) {
-                    $companyPublishStatus[$cid] = 'Draft';
-                } else {
-                    $companyPublishStatus[$cid] = null;
-                }
+                $ps = $settings->get($cid)?->publish_status ?? null;
+                $companyPublishStatus[$cid] = $ps ? ucfirst($ps) : null;
             }
         }
         $this->companyPublishStatus = $companyPublishStatus;
@@ -224,14 +251,36 @@ class DashboardController extends AccountBaseController
             ->orderBy('monthly_price')
             ->get();
 
-        // Clients list for "View Client Dashboard / Insights" modal
-        $this->modalClients = $subCompanyIds->isNotEmpty()
-            ? User::withoutGlobalScopes()
-                ->whereIn('company_id', $subCompanyIds)
-                ->with('company:id,company_name')
-                ->orderBy('name')
-                ->get(['id', 'name', 'company_id'])
-            : collect();
+        // Clients list for "View Client Portal" modal.
+        // Build one row per unique client showing their LATEST (newest) sub-company.
+        if ($subCompanyIds->isNotEmpty()) {
+            $companiesNewestFirst = Company::withoutGlobalScopes()
+                ->whereIn('id', $subCompanyIds)
+                ->orderByDesc('created_at')
+                ->get(['id', 'company_name']);
+
+            $seenUserIds = [];
+            $modalRows   = collect();
+
+            foreach ($companiesNewestFirst as $co) {
+                $clientUser = User::withoutGlobalScopes()
+                    ->where('company_id', $co->id)
+                    ->select(['id', 'name', 'company_id'])
+                    ->first();
+
+                if (!$clientUser || isset($seenUserIds[$clientUser->id])) {
+                    continue;
+                }
+                $seenUserIds[$clientUser->id] = true;
+                $clientUser->setAttribute('display_company_id',   $co->id);
+                $clientUser->setAttribute('display_company_name', $co->company_name);
+                $modalRows->push($clientUser);
+            }
+
+            $this->modalClients = $modalRows->sortBy('name')->values();
+        } else {
+            $this->modalClients = collect();
+        }
 
         return view('dashboard.index', $this->data);
     }
@@ -406,26 +455,34 @@ class DashboardController extends AccountBaseController
         $this->currentPlan      = $company->activePlan();
         $this->plans            = $plans;
         $this->subscription     = $company->subscription;
-        $this->isQuickbooksConnected = QuickBooksConnection::withoutGlobalScopes()
-            ->where('company_id', $company->id)
-            ->where('is_active', true)
-            ->exists();
 
         $user = auth()->user();
+
+        // Check QB connection across all portfolio companies (admin may have connected on client's behalf)
+        $portfolioCompanyIds = $user->portfolioCompanies()->pluck('id');
+        if ($portfolioCompanyIds->isEmpty()) {
+            $portfolioCompanyIds = collect([$company->id]);
+        }
+        $this->isQuickbooksConnected = QuickBooksConnection::withoutGlobalScopes()
+            ->whereIn('company_id', $portfolioCompanyIds)
+            ->where('is_active', true)
+            ->exists();
         $tenantId = (int) $company->id;
         $latestAnalyzedReport = $this->latestAnalyzedKpiReportForUser($user, $tenantId);
-        $eligibleCompanies = $user->kpiEligiblePortfolioCompanies();
-
-        if ($latestAnalyzedReport?->company_id && ! $eligibleCompanies->contains(fn ($c) => (int) $c->id === (int) $latestAnalyzedReport->company_id)) {
+        // Show ALL portfolio companies in the dropdown so admin/client can switch between them.
+        // kpiEligiblePortfolioCompanies() only returns companies with analyzed data, which hides
+        // companies the user wants to see even when they have no insights yet.
+        $allPortfolioCompanies = $user->portfolioCompanies();
+        if ($latestAnalyzedReport?->company_id && !$allPortfolioCompanies->contains(fn ($c) => (int) $c->id === (int) $latestAnalyzedReport->company_id)) {
             $reportCompany = Company::withoutGlobalScopes()->find((int) $latestAnalyzedReport->company_id);
             if ($reportCompany) {
-                $eligibleCompanies->push($reportCompany);
+                $allPortfolioCompanies->push($reportCompany);
             }
         }
 
         // End-user dashboard should switch to KPI counters after an analyzed insight,
         // using the company that produced the latest analyzed report.
-        $this->kpiCompanies = $eligibleCompanies->isNotEmpty() ? $eligibleCompanies->unique('id')->values() : collect([$company]);
+        $this->kpiCompanies = $allPortfolioCompanies->isNotEmpty() ? $allPortfolioCompanies->unique('id')->values() : collect([$company]);
         $this->selectedKpiCompanyId = (int) ($latestAnalyzedReport?->company_id ?: $tenantId);
         $this->hasAnalyzedInsights = (bool) $latestAnalyzedReport;
         // Executive KPI layout only after at least one analyzed insight (QB alone → classic dashboard).

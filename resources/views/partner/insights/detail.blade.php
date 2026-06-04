@@ -7,8 +7,8 @@
 .rdc { background:#f5f7fa;min-height:100vh; }
 
 /* ── Back link ───────────────────────────────────────────────── */
-.rd-back { display:inline-flex;align-items:center;gap:8px;color:#0788be;font-size:13.5px;font-weight:500;text-decoration:none;margin-bottom:18px;padding:9px 16px;border:1px solid #0788be;border-radius:7px;background:#fff;box-shadow:0 2px 6px rgba(16,134,190,.12);transition:all .2s; }
-.rd-back:hover { background:#f0f9ff;color:#1559a6;text-decoration:none; }
+.rd-back { display:inline-flex;align-items:center;gap:8px;color:var(--blue);font-size:13.5px;font-weight:500;text-decoration:none;margin-bottom:18px;padding:9px 16px;border:1px solid var(--blue);border-radius:7px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.08);transition:all .2s; }
+.rd-back:hover { background:var(--blue-pale);color:var(--blue);text-decoration:none; }
 
 /* ── Header card ─────────────────────────────────────────────── */
 .rd-header { display:flex;justify-content:space-between;align-items:flex-start;background:#fff;border-radius:12px;padding:22px 26px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.07);flex-wrap:wrap;gap:14px; }
@@ -22,13 +22,17 @@
 .rd-btn { height:38px;padding:0 18px;border-radius:7px;font-size:13.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;border:none;transition:all .2s;white-space:nowrap; }
 .rd-btn-outline { background:#fff;color:#374151;border:1.5px solid #e2e8f0; }
 .rd-btn-outline:hover { background:#f8fafc;color:#1a202c;text-decoration:none; }
-.rd-btn-edit { background:#fff;color:#1a6aa8;border:1.5px solid #1a6aa8; }
-.rd-btn-edit:hover { background:#f0f7ff;text-decoration:none; }
-.rd-btn-edit.active { background:#1a6aa8;color:#fff; }
-.rd-btn-save { background:#10b981;color:#fff;border:1.5px solid #10b981; }
-.rd-btn-save:hover { background:#059669;border-color:#059669;text-decoration:none; }
-.rd-btn-pdf { background:#f06b25;color:#fff;border:1.5px solid #f06b25; }
-.rd-btn-pdf:hover { background:#d95a1a;border-color:#d95a1a;text-decoration:none; }
+.rd-btn-edit { background:#fff;color:var(--blue);border:1.5px solid var(--blue); }
+.rd-btn-edit:hover { background:var(--blue-pale);text-decoration:none; }
+.rd-btn-edit.active { background:var(--blue);color:#fff; }
+.rd-btn-save { background:var(--orange);color:#fff;border:1.5px solid var(--orange); }
+.rd-btn-save:hover { background:var(--orange-dark);border-color:var(--orange-dark);text-decoration:none; }
+.rd-btn-pdf { background:var(--orange);color:#fff;border:1.5px solid var(--orange); }
+.rd-btn-pdf:hover { background:var(--orange-dark);border-color:var(--orange-dark);text-decoration:none; }
+.rd-btn-publish { background:var(--orange);color:#fff;border:1.5px solid var(--orange); }
+.rd-btn-publish:hover { background:var(--orange-dark);border-color:var(--orange-dark);text-decoration:none; }
+.rd-btn-share { background:#fff;color:#374151;border:1.5px solid #e2e8f0; }
+.rd-btn-share:hover { background:#f8fafc;color:#1a202c;text-decoration:none; }
 .rd-btn:disabled { opacity:.6;cursor:not-allowed; }
 
 /* ── Publish status badge ────────────────────────────────────── */
@@ -59,14 +63,14 @@
 /* ── Slide card ──────────────────────────────────────────────── */
 .insight-slider-card { background:#fff;border-radius:12px;padding:28px 32px;box-shadow:0 2px 8px rgba(0,0,0,.07); }
 .insight-slider-title { display:flex;align-items:center;gap:14px;margin-bottom:22px; }
-.ist-icon { width:42px;height:42px;background:#f06b25;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0; }
+.ist-icon { width:42px;height:42px;background:var(--orange);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:17px;flex-shrink:0; }
 .insight-slider-title h2 { margin:0;font-size:22px;font-weight:600;color:#1a202c; }
 .insight-slider-content { color:#2d3748;font-size:14.5px;line-height:1.85; }
 .insight-slider-content ul,.insight-slider-content ol { padding-left:20px;margin:4px 0; }
 .insight-slider-content li { margin:7px 0;list-style-type:circle; }
-.insight-slider-content strong { color:#1559a6;font-weight:600; }
+.insight-slider-content strong { color:var(--blue);font-weight:600; }
 .insight-slider-content p { margin:0 0 10px; }
-.insight-slider-content h3,.insight-slider-content h4 { color:#1559a6;margin-top:10px;margin-bottom:0;font-weight:600; }
+.insight-slider-content h3,.insight-slider-content h4 { color:var(--blue);margin-top:10px;margin-bottom:0;font-weight:600; }
 .insight-slider-content table.insight-table { width:100%;border-collapse:collapse;margin:6px 0;box-shadow:0 1px 3px rgba(0,0,0,.08);border-radius:8px;overflow:hidden; }
 .insight-slider-content table.insight-table th { border:1px solid #e2e8f0;padding:11px 12px;font-weight:600;color:#2d3748;background:#f7fafc; }
 .insight-slider-content table.insight-table td { border:1px solid #e2e8f0;padding:11px 12px;color:#4a5568; }
@@ -75,24 +79,46 @@
 /* ── Dots ────────────────────────────────────────────────────── */
 .insight-slider-pagination { display:flex;justify-content:center;gap:8px;margin-top:20px; }
 .isd { width:10px;height:10px;border-radius:50%;background:#cbd5e0;cursor:pointer;transition:all .3s; }
-.isd.active { background:#0788be;width:24px;border-radius:5px; }
+.isd.active { background:var(--blue);width:24px;border-radius:5px; }
 .isd:hover { background:#94a3b8; }
 
 @keyframes rdSpin { to { transform: rotate(360deg); } }
 
-/* ── Edit mode ───────────────────────────────────────────────── */
-.edit-mode-active .insight-slider-content [contenteditable] {
-    border-radius:6px;padding:4px 6px;margin:-4px -6px;
-    background:#fffbeb;border:1px dashed #f59e0b;outline:none;
-    cursor:text;transition:background .2s;min-height:24px;display:block;
+/* ── Edit mode content area ──────────────────────────────────── */
+.edit-mode-active .insight-slider-content[contenteditable] {
+    border:2px solid #f59e0b;
+    border-radius:8px;padding:14px 16px;
+    outline:none;cursor:text;min-height:180px;
+    transition:border-color .15s,box-shadow .15s;
+    /* background:#fffdf0; */
 }
-.edit-mode-active .insight-slider-content [contenteditable]:focus {
-    background:#fefce8;border-color:#d97706;
-    box-shadow:0 0 0 3px rgba(245,158,11,.12);
+.edit-mode-active .insight-slider-content[contenteditable]:focus {
+    border-color:#d97706;box-shadow:0 0 0 3px rgba(245,158,11,.14);
 }
-.edit-mode-active .insight-slider-content li [contenteditable] {
-    display:inline;
+
+/* ── Rich-text toolbar ───────────────────────────────────────── */
+#rdEditToolbar {
+    display:none;background:#fff;border:1px solid #e2e8f0;border-radius:9px;
+    padding:7px 12px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.07);
+    align-items:center;gap:3px;flex-wrap:wrap;
 }
+#rdEditToolbar.visible { display:flex; }
+.tb-sep { width:1px;height:22px;background:#e2e8f0;margin:0 5px;flex-shrink:0; }
+.tb-btn {
+    width:30px;height:30px;border:none;border-radius:5px;background:transparent;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:background .13s,color .13s;color:#374151;flex-shrink:0;
+}
+.tb-btn:hover { background:#f1f5f9; }
+.tb-btn.active { background:#dbeafe;color:#1d4ed8; }
+.tb-btn svg { pointer-events:none; }
+.tb-select {
+    height:30px;border:1px solid #e2e8f0;border-radius:5px;padding:0 22px 0 8px;
+    font-size:12.5px;font-family:inherit;color:#374151;background:#fff
+    url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%2394a3b8' stroke-width='1.3' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 6px center;
+    -webkit-appearance:none;appearance:none;outline:none;cursor:pointer;min-width:96px;
+}
+.tb-select:focus { border-color:var(--blue,#1a6aa8); }
 </style>
 @endpush
 
@@ -107,7 +133,7 @@
     {{-- Edit mode toast --}}
     <div id="rdEditToast" class="rd-edit-toast">
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        Edit mode toggled. Click on text to edit.
+        Edit mode on — use the toolbar to format selected text.
     </div>
 
     {{-- Header --}}
@@ -141,7 +167,12 @@
 
         @if($report->insight_json_data)
         <div class="rd-header-actions">
-            @if($report->isDraft())
+            @if($report->isPublished())
+            <button class="rd-btn rd-btn-share">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                <span>Share</span>
+            </button>
+            @endif
             <button id="rdBtnEdit" class="rd-btn rd-btn-edit" onclick="rdToggleEdit()">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                 <span id="rdBtnEditLabel">Edit Insight</span>
@@ -149,6 +180,11 @@
             <button id="rdBtnSave" class="rd-btn rd-btn-save" onclick="rdSaveEdits()">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
                 <span id="rdBtnSaveLabel">Save</span>
+            </button>
+            @if($report->isDraft())
+            <button id="rdBtnPublish" class="rd-btn rd-btn-publish" onclick="rdPublishInsight()">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span id="rdBtnPublishLabel">Publish Insight</span>
             </button>
             @endif
             <a href="{{ route('partner-insights.export-pdf', $report->id) }}" class="rd-btn rd-btn-pdf" id="rdBtnPdf"
@@ -158,6 +194,51 @@
             </a>
         </div>
         @endif
+    </div>
+
+    {{-- Rich-text toolbar (shown in edit mode) --}}
+    <div id="rdEditToolbar">
+        <select class="tb-select" id="tbStyleSel" title="Text style" onchange="rdFormatBlock(this.value)">
+            <option value="p">Normal</option>
+            <option value="h2">Heading 2</option>
+            <option value="h3">Heading 3</option>
+            <option value="h4">Sub-heading</option>
+        </select>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" id="tbBold"      onclick="rdExecCmd('bold')"           title="Bold">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"/><path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"/></svg>
+        </button>
+        <button class="tb-btn" id="tbItalic"    onclick="rdExecCmd('italic')"         title="Italic">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></svg>
+        </button>
+        <button class="tb-btn" id="tbUnderline" onclick="rdExecCmd('underline')"      title="Underline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 3v7a6 6 0 006 6 6 6 0 006-6V3"/><line x1="4" y1="21" x2="20" y2="21"/></svg>
+        </button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" onclick="rdInsertLink()" title="Insert link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        </button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" onclick="rdExecCmd('insertUnorderedList')" title="Bullet list">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="4" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+        </button>
+        <button class="tb-btn" onclick="rdExecCmd('insertOrderedList')" title="Numbered list">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M4 10h2" stroke="currentColor" stroke-width="1.8"/><path d="M6 14H4c0-1 2-2 2-3s-1-1.5-2-1" stroke="currentColor" stroke-width="1.8" fill="none"/></svg>
+        </button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" id="tbAlignL" onclick="rdExecCmd('justifyLeft')"   title="Align left">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg>
+        </button>
+        <button class="tb-btn" id="tbAlignC" onclick="rdExecCmd('justifyCenter')" title="Align center">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+        </button>
+        <button class="tb-btn" id="tbAlignR" onclick="rdExecCmd('justifyRight')"  title="Align right">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="tb-sep"></div>
+        <button class="tb-btn" onclick="rdExecCmd('removeFormat')" title="Clear formatting">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/><line x1="3" y1="21" x2="21" y2="3" stroke="currentColor" stroke-width="1.8" opacity=".5"/></svg>
+        </button>
     </div>
 
     {{-- Slider container --}}
@@ -332,50 +413,119 @@
     }
 
     // ── Edit mode ─────────────────────────────────────────────────────────────
-    window.rdToggleEdit = function () {
-        if (!IS_DRAFT) return;
-        editMode = !editMode;
+    let previewMode = false; // preview while in edit mode (hides toolbar temporarily)
 
-        const btn      = document.getElementById('rdBtnEdit');
-        const btnLabel = document.getElementById('rdBtnEditLabel');
-        const pdfBtn   = document.getElementById('rdBtnPdf');
-        const slider   = document.getElementById('insightSliderContent');
-        const toast    = document.getElementById('rdEditToast');
+    window.rdToggleEdit = function () {
+        editMode = !editMode;
+        previewMode = false;
+
+        const btn         = document.getElementById('rdBtnEdit');
+        const btnLabel    = document.getElementById('rdBtnEditLabel');
+        const previewBtn  = document.getElementById('rdBtnPreview');
+        const pdfBtn      = document.getElementById('rdBtnPdf');
+        const slider      = document.getElementById('insightSliderContent');
+        const toast       = document.getElementById('rdEditToast');
+        const toolbar     = document.getElementById('rdEditToolbar');
 
         if (editMode) {
             if (btnLabel) btnLabel.textContent = 'Cancel Edit';
             btn?.classList.add('active');
-            if (pdfBtn)  { pdfBtn.style.opacity = '.4'; pdfBtn.style.pointerEvents = 'none'; }
+            if (pdfBtn)   { pdfBtn.style.opacity = '.4'; pdfBtn.style.pointerEvents = 'none'; }
+            if (previewBtn) previewBtn.style.display = '';
             slider?.classList.add('edit-mode-active');
+            toolbar?.classList.add('visible');
             makeContentEditable(true);
             toast?.classList.add('show');
             setTimeout(() => toast?.classList.remove('show'), 4000);
         } else {
             if (btnLabel) btnLabel.textContent = 'Edit Insight';
             btn?.classList.remove('active');
-            if (pdfBtn)  { pdfBtn.style.opacity = ''; pdfBtn.style.pointerEvents = ''; }
+            if (pdfBtn)   { pdfBtn.style.opacity = ''; pdfBtn.style.pointerEvents = ''; }
+            if (previewBtn) previewBtn.style.display = 'none';
             slider?.classList.remove('edit-mode-active');
+            toolbar?.classList.remove('visible');
             makeContentEditable(false);
         }
     };
 
+    // Preview toggle: temporarily hides toolbar + edit chrome while in edit mode
+    window.rdTogglePreview = function () {
+        if (!editMode) return;
+        previewMode = !previewMode;
+        const toolbar    = document.getElementById('rdEditToolbar');
+        const slider     = document.getElementById('insightSliderContent');
+        const previewBtn = document.getElementById('rdBtnPreview');
+        const previewSpan = previewBtn?.querySelector('span');
+
+        if (previewMode) {
+            toolbar?.classList.remove('visible');
+            slider?.classList.remove('edit-mode-active');
+            makeContentEditable(false);
+            if (previewSpan) previewSpan.textContent = 'Back to Edit';
+            previewBtn?.classList.add('active');
+        } else {
+            toolbar?.classList.add('visible');
+            slider?.classList.add('edit-mode-active');
+            makeContentEditable(true);
+            if (previewSpan) previewSpan.textContent = 'Preview';
+            previewBtn?.classList.remove('active');
+        }
+    };
+
     function makeContentEditable(on) {
-        // Wrap text-containing elements inside .insight-slider-content with contenteditable
         document.querySelectorAll('.insight-slider-content').forEach(container => {
             if (on) {
-                // Make each <p>, <li>, <h3>, <h4>, <td>, <th> editable
-                container.querySelectorAll('p, li, h3, h4, td, th').forEach(el => {
-                    el.setAttribute('contenteditable', 'true');
-                    el.setAttribute('spellcheck', 'false');
-                });
+                container.setAttribute('contenteditable', 'true');
+                container.setAttribute('spellcheck', 'false');
+                container.style.outline = 'none';
             } else {
-                container.querySelectorAll('[contenteditable]').forEach(el => {
-                    el.removeAttribute('contenteditable');
-                    el.removeAttribute('spellcheck');
-                });
+                container.removeAttribute('contenteditable');
+                container.removeAttribute('spellcheck');
+                container.style.outline = '';
             }
         });
     }
+
+    // ── Toolbar commands ──────────────────────────────────────────────────────
+    window.rdExecCmd = function (cmd, value) {
+        document.execCommand(cmd, false, value || null);
+        rdUpdateToolbarState();
+        // Return focus to the active editable area
+        const active = document.querySelector('.insight-slider-slide.active .insight-slider-content[contenteditable]');
+        if (active) active.focus();
+    };
+
+    window.rdFormatBlock = function (tag) {
+        document.execCommand('formatBlock', false, tag);
+        const sel = document.getElementById('tbStyleSel');
+        // Reset selector back to current after a tick
+        setTimeout(() => { if (sel) sel.value = 'p'; }, 50);
+        const active = document.querySelector('.insight-slider-slide.active .insight-slider-content[contenteditable]');
+        if (active) active.focus();
+    };
+
+    window.rdInsertLink = function () {
+        const url = window.prompt('Enter URL:', 'https://');
+        if (url && url !== 'https://') {
+            document.execCommand('createLink', false, url);
+        }
+        const active = document.querySelector('.insight-slider-slide.active .insight-slider-content[contenteditable]');
+        if (active) active.focus();
+    };
+
+    function rdUpdateToolbarState() {
+        const cmds = { tbBold:'bold', tbItalic:'italic', tbUnderline:'underline',
+                       tbAlignL:'justifyLeft', tbAlignC:'justifyCenter', tbAlignR:'justifyRight' };
+        Object.entries(cmds).forEach(([id, cmd]) => {
+            const el = document.getElementById(id);
+            if (el) el.classList.toggle('active', document.queryCommandState(cmd));
+        });
+    }
+
+    // Update toolbar state on selection change
+    document.addEventListener('selectionchange', function () {
+        if (editMode && !previewMode) rdUpdateToolbarState();
+    });
 
     window.rdSaveEdits = function () {
         // Collect innerHTML so all formatting (bullets, bold, headings) is preserved exactly
@@ -412,7 +562,7 @@
                         </div>`,
                     showConfirmButton: true,
                     confirmButtonText: 'Got it',
-                    confirmButtonColor: '#f06b25',
+                    confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
                     showCloseButton: false,
                     allowOutsideClick: true,
                     didOpen: (popup) => {
@@ -434,6 +584,87 @@
         });
     };
 
+
+    // ── Publish ───────────────────────────────────────────────────────────────
+    window.rdPublishInsight = function () {
+        if (!IS_DRAFT) return;
+        Swal.fire({
+            html: `
+                <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
+                    <div style="width:70px;height:70px;background:#eff6ff;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+                        <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#1a6aa8" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Publish Insight?</h2>
+                    <p style="font-size:14px;color:#64748b;margin:0;text-align:center;">This will make the insight visible to the client. You won't be able to edit it after publishing.</p>
+                </div>`,
+            showConfirmButton: true,
+            confirmButtonText: 'Yes, Publish',
+            showCancelButton: true,
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#1a6aa8',
+            cancelButtonColor: '#6b7280',
+            reverseButtons: true,
+            didOpen: (popup) => {
+                const actions = popup.querySelector('.swal2-actions');
+                if (actions) actions.style.cssText = 'width:100%;padding:0 24px;display:flex;gap:10px;';
+                popup.querySelectorAll('.swal2-confirm,.swal2-cancel').forEach(b => {
+                    b.style.cssText = 'flex:1;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;border:none;cursor:pointer;';
+                });
+            },
+        }).then(result => {
+            if (!result.isConfirmed) return;
+
+            const btn = document.getElementById('rdBtnPublish');
+            if (btn) { btn.disabled = true; document.getElementById('rdBtnPublishLabel').textContent = 'Publishing…'; }
+
+            fetch(PUBLISH_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                body: JSON.stringify({}),
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Update badge
+                    const badge = document.getElementById('rdPublishBadge');
+                    if (badge) {
+                        badge.className = 'rd-publish-badge published';
+                        badge.innerHTML = '<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Published';
+                    }
+                    // Hide only the Publish button once published
+                    const publishBtn = document.getElementById('rdBtnPublish');
+                    if (publishBtn) publishBtn.style.display = 'none';
+                    Swal.fire({
+                        html: `
+                            <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
+                                <div style="width:70px;height:70px;background:#d1fae5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+                                    <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#065f46" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+                                </div>
+                                <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Published!</h2>
+                                <p style="font-size:14px;color:#64748b;margin:0;">The insight is now visible to the client.</p>
+                            </div>`,
+                        showConfirmButton: true,
+                        confirmButtonText: 'Got it',
+                        confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#1a6aa8',
+                        allowOutsideClick: true,
+                        didOpen: (popup) => {
+                            const actions = popup.querySelector('.swal2-actions');
+                            if (actions) actions.style.cssText = 'width:100%;padding:0 24px;display:flex;';
+                            const b = popup.querySelector('.swal2-confirm');
+                            if (b) { const pc=getComputedStyle(document.documentElement).getPropertyValue('--blue').trim()||'#1a6aa8'; b.style.cssText=`flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:${pc};border:none;color:#fff;cursor:pointer;`; }
+                        },
+                    });
+                } else {
+                    if (btn) { btn.disabled = false; document.getElementById('rdBtnPublishLabel').textContent = 'Publish Insight'; }
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Could not publish.' });
+                }
+            })
+            .catch(() => {
+                if (btn) { btn.disabled = false; document.getElementById('rdBtnPublishLabel').textContent = 'Publish Insight'; }
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Network error. Please try again.' });
+            });
+        });
+    };
 
     // ── Section parsing (mirrors firm insight view) ───────────────────────────
     const canonicalSections = ['Executive Summary','Financial Snapshot','Key Trends & Drivers','Wins & Opportunities','Risks & Concerns','Forensic Observations','Actionable Recommendations'];

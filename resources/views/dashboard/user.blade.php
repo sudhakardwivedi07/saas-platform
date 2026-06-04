@@ -155,6 +155,10 @@
 .kpi-card { position: relative; }
 /* Hidden cards are completely invisible outside edit mode */
 .kpi-card.kpi-hidden-draft { display: none; }
+/* Hide entire section block when all its KPI cards are draft-hidden */
+.kpi-tier-block.kpi-section-all-hidden { display: none; }
+/* In edit mode: keep section visible so admin can still toggle cards */
+.kpi-edit-active .kpi-tier-block.kpi-section-all-hidden { display: block; }
 /* In edit mode: show greyed out so admin can toggle visibility */
 .kpi-edit-active .kpi-card.kpi-hidden-draft {
     display: block;
@@ -722,6 +726,7 @@
             card.appendChild(btn);
             refreshEyeIcon(kpiType);
         });
+        refreshSectionTitleVisibility();
     }
 
     function refreshEyeIcon(kpiType) {
@@ -737,11 +742,22 @@
         }
     }
 
+    function refreshSectionTitleVisibility() {
+        document.querySelectorAll('.kpi-tier-block').forEach(function (block) {
+            var cards = block.querySelectorAll('[data-kpi-card]');
+            var allHidden = cards.length > 0 && Array.from(cards).every(function (c) {
+                return c.classList.contains('kpi-hidden-draft');
+            });
+            block.classList.toggle('kpi-section-all-hidden', allHidden);
+        });
+    }
+
     function toggleKpiHidden(kpiType) {
         const idx = draftHiddenKpis.indexOf(kpiType);
         if (idx === -1) draftHiddenKpis.push(kpiType);
         else draftHiddenKpis.splice(idx, 1);
         refreshEyeIcon(kpiType);
+        refreshSectionTitleVisibility();
     }
 
     window.cdbToggleEditMode = function () {

@@ -407,6 +407,31 @@
                 <option value="quota full">Quota Full</option>
                 <option value="no usage">No Usage</option>
             </select>
+            <div class="dr-wrap" id="usage-dr">
+                <div class="dr-field" onclick="drOpen('usage-dr')">
+                    <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span class="dr-text" id="usage-dr-text">Last Generated</span>
+                    <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('usage-dr')" title="Clear date filter">&#x2715;</button>
+                </div>
+                <div class="dr-menu" id="usage-dr-menu">
+                    <ul class="dr-list">
+                        <li class="dr-opt" onclick="drPickPreset('usage-dr','today',this)">Today</li>
+                        <li class="dr-opt" onclick="drPickPreset('usage-dr','last30',this)">Last 30 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('usage-dr','thisMonth',this)">This Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('usage-dr','lastMonth',this)">Last Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('usage-dr','last90',this)">Last 90 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('usage-dr','last6m',this)">Last 6 Months</li>
+                        <li class="dr-opt" onclick="drPickPreset('usage-dr','last1y',this)">Last 1 Year</li>
+                        <li class="dr-opt" onclick="drPickPreset('usage-dr','custom',this)">Custom Range</li>
+                    </ul>
+                    <div class="dr-custom-row" id="usage-dr-custom">
+                        <input type="date" class="dr-date-inp" id="usage-dr-from">
+                        <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                        <input type="date" class="dr-date-inp" id="usage-dr-to">
+                        <button class="dr-apply-btn" onclick="drApplyCustom('usage-dr')">Apply</button>
+                    </div>
+                </div>
+            </div>
             <button class="btn btn-danger" onclick="resetUsageFilters()">Reset</button>
         </div>
     </div>
@@ -490,7 +515,7 @@
                     <td style="font-size:13px;color:{{ $remaining === 0 ? 'var(--red)' : 'var(--text-2)' }}">
                         {{ is_numeric($remaining) ? $remaining : $remaining }}
                     </td>
-                    <td style="font-size:12.5px;color:{{ $co->last_active_at ? 'var(--text-2)' : 'var(--text-3)' }}">
+                    <td style="font-size:12.5px;color:{{ $co->last_active_at ? 'var(--text-2)' : 'var(--text-3)' }}" data-date="{{ $co->last_active_at?->format('Y-m-d') ?? '' }}">
                         {{ $co->last_active_at ? $co->last_active_at->diffForHumans() : 'N/A' }}
                     </td>
                     <td data-search="{{ $usageStatus }}">
@@ -545,6 +570,21 @@ $(document).ready(function() {
     document.getElementById('usage-status-filter').addEventListener('change', function() {
         table.column(7).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
     });
+
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (!settings.nTable || settings.nTable.id !== 'usage-table') return true;
+        var from = document.getElementById('usage-dr-from') ? document.getElementById('usage-dr-from').value : '';
+        var to   = document.getElementById('usage-dr-to')   ? document.getElementById('usage-dr-to').value   : '';
+        if (!from && !to) return true;
+        var row = table.row(dataIndex).node();
+        if (!row) return true;
+        var dateVal = row.querySelector('td[data-date]')?.getAttribute('data-date') || '';
+        if (!dateVal) return true;
+        if (from && dateVal < from) return false;
+        if (to   && dateVal > to)   return false;
+        return true;
+    });
+    _drCbs['usage-dr'] = function() { table.draw(); };
 });
 
 async function startCheckout(packageId, btn) {
@@ -695,6 +735,7 @@ function cancelSubscription() {
 function resetUsageFilters() {
     document.getElementById('usage-search').value        = '';
     document.getElementById('usage-status-filter').value = '';
+    drClear('usage-dr');
     if (window.$ && $('#usage-table').length) {
         $('#usage-table').DataTable().search('').columns().search('').draw();
     }

@@ -7,7 +7,7 @@ use App\Http\Controllers\AccountBaseController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 
 class UserController extends AccountBaseController
 {

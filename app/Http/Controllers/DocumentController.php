@@ -19,8 +19,10 @@ class DocumentController extends AccountBaseController
     public function index(Request $request)
     {
         $this->documents = Document::with('uploader')
-            ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
-            ->when($request->type,   fn ($q) => $q->where('mime_type', 'like', "%{$request->type}%"))
+            ->when($request->search,    fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
+            ->when($request->type,      fn ($q) => $q->where('mime_type', 'like', "%{$request->type}%"))
+            ->when($request->date_from, fn ($q) => $q->whereDate('created_at', '>=', $request->date_from))
+            ->when($request->date_to,   fn ($q) => $q->whereDate('created_at', '<=', $request->date_to))
             ->orderByDesc('created_at')
             ->paginate(20);
 

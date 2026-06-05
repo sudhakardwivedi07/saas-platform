@@ -123,7 +123,7 @@ class ClientController extends AccountBaseController
 
         // Plan's Max Clients limit (max_users field on the plan)
         $planMaxClients = (int) ($plan?->max_users ?? 0);
-        $currentClientCount = $this->companies->count();
+        $currentClientCount = $this->clientsList->count();
         $this->planMaxClients    = $planMaxClients;
         $this->currentClientCount = $currentClientCount;
         $this->maxClientsReached  = $planMaxClients > 0 && $currentClientCount >= $planMaxClients;

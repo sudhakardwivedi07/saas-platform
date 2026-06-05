@@ -92,7 +92,7 @@
                 <td>
                     @foreach($user->roles as $role)
                     @php
-                        $rk = strtolower($role->name);  {{-- colour lookup always uses the technical name --}}
+                        $rk = strtolower($role->name);  // colour lookup always uses the technical name
                         $rc = $roleColorMap[$rk] ?? ['bg'=>'#f3f4f6','text'=>'#374151'];
                     @endphp
                     <span class="badge" style="background:{{ $rc['bg'] }};color:{{ $rc['text'] }};font-weight:600">

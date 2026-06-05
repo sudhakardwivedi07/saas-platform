@@ -52,6 +52,31 @@
                 <option value="suspended">Suspended</option>
                 <option value="pending payment">Pending Payment</option>
             </select>
+            <div class="dr-wrap" id="coi-dr">
+                <div class="dr-field" onclick="drOpen('coi-dr')">
+                    <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span class="dr-text" id="coi-dr-text">Created Date</span>
+                    <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('coi-dr')" title="Clear date filter">&#x2715;</button>
+                </div>
+                <div class="dr-menu" id="coi-dr-menu">
+                    <ul class="dr-list">
+                        <li class="dr-opt" onclick="drPickPreset('coi-dr','today',this)">Today</li>
+                        <li class="dr-opt" onclick="drPickPreset('coi-dr','last30',this)">Last 30 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('coi-dr','thisMonth',this)">This Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('coi-dr','lastMonth',this)">Last Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('coi-dr','last90',this)">Last 90 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('coi-dr','last6m',this)">Last 6 Months</li>
+                        <li class="dr-opt" onclick="drPickPreset('coi-dr','last1y',this)">Last 1 Year</li>
+                        <li class="dr-opt" onclick="drPickPreset('coi-dr','custom',this)">Custom Range</li>
+                    </ul>
+                    <div class="dr-custom-row" id="coi-dr-custom">
+                        <input type="date" class="dr-date-inp" id="coi-dr-from">
+                        <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                        <input type="date" class="dr-date-inp" id="coi-dr-to">
+                        <button class="dr-apply-btn" onclick="drApplyCustom('coi-dr')">Apply</button>
+                    </div>
+                </div>
+            </div>
             <button class="btn btn-danger" onclick="resetCoFilters()">Reset</button>
         </div>
         <span class="badge b-gray" id="co-count-badge">{{ $companies->count() }} companies</span>
@@ -150,7 +175,7 @@
                             {{ $stLabel }}
                         </span>
                     </td>
-                    <td style="font-size:12.5px;color:var(--text-2)">
+                    <td style="font-size:12.5px;color:var(--text-2)" data-date="{{ $co->created_at?->format('Y-m-d') ?? '' }}">
                         {{ $co->created_at?->format(active_date_format()) ?? '—' }}
                     </td>
                     <td>
@@ -210,6 +235,21 @@ $(document).ready(function() {
     document.getElementById('co-status-filter').addEventListener('change', function() {
         table.column(3).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
     });
+
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (!settings.nTable || settings.nTable.id !== 'co-table') return true;
+        var from = document.getElementById('coi-dr-from') ? document.getElementById('coi-dr-from').value : '';
+        var to   = document.getElementById('coi-dr-to')   ? document.getElementById('coi-dr-to').value   : '';
+        if (!from && !to) return true;
+        var row = table.row(dataIndex).node();
+        if (!row) return true;
+        var dateVal = row.querySelector('td[data-date]')?.getAttribute('data-date') || '';
+        if (!dateVal) return true;
+        if (from && dateVal < from) return false;
+        if (to   && dateVal > to)   return false;
+        return true;
+    });
+    _drCbs['coi-dr'] = function() { table.draw(); };
 });
 
 function confirmCompanyDelete(formEl) {
@@ -235,6 +275,7 @@ function confirmCompanyDelete(formEl) {
 function resetCoFilters() {
     document.getElementById('co-search').value        = '';
     document.getElementById('co-status-filter').value = '';
+    drClear('coi-dr');
     if (window.$ && $('#co-table').length) {
         $('#co-table').DataTable().search('').columns().search('').draw();
     }

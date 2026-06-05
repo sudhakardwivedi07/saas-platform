@@ -313,6 +313,31 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </select>
+                <div class="dr-wrap" id="plan-dr">
+                    <div class="dr-field" onclick="drOpen('plan-dr')">
+                        <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span class="dr-text" id="plan-dr-text">Start Date To End Date</span>
+                        <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('plan-dr')" title="Clear date filter">&#x2715;</button>
+                    </div>
+                    <div class="dr-menu" id="plan-dr-menu">
+                        <ul class="dr-list">
+                            <li class="dr-opt" onclick="drPickPreset('plan-dr','today',this)">Today</li>
+                            <li class="dr-opt" onclick="drPickPreset('plan-dr','last30',this)">Last 30 Days</li>
+                            <li class="dr-opt" onclick="drPickPreset('plan-dr','thisMonth',this)">This Month</li>
+                            <li class="dr-opt" onclick="drPickPreset('plan-dr','lastMonth',this)">Last Month</li>
+                            <li class="dr-opt" onclick="drPickPreset('plan-dr','last90',this)">Last 90 Days</li>
+                            <li class="dr-opt" onclick="drPickPreset('plan-dr','last6m',this)">Last 6 Months</li>
+                            <li class="dr-opt" onclick="drPickPreset('plan-dr','last1y',this)">Last 1 Year</li>
+                            <li class="dr-opt" onclick="drPickPreset('plan-dr','custom',this)">Custom Range</li>
+                        </ul>
+                        <div class="dr-custom-row" id="plan-dr-custom">
+                            <input type="date" class="dr-date-inp" id="plan-dr-from">
+                            <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                            <input type="date" class="dr-date-inp" id="plan-dr-to">
+                            <button class="dr-apply-btn" onclick="drApplyCustom('plan-dr')">Apply</button>
+                        </div>
+                    </div>
+                </div>
                 <button class="btn btn-danger" onclick="resetPlanFilters()">Reset</button>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
@@ -343,7 +368,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                         $planStatus = ($plan->is_active ?? true) ? 'active' : 'inactive';
                     @endphp
                     <tr>
-                        <td>
+                        <td data-date="{{ $plan->created_at?->format('Y-m-d') ?? '' }}">
                             <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $plan->name }}</div>
                             @if($plan->description)
                             <div style="font-size:11.5px;color:var(--text-3);margin-top:1px">{{ Str::limit($plan->description, 60) }}</div>
@@ -587,6 +612,31 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                     <option value="system">System</option>
                     <option value="custom">Custom</option>
                 </select>
+                <div class="dr-wrap" id="role-dr">
+                    <div class="dr-field" onclick="drOpen('role-dr')">
+                        <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span class="dr-text" id="role-dr-text">Start Date To End Date</span>
+                        <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('role-dr')" title="Clear date filter">&#x2715;</button>
+                    </div>
+                    <div class="dr-menu" id="role-dr-menu">
+                        <ul class="dr-list">
+                            <li class="dr-opt" onclick="drPickPreset('role-dr','today',this)">Today</li>
+                            <li class="dr-opt" onclick="drPickPreset('role-dr','last30',this)">Last 30 Days</li>
+                            <li class="dr-opt" onclick="drPickPreset('role-dr','thisMonth',this)">This Month</li>
+                            <li class="dr-opt" onclick="drPickPreset('role-dr','lastMonth',this)">Last Month</li>
+                            <li class="dr-opt" onclick="drPickPreset('role-dr','last90',this)">Last 90 Days</li>
+                            <li class="dr-opt" onclick="drPickPreset('role-dr','last6m',this)">Last 6 Months</li>
+                            <li class="dr-opt" onclick="drPickPreset('role-dr','last1y',this)">Last 1 Year</li>
+                            <li class="dr-opt" onclick="drPickPreset('role-dr','custom',this)">Custom Range</li>
+                        </ul>
+                        <div class="dr-custom-row" id="role-dr-custom">
+                            <input type="date" class="dr-date-inp" id="role-dr-from">
+                            <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                            <input type="date" class="dr-date-inp" id="role-dr-to">
+                            <button class="dr-apply-btn" onclick="drApplyCustom('role-dr')">Apply</button>
+                        </div>
+                    </div>
+                </div>
                 <button class="btn btn-danger" onclick="resetRoleFilters()">Reset</button>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
@@ -618,7 +668,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                         $permCount = $role->permissions->count();
                     @endphp
                     <tr>
-                        <td>
+                        <td data-date="{{ $role->created_at?->format('Y-m-d') ?? '' }}">
                             <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $role->display_name }}</div>
                             @if($role->alias)
                             <div style="font-size:11px;color:var(--text-3);margin-top:1px;font-family:monospace">{{ $role->name }}</div>
@@ -639,7 +689,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                             <div style="display:flex;gap:5px">
                                 @if(!$isSystem)
                                 <button class="btn btn-ghost btn-xs"
-                                    onclick="openEditRoleModal({{ $role->id }}, '{{ addslashes($role->name) }}', {{ json_encode($role->permissions->pluck('name')) }})">
+                                    onclick="openEditRoleModal({{ $role->id }}, '{{ addslashes($role->name) }}', '{{ addslashes($role->alias ?? '') }}', {{ json_encode($role->permissions->pluck('name')) }})">
                                     Edit
                                 </button>
                                 <button class="btn btn-xs" style="background:rgba(239,68,68,.07);color:var(--red);border:1px solid rgba(239,68,68,.2)"
@@ -688,10 +738,17 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
         <div class="modal-sub">Define a role name and assign permissions.</div>
         <form id="create-role-form" onsubmit="submitCreateRole(event)">
             @csrf
-            <div class="mf-field">
-                <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
-                <input type="text" name="name" id="cr-name" class="mf-inp" placeholder="e.g. accountant" required autocomplete="off">
-                <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase with underscores (e.g. senior_manager)</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div class="mf-field">
+                    <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="name" id="cr-name" class="mf-inp" placeholder="e.g. accountant" required autocomplete="off">
+                    <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase with underscores (e.g. senior_manager)</div>
+                </div>
+                <div class="mf-field">
+                    <label class="mf-label">Alias <span style="font-size:11px;color:var(--text-3)">(display name)</span></label>
+                    <input type="text" name="alias" id="cr-alias" class="mf-inp" placeholder="e.g. Account Manager" autocomplete="off">
+                    <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Shown to users instead of the role name</div>
+                </div>
             </div>
             <div class="mf-field">
                 <label class="mf-label">Permissions</label>
@@ -736,9 +793,15 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
         <form id="edit-role-form" onsubmit="submitEditRole(event)">
             @csrf
             <input type="hidden" id="er-role-id">
-            <div class="mf-field">
-                <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
-                <input type="text" name="name" id="er-name" class="mf-inp" required autocomplete="off">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div class="mf-field">
+                    <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="name" id="er-name" class="mf-inp" required autocomplete="off">
+                </div>
+                <div class="mf-field">
+                    <label class="mf-label">Alias <span style="font-size:11px;color:var(--text-3)">(display name)</span></label>
+                    <input type="text" name="alias" id="er-alias" class="mf-inp" placeholder="e.g. Account Manager" autocomplete="off">
+                </div>
             </div>
             <div class="mf-field">
                 <label class="mf-label">Permissions</label>
@@ -842,6 +905,21 @@ $(document).ready(function() {
         document.getElementById('plan-status-filter').addEventListener('change', function() {
             planTable.column(5).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
         });
+
+        $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+            if (!settings.nTable || settings.nTable.id !== 'plans-table') return true;
+            var from = document.getElementById('plan-dr-from') ? document.getElementById('plan-dr-from').value : '';
+            var to   = document.getElementById('plan-dr-to')   ? document.getElementById('plan-dr-to').value   : '';
+            if (!from && !to) return true;
+            var row = planTable.row(dataIndex).node();
+            if (!row) return true;
+            var dateVal = row.querySelector('td[data-date]')?.getAttribute('data-date') || '';
+            if (!dateVal) return true;
+            if (from && dateVal < from) return false;
+            if (to   && dateVal > to)   return false;
+            return true;
+        });
+        _drCbs['plan-dr'] = function() { planTable.draw(); };
     } else {
         // Update count badge for empty state
         var badge = document.getElementById('plan-count-badge');
@@ -872,6 +950,21 @@ $(document).ready(function() {
     document.getElementById('role-type-filter').addEventListener('change', function() {
         roleTable.column(1).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
     });
+
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (!settings.nTable || settings.nTable.id !== 'roles-table') return true;
+        var from = document.getElementById('role-dr-from') ? document.getElementById('role-dr-from').value : '';
+        var to   = document.getElementById('role-dr-to')   ? document.getElementById('role-dr-to').value   : '';
+        if (!from && !to) return true;
+        var row = roleTable.row(dataIndex).node();
+        if (!row) return true;
+        var dateVal = row.querySelector('td[data-date]')?.getAttribute('data-date') || '';
+        if (!dateVal) return true;
+        if (from && dateVal < from) return false;
+        if (to   && dateVal > to)   return false;
+        return true;
+    });
+    _drCbs['role-dr'] = function() { roleTable.draw(); };
 });
 
 // ── Permission toggles ─────────────────────────────────────────────────────────
@@ -918,9 +1011,10 @@ function submitCreateRole(e) {
 }
 
 // ── Edit Role ──────────────────────────────────────────────────────────────────
-function openEditRoleModal(id, name, permissions) {
+function openEditRoleModal(id, name, alias, permissions) {
     document.getElementById('er-role-id').value = id;
     document.getElementById('er-name').value     = name;
+    document.getElementById('er-alias').value    = alias || '';
 
     // Reset all checkboxes
     document.querySelectorAll('#edit-role-modal input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
@@ -1186,6 +1280,7 @@ function saveCustomLimit() {
 function resetPlanFilters() {
     document.getElementById('plan-search').value        = '';
     document.getElementById('plan-status-filter').value = '';
+    drClear('plan-dr');
     if (window.$ && $('#plans-table').length) {
         $('#plans-table').DataTable().search('').columns().search('').draw();
     }
@@ -1194,6 +1289,7 @@ function resetPlanFilters() {
 function resetRoleFilters() {
     document.getElementById('role-search').value        = '';
     document.getElementById('role-type-filter').value   = '';
+    drClear('role-dr');
     if (window.$ && $('#roles-table').length) {
         $('#roles-table').DataTable().search('').columns().search('').draw();
     }

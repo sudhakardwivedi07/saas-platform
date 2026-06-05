@@ -798,6 +798,15 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input type="text" class="srch-inp" id="activitySearch" placeholder="Search activity..." autocomplete="off">
             </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">Event Type</label>
+                <select class="sel" id="actFilterEventType" style="min-width:190px;">
+                    <option value="">All Events</option>
+                    @foreach(($eventTypes ?? collect()) as $eventType)
+                        <option value="{{ $eventType }}">{{ ucwords(str_replace(['_', '-'], ' ', $eventType)) }}</option>
+                    @endforeach
+                </select>
+            </div>
             {{-- Date range filter --}}
             <div class="dr-wrap" id="act-log-dr">
                 <div class="dr-field" onclick="drOpen('act-log-dr')">
@@ -823,15 +832,6 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                         <button class="dr-apply-btn" onclick="drApplyCustom('act-log-dr')">Apply</button>
                     </div>
                 </div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:4px;">
-                <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">Event Type</label>
-                <select class="sel" id="actFilterEventType" style="min-width:190px;">
-                    <option value="">All Events</option>
-                    @foreach(($eventTypes ?? collect()) as $eventType)
-                        <option value="{{ $eventType }}">{{ ucwords(str_replace(['_', '-'], ' ', $eventType)) }}</option>
-                    @endforeach
-                </select>
             </div>
             <button class="btn btn-danger" onclick="actClearFilters()">Reset</button>
         </div>

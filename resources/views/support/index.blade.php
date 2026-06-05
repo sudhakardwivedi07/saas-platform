@@ -149,6 +149,31 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <option value="Medium">Medium</option>
                 <option value="Low">Low</option>
             </select>
+            <div class="dr-wrap" id="ct-dr">
+                <div class="dr-field" onclick="drOpen('ct-dr')">
+                    <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span class="dr-text" id="ct-dr-text">Raised Date</span>
+                    <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('ct-dr')" title="Clear date filter">&#x2715;</button>
+                </div>
+                <div class="dr-menu" id="ct-dr-menu">
+                    <ul class="dr-list">
+                        <li class="dr-opt" onclick="drPickPreset('ct-dr','today',this)">Today</li>
+                        <li class="dr-opt" onclick="drPickPreset('ct-dr','last30',this)">Last 30 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('ct-dr','thisMonth',this)">This Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('ct-dr','lastMonth',this)">Last Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('ct-dr','last90',this)">Last 90 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('ct-dr','last6m',this)">Last 6 Months</li>
+                        <li class="dr-opt" onclick="drPickPreset('ct-dr','last1y',this)">Last 1 Year</li>
+                        <li class="dr-opt" onclick="drPickPreset('ct-dr','custom',this)">Custom Range</li>
+                    </ul>
+                    <div class="dr-custom-row" id="ct-dr-custom">
+                        <input type="date" class="dr-date-inp" id="ct-dr-from">
+                        <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                        <input type="date" class="dr-date-inp" id="ct-dr-to">
+                        <button class="dr-apply-btn" onclick="drApplyCustom('ct-dr')">Apply</button>
+                    </div>
+                </div>
+            </div>
             <button class="btn btn-danger" onclick="resetCtFilters()">Reset</button>
         </div>
 
@@ -190,7 +215,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                     <td style="color:var(--text-1);font-weight:500;max-width:280px">{{ $ticket->subject }}</td>
                     <td><span class="pri-{{ $pri }}">{{ ucfirst($pri) }}</span></td>
                     <td><span class="st-badge st-{{ $st }}">{{ $stLabel }}</span></td>
-                    <td>
+                    <td data-date="{{ $ticket->created_at->format('Y-m-d') }}">
                         <div class="raised-date">{{ $ticket->created_at->format(active_date_format()) }}</div>
                         <div class="raised-time">{{ $ticket->created_at->format('g:i A') }}</div>
                     </td>
@@ -242,6 +267,31 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <option value="Medium">Medium</option>
                 <option value="Low">Low</option>
             </select>
+            <div class="dr-wrap" id="mt-dr">
+                <div class="dr-field" onclick="drOpen('mt-dr')">
+                    <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span class="dr-text" id="mt-dr-text">Raised Date</span>
+                    <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('mt-dr')" title="Clear date filter">&#x2715;</button>
+                </div>
+                <div class="dr-menu" id="mt-dr-menu">
+                    <ul class="dr-list">
+                        <li class="dr-opt" onclick="drPickPreset('mt-dr','today',this)">Today</li>
+                        <li class="dr-opt" onclick="drPickPreset('mt-dr','last30',this)">Last 30 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('mt-dr','thisMonth',this)">This Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('mt-dr','lastMonth',this)">Last Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('mt-dr','last90',this)">Last 90 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('mt-dr','last6m',this)">Last 6 Months</li>
+                        <li class="dr-opt" onclick="drPickPreset('mt-dr','last1y',this)">Last 1 Year</li>
+                        <li class="dr-opt" onclick="drPickPreset('mt-dr','custom',this)">Custom Range</li>
+                    </ul>
+                    <div class="dr-custom-row" id="mt-dr-custom">
+                        <input type="date" class="dr-date-inp" id="mt-dr-from">
+                        <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                        <input type="date" class="dr-date-inp" id="mt-dr-to">
+                        <button class="dr-apply-btn" onclick="drApplyCustom('mt-dr')">Apply</button>
+                    </div>
+                </div>
+            </div>
             <button class="btn btn-danger" onclick="resetMtFilters()">Reset</button>
         </div>
 
@@ -278,7 +328,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                     <td style="color:var(--text-1);font-weight:500;max-width:340px">{{ $ticket->subject }}</td>
                     <td><span class="pri-{{ $pri }}">{{ ucfirst($pri) }}</span></td>
                     <td><span class="st-badge st-{{ $st }}">{{ $stLabel }}</span></td>
-                    <td>
+                    <td data-date="{{ $ticket->created_at->format('Y-m-d') }}">
                         <div class="raised-date">{{ $ticket->created_at->format(active_date_format()) }}</div>
                         <div class="raised-time">{{ $ticket->created_at->format('g:i A') }}</div>
                     </td>
@@ -526,6 +576,21 @@ $(document).ready(function () {
         ctTable.column(3).search(this.value?'^'+this.value+'$':'',true,false,true).draw();
     });
 
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (!settings.nTable || settings.nTable.id !== 'client-tickets-table') return true;
+        var from = document.getElementById('ct-dr-from') ? document.getElementById('ct-dr-from').value : '';
+        var to   = document.getElementById('ct-dr-to')   ? document.getElementById('ct-dr-to').value   : '';
+        if (!from && !to) return true;
+        var row = ctTable.row(dataIndex).node();
+        if (!row) return true;
+        var dateVal = row.querySelector('td[data-date]')?.getAttribute('data-date') || '';
+        if (!dateVal) return true;
+        if (from && dateVal < from) return false;
+        if (to   && dateVal > to)   return false;
+        return true;
+    });
+    _drCbs['ct-dr'] = function() { ctTable.draw(); };
+
     // ── My Tickets DataTable ─────────────────────────────────────────────────
     var mtTable = $('#my-tickets-table').DataTable({
         paging:true, pageLength:15, lengthChange:false,
@@ -559,6 +624,21 @@ $(document).ready(function () {
     document.getElementById('mt-priority-filter').addEventListener('change',function(){
         mtTable.column(2).search(this.value?'^'+this.value+'$':'',true,false,true).draw();
     });
+
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (!settings.nTable || settings.nTable.id !== 'my-tickets-table') return true;
+        var from = document.getElementById('mt-dr-from') ? document.getElementById('mt-dr-from').value : '';
+        var to   = document.getElementById('mt-dr-to')   ? document.getElementById('mt-dr-to').value   : '';
+        if (!from && !to) return true;
+        var row = mtTable.row(dataIndex).node();
+        if (!row) return true;
+        var dateVal = row.querySelector('td[data-date]')?.getAttribute('data-date') || '';
+        if (!dateVal) return true;
+        if (from && dateVal < from) return false;
+        if (to   && dateVal > to)   return false;
+        return true;
+    });
+    _drCbs['mt-dr'] = function() { mtTable.draw(); };
 
     // ── Init: reopen modal if validation error ───────────────────────────────
     var el = document.getElementById('support-data');
@@ -851,18 +931,20 @@ Swal.fire({
 @endif
 
 function resetCtFilters() {
-    document.getElementById('ct-search').value         = '';
-    document.getElementById('ct-status-filter').value  = '';
+    document.getElementById('ct-search').value          = '';
+    document.getElementById('ct-status-filter').value   = '';
     document.getElementById('ct-priority-filter').value = '';
+    drClear('ct-dr');
     if (window.$ && $('#client-tickets-table').length) {
         $('#client-tickets-table').DataTable().search('').columns().search('').draw();
     }
 }
 
 function resetMtFilters() {
-    document.getElementById('mt-search').value         = '';
-    document.getElementById('mt-status-filter').value  = '';
+    document.getElementById('mt-search').value          = '';
+    document.getElementById('mt-status-filter').value   = '';
     document.getElementById('mt-priority-filter').value = '';
+    drClear('mt-dr');
     if (window.$ && $('#my-tickets-table').length) {
         $('#my-tickets-table').DataTable().search('').columns().search('').draw();
     }

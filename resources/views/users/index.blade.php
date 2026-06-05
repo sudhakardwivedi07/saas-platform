@@ -72,6 +72,31 @@
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
             </select>
+            <div class="dr-wrap" id="user-dr">
+                <div class="dr-field" onclick="drOpen('user-dr')">
+                    <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span class="dr-text" id="user-dr-text">Date Joined</span>
+                    <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('user-dr')" title="Clear date filter">&#x2715;</button>
+                </div>
+                <div class="dr-menu" id="user-dr-menu">
+                    <ul class="dr-list">
+                        <li class="dr-opt" onclick="drPickPreset('user-dr','today',this)">Today</li>
+                        <li class="dr-opt" onclick="drPickPreset('user-dr','last30',this)">Last 30 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('user-dr','thisMonth',this)">This Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('user-dr','lastMonth',this)">Last Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('user-dr','last90',this)">Last 90 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('user-dr','last6m',this)">Last 6 Months</li>
+                        <li class="dr-opt" onclick="drPickPreset('user-dr','last1y',this)">Last 1 Year</li>
+                        <li class="dr-opt" onclick="drPickPreset('user-dr','custom',this)">Custom Range</li>
+                    </ul>
+                    <div class="dr-custom-row" id="user-dr-custom">
+                        <input type="date" class="dr-date-inp" id="user-dr-from">
+                        <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                        <input type="date" class="dr-date-inp" id="user-dr-to">
+                        <button class="dr-apply-btn" onclick="drApplyCustom('user-dr')">Apply</button>
+                    </div>
+                </div>
+            </div>
             <button class="btn btn-danger" onclick="resetUsersFilters()">Reset</button>
         </div>
         <span class="badge b-gray" id="user-count-badge">{{ $users->count() }} user{{ $users->count() !== 1 ? 's' : '' }}</span>
@@ -120,7 +145,7 @@
                 };
             @endphp
             <tr data-user-id="{{ $user->id }}">
-                <td>
+                <td data-date="{{ $user->created_at?->format('Y-m-d') ?? '' }}">
                     <div style="display:flex;align-items:center;gap:10px">
                         <div style="width:34px;height:34px;border-radius:9px;background:{{ $avatarColor }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">{{ $initials }}</div>
                         <div>
@@ -341,6 +366,21 @@ $(document).ready(function() {
     document.getElementById('user-status-filter').addEventListener('change', function() {
         usersTable.column(5).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
     });
+
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (!settings.nTable || settings.nTable.id !== 'users-table') return true;
+        var from = document.getElementById('user-dr-from') ? document.getElementById('user-dr-from').value : '';
+        var to   = document.getElementById('user-dr-to')   ? document.getElementById('user-dr-to').value   : '';
+        if (!from && !to) return true;
+        var row = usersTable.row(dataIndex).node();
+        if (!row) return true;
+        var dateVal = row.querySelector('td[data-date]')?.getAttribute('data-date') || '';
+        if (!dateVal) return true;
+        if (from && dateVal < from) return false;
+        if (to   && dateVal > to)   return false;
+        return true;
+    });
+    _drCbs['user-dr'] = function() { usersTable.draw(); };
 });
 
 function togglePwd(inputId, eyeId) {
@@ -566,6 +606,7 @@ function resetUsersFilters() {
     document.getElementById('user-search').value        = '';
     document.getElementById('user-role-filter').value   = '';
     document.getElementById('user-status-filter').value = '';
+    drClear('user-dr');
     if (window.$ && $('#users-table').length) {
         $('#users-table').DataTable().search('').columns().search('').draw();
     }

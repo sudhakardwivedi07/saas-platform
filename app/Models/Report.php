@@ -26,6 +26,8 @@ class Report extends BaseModel
         'one_page_insight',
         'seven_page_insight',
         'insight_json_data',
+        'version',
+        'parent_report_id',
     ];
 
     protected $casts = [
@@ -48,6 +50,18 @@ class Report extends BaseModel
     public function attachments(): HasMany
     {
         return $this->hasMany(ReportAttachment::class, 'report_id');
+    }
+
+    // Original report this version was derived from (null = this IS the original)
+    public function parentReport(): BelongsTo
+    {
+        return $this->belongsTo(Report::class, 'parent_report_id');
+    }
+
+    // All version-copies spawned from this report
+    public function versionCopies(): HasMany
+    {
+        return $this->hasMany(Report::class, 'parent_report_id');
     }
 
     public function getFormattedFileSizeAttribute(): string

@@ -27,7 +27,6 @@
 
     .analysis-label { font-size:7pt; font-weight:bold; letter-spacing:2px; color:#9ca3af; text-transform:uppercase; margin-bottom:6px; margin-top:24px; }
     .company-name   { font-size:26pt; font-weight:bold; color:#1a202c; margin-bottom:4px; }
-    .report-sub     { font-size:11pt; color:#64748b; margin-bottom:12px; }
     .orange-bar     { height:3px; width:56px; background:#f06b25; margin-bottom:22px; }
 
     .meta-table { width:100%; border-collapse:collapse; border-top:1px solid #f1f5f9; padding-top:14px; margin-top:14px; }
@@ -91,7 +90,6 @@
 
     <div class="analysis-label">INSIGHTS ANALYSIS</div>
     <div class="company-name">{{ $report->company?->company_name ?? '' }}</div>
-    <div class="report-sub">{{ $report->report_name }}</div>
     <div class="orange-bar"></div>
 
     <table class="meta-table">

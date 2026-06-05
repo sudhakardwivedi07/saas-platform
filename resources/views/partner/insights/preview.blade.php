@@ -60,7 +60,6 @@
     text-transform:uppercase; margin-bottom:6px;
 }
 .ipv-company-name  { font-size:28px; font-weight:700; color:#1a202c; margin-bottom:4px; line-height:1.2; }
-.ipv-report-sub    { font-size:13px; color:#64748b; margin-bottom:14px; }
 .ipv-orange-bar    { height:3px; width:56px; background:var(--orange,#f06b25); border-radius:2px; margin-bottom:24px; }
 
 .ipv-meta-grid {
@@ -167,7 +166,6 @@
 
             <div class="ipv-analysis-label">INSIGHTS ANALYSIS</div>
             <div class="ipv-company-name">{{ $report->company?->company_name ?? '' }}</div>
-            <div class="ipv-report-sub">{{ $report->report_name }}</div>
             <div class="ipv-orange-bar"></div>
 
             {{-- Metadata --}}
@@ -180,12 +178,10 @@
                 <div>
                     <div class="ipv-meta-label">PREPARED BY</div>
                     <div class="ipv-meta-value">{{ $companyName }}</div>
-                    <div class="ipv-meta-sub">{{ $authUser->email }}</div>
                 </div>
                 <div>
                     <div class="ipv-meta-label">DATE</div>
                     <div class="ipv-meta-value">{{ $report->created_at->format('F d, Y') }}</div>
-                    <div class="ipv-meta-sub">{{ $report->created_at->format('g:i A') }} ({{ $report->created_at->tzName }})</div>
                 </div>
             </div>
         </div>

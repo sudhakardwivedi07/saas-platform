@@ -150,6 +150,7 @@ class Report extends BaseModel
     {
         return static::withTrashed()
             ->where('user_id', $userId)
+            ->whereNull('parent_report_id')
             ->where('created_at', '>=', Carbon::now()->startOfMonth())
             ->where(function ($q) use ($selectedCompanyId, $userHomeCompanyId) {
                 $q->where('company_id', $selectedCompanyId);

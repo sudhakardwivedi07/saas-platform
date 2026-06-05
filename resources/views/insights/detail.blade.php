@@ -223,6 +223,10 @@
                     <i class="fas fa-folder"></i>
                     <span>{{ $report->attachments->count() }} file(s)</span>
                 </div>
+                <div class="report-meta-item">
+                    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#94a3b8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5l5 5v13a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
+                    <span id="ciVersionBadge" style="font-size:13px;color:#64748b;font-weight:500;">v{{ $report->version ?? 1 }}</span>
+                </div>
             </div>
         </div>
         @if($report->insight_json_data)
@@ -865,20 +869,33 @@
             document.getElementById('ciBtnSaveLabel').textContent = 'Save';
             if (data.status === 'success') {
                 window.insightSections = sections.map(s => ({ title: s.title, content: s.html }));
+                const redirectUrl = data.redirect_url || null;
+                const newVersion  = data.version      || null;
                 Swal.fire({
                     html: `<div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
                         <div style="width:70px;height:70px;background:#ecfdf5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
                             <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#10b981" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
                         </div>
-                        <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Saved Successfully</h2>
-                        <p style="font-size:14px;color:#64748b;margin:0;">Your changes have been saved.</p>
+                        <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">${redirectUrl ? 'Saved as v' + newVersion : 'Saved Successfully'}</h2>
+                        <p style="font-size:14px;color:#64748b;margin:0;">${redirectUrl ? 'Opening <strong>v' + newVersion + '</strong>…' : 'Your changes have been saved.'}</p>
                     </div>`,
                     showConfirmButton: true,
                     confirmButtonText: 'Got it',
                     confirmButtonColor: '#f06b25',
-                    allowOutsideClick: true,
+                    allowOutsideClick: !redirectUrl,
+                    didOpen: (popup) => {
+                        const actions = popup.querySelector('.swal2-actions');
+                        if (actions) { actions.style.cssText = 'width:100%;padding:0 24px;display:flex;'; }
+                        const b = popup.querySelector('.swal2-confirm');
+                        if (b) { b.style.cssText = 'flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:#f06b25;border:none;color:#fff;cursor:pointer;'; }
+                    },
+                }).then(() => {
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    } else {
+                        ciToggleEdit();
+                    }
                 });
-                ciToggleEdit();
             } else {
                 Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Could not save.' });
             }

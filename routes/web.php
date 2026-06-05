@@ -277,6 +277,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{id}/data',                   [PartnerInsightsController::class, 'getData'])->name('data');
         Route::post('/{id}/update-content',        [PartnerInsightsController::class, 'updateContent'])->name('update-content');
         Route::post('/{id}/publish',               [PartnerInsightsController::class, 'publish'])->name('publish');
+        Route::get('/{id}/preview',                [PartnerInsightsController::class, 'previewPdf'])->name('preview');
         Route::get('/{id}/export-pdf',             [PartnerInsightsController::class, 'exportPdf'])->name('export-pdf');
         Route::get('/{id}/download',               [PartnerInsightsController::class, 'download'])->name('download');
         Route::delete('/{id}',                     [PartnerInsightsController::class, 'destroy'])->name('destroy');

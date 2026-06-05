@@ -238,6 +238,7 @@
                 <tr>
                     <th>Insight Report</th>
                     <th>Generated</th>
+                    <th>Version</th>
                     <th>Client Name</th>
                     <th>Company Name</th>
                     <th>Status</th>
@@ -281,6 +282,7 @@
                         </div>
                     </td>
                     <td style="color:#64748b;" data-date="{{ $report->created_at->format('Y-m-d') }}" data-order="{{ $report->created_at->format('Y-m-d') }}">{{ $report->created_at->format(active_date_format()) }}</td>
+                    <td style="color:#64748b;font-weight:500;">v{{ $report->version ?? 1 }}</td>
                     <td style="color:#64748b;">{{ $clientName }}</td>
                     <td style="color:#64748b;">{{ $companyName }}</td>
                     <td data-search="{{ $rowStatus }}">
@@ -427,9 +429,9 @@
             table.search(this.value).draw();
         });
 
-        // Wire status filter — col 4 (Status), search by data-search value
+        // Wire status filter — col 5 (Status), search by data-search value
         document.getElementById('piStatusFilter').addEventListener('change', function () {
-            table.column(4).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+            table.column(5).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
         });
 
         piSyncHeaderBtn();
@@ -446,7 +448,7 @@
         const q  = (document.getElementById('piSearch')?.value ?? '').trim();
         const st = (document.getElementById('piStatusFilter')?.value ?? '');
         table.search(q);
-        table.column(4).search(st ? '^' + st + '$' : '', true, false, true);
+        table.column(5).search(st ? '^' + st + '$' : '', true, false, true);
         table.draw();
     };
 
@@ -459,16 +461,17 @@
 
     // ── Export CSV ────────────────────────────────────────────────────────────
     window.piExportCSV = function () {
-        const rows = [['Insight Report', 'Generated', 'Client Name', 'Company Name', 'Status']];
+        const rows = [['Insight Report', 'Generated', 'Version', 'Client Name', 'Company Name', 'Status']];
         document.querySelectorAll('#pi-table tbody tr[data-status]').forEach(r => {
             const cells = r.querySelectorAll('td');
-            if (cells.length < 5) return;
+            if (cells.length < 6) return;
             rows.push([
                 cells[0].querySelector('a, .pi-name-deleted, span[style]')?.textContent?.trim() ?? '',
                 cells[1].textContent.trim(),
                 cells[2].textContent.trim(),
                 cells[3].textContent.trim(),
                 cells[4].textContent.trim(),
+                cells[5].textContent.trim(),
             ]);
         });
         const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -623,7 +626,7 @@
     }
 
     // ── Prepend new row into DataTable ────────────────────────────────────────
-    // Columns: Insight Report | Generated | Client | Company | Status | Action
+    // Columns: Insight Report | Generated | Version | Client | Company | Status | Action
     function prependRow(id, name, clientName, companyName, companyId, userId) {
         if (!table) return;
         const today = new Date().toISOString().slice(0, 10);
@@ -638,6 +641,7 @@
                 <span style="font-weight:500;">${name || 'Generating…'}</span>
             </div></td>
             <td style="color:#64748b;" data-date="" data-order="${today}">Just now</td>
+            <td style="color:#64748b;font-weight:500;">v1</td>
             <td style="color:#64748b;">${clientName || '—'}</td>
             <td style="color:#64748b;">${companyName || '—'}</td>
             <td data-search="processing"><span class="badge badge-processing" id="pi-badge-${id}">Processing</span></td>
@@ -653,7 +657,7 @@
         const badge = document.getElementById('pi-badge-' + id);
         if (badge) { badge.className = 'badge badge-draft'; badge.textContent = 'Draft'; }
         row.dataset.status = 'draft';
-        if (row.cells[4]) row.cells[4].setAttribute('data-search', 'draft');
+        if (row.cells[5]) row.cells[5].setAttribute('data-search', 'draft');
 
         const viewUrl  = `/partner-insights/${encId}/view`;
         const nameCell = row.querySelector('.pi-name-cell span[style]');
@@ -674,7 +678,7 @@
         piUpdateGenerateBtn();
         piSyncHeaderBtn();
 
-        const compName = row?.cells[3]?.textContent?.trim() || '';
+        const compName = row?.cells[4]?.textContent?.trim() || '';
         Swal.fire({
             title: 'Insight Generated!',
             html:  `<p style="color:#6b7280;font-size:14px;line-height:1.6">Your CFO level Financial Insight is ready to view for <strong>"${compName}"</strong>.</p>`,
@@ -689,7 +693,7 @@
         const badge = document.getElementById('pi-badge-' + id);
         if (badge) { badge.className = 'badge badge-failed'; badge.textContent = 'Failed'; }
         row.dataset.status = 'failed';
-        if (row.cells[4]) row.cells[4].setAttribute('data-search', 'failed');
+        if (row.cells[5]) row.cells[5].setAttribute('data-search', 'failed');
         const vb = row.querySelector('.pi-btn-view');
         if (vb) { vb.textContent = 'Failed'; vb.style.background = '#9ca3af'; }
         if (table) table.row(row).invalidate().draw(false);
@@ -727,9 +731,9 @@
                         if (nameEl && !nameEl.classList.contains('pi-name-deleted')) {
                             const s = document.createElement('span'); s.className = 'pi-name-deleted'; s.textContent = nameEl.textContent.trim(); nameEl.replaceWith(s);
                         }
-                        const statusCell = row.cells[4];
+                        const statusCell = row.cells[5];
                         if (statusCell) { statusCell.setAttribute('data-search', 'deleted'); statusCell.innerHTML = '<span class="badge badge-deleted">Deleted</span>'; }
-                        const actCell = row.cells[5];
+                        const actCell = row.cells[6];
                         if (actCell) actCell.innerHTML = '<span style="font-size:12px;color:#9ca3af;font-style:italic;">—</span>';
                         if (table) table.row(row).invalidate().draw(false);
                     }

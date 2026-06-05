@@ -154,6 +154,10 @@
                     <span>{{ $report->attachments->count() }} file(s)</span>
                 </div>
                 <div class="rd-meta-item">
+                    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#94a3b8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5l5 5v13a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
+                    <span id="rdVersionBadge" style="font-size:13px;color:#64748b;font-weight:500;">v{{ $report->version ?? 1 }}</span>
+                </div>
+                <div class="rd-meta-item">
                     <span class="rd-publish-badge {{ $report->publish_status ?? 'draft' }}" id="rdPublishBadge">
                         @if(($report->publish_status ?? 'draft') === 'published')
                             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Published
@@ -173,6 +177,10 @@
                 <span>Share</span>
             </button>
             @endif
+            <a href="{{ route('partner-insights.preview', $report->id) }}" class="rd-btn rd-btn-outline" id="rdBtnPdfPreview">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span>Preview</span>
+            </a>
             <button id="rdBtnEdit" class="rd-btn rd-btn-edit" onclick="rdToggleEdit()">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                 <span id="rdBtnEditLabel">Edit Insight</span>
@@ -551,28 +559,35 @@
             btn.disabled = false;
             document.getElementById('rdBtnSaveLabel').textContent = 'Save';
             if (data.status === 'success') {
+                const redirectUrl = data.redirect_url || null;
+                const newVersion  = data.version      || null;
                 Swal.fire({
                     html: `
                         <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
                             <div style="width:70px;height:70px;background:#ecfdf5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
                                 <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#10b981" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
                             </div>
-                            <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Saved Successfully</h2>
-                            <p style="font-size:14px;color:#64748b;margin:0;">Your changes have been saved.</p>
+                            <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">${redirectUrl ? 'Saved as v' + newVersion : 'Saved Successfully'}</h2>
+                            <p style="font-size:14px;color:#64748b;margin:0;">${redirectUrl ? 'Opening <strong>v' + newVersion + ' Published</strong>…' : 'Your changes have been saved.'}</p>
                         </div>`,
                     showConfirmButton: true,
                     confirmButtonText: 'Got it',
                     confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
                     showCloseButton: false,
-                    allowOutsideClick: true,
+                    allowOutsideClick: !redirectUrl,
                     didOpen: (popup) => {
                         const actions = popup.querySelector('.swal2-actions');
                         if (actions) { actions.style.cssText = 'width:100%;padding:0 24px;display:flex;'; }
-                        const btn = popup.querySelector('.swal2-confirm');
-                        if (btn) { btn.style.cssText = 'flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:#f06b25;border:none;color:#fff;cursor:pointer;'; }
+                        const b = popup.querySelector('.swal2-confirm');
+                        if (b) { b.style.cssText = 'flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:#f06b25;border:none;color:#fff;cursor:pointer;'; }
                     },
+                }).then(() => {
+                    if (redirectUrl) {
+                        window.location.href = redirectUrl;
+                    } else {
+                        rdToggleEdit();
+                    }
                 });
-                rdToggleEdit();
             } else {
                 Swal.fire({ icon:'error', title:'Error', text: data.message || 'Could not save.' });
             }
@@ -625,15 +640,6 @@
             .then(r => r.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // Update badge
-                    const badge = document.getElementById('rdPublishBadge');
-                    if (badge) {
-                        badge.className = 'rd-publish-badge published';
-                        badge.innerHTML = '<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Published';
-                    }
-                    // Hide only the Publish button once published
-                    const publishBtn = document.getElementById('rdBtnPublish');
-                    if (publishBtn) publishBtn.style.display = 'none';
                     Swal.fire({
                         html: `
                             <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
@@ -641,18 +647,20 @@
                                     <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#065f46" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
                                 </div>
                                 <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Published!</h2>
-                                <p style="font-size:14px;color:#64748b;margin:0;">The insight is now visible to the client.</p>
+                                <p style="font-size:14px;color:#64748b;margin:0;text-align:center;">The insight is now visible to the client as <strong>v${data.version}</strong>.</p>
                             </div>`,
                         showConfirmButton: true,
                         confirmButtonText: 'Got it',
                         confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#1a6aa8',
-                        allowOutsideClick: true,
+                        allowOutsideClick: false,
                         didOpen: (popup) => {
                             const actions = popup.querySelector('.swal2-actions');
                             if (actions) actions.style.cssText = 'width:100%;padding:0 24px;display:flex;';
                             const b = popup.querySelector('.swal2-confirm');
                             if (b) { const pc=getComputedStyle(document.documentElement).getPropertyValue('--blue').trim()||'#1a6aa8'; b.style.cssText=`flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:${pc};border:none;color:#fff;cursor:pointer;`; }
                         },
+                    }).then(() => {
+                        if (data.redirect_url) window.location.href = data.redirect_url;
                     });
                 } else {
                     if (btn) { btn.disabled = false; document.getElementById('rdBtnPublishLabel').textContent = 'Publish Insight'; }

@@ -45,10 +45,11 @@ class PartnerInsightsController extends AccountBaseController
             ->orderByDesc('created_at')
             ->get();
 
-        // Billing-cycle usage (current month, non-deleted non-firm reports for sub-companies)
+        // Billing-cycle usage: only count original AI-generated reports (not version copies)
         $cycleUsed = Report::whereIn('company_id', $subCompanyIds)
             ->where('is_firm_report', false)
             ->whereNull('deleted_at')
+            ->whereNull('parent_report_id')
             ->where('created_at', '>=', Carbon::now()->startOfMonth())
             ->whereNotIn('status', ['Failed'])
             ->count();
@@ -421,14 +422,14 @@ class PartnerInsightsController extends AccountBaseController
         ]);
     }
 
-    // ── Update content (inline edit, draft only) ──────────────────────────────
+    // ── Update content ────────────────────────────────────────────────────────
 
     public function updateContent(Request $request, int $reportId)
     {
         $request->validate([
-            'sections'       => 'required|array',
-            'sections.*.title' => 'required|string',
-            'sections.*.html'  => 'present|string',
+            'sections'           => 'required|array',
+            'sections.*.title'   => 'required|string',
+            'sections.*.html'    => 'present|string',
         ]);
 
         $subCompanyIds = $this->allClientCompanyIds();
@@ -437,22 +438,33 @@ class PartnerInsightsController extends AccountBaseController
             ->where('id', $reportId)
             ->firstOrFail();
 
-        $sections = $request->sections; // [{title, html}]
+        $sections = $request->sections;
 
-        // Rebuild plain-text `report` key so PDF export continues to work
+        // Build plain-text version for PDF export
         $reportText = '';
         foreach ($sections as $section) {
-            $title = $section['title'] ?? '';
-            $html  = $section['html']  ?? '';
-            $plain = $this->htmlToPlainText($html);
-            $reportText .= $title . "\n" . $plain . "\n\n";
+            $reportText .= ($section['title'] ?? '') . "\n"
+                         . $this->htmlToPlainText($section['html'] ?? '') . "\n\n";
         }
 
-        $existing = is_array($report->insight_json_data) ? $report->insight_json_data : [];
-        $existing['sections'] = $sections;          // HTML sections for exact re-render
-        $existing['report']   = trim($reportText);  // plain text for PDF export
+        $jsonData             = is_array($report->insight_json_data) ? $report->insight_json_data : [];
+        $jsonData['sections'] = $sections;
+        $jsonData['report']   = trim($reportText);
 
-        $report->insight_json_data = $existing;
+        // Published → create a new published record so all versions are preserved in the list
+        if ($report->isPublished()) {
+            $next = $this->spawnVersion($report, $jsonData, 'published');
+
+            return response()->json([
+                'status'       => 'success',
+                'message'      => 'Saved as new version.',
+                'redirect_url' => route('partner-insights.view', $next->encrypted_id),
+                'version'      => $next->version,
+            ]);
+        }
+
+        // Draft → update in place
+        $report->insight_json_data = $jsonData;
         $report->save();
 
         return response()->json(['status' => 'success', 'message' => 'Insight updated.']);
@@ -488,19 +500,24 @@ class PartnerInsightsController extends AccountBaseController
             ->where('id', $reportId)
             ->firstOrFail();
 
-        $report->publish_status = 'published';
-        $report->save();
+        // Create a new published record so v1 Draft stays in the list alongside v2 Published
+        $next = $this->spawnVersion($report, $report->insight_json_data, 'published');
 
-        return response()->json(['status' => 'success', 'message' => 'Insight published.']);
+        return response()->json([
+            'status'       => 'success',
+            'message'      => 'Insight published.',
+            'redirect_url' => route('partner-insights.view', $next->encrypted_id),
+            'version'      => $next->version,
+        ]);
     }
 
-    // ── Export PDF ────────────────────────────────────────────────────────────
+    // ── Preview PDF (HTML preview page) ──────────────────────────────────────
 
-    public function exportPdf(int $reportId)
+    public function previewPdf(int $reportId)
     {
         $subCompanyIds = $this->allClientCompanyIds();
 
-        $report = Report::with('user.company')
+        $report = Report::with(['user', 'company'])
             ->whereIn('company_id', $subCompanyIds)
             ->where('id', $reportId)
             ->firstOrFail();
@@ -509,10 +526,85 @@ class PartnerInsightsController extends AccountBaseController
             abort(404, 'No insight data available.');
         }
 
-        $fullTitle   = $report->report_name ?: 'CFO Insights';
-        $insightData = $report->insight_json_data;
-        $reportText  = '';
+        $sections = $this->getReportSections($report);
 
+        $this->pageTitle = 'Preview — ' . ($report->report_name ?: 'Insight');
+        $this->report    = $report;
+        $this->sections  = $sections;
+
+        return view('partner.insights.preview', $this->data);
+    }
+
+    // ── Export PDF ────────────────────────────────────────────────────────────
+
+    public function exportPdf(int $reportId)
+    {
+        $subCompanyIds = $this->allClientCompanyIds();
+
+        $report = Report::with(['user', 'company'])
+            ->whereIn('company_id', $subCompanyIds)
+            ->where('id', $reportId)
+            ->firstOrFail();
+
+        if (empty($report->insight_json_data)) {
+            abort(404, 'No insight data available.');
+        }
+
+        $sections = $this->getReportSections($report);
+
+        if (empty($sections)) {
+            abort(404, 'No report content found.');
+        }
+
+        // Convert logo to base64 so DOMPDF can embed it without HTTP requests
+        $logoBase64 = '';
+        $branding   = $this->branding;
+        if ($branding?->logo) {
+            $logoPath = storage_path('app/public/' . $branding->logo);
+            if (file_exists($logoPath)) {
+                $mime       = mime_content_type($logoPath);
+                $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+            }
+        }
+
+        $pdf = app('dompdf.wrapper');
+        $pdf->setOption('enable_php', true);
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isRemoteEnabled', true);
+        $pdf->setOption('defaultFont', 'Arial');
+        $pdf->setOption('fontHeightRatio', 1.1);
+        $pdf->setOption('show_warnings', false);
+
+        $pdf->loadView('partner.insights.pdf', [
+            'sections'    => $sections,
+            'report'      => $report,
+            'companyName' => $this->companyName,
+            'logoBase64'  => $logoBase64,
+            'reportDate'  => $report->created_at->format('M d, Y'),
+        ]);
+
+        $timestamp = $report->created_at->format('mdyHis');
+        $base      = preg_replace('/[^A-Za-z0-9\-_ ]/', '', $report->report_name ?: 'Insight') . '_' . $timestamp;
+
+        return $pdf->download($base . '.pdf');
+    }
+
+    // ── Shared section-extraction helper ─────────────────────────────────────
+
+    private function getReportSections(Report $report): array
+    {
+        $insightData = $report->insight_json_data;
+
+        // Prefer structured HTML sections saved by the inline editor
+        if (is_array($insightData) && !empty($insightData['sections'])) {
+            return array_map(fn ($s) => [
+                'title'             => $s['title']   ?? '',
+                'formatted_content' => $s['html']    ?? $s['content'] ?? '',
+            ], $insightData['sections']);
+        }
+
+        // Fall back to parsing the raw report text
+        $reportText = '';
         if (is_string($insightData)) {
             $reportText = $insightData;
         } elseif (is_array($insightData)) {
@@ -527,33 +619,13 @@ class PartnerInsightsController extends AccountBaseController
             }
         }
 
-        if (empty($reportText)) {
-            abort(404, 'No report content found.');
-        }
+        if (empty($reportText)) return [];
 
         $sections = $this->parseInsightSectionsForPdf($reportText);
         foreach ($sections as &$section) {
             $section['formatted_content'] = $this->formatContentForPdf($section['content']);
         }
-
-        $pdf = app('dompdf.wrapper');
-        $pdf->setOption('enable_php', true);
-        $pdf->setOption('isHtml5ParserEnabled', true);
-        $pdf->setOption('isRemoteEnabled', true);
-        $pdf->setOption('defaultFont', 'Arial');
-        $pdf->setOption('fontHeightRatio', 1.1);
-        $pdf->setOption('show_warnings', false);
-
-        $pdf->loadView('firm.insights.pdf', [
-            'sections'   => $sections,
-            'fullTitle'  => $fullTitle,
-            'reportDate' => $report->created_at->format('M d, Y'),
-        ]);
-
-        $timestamp = $report->created_at->format('mdyHis');
-        $base      = preg_replace('/[^A-Za-z0-9\-_ ]/', '', $fullTitle) . '_' . $timestamp;
-
-        return $pdf->download($base . '.pdf');
+        return $sections;
     }
 
     // ── Download CSV ZIP ──────────────────────────────────────────────────────
@@ -676,6 +748,25 @@ class PartnerInsightsController extends AccountBaseController
             ->pluck('company_id');
 
         return $directClientIds->merge($linkedCompanyIds)->unique()->filter()->values();
+    }
+
+    // ── Version helper ────────────────────────────────────────────────────────
+
+    private function spawnVersion(Report $source, mixed $jsonData, string $publishStatus): Report
+    {
+        return Report::create([
+            'user_id'          => $source->user_id,
+            'company_id'       => $source->company_id,
+            'is_firm_report'   => $source->is_firm_report,
+            'report_name'      => $source->report_name,
+            'upload_date'      => $source->upload_date ?? now()->toDateString(),
+            'total_file_size'  => $source->total_file_size,
+            'status'           => 'Analyzed',
+            'publish_status'   => $publishStatus,
+            'insight_json_data'=> $jsonData,
+            'version'          => ($source->version ?? 1) + 1,
+            'parent_report_id' => $source->parent_report_id ?? $source->id,
+        ]);
     }
 
     // ── PDF helpers ───────────────────────────────────────────────────────────

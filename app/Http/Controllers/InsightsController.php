@@ -311,9 +311,16 @@ class InsightsController extends AccountBaseController
             abort(404);
         }
 
+        $impersonatingAdminId = session('impersonating_client_original_id');
+
         $this->report = Report::with('attachments')
             ->where('id', $reportId)
-            ->where('user_id', auth()->id())
+            ->where(function ($q) use ($impersonatingAdminId) {
+                $q->where('user_id', auth()->id());
+                if ($impersonatingAdminId) {
+                    $q->orWhere('user_id', $impersonatingAdminId);
+                }
+            })
             ->firstOrFail();
 
         $this->pageTitle = 'Insights';
@@ -322,8 +329,15 @@ class InsightsController extends AccountBaseController
 
     public function getData(int $reportId)
     {
+        $impersonatingAdminId = session('impersonating_client_original_id');
+
         $report = Report::where('id', $reportId)
-            ->where('user_id', auth()->id())
+            ->where(function ($q) use ($impersonatingAdminId) {
+                $q->where('user_id', auth()->id());
+                if ($impersonatingAdminId) {
+                    $q->orWhere('user_id', $impersonatingAdminId);
+                }
+            })
             ->first();
 
         if (!$report) {
@@ -343,33 +357,43 @@ class InsightsController extends AccountBaseController
     public function updateContent(Request $request, int $reportId)
     {
         $request->validate([
-            'sections'         => 'required|array',
-            'sections.*.title' => 'required|string',
-            'sections.*.html'  => 'present|string',
+            'sections'           => 'required|array',
+            'sections.*.title'   => 'required|string',
+            'sections.*.html'    => 'present|string',
         ]);
 
+        $impersonatingAdminId = session('impersonating_client_original_id');
+
         $report = Report::where('id', $reportId)
-            ->where('user_id', auth()->id())
+            ->where(function ($q) use ($impersonatingAdminId) {
+                $q->where('user_id', auth()->id());
+                if ($impersonatingAdminId) {
+                    $q->orWhere('user_id', $impersonatingAdminId);
+                }
+            })
             ->firstOrFail();
 
         $sections = $request->sections;
 
         $reportText = '';
         foreach ($sections as $section) {
-            $title = $section['title'] ?? '';
-            $html  = $section['html']  ?? '';
-            $plain = $this->htmlToPlainText($html);
-            $reportText .= $title . "\n" . $plain . "\n\n";
+            $reportText .= ($section['title'] ?? '') . "\n"
+                         . $this->htmlToPlainText($section['html'] ?? '') . "\n\n";
         }
 
-        $existing = is_array($report->insight_json_data) ? $report->insight_json_data : [];
-        $existing['sections'] = $sections;
-        $existing['report']   = trim($reportText);
+        $jsonData             = is_array($report->insight_json_data) ? $report->insight_json_data : [];
+        $jsonData['sections'] = $sections;
+        $jsonData['report']   = trim($reportText);
 
-        $report->insight_json_data = $existing;
-        $report->save();
+        // Always spawn a new version to preserve history
+        $next = $this->spawnVersion($report, $jsonData);
 
-        return response()->json(['status' => 'success', 'message' => 'Insight updated.']);
+        return response()->json([
+            'status'       => 'success',
+            'message'      => 'Saved as new version.',
+            'redirect_url' => route('insights.view', $next->encrypted_id),
+            'version'      => $next->version,
+        ]);
     }
 
     private function htmlToPlainText(string $html): string
@@ -388,9 +412,16 @@ class InsightsController extends AccountBaseController
 
     public function download(int $reportId)
     {
+        $impersonatingAdminId = session('impersonating_client_original_id');
+
         $report = Report::with('attachments')
             ->where('id', $reportId)
-            ->where('user_id', auth()->id())
+            ->where(function ($q) use ($impersonatingAdminId) {
+                $q->where('user_id', auth()->id());
+                if ($impersonatingAdminId) {
+                    $q->orWhere('user_id', $impersonatingAdminId);
+                }
+            })
             ->firstOrFail();
 
         $attachments = $report->attachments;
@@ -424,42 +455,37 @@ class InsightsController extends AccountBaseController
 
     public function exportPdf(int $reportId)
     {
-        $report = Report::with('user.company')
+        $impersonatingAdminId = session('impersonating_client_original_id');
+
+        $report = Report::with(['user', 'company'])
             ->where('id', $reportId)
-            ->where('user_id', auth()->id())
+            ->where(function ($q) use ($impersonatingAdminId) {
+                $q->where('user_id', auth()->id());
+                if ($impersonatingAdminId) {
+                    $q->orWhere('user_id', $impersonatingAdminId);
+                }
+            })
             ->firstOrFail();
 
         if (empty($report->insight_json_data)) {
             abort(404, 'No insight data available.');
         }
 
-        $fullTitle = $report->report_name ?: 'CFO Insights';
+        $sections = $this->getReportSections($report);
 
-        $insightData = $report->insight_json_data;
-        $reportText  = '';
-        if (is_string($insightData)) {
-            $reportText = $insightData;
-        } elseif (is_array($insightData)) {
-            if (isset($insightData['report'])) {
-                $reportText = $insightData['report'];
-            } elseif (isset($insightData['insight_json_data']['report'])) {
-                $reportText = $insightData['insight_json_data']['report'];
-            } else {
-                $longest = '';
-                foreach ($insightData as $value) {
-                    if (is_string($value) && strlen($value) > strlen($longest)) $longest = $value;
-                }
-                $reportText = $longest;
-            }
-        }
-
-        if (empty($reportText)) {
+        if (empty($sections)) {
             abort(404, 'No report content found.');
         }
 
-        $sections = $this->parseInsightSectionsForPdf($reportText);
-        foreach ($sections as &$section) {
-            $section['formatted_content'] = $this->formatContentForPdf($section['content']);
+        // Convert logo to base64 so DOMPDF can embed it without HTTP requests
+        $logoBase64 = '';
+        $branding   = $this->branding;
+        if ($branding?->logo) {
+            $logoPath = storage_path('app/public/' . $branding->logo);
+            if (file_exists($logoPath)) {
+                $mime       = mime_content_type($logoPath);
+                $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+            }
         }
 
         $pdf = app('dompdf.wrapper');
@@ -471,13 +497,15 @@ class InsightsController extends AccountBaseController
         $pdf->setOption('show_warnings', false);
 
         $pdf->loadView('insights.pdf', [
-            'sections'   => $sections,
-            'fullTitle'  => $fullTitle,
-            'reportDate' => $report->created_at->format('M d, Y'),
+            'sections'    => $sections,
+            'report'      => $report,
+            'companyName' => $this->companyName,
+            'logoBase64'  => $logoBase64,
+            'reportDate'  => $report->created_at->format('M d, Y'),
         ]);
 
         $timestamp = $report->created_at->format('mdyHis');
-        $base      = preg_replace('/[^A-Za-z0-9\-_ ]/', '', $fullTitle) . '_' . $timestamp;
+        $base      = preg_replace('/[^A-Za-z0-9\-_ ]/', '', $report->report_name ?: 'Insight') . '_' . $timestamp;
 
         return $pdf->download($base . '.pdf');
     }
@@ -525,6 +553,64 @@ class InsightsController extends AccountBaseController
             'message' => 'All reports and attachments deleted.',
             'deleted' => $count,
         ]);
+    }
+
+    // ── Version helper ────────────────────────────────────────────────────────
+
+    private function spawnVersion(Report $source, mixed $jsonData): Report
+    {
+        return Report::create([
+            'user_id'           => $source->user_id,
+            'company_id'        => $source->company_id,
+            'is_firm_report'    => $source->is_firm_report,
+            'report_name'       => $source->report_name,
+            'upload_date'       => $source->upload_date ?? now()->toDateString(),
+            'total_file_size'   => $source->total_file_size,
+            'status'            => 'Analyzed',
+            'publish_status'    => $source->publish_status,
+            'insight_json_data' => $jsonData,
+            'version'           => ($source->version ?? 1) + 1,
+            'parent_report_id'  => $source->parent_report_id ?? $source->id,
+        ]);
+    }
+
+    // ── Shared section-extraction helper ─────────────────────────────────────
+
+    private function getReportSections(Report $report): array
+    {
+        $insightData = $report->insight_json_data;
+
+        if (is_array($insightData) && !empty($insightData['sections'])) {
+            return array_map(fn ($s) => [
+                'title'             => $s['title']  ?? '',
+                'formatted_content' => $s['html']   ?? $s['content'] ?? '',
+            ], $insightData['sections']);
+        }
+
+        $reportText = '';
+        if (is_string($insightData)) {
+            $reportText = $insightData;
+        } elseif (is_array($insightData)) {
+            if (isset($insightData['report'])) {
+                $reportText = $insightData['report'];
+            } elseif (isset($insightData['insight_json_data']['report'])) {
+                $reportText = $insightData['insight_json_data']['report'];
+            } else {
+                $longest = '';
+                foreach ($insightData as $value) {
+                    if (is_string($value) && strlen($value) > strlen($longest)) $longest = $value;
+                }
+                $reportText = $longest;
+            }
+        }
+
+        if (empty($reportText)) return [];
+
+        $sections = $this->parseInsightSectionsForPdf($reportText);
+        foreach ($sections as &$section) {
+            $section['formatted_content'] = $this->formatContentForPdf($section['content']);
+        }
+        return $sections;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

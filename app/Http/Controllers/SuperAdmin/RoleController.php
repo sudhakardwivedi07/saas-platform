@@ -6,7 +6,7 @@ use App\Helper\Reply;
 use App\Http\Controllers\AccountBaseController;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 
 class RoleController extends AccountBaseController
 {

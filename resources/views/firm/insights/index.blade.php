@@ -97,12 +97,38 @@
             <option value="failed">Failed</option>
             <option value="deleted">Deleted</option>
         </select>
+        <div class="dr-wrap" id="fi-dr">
+            <div class="dr-field" onclick="drOpen('fi-dr')">
+                <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span class="dr-text" id="fi-dr-text">Start Date To End Date</span>
+                <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('fi-dr')" title="Clear date filter">&#x2715;</button>
+            </div>
+            <div class="dr-menu" id="fi-dr-menu">
+                <ul class="dr-list">
+                    <li class="dr-opt" onclick="drPickPreset('fi-dr','today',this)">Today</li>
+                    <li class="dr-opt" onclick="drPickPreset('fi-dr','last30',this)">Last 30 Days</li>
+                    <li class="dr-opt" onclick="drPickPreset('fi-dr','thisMonth',this)">This Month</li>
+                    <li class="dr-opt" onclick="drPickPreset('fi-dr','lastMonth',this)">Last Month</li>
+                    <li class="dr-opt" onclick="drPickPreset('fi-dr','last90',this)">Last 90 Days</li>
+                    <li class="dr-opt" onclick="drPickPreset('fi-dr','last6m',this)">Last 6 Months</li>
+                    <li class="dr-opt" onclick="drPickPreset('fi-dr','last1y',this)">Last 1 Year</li>
+                    <li class="dr-opt" onclick="drPickPreset('fi-dr','custom',this)">Custom Range</li>
+                </ul>
+                <div class="dr-custom-row" id="fi-dr-custom">
+                    <input type="date" class="dr-date-inp" id="fi-dr-from">
+                    <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                    <input type="date" class="dr-date-inp" id="fi-dr-to">
+                    <button class="dr-apply-btn" onclick="drApplyCustom('fi-dr')">Apply</button>
+                </div>
+            </div>
+        </div>
         <div class="bar-search-wrap">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
             </svg>
             <input type="text" id="fiFiSearchInput" class="bar-search-inp" placeholder="Search insights…" oninput="fiFiApplyFilters()">
         </div>
+        <button type="button" class="btn btn-danger" onclick="fiFiResetFilters()">Reset</button>
     </div>
 </div>
 
@@ -210,7 +236,7 @@
                                 @endif
                             </div>
                         </td>
-                        <td style="color:#64748b;">{{ $report->created_at->format(active_date_format()) }}</td>
+                        <td style="color:#64748b;" data-date="{{ $report->created_at->format('Y-m-d') }}">{{ $report->created_at->format(active_date_format()) }}</td>
                         <td style="color:#64748b;">{{ $report->formatted_file_size }}</td>
                         <td>
                             @if($isDeleted)
@@ -466,7 +492,7 @@
                 </span>
                 <span style="color:#1a202c;font-weight:500;">${label}</span>
             </div></td>
-            <td style="color:#64748b;">Just now</td>
+            <td style="color:#64748b;" data-date="">Just now</td>
             <td style="color:#64748b;">—</td>
             <td><span class="badge info" id="fi-status-${id}">Analyzing</span></td>
             <td><div class="action-buttons">
@@ -554,13 +580,36 @@
 
     // ── Filters ──────────────────────────────────────────────────────────────
     window.fiFiApplyFilters = function () {
-        const q  = (document.getElementById('fiFiSearchInput')?.value ?? '').toLowerCase();
-        const st = (document.getElementById('fiFiStatusFilter')?.value ?? '').toLowerCase();
+        const q    = (document.getElementById('fiFiSearchInput')?.value ?? '').toLowerCase();
+        const st   = (document.getElementById('fiFiStatusFilter')?.value ?? '').toLowerCase();
+        const from = document.getElementById('fi-dr-from') ? document.getElementById('fi-dr-from').value : '';
+        const to   = document.getElementById('fi-dr-to')   ? document.getElementById('fi-dr-to').value   : '';
         document.querySelectorAll('#fiFiTableBody tr').forEach(row => {
             const ms = !q  || (row.dataset.search || '').includes(q);
             const mv = !st || (row.dataset.status || '') === st;
-            row.style.display = (ms && mv) ? '' : 'none';
+            let md = true;
+            if (from || to) {
+                const dateVal = row.querySelector('td[data-date]')?.getAttribute('data-date') || '';
+                if (dateVal) {
+                    if (from && dateVal < from) md = false;
+                    if (to   && dateVal > to)   md = false;
+                } else {
+                    md = false;
+                }
+            }
+            row.style.display = (ms && mv && md) ? '' : 'none';
         });
+    };
+
+    _drCbs['fi-dr'] = function () { fiFiApplyFilters(); };
+
+    window.fiFiResetFilters = function () {
+        const si = document.getElementById('fiFiSearchInput');
+        const sf = document.getElementById('fiFiStatusFilter');
+        if (si) si.value = '';
+        if (sf) sf.value = '';
+        drClear('fi-dr');
+        fiFiApplyFilters();
     };
 
     // ── Download ─────────────────────────────────────────────────────────────

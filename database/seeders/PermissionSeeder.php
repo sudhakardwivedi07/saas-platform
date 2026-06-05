@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 
 class PermissionSeeder extends Seeder
 {
@@ -44,10 +44,11 @@ class PermissionSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        // Roles (global — no company_id)
-        $adminRole  = Role::firstOrCreate(['name' => 'admin',   'guard_name' => 'web']);
-        $manager    = Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
-        $clientRole = Role::firstOrCreate(['name' => 'client',  'guard_name' => 'web']);
+        // Roles (global — company_id = NULL so they are never confused with tenant-scoped roles)
+        $adminRole  = Role::firstOrCreate(['name' => 'admin',       'guard_name' => 'web', 'company_id' => null]);
+        $manager    = Role::firstOrCreate(['name' => 'manager',     'guard_name' => 'web', 'company_id' => null]);
+        $clientRole = Role::firstOrCreate(['name' => 'client',      'guard_name' => 'web', 'company_id' => null]);
+        Role::firstOrCreate(            ['name' => 'super_admin', 'guard_name' => 'web', 'company_id' => null]);
 
         // Admin gets all permissions
         $adminRole->syncPermissions($permissions);

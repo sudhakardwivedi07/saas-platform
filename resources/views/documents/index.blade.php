@@ -21,7 +21,7 @@
 <div class="tc" style="margin-bottom:14px">
     <div class="tc-head">
         <div class="tc-filters">
-            <form method="GET" action="{{ route('documents.index') }}" style="display:flex;gap:8px;flex-wrap:wrap;flex:1">
+            <form method="GET" action="{{ route('documents.index') }}" id="doc-filter-form" style="display:flex;gap:8px;flex-wrap:wrap;flex:1">
                 <div class="srch-wrap">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                     <input name="search" value="{{ request('search') }}" placeholder="Search documents…" class="srch-inp">
@@ -32,6 +32,33 @@
                     <option value="image" {{ request('type')==='image' ? 'selected':'' }}>Images</option>
                     <option value="word"  {{ request('type')==='word'  ? 'selected':'' }}>Word Docs</option>
                 </select>
+                <input type="hidden" name="date_from" id="doc-date-from" value="{{ request('date_from') }}">
+                <input type="hidden" name="date_to"   id="doc-date-to"   value="{{ request('date_to') }}">
+                <div class="dr-wrap" id="doc-dr">
+                    <div class="dr-field" onclick="drOpen('doc-dr')">
+                        <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span class="dr-text" id="doc-dr-text">Upload Date</span>
+                        <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('doc-dr')" title="Clear date filter">&#x2715;</button>
+                    </div>
+                    <div class="dr-menu" id="doc-dr-menu">
+                        <ul class="dr-list">
+                            <li class="dr-opt" onclick="drPickPreset('doc-dr','today',this)">Today</li>
+                            <li class="dr-opt" onclick="drPickPreset('doc-dr','last30',this)">Last 30 Days</li>
+                            <li class="dr-opt" onclick="drPickPreset('doc-dr','thisMonth',this)">This Month</li>
+                            <li class="dr-opt" onclick="drPickPreset('doc-dr','lastMonth',this)">Last Month</li>
+                            <li class="dr-opt" onclick="drPickPreset('doc-dr','last90',this)">Last 90 Days</li>
+                            <li class="dr-opt" onclick="drPickPreset('doc-dr','last6m',this)">Last 6 Months</li>
+                            <li class="dr-opt" onclick="drPickPreset('doc-dr','last1y',this)">Last 1 Year</li>
+                            <li class="dr-opt" onclick="drPickPreset('doc-dr','custom',this)">Custom Range</li>
+                        </ul>
+                        <div class="dr-custom-row" id="doc-dr-custom">
+                            <input type="date" class="dr-date-inp" id="doc-dr-from" value="{{ request('date_from') }}">
+                            <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                            <input type="date" class="dr-date-inp" id="doc-dr-to" value="{{ request('date_to') }}">
+                            <button class="dr-apply-btn" onclick="drApplyCustom('doc-dr')">Apply</button>
+                        </div>
+                    </div>
+                </div>
                 <button type="submit" class="btn btn-ghost btn-sm">Filter</button>
                 <a href="{{ route('documents.index') }}" class="btn btn-danger btn-sm">Reset</a>
             </form>
@@ -166,6 +193,31 @@
 
 @push('scripts')
 <script>
+// ── Document date-range filter (server-side) ─────────────────────────────────
+_drCbs['doc-dr'] = function() {
+    var from = document.getElementById('doc-dr-from') ? document.getElementById('doc-dr-from').value : '';
+    var to   = document.getElementById('doc-dr-to')   ? document.getElementById('doc-dr-to').value   : '';
+    var fromHidden = document.getElementById('doc-date-from');
+    var toHidden   = document.getElementById('doc-date-to');
+    if (fromHidden) fromHidden.value = from;
+    if (toHidden)   toHidden.value   = to;
+    var form = document.getElementById('doc-filter-form');
+    if (form) form.submit();
+};
+
+// ── Pre-populate DR picker label if date params are in URL ───────────────────
+(function() {
+    var from = document.getElementById('doc-date-from') ? document.getElementById('doc-date-from').value : '';
+    var to   = document.getElementById('doc-date-to')   ? document.getElementById('doc-date-to').value   : '';
+    if (from || to) {
+        var label = (from && to) ? (from + ' → ' + to) : (from ? 'From ' + from : 'Until ' + to);
+        var textEl = document.getElementById('doc-dr-text');
+        if (textEl) textEl.textContent = label;
+        var wrap = document.getElementById('doc-dr');
+        if (wrap) wrap.classList.add('has-val');
+    }
+})();
+
 let currentDocId = null;
 
 document.addEventListener('submit', function (e) {

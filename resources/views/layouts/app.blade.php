@@ -355,7 +355,7 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 
 /* ── DATE RANGE PICKER ─────────────────────────────────── */
 .dr-wrap{position:relative;display:inline-block}
-.dr-field{display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;border:1.5px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;user-select:none;font-size:13px;min-width:220px;transition:border-color .14s}
+.dr-field{display:flex;align-items:center;gap:8px;height:34px;padding:0 12px;border:1.5px solid var(--border);border-radius:8px;background:#fff;cursor:pointer;user-select:none;font-size:13px;min-width:220px;transition:border-color .14s}
 .dr-field:hover,.dr-field.open{border-color:var(--orange)}
 .dr-field .dr-cal-ico{flex-shrink:0;width:15px;height:15px;stroke:var(--text-3);transition:stroke .14s}
 .dr-field.has-val .dr-cal-ico,.dr-field.open .dr-cal-ico{stroke:var(--orange)}

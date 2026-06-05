@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helper\Reply;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 use Spatie\Permission\Models\Permission;
 
 class RoleController extends AccountBaseController
@@ -21,11 +21,12 @@ class RoleController extends AccountBaseController
     {
         $request->validate([
             'name'        => 'required|string|max:60|unique:roles,name',
+            'alias'       => 'nullable|string|max:100',
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,name',
         ]);
 
-        $role = Role::create(['name' => $request->name, 'guard_name' => 'web']);
+        $role = Role::create(['name' => $request->name, 'alias' => $request->alias ?: null, 'guard_name' => 'web']);
 
         if ($request->filled('permissions')) {
             $role->syncPermissions($request->permissions);
@@ -44,11 +45,12 @@ class RoleController extends AccountBaseController
 
         $request->validate([
             'name'        => 'required|string|max:60|unique:roles,name,' . $id,
+            'alias'       => 'nullable|string|max:100',
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,name',
         ]);
 
-        $role->update(['name' => $request->name]);
+        $role->update(['name' => $request->name, 'alias' => $request->alias ?: null]);
         $role->syncPermissions($request->permissions ?? []);
 
         return response()->json(Reply::success('Role updated.'));

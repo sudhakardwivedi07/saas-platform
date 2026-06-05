@@ -12,7 +12,7 @@ use App\Models\SmsSetting;
 use App\Models\CompanyPaymentGateway;
 use App\Models\ClientPackage;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 use Spatie\Permission\Models\Permission;
 
 class SettingsController extends AccountBaseController

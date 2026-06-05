@@ -77,6 +77,31 @@
                 <option value="not connected">Not Connected</option>
                 <option value="auth expired">Auth Expired</option>
             </select>
+            <div class="dr-wrap" id="qb-dr">
+                <div class="dr-field" onclick="drOpen('qb-dr')">
+                    <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span class="dr-text" id="qb-dr-text">Start Date To End Date</span>
+                    <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('qb-dr')" title="Clear date filter">&#x2715;</button>
+                </div>
+                <div class="dr-menu" id="qb-dr-menu">
+                    <ul class="dr-list">
+                        <li class="dr-opt" onclick="drPickPreset('qb-dr','today',this)">Today</li>
+                        <li class="dr-opt" onclick="drPickPreset('qb-dr','last30',this)">Last 30 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('qb-dr','thisMonth',this)">This Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('qb-dr','lastMonth',this)">Last Month</li>
+                        <li class="dr-opt" onclick="drPickPreset('qb-dr','last90',this)">Last 90 Days</li>
+                        <li class="dr-opt" onclick="drPickPreset('qb-dr','last6m',this)">Last 6 Months</li>
+                        <li class="dr-opt" onclick="drPickPreset('qb-dr','last1y',this)">Last 1 Year</li>
+                        <li class="dr-opt" onclick="drPickPreset('qb-dr','custom',this)">Custom Range</li>
+                    </ul>
+                    <div class="dr-custom-row" id="qb-dr-custom">
+                        <input type="date" class="dr-date-inp" id="qb-dr-from">
+                        <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                        <input type="date" class="dr-date-inp" id="qb-dr-to">
+                        <button class="dr-apply-btn" onclick="drApplyCustom('qb-dr')">Apply</button>
+                    </div>
+                </div>
+            </div>
             <button onclick="resetFilters()" class="btn btn-danger">Reset</button>
         </div>
     </div>
@@ -128,7 +153,7 @@
                                 {{ $qbStatus }}
                             </span>
                         </td>
-                        <td style="font-size:12.5px;color:var(--text-2)">
+                        <td style="font-size:12.5px;color:var(--text-2)" data-date="{{ $conn->last_synced_at?->format('Y-m-d') ?? '' }}">
                             {{ $conn->last_synced_at?->format(active_date_format()) ?? '—' }}
                         </td>
                         <td>
@@ -177,7 +202,7 @@
                                 Not Connected
                             </span>
                         </td>
-                        <td style="font-size:12.5px;color:var(--text-2)">—</td>
+                        <td style="font-size:12.5px;color:var(--text-2)" data-date="">—</td>
                         <td>
                             @if($qbConfigured ?? false)
                             <a href="{{ $connectUrl }}?company_id={{ $company->id }}"
@@ -244,11 +269,27 @@ $(document).ready(function () {
         const val = this.value;
         table.column(statusColIndex).search(val ? '^' + val + '$' : '', true, false, true).draw();
     });
+
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (!settings.nTable || settings.nTable.id !== 'qb-table') return true;
+        var from = document.getElementById('qb-dr-from') ? document.getElementById('qb-dr-from').value : '';
+        var to   = document.getElementById('qb-dr-to')   ? document.getElementById('qb-dr-to').value   : '';
+        if (!from && !to) return true;
+        var row = table.row(dataIndex).node();
+        if (!row) return true;
+        var dateVal = row.querySelector('td[data-date]')?.getAttribute('data-date') || '';
+        if (!dateVal) return false;
+        if (from && dateVal < from) return false;
+        if (to   && dateVal > to)   return false;
+        return true;
+    });
+    _drCbs['qb-dr'] = function() { table.draw(); };
 });
 
 function resetFilters() {
     document.getElementById('qb-search').value        = '';
     document.getElementById('qb-status-filter').value = '';
+    drClear('qb-dr');
     if (window.$.fn && $('#qb-table').DataTable) {
         var t = $('#qb-table').DataTable();
         t.search('').columns().search('').draw();

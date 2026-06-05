@@ -63,6 +63,31 @@
                     <option value="inactive">Inactive</option>
                     <option value="suspended">Suspended</option>
                 </select>
+                <div class="dr-wrap" id="client-dr">
+                    <div class="dr-field" onclick="drOpen('client-dr')">
+                        <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span class="dr-text" id="client-dr-text">Created Date</span>
+                        <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('client-dr')" title="Clear date filter">&#x2715;</button>
+                    </div>
+                    <div class="dr-menu" id="client-dr-menu">
+                        <ul class="dr-list">
+                            <li class="dr-opt" onclick="drPickPreset('client-dr','today',this)">Today</li>
+                            <li class="dr-opt" onclick="drPickPreset('client-dr','last30',this)">Last 30 Days</li>
+                            <li class="dr-opt" onclick="drPickPreset('client-dr','thisMonth',this)">This Month</li>
+                            <li class="dr-opt" onclick="drPickPreset('client-dr','lastMonth',this)">Last Month</li>
+                            <li class="dr-opt" onclick="drPickPreset('client-dr','last90',this)">Last 90 Days</li>
+                            <li class="dr-opt" onclick="drPickPreset('client-dr','last6m',this)">Last 6 Months</li>
+                            <li class="dr-opt" onclick="drPickPreset('client-dr','last1y',this)">Last 1 Year</li>
+                            <li class="dr-opt" onclick="drPickPreset('client-dr','custom',this)">Custom Range</li>
+                        </ul>
+                        <div class="dr-custom-row" id="client-dr-custom">
+                            <input type="date" class="dr-date-inp" id="client-dr-from">
+                            <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
+                            <input type="date" class="dr-date-inp" id="client-dr-to">
+                            <button class="dr-apply-btn" onclick="drApplyCustom('client-dr')">Apply</button>
+                        </div>
+                    </div>
+                </div>
                 <button class="btn btn-danger" onclick="resetClientTabFilters()">Reset</button>
             </div>
             <span class="badge b-gray" id="client-count-badge">{{ $clients->count() }} clients</span>
@@ -99,7 +124,7 @@
                     $lastActivity = $co?->last_active_at ?? $client->updated_at ?? $client->created_at;
                 @endphp
                 <tr data-search="{{ strtolower($client->name . ' ' . $client->email . ' ' . $status) }}" data-status="{{ $status }}">
-                    <td>
+                    <td data-date="{{ $client->created_at?->format('Y-m-d') ?? '' }}">
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:34px;height:34px;border-radius:9px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:-.2px">{{ $initials }}</div>
                             <div>
@@ -752,6 +777,22 @@ $(document).ready(function() {
         return true;
     });
     _drCbs['co-dr'] = function(from, to) { coTable.draw(); };
+
+    // Date range filter for clients table
+    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
+        if (settings.nTable.id !== 'clients-table') return true;
+        var from = document.getElementById('client-dr-from') ? document.getElementById('client-dr-from').value : '';
+        var to   = document.getElementById('client-dr-to')   ? document.getElementById('client-dr-to').value   : '';
+        if (!from && !to) return true;
+        var row = clientTable.row(dataIndex).node();
+        if (!row) return true;
+        var dateVal = row.querySelector('td[data-date]')?.getAttribute('data-date') || '';
+        if (!dateVal) return true;
+        if (from && dateVal < from) return false;
+        if (to   && dateVal > to)   return false;
+        return true;
+    });
+    _drCbs['client-dr'] = function() { clientTable.draw(); };
 });
 
 // ── Add Client validation ────────────────────────────────────
@@ -1136,8 +1177,9 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function resetClientTabFilters() {
-    document.getElementById('client-search').value       = '';
+    document.getElementById('client-search').value        = '';
     document.getElementById('client-status-filter').value = '';
+    drClear('client-dr');
     if (window.$ && $('#clients-table').length) {
         $('#clients-table').DataTable().search('').columns().search('').draw();
     }

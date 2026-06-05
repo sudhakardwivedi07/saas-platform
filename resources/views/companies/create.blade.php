@@ -77,68 +77,11 @@
     {{-- ── Left column: form ──────────────────────────────── --}}
     <div>
 
-        {{-- Section 1: Company Info --}}
-        <div class="acc-card" style="margin-bottom:16px">
-            <div style="display:flex;align-items:center;margin-bottom:18px">
-                <span class="step-num">1</span>
-                <div style="font-size:15px;font-weight:600;color:var(--text-1)">Company Information</div>
-            </div>
-
-            <div class="mf-field">
-                <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
-                <input type="text" name="company_name" id="company_name" class="mf-inp"
-                       placeholder="Acme Inc." value="{{ old('company_name') }}" maxlength="100">
-                @error('company_name')
-                <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
-                @enderror
-                <div id="err-co-name" class="co-err" style="display:none"></div>
-            </div>
-
-            <div class="form-2col">
-                <div class="mf-field">
-                    <label class="mf-label">Industry Type <span style="color:var(--red)">*</span></label>
-                    <select name="industry_type" id="co-industry" class="mf-sel" style="height:38px">
-                        <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select industry</option>
-                        @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
-                        <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
-                        @endforeach
-                    </select>
-                    <div id="err-co-industry" class="co-err" style="display:none"></div>
-                </div>
-                <div class="mf-field">
-                    <label class="mf-label">Entity Type <span style="color:var(--red)">*</span></label>
-                    <select name="entity_type" id="co-entity" class="mf-sel" style="height:38px">
-                        <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
-                        @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
-                        <option value="{{ $ent }}" {{ old('entity_type') === $ent ? 'selected' : '' }}>{{ $ent }}</option>
-                        @endforeach
-                    </select>
-                    <div id="err-co-entity" class="co-err" style="display:none"></div>
-                </div>
-            </div>
-
-            <div class="mf-field">
-                <label class="mf-label">State / Jurisdiction</label>
-                <input type="text" name="state" class="mf-inp"
-                       placeholder="e.g. Delaware, California" value="{{ old('state') }}">
-            </div>
-
-            <div class="mf-field">
-                <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
-                <input type="email" name="company_email" id="co-email" class="mf-inp"
-                       placeholder="info@acme.com" value="{{ old('company_email') }}" maxlength="100">
-                @error('company_email')
-                <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
-                @enderror
-                <div id="err-co-email" class="co-err" style="display:none"></div>
-            </div>
-        </div>
-
         @if(!$isClientUserFlow)
-        {{-- Section 2: Admin Account --}}
+        {{-- Section 1: Admin Account --}}
         <div class="acc-card" style="margin-bottom:16px">
             <div style="display:flex;align-items:center;margin-bottom:6px">
-                <span class="step-num">2</span>
+                <span class="step-num">1</span>
                 <div style="font-size:15px;font-weight:600;color:var(--text-1)">Company Admin Account</div>
             </div>
 
@@ -212,10 +155,13 @@
                 @else
                 <div class="mf-field">
                     <label class="mf-label">Select Client <span style="color:var(--red)">*</span></label>
-                    <select name="existing_client_id" id="existing_client_id" class="mf-sel" style="height:38px">
+                    <select name="existing_client_id" id="existing_client_id" class="mf-sel" style="height:38px"
+                            onchange="onExistingClientChange(this)">
                         <option value="">— Select a client —</option>
                         @foreach($existingClients ?? [] as $client)
                         <option value="{{ $client->id }}"
+                            data-name="{{ $client->name }}"
+                            data-email="{{ $client->email }}"
                             {{ old('existing_client_id') == $client->id ? 'selected' : '' }}>
                             {{ $client->name }} ({{ $client->email }})
                         </option>
@@ -225,10 +171,68 @@
                     <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
                     @enderror
                 </div>
+
                 @endif
             </div>
         </div>
         @endif
+
+        {{-- Section 2: Company Info --}}
+        <div class="acc-card" style="margin-bottom:16px">
+            <div style="display:flex;align-items:center;margin-bottom:18px">
+                <span class="step-num">{{ $isClientUserFlow ? '1' : '2' }}</span>
+                <div style="font-size:15px;font-weight:600;color:var(--text-1)">Company Information</div>
+            </div>
+
+            <div class="mf-field">
+                <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
+                <input type="text" name="company_name" id="company_name" class="mf-inp"
+                       placeholder="Acme Inc." value="{{ old('company_name') }}" maxlength="100">
+                @error('company_name')
+                <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
+                @enderror
+                <div id="err-co-name" class="co-err" style="display:none"></div>
+            </div>
+
+            <div class="form-2col">
+                <div class="mf-field">
+                    <label class="mf-label">Industry Type <span style="color:var(--red)">*</span></label>
+                    <select name="industry_type" id="co-industry" class="mf-sel" style="height:38px">
+                        <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select industry</option>
+                        @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
+                        <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
+                        @endforeach
+                    </select>
+                    <div id="err-co-industry" class="co-err" style="display:none"></div>
+                </div>
+                <div class="mf-field">
+                    <label class="mf-label">Entity Type <span style="color:var(--red)">*</span></label>
+                    <select name="entity_type" id="co-entity" class="mf-sel" style="height:38px">
+                        <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
+                        @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
+                        <option value="{{ $ent }}" {{ old('entity_type') === $ent ? 'selected' : '' }}>{{ $ent }}</option>
+                        @endforeach
+                    </select>
+                    <div id="err-co-entity" class="co-err" style="display:none"></div>
+                </div>
+            </div>
+
+            <div class="mf-field">
+                <label class="mf-label">State / Jurisdiction</label>
+                <input type="text" name="state" class="mf-inp"
+                       placeholder="e.g. Delaware, California" value="{{ old('state') }}">
+            </div>
+
+            <div class="mf-field">
+                <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
+                <input type="email" name="company_email" id="co-email" class="mf-inp"
+                       placeholder="info@acme.com" value="{{ old('company_email') }}" maxlength="100">
+                @error('company_email')
+                <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
+                @enderror
+                <div id="err-co-email" class="co-err" style="display:none"></div>
+            </div>
+        </div>
 
         <div style="margin-top:16px">
             <button type="submit" id="submit-btn" class="btn btn-primary"
@@ -294,6 +298,16 @@ function updatePreview() {
 
 document.getElementById('company_name')?.addEventListener('input', updatePreview);
 document.querySelector('[name=company_email]')?.addEventListener('input', updatePreview);
+
+function onExistingClientChange(sel) {
+    var opt = sel.options[sel.selectedIndex];
+    var email = opt.getAttribute('data-email') || '';
+    var coEmailEl = document.getElementById('co-email');
+    if (coEmailEl && email) {
+        coEmailEl.value = email;
+        updatePreview();
+    }
+}
 
 function setAdminType(type) {
     var isNew = type === 'new';
@@ -469,6 +483,11 @@ function validateCompanyForm(e) {
     updatePreview();
     var adminTypeEl = document.getElementById('admin_type');
     if (adminTypeEl) setAdminType(adminTypeEl.value || 'new');
+
+    var existingSel = document.getElementById('existing_client_id');
+    if (existingSel && existingSel.value) {
+        onExistingClientChange(existingSel);
+    }
 })();
 </script>
 @endpush

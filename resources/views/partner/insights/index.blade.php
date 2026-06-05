@@ -215,6 +215,7 @@
                     <th>Client Name</th>
                     <th>Company Name</th>
                     <th>Generated</th>
+                    <th>Version</th>
                     <th>Status</th>
                     <th>Action</th>
                 </tr>
@@ -258,6 +259,7 @@
                     <td style="color:#64748b;">{{ $clientName }}</td>
                     <td style="color:#64748b;">{{ $companyName }}</td>
                     <td style="color:#64748b;">{{ $report->created_at->format(active_date_format()) }}</td>
+                    <td style="color:#64748b;font-weight:500;">v{{ $report->version ?? 1 }}</td>
                     <td>
                         @if($isDeleted)
                             <span class="badge badge-deleted">Deleted</span>
@@ -299,7 +301,7 @@
                 </tr>
                 @empty
                 <tr id="pi-empty-row">
-                    <td colspan="6" style="text-align:center;padding:40px;color:#94a3b8;font-size:14px;">
+                    <td colspan="7" style="text-align:center;padding:40px;color:#94a3b8;font-size:14px;">
                         No insights generated yet. Click <strong>Generate New Insight</strong> to get started.
                     </td>
                 </tr>

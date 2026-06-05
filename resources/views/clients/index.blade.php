@@ -252,17 +252,10 @@
                 </div>
                 <button class="btn btn-danger" onclick="resetCompanyTabFilters()">Reset</button>
             </div>
-            @if($hasActivePlan ?? false)
-            <a href="{{ route('my-companies.create') }}" class="btn btn-primary btn-sm">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Add Company
-            </a>
-            @else
-            <button type="button" class="btn btn-primary btn-sm" onclick="showNoPlanSwal()">
+            <button type="button" class="btn btn-primary btn-sm" onclick="openAddCompanyModal()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add Company
             </button>
-            @endif
         </div>
 
         <table id="companies-table" style="width:100%;border-collapse:collapse">
@@ -608,6 +601,166 @@
     </div>
 </div>
 
+{{-- ── Add Company Modal ────────────────────────────────── --}}
+<div class="modal-overlay" id="modal-add-company" onclick="if(event.target===this)closeAddCompanyModal()">
+    <div class="modal-box" style="width:640px;max-height:90vh;overflow-y:auto;padding-bottom:0">
+        <button class="modal-close" onclick="closeAddCompanyModal()">&times;</button>
+        <div class="modal-title">Add New Company</div>
+        <div class="modal-sub">Create a new client company and assign an admin account</div>
+
+        @if($errors->any() && old('_form_source') === 'add_company')
+        <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 13px;margin:12px 0">
+            @foreach($errors->all() as $error)
+            <div style="font-size:12.5px;color:var(--red);display:flex;align-items:center;gap:6px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                {{ $error }}
+            </div>
+            @endforeach
+        </div>
+        @endif
+
+        <form method="POST" action="{{ route('my-companies.store') }}" id="modal-add-company-form" novalidate>
+            @csrf
+            <input type="hidden" name="_form_source" value="add_company">
+
+            {{-- Section 1: Company Admin Account --}}
+            <div style="margin-bottom:20px">
+                <div style="font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+                    <span style="width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">1</span>
+                    Company Admin Account
+                </div>
+
+                <div style="display:flex;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:3px;gap:3px;margin-bottom:16px">
+                    <button type="button" id="modal-btn-admin-new" onclick="modalSetAdminType('new')"
+                        style="flex:1;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:all .12s;background:var(--orange);color:#fff">
+                        New Client
+                    </button>
+                    <button type="button" id="modal-btn-admin-existing" onclick="modalSetAdminType('existing')"
+                        style="flex:1;padding:7px 14px;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;transition:all .12s;background:transparent;color:var(--text-2)">
+                        Existing Client
+                    </button>
+                </div>
+
+                <input type="hidden" name="admin_type" id="modal-admin-type" value="{{ old('admin_type', 'new') }}">
+
+                {{-- New admin panel --}}
+                <div id="modal-panel-admin-new">
+                    <div style="font-size:12.5px;color:var(--text-3);margin-bottom:12px">Create login credentials for this company's administrator.</div>
+                    <div class="mf-field">
+                        <label class="mf-label">Client Full Name <span style="color:var(--red)">*</span></label>
+                        <input type="text" name="admin_name" id="modal-co-admin-name" class="mf-inp"
+                               placeholder="Jane Smith" value="{{ old('admin_name') }}" maxlength="100">
+                        <div id="modal-err-co-admin-name" class="co-err" style="display:none"></div>
+                    </div>
+                    <div class="mf-field">
+                        <label class="mf-label">Client Email <span style="color:var(--red)">*</span></label>
+                        <input type="email" name="admin_email" id="modal-co-admin-email" class="mf-inp"
+                               placeholder="jane@acme.com" value="{{ old('admin_email') }}" maxlength="100">
+                        <div id="modal-err-co-admin-email" class="co-err" style="display:none"></div>
+                    </div>
+                    <div class="form-2col">
+                        <div class="mf-field">
+                            <label class="mf-label">Password <span style="color:var(--red)">*</span></label>
+                            <input type="password" name="admin_password" id="modal-co-admin-pwd" class="mf-inp"
+                                   placeholder="Min. 8 characters" autocomplete="new-password">
+                            <div id="modal-err-co-admin-pwd" class="co-err" style="display:none"></div>
+                        </div>
+                        <div class="mf-field">
+                            <label class="mf-label">Confirm Password <span style="color:var(--red)">*</span></label>
+                            <input type="password" name="admin_password_confirmation" id="modal-co-admin-confirm" class="mf-inp"
+                                   placeholder="Repeat password" autocomplete="new-password">
+                            <div id="modal-err-co-admin-confirm" class="co-err" style="display:none"></div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Existing client panel --}}
+                <div id="modal-panel-admin-existing" style="display:none">
+                    <div style="font-size:12.5px;color:var(--text-3);margin-bottom:12px">Assign an existing client as the administrator for this company.</div>
+                    @if(($existingClients ?? collect())->isEmpty())
+                    <div style="padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text-3);text-align:center">
+                        No existing clients found. Add clients first from the Clients tab.
+                    </div>
+                    @else
+                    <div class="mf-field">
+                        <label class="mf-label">Select Client <span style="color:var(--red)">*</span></label>
+                        <select name="existing_client_id" id="modal-existing-client-id" class="mf-sel" style="height:38px"
+                                onchange="modalOnExistingClientChange(this)">
+                            <option value="">— Select a client —</option>
+                            @foreach($existingClients ?? [] as $client)
+                            <option value="{{ $client->id }}"
+                                data-email="{{ $client->email }}"
+                                {{ old('existing_client_id') == $client->id ? 'selected' : '' }}>
+                                {{ $client->name }} ({{ $client->email }})
+                            </option>
+                            @endforeach
+                        </select>
+                        <div id="modal-err-existing-client" class="co-err" style="display:none"></div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            <div style="height:1px;background:var(--border);margin:0 -22px 20px"></div>
+
+            {{-- Section 2: Company Information --}}
+            <div>
+                <div style="font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:14px;display:flex;align-items:center;gap:8px">
+                    <span style="width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">2</span>
+                    Company Information
+                </div>
+                <div class="mf-field">
+                    <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="company_name" id="modal-company-name" class="mf-inp"
+                           placeholder="Acme Inc." value="{{ old('company_name') }}" maxlength="100">
+                    <div id="modal-err-co-name" class="co-err" style="display:none"></div>
+                </div>
+                <div class="form-2col">
+                    <div class="mf-field">
+                        <label class="mf-label">Industry Type <span style="color:var(--red)">*</span></label>
+                        <select name="industry_type" id="modal-co-industry" class="mf-sel" style="height:38px">
+                            <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select industry</option>
+                            @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
+                            <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
+                            @endforeach
+                        </select>
+                        <div id="modal-err-co-industry" class="co-err" style="display:none"></div>
+                    </div>
+                    <div class="mf-field">
+                        <label class="mf-label">Entity Type <span style="color:var(--red)">*</span></label>
+                        <select name="entity_type" id="modal-co-entity" class="mf-sel" style="height:38px">
+                            <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
+                            @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
+                            <option value="{{ $ent }}" {{ old('entity_type') === $ent ? 'selected' : '' }}>{{ $ent }}</option>
+                            @endforeach
+                        </select>
+                        <div id="modal-err-co-entity" class="co-err" style="display:none"></div>
+                    </div>
+                </div>
+                <div class="mf-field">
+                    <label class="mf-label">State / Jurisdiction</label>
+                    <input type="text" name="state" class="mf-inp"
+                           placeholder="e.g. Delaware, California" value="{{ old('state') }}">
+                </div>
+                <div class="mf-field" style="margin-bottom:0">
+                    <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
+                    <input type="email" name="company_email" id="modal-co-email" class="mf-inp"
+                           placeholder="info@acme.com" value="{{ old('company_email') }}" maxlength="100">
+                    <div id="modal-err-co-email" class="co-err" style="display:none"></div>
+                </div>
+            </div>
+
+            <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;margin:0 0 0;border-top:1px solid var(--border);margin-top:20px">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="closeAddCompanyModal()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitCompanyModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                    Create Company
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @endsection
 
 @push('styles')
@@ -663,6 +816,16 @@
     flex-shrink: 0;
 }
 .mf-inp.ac-invalid, .mf-sel.ac-invalid { border-color: var(--red) !important; }
+.co-err {
+    font-size: 11.5px; color: var(--red); margin-top: 4px;
+    display: flex; align-items: center; gap: 4px;
+}
+.co-err::before {
+    content: '';
+    display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.mf-inp.co-invalid, .mf-sel.co-invalid { border-color: var(--red) !important; }
 </style>
 @endpush
 
@@ -681,7 +844,7 @@
         : '<div style="text-align:center;padding:48px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">Complete branding setup first</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px;max-width:520px;margin-inline:auto">Upload your firm logo and set your brand colours before adding clients.</div><div style="margin-top:14px"><a href="' . e($brandingUrl) . '" class="btn btn-primary btn-sm">Go to Branding Settings</a></div></div>';
 
     $dtEmptyCompaniesHtml = $hasBranding
-        ? '<div style="text-align:center;padding:56px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">Your client companies will be listed here</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px;max-width:560px;margin-inline:auto">This is where you view and manage all companies associated with your clients. Companies are added during client onboarding or created later and linked to a client. Each company appears here with its QuickBooks status and insight activity.</div><div style="margin-top:14px"><a href="' . e($myCompaniesCreate) . '" class="btn btn-primary btn-sm">+ Add a Company</a></div><div style="font-size:11px;color:#9ca3af;margin-top:10px">Each company needs a QuickBooks connection to start generating CFO-ready insight reports.</div></div>'
+        ? '<div style="text-align:center;padding:56px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">Your client companies will be listed here</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px;max-width:560px;margin-inline:auto">This is where you view and manage all companies associated with your clients. Companies are added during client onboarding or created later and linked to a client. Each company appears here with its QuickBooks status and insight activity.</div><div style="margin-top:14px"><button type=\"button\" onclick=\"openAddCompanyModal()\" class=\"btn btn-primary btn-sm\">+ Add a Company</button></div><div style="font-size:11px;color:#9ca3af;margin-top:10px">Each company needs a QuickBooks connection to start generating CFO-ready insight reports.</div></div>'
         : '<div style="text-align:center;padding:56px 20px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">Complete branding setup first</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px;max-width:520px;margin-inline:auto">Upload your firm logo and set your brand colours before adding companies.</div><div style="margin-top:14px"><a href="' . e($brandingUrl) . '" class="btn btn-primary btn-sm">Go to Branding Settings</a></div></div>';
 @endphp
 $(document).ready(function() {
@@ -1122,12 +1285,16 @@ document.getElementById('assign-plan-form').addEventListener('submit', function(
     .catch(function() { showToast('Request failed.', 'error'); });
 });
 
-// Re-open add client modal on validation error
+// Re-open the correct modal on validation error
 @if($errors->any())
-document.getElementById('modal-add-client').classList.add('open');
-@foreach($errors->all() as $error)
-showToast('{{ addslashes($error) }}', 'error');
-@endforeach
+    @if(old('_form_source') === 'add_company')
+    document.getElementById('modal-add-company').classList.add('open');
+    @else
+    document.getElementById('modal-add-client').classList.add('open');
+    @endif
+    @foreach($errors->all() as $error)
+    showToast('{{ addslashes($error) }}', 'error');
+    @endforeach
 @endif
 
 function showNoPlanSwal() {
@@ -1155,7 +1322,180 @@ if (new URLSearchParams(window.location.search).get('add') === '1') {
     history.replaceState(null, '', window.location.pathname);
 }
 
-// Auto-activate a specific tab when returning from Add/Edit Company with ?tab=<id>
+// ── Add Company Modal ────────────────────────────────────────
+function openAddCompanyModal() {
+    document.getElementById('modal-add-company').classList.add('open');
+    setTimeout(function() {
+        var f = document.getElementById('modal-co-admin-name');
+        if (f) f.focus();
+    }, 80);
+}
+
+function closeAddCompanyModal() {
+    document.getElementById('modal-add-company').classList.remove('open');
+}
+
+function modalSetAdminType(type) {
+    var isNew = type === 'new';
+    document.getElementById('modal-admin-type').value = type;
+    document.getElementById('modal-panel-admin-new').style.display = isNew ? '' : 'none';
+    document.getElementById('modal-panel-admin-existing').style.display = isNew ? 'none' : '';
+    var btnNew = document.getElementById('modal-btn-admin-new');
+    var btnExisting = document.getElementById('modal-btn-admin-existing');
+    if (btnNew) {
+        btnNew.style.background = isNew ? 'var(--orange)' : 'transparent';
+        btnNew.style.color = isNew ? '#fff' : 'var(--text-2)';
+    }
+    if (btnExisting) {
+        btnExisting.style.background = isNew ? 'transparent' : 'var(--orange)';
+        btnExisting.style.color = isNew ? 'var(--text-2)' : '#fff';
+    }
+}
+
+function modalOnExistingClientChange(sel) {
+    var opt = sel.options[sel.selectedIndex];
+    var email = opt.getAttribute('data-email') || '';
+    var coEmailEl = document.getElementById('modal-co-email');
+    if (coEmailEl && email) coEmailEl.value = email;
+}
+
+function modalCoErr(id, msg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg || '';
+    el.style.display = msg ? 'flex' : 'none';
+}
+function modalCoMark(inputId, invalid) {
+    var el = document.getElementById(inputId);
+    if (!el) return;
+    if (invalid) el.classList.add('co-invalid');
+    else el.classList.remove('co-invalid');
+}
+
+function validateAndSubmitCompanyModal() {
+    var ok = true;
+    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // Company Name
+    var nameEl = document.getElementById('modal-company-name');
+    var nameVal = nameEl ? nameEl.value.trim() : '';
+    if (!nameVal) {
+        modalCoErr('modal-err-co-name', 'Company name is required.'); modalCoMark('modal-company-name', true); ok = false;
+    } else if (nameVal.length < 2) {
+        modalCoErr('modal-err-co-name', 'Minimum 2 characters required.'); modalCoMark('modal-company-name', true); ok = false;
+    } else {
+        modalCoErr('modal-err-co-name', ''); modalCoMark('modal-company-name', false);
+    }
+
+    // Industry Type
+    var indEl = document.getElementById('modal-co-industry');
+    if (!indEl || !indEl.value) {
+        modalCoErr('modal-err-co-industry', 'Please select an industry.'); modalCoMark('modal-co-industry', true); ok = false;
+    } else {
+        modalCoErr('modal-err-co-industry', ''); modalCoMark('modal-co-industry', false);
+    }
+
+    // Entity Type
+    var entEl = document.getElementById('modal-co-entity');
+    if (!entEl || !entEl.value) {
+        modalCoErr('modal-err-co-entity', 'Please select an entity type.'); modalCoMark('modal-co-entity', true); ok = false;
+    } else {
+        modalCoErr('modal-err-co-entity', ''); modalCoMark('modal-co-entity', false);
+    }
+
+    // Company Email
+    var coEmailEl = document.getElementById('modal-co-email');
+    var coEmailVal = coEmailEl ? coEmailEl.value.trim() : '';
+    if (!coEmailVal) {
+        modalCoErr('modal-err-co-email', 'Company email is required.'); modalCoMark('modal-co-email', true); ok = false;
+    } else if (!emailRx.test(coEmailVal)) {
+        modalCoErr('modal-err-co-email', 'Enter a valid email address.'); modalCoMark('modal-co-email', true); ok = false;
+    } else {
+        modalCoErr('modal-err-co-email', ''); modalCoMark('modal-co-email', false);
+    }
+
+    // Admin section
+    var adminTypeEl = document.getElementById('modal-admin-type');
+    if (adminTypeEl) {
+        if (adminTypeEl.value === 'new') {
+            var adminNameEl = document.getElementById('modal-co-admin-name');
+            var adminNameVal = adminNameEl ? adminNameEl.value.trim() : '';
+            if (!adminNameVal) {
+                modalCoErr('modal-err-co-admin-name', 'Admin full name is required.'); modalCoMark('modal-co-admin-name', true); ok = false;
+            } else if (adminNameVal.length < 2) {
+                modalCoErr('modal-err-co-admin-name', 'Minimum 2 characters required.'); modalCoMark('modal-co-admin-name', true); ok = false;
+            } else if (!/^[a-zA-Z\s]+$/.test(adminNameVal)) {
+                modalCoErr('modal-err-co-admin-name', 'Name must contain only letters and spaces.'); modalCoMark('modal-co-admin-name', true); ok = false;
+            } else {
+                modalCoErr('modal-err-co-admin-name', ''); modalCoMark('modal-co-admin-name', false);
+            }
+
+            var adminEmailEl = document.getElementById('modal-co-admin-email');
+            var adminEmailVal = adminEmailEl ? adminEmailEl.value.trim() : '';
+            if (!adminEmailVal) {
+                modalCoErr('modal-err-co-admin-email', 'Admin email is required.'); modalCoMark('modal-co-admin-email', true); ok = false;
+            } else if (!emailRx.test(adminEmailVal)) {
+                modalCoErr('modal-err-co-admin-email', 'Enter a valid email address.'); modalCoMark('modal-co-admin-email', true); ok = false;
+            } else {
+                modalCoErr('modal-err-co-admin-email', ''); modalCoMark('modal-co-admin-email', false);
+            }
+
+            var pwdEl = document.getElementById('modal-co-admin-pwd');
+            var pwdVal = pwdEl ? pwdEl.value : '';
+            if (!pwdVal) {
+                modalCoErr('modal-err-co-admin-pwd', 'Password is required.'); modalCoMark('modal-co-admin-pwd', true); ok = false;
+            } else if (pwdVal.length < 8) {
+                modalCoErr('modal-err-co-admin-pwd', 'Password must be at least 8 characters.'); modalCoMark('modal-co-admin-pwd', true); ok = false;
+            } else {
+                modalCoErr('modal-err-co-admin-pwd', ''); modalCoMark('modal-co-admin-pwd', false);
+            }
+
+            var confirmEl = document.getElementById('modal-co-admin-confirm');
+            var confirmVal = confirmEl ? confirmEl.value : '';
+            if (!confirmVal) {
+                modalCoErr('modal-err-co-admin-confirm', 'Please confirm the password.'); modalCoMark('modal-co-admin-confirm', true); ok = false;
+            } else if (confirmVal !== pwdVal) {
+                modalCoErr('modal-err-co-admin-confirm', 'Passwords do not match.'); modalCoMark('modal-co-admin-confirm', true); ok = false;
+            } else {
+                modalCoErr('modal-err-co-admin-confirm', ''); modalCoMark('modal-co-admin-confirm', false);
+            }
+        } else {
+            var existingEl = document.getElementById('modal-existing-client-id');
+            if (existingEl && !existingEl.value) {
+                modalCoErr('modal-err-existing-client', 'Please select an existing client.'); existingEl.classList.add('co-invalid'); ok = false;
+            } else if (existingEl) {
+                modalCoErr('modal-err-existing-client', ''); existingEl.classList.remove('co-invalid');
+            }
+        }
+    }
+
+    if (ok) {
+        document.getElementById('modal-add-company-form').submit();
+    }
+}
+
+// Init modal on load
+(function() {
+    var typeEl = document.getElementById('modal-admin-type');
+    if (typeEl) modalSetAdminType(typeEl.value || 'new');
+
+    var existingSel = document.getElementById('modal-existing-client-id');
+    if (existingSel && existingSel.value) modalOnExistingClientChange(existingSel);
+
+    var adminNameInp = document.getElementById('modal-co-admin-name');
+    if (adminNameInp) {
+        adminNameInp.addEventListener('input', function() {
+            var pos = this.selectionStart;
+            var cleaned = this.value.replace(/[^a-zA-Z\s]/g, '');
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+                this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+            }
+        });
+    }
+})();
+
+// ── Auto-activate a specific tab when returning from Add/Edit Company with ?tab=<id>
 // Must run inside DOMContentLoaded so the layout's tab-panel toggle classes are available.
 document.addEventListener('DOMContentLoaded', function() {
     var tabParam = new URLSearchParams(window.location.search).get('tab');

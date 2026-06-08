@@ -456,6 +456,33 @@ class InsightsController extends AccountBaseController
         return response()->download($tempZip, $zipName)->deleteFileAfterSend(true);
     }
 
+    public function previewPdf(int $reportId)
+    {
+        $impersonatingAdminId = session('impersonating_client_original_id');
+
+        $report = Report::with(['user', 'company'])
+            ->where('id', $reportId)
+            ->where(function ($q) use ($impersonatingAdminId) {
+                $q->where('user_id', auth()->id());
+                if ($impersonatingAdminId) {
+                    $q->orWhere('user_id', $impersonatingAdminId);
+                }
+            })
+            ->firstOrFail();
+
+        if (empty($report->insight_json_data)) {
+            abort(404, 'No insight data available.');
+        }
+
+        $sections = $this->getReportSections($report);
+
+        $this->pageTitle = 'Preview — ' . ($report->report_name ?: 'Insight');
+        $this->report    = $report;
+        $this->sections  = $sections;
+
+        return view('insights.preview', $this->data);
+    }
+
     public function exportPdf(int $reportId)
     {
         $impersonatingAdminId = session('impersonating_client_original_id');

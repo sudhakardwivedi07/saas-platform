@@ -184,6 +184,9 @@ class InsightsController extends AccountBaseController
             (new QuickBooksService($connection, $credentials))->refreshTokenIfNeeded();
             $connection->refresh();
 
+            // Multiple sequential QB API calls can exceed PHP's default 30s limit.
+            set_time_limit(0);
+
             // Generate CSV files from QB
             $csvFiles = QuickBooksCSVExportService::generateAllCSVFiles(
                 $connection, $credentials, $startDate, $endDate

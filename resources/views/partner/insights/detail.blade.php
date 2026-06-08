@@ -51,8 +51,8 @@
 .insight-slider-counter { color:#64748b;font-size:14px;font-weight:500; }
 .insight-slider-nav { display:flex;align-items:center;gap:16px; }
 .isnbc { display:flex;align-items:center;gap:10px;border:1px solid #dbdbdb;border-radius:30px;padding:5px;cursor:pointer;transition:all .3s;background:none;font-family:inherit;outline:none; }
-.isnbc:hover { border-color:#ef6a24; }
-.isnb { width:38px;height:38px;border-radius:50%;background:linear-gradient(124deg,#ef6a24 20%,#f99d3c 88%);color:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;pointer-events:none; }
+.isnbc:hover { border-color:var(--orange); }
+.isnb { width:38px;height:38px;border-radius:50%;background:var(--orange);color:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;pointer-events:none; }
 .isnl { font-size:13px;color:#474747;padding:0 10px 0 0;font-weight:400;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .isnl.last { padding:0 0 0 10px; }
 .insight-slider-slides { position:relative;overflow:hidden; }

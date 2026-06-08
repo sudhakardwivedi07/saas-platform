@@ -8,14 +8,16 @@
 .welcome-header p  { color:#000;font-size:15px;line-height:1.6;margin:0 0 12px; }
 .dashboard-action-cards-row { display:grid;grid-template-columns:repeat(2,1fr);gap:20px;margin-bottom:30px; }
 .dashboard-action-card { background:white;border:1px solid #dbdbdb;border-radius:5px;padding:24px;transition:all .3s ease; }
-.dashboard-action-card:hover { border-color:#f06b25;box-shadow:0 4px 12px rgba(21,89,166,.1); }
+.dashboard-action-card:hover { border-color:var(--orange);box-shadow:0 4px 12px rgba(21,89,166,.1); }
 .dashboard-action-card-icon { width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin-bottom:16px; }
 .dashboard-action-card h3 { font-size:18px;font-weight:600;color:#1a202c;margin:0 0 8px; }
 .dashboard-action-card p  { color:#000;font-size:15px;line-height:1.5;margin:0 0 20px; }
 .dashboard-action-card-btn { width:100%;padding:16px 24px;border-radius:8px;font-size:16px;font-weight:500;cursor:pointer;transition:all .3s ease;border:none;display:flex;align-items:center;justify-content:center;gap:8px; }
-.dashboard-action-card-btn.primary { background:#f06b25;color:white; }
-.dashboard-action-card-btn.primary:hover { background:#d95a1a;color:white; }
+.dashboard-action-card-btn.primary { background:var(--orange);color:white; }
+.dashboard-action-card-btn.primary:hover { filter:brightness(.85);color:white; }
 .dashboard-action-card-btn:disabled { opacity:.7;cursor:not-allowed; }
+.btn-generate-insight { background:var(--orange);color:white;padding:8px 18px;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:filter .2s; }
+.btn-generate-insight:hover { filter:brightness(.85); }
 .fi-bar { background:white;border-radius:10px;padding:12px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap; }
 .bar-right { margin-left:auto;display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
 .bar-select { height:34px;border:1px solid #e2e8f0;border-radius:7px;padding:0 28px 0 10px;font-size:13px;font-family:inherit;color:#1a202c;background:#f8fafc url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 10px center;-webkit-appearance:none;appearance:none;outline:none;cursor:pointer;min-width:140px; }
@@ -44,7 +46,7 @@
 .btn-view-insight:hover { background:#155a8a;color:white;text-decoration:none; }
 .btn-view-insight:disabled { background:#9ca3af;cursor:not-allowed;opacity:.7; }
 .btn-icon { width:32px;height:32px;border-radius:6px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s; }
-.btn-icon.download { background:#fff3e6;color:#f06b25;border:1px solid #fddbb5; }
+.btn-icon.download { background:#fff3e6;color:var(--orange);border:1px solid #fddbb5; }
 .btn-icon.delete   { background:#fee2e2;color:#ef4444; }
 .btn-icon:hover    { transform:scale(1.1); }
 .qb-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;animation:fadeOverlay .2s ease; }
@@ -57,12 +59,12 @@
 .qb-modal ul { list-style:none;padding:0;margin:12px auto 10px;text-align:left;display:inline-block; }
 .qb-modal ul li { font-size:15px;color:#374151;padding:3px 0;display:flex;align-items:center;gap:10px; }
 .qb-modal ul li::before { content:'○';color:#6b7280;flex-shrink:0; }
-.qb-modal .qb-modal-timing { font-size:15px;font-weight:700;color:#f06b25;margin:10px 0 24px; }
+.qb-modal .qb-modal-timing { font-size:15px;font-weight:700;color:var(--orange);margin:10px 0 24px; }
 .qb-modal .qb-modal-actions { display:flex;flex-direction:row;gap:12px; }
-.qb-modal .btn-modal-confirm { flex:1;background:#f06b25;color:white;border:none;padding:16px 20px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s;box-shadow:0 5px 10px rgba(240,107,37,.3); }
-.qb-modal .btn-modal-confirm:hover { background:#d95a1a; }
-.qb-modal .btn-modal-cancel { flex:1;background:transparent;color:#f06b25;border:1.5px solid #f06b25;padding:15px 20px;border-radius:10px;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s; }
-.qb-modal .btn-modal-cancel:hover { background:#fff4ee; }
+.qb-modal .btn-modal-confirm { flex:1;background:var(--orange);color:white;border:none;padding:16px 20px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;transition:filter .2s;box-shadow:0 5px 10px rgba(0,0,0,.15); }
+.qb-modal .btn-modal-confirm:hover { filter:brightness(.85); }
+.qb-modal .btn-modal-cancel { flex:1;background:transparent;color:var(--orange);border:1.5px solid var(--orange);padding:15px 20px;border-radius:10px;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s; }
+.qb-modal .btn-modal-cancel:hover { opacity:.8; }
 .ind-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10000;display:none;align-items:center;justify-content:center; }
 .ind-modal-overlay.open { display:flex; }
 .ind-modal { background:white;border-radius:20px;padding:36px 36px 28px;width:480px;max-width:95vw;text-align:center;animation:indSlide .25s ease;box-shadow:0 20px 60px rgba(0,0,0,.18); }
@@ -70,13 +72,13 @@
 .ind-modal h3 { font-size:22px;font-weight:700;color:#1a202c;margin:0 0 10px; }
 .ind-modal p  { font-size:14px;color:#6b7280;line-height:1.6;margin:0 0 20px; }
 .ind-modal select { width:100%;padding:11px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;font-family:inherit;color:#1a202c;background:#fff;outline:none;cursor:pointer;margin-bottom:20px;transition:border-color .2s; }
-.ind-modal select:focus { border-color:#f06b25; }
+.ind-modal select:focus { border-color:var(--orange); }
 .ind-modal-actions { display:flex;gap:12px; }
-.ind-btn-confirm { flex:1;background:#f06b25;color:white;border:none;padding:13px 20px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s; }
-.ind-btn-confirm:hover { background:#d95a1a; }
+.ind-btn-confirm { flex:1;background:var(--orange);color:white;border:none;padding:13px 20px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:filter .2s; }
+.ind-btn-confirm:hover { filter:brightness(.85); }
 .ind-btn-confirm:disabled { opacity:.6;cursor:not-allowed; }
-.ind-btn-cancel { flex:1;background:transparent;color:#f06b25;border:1.5px solid #f06b25;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s; }
-.ind-btn-cancel:hover { background:#fff4ee; }
+.ind-btn-cancel { flex:1;background:transparent;color:var(--orange);border:1.5px solid var(--orange);padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s; }
+.ind-btn-cancel:hover { opacity:.8; }
 </style>
 @endpush
 
@@ -187,9 +189,7 @@
             <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
                 <h2>All Insights</h2>
                 @if($qbConnection)
-                <button id="fiFiBtnGenerateNew" onclick="fiFiGenerateInsight()"
-                        style="background:#f06b25;color:white;padding:8px 18px;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .2s;"
-                        onmouseover="this.style.background='#d95a1a'" onmouseout="this.style.background='#f06b25'">
+                <button id="fiFiBtnGenerateNew" onclick="fiFiGenerateInsight()" class="btn-generate-insight">
                     <i class="fa fa-sync-alt"></i> Generate New Insight
                 </button>
                 @endif

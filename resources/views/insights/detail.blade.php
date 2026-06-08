@@ -36,8 +36,8 @@
 .rd-btn-edit { background:#fff;color:#1a6aa8;border:1.5px solid #1a6aa8; }
 .rd-btn-edit:hover { background:#f0f7ff;text-decoration:none; }
 .rd-btn-edit.active { background:#1a6aa8;color:#fff; }
-.rd-btn-save { background:#f06b25;color:#fff;border:1.5px solid #f06b25; }
-.rd-btn-save:hover { background:#d95a1a;border-color:#d95a1a;text-decoration:none; }
+.rd-btn-save { background:var(--orange);color:#fff;border:1.5px solid var(--orange); }
+.rd-btn-save:hover { filter:brightness(.85);text-decoration:none; }
 .rd-btn:disabled { opacity:.6;cursor:not-allowed; }
 
 /* ── Edit mode content area ── */
@@ -85,15 +85,15 @@
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    background: #F06B25;
+    background: var(--orange);
     border-radius: 5px;
     text-decoration: none;
     white-space: nowrap;
     flex-shrink: 0;
-    box-shadow: 0 5px 10px 0 rgba(240,107,37,.2);
+    box-shadow: 0 5px 10px 0 rgba(0,0,0,.15);
     transition: all .3s ease;
 }
-.export-pdf-btn:hover { background: #d95a1a; color: white; text-decoration: none; transform: translateY(-1px); }
+.export-pdf-btn:hover { filter: brightness(.85); color: white; text-decoration: none; transform: translateY(-1px); }
 
 /* ── Back btn ── */
 .btn-back {
@@ -131,10 +131,10 @@
     cursor: pointer; transition: all .3s ease;
     background: none; font-family: inherit; outline: none;
 }
-.insight-slider-nav-section-btn-container:hover { border-color: #EF6A24; }
+.insight-slider-nav-section-btn-container:hover { border-color: var(--orange); }
 .insight-slider-nav-btn {
     width: 40px; height: 40px; border-radius: 50%;
-    background: linear-gradient(124.07deg, #EF6A24 19.79%, #F99D3C 88.53%);
+    background: var(--orange);
     color: white; border: none;
     display: flex; align-items: center; justify-content: center;
     font-size: 14px; flex-shrink: 0; pointer-events: none;
@@ -155,7 +155,7 @@
 }
 .insight-slider-title { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
 .insight-slider-title-icon {
-    width: 44px; height: 44px; background: #F06B25; border-radius: 8px;
+    width: 44px; height: 44px; background: var(--orange); border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
     color: white; font-size: 18px; flex-shrink: 0;
 }

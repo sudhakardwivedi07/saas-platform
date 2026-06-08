@@ -75,8 +75,10 @@
     justify-content: center;
     gap: 8px;
 }
-.dashboard-action-card-btn.primary { background: #f06b25; color: white; }
-.dashboard-action-card-btn.primary:hover { background: #d95a1a; color: white; }
+.dashboard-action-card-btn.primary { background: var(--orange); color: white; }
+.dashboard-action-card-btn.primary:hover { filter: brightness(.85); color: white; }
+.btn-generate-insight { background:var(--orange);color:white;padding:8px 18px;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:filter .2s; }
+.btn-generate-insight:hover { filter:brightness(.85); }
 .dashboard-action-card-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 /* ── Company / Filter Bar ────────────────────────────────────── */
 .insights-company-bar {
@@ -282,21 +284,21 @@
 .qb-modal ul { list-style: none; padding: 0; margin: 12px auto 10px; text-align: left; display: inline-block; }
 .qb-modal ul li { font-size: 15px; color: #374151; padding: 3px 0; display: flex; align-items: center; gap: 10px; }
 .qb-modal ul li::before { content: '○'; color: #6b7280; flex-shrink: 0; }
-.qb-modal .qb-modal-timing { font-size: 15px; font-weight: 700; color: #f06b25; margin: 10px 0 24px; }
+.qb-modal .qb-modal-timing { font-size: 15px; font-weight: 700; color: var(--orange); margin: 10px 0 24px; }
 .qb-modal .qb-modal-actions { display: flex; flex-direction: row; gap: 12px; }
 .qb-modal .btn-modal-confirm {
-    flex: 1; background: #f06b25; color: white; border: none;
+    flex: 1; background: var(--orange); color: white; border: none;
     padding: 16px 20px; border-radius: 10px; font-size: 15px; font-weight: 600;
-    cursor: pointer; transition: background .2s;
-    box-shadow: 0 5px 10px rgba(240,107,37,.3);
+    cursor: pointer; transition: filter .2s;
+    box-shadow: 0 5px 10px rgba(0,0,0,.15);
 }
-.qb-modal .btn-modal-confirm:hover { background: #d95a1a; }
+.qb-modal .btn-modal-confirm:hover { filter: brightness(.85); }
 .qb-modal .btn-modal-cancel {
-    flex: 1; background: transparent; color: #f06b25;
-    border: 1.5px solid #f06b25; padding: 15px 20px; border-radius: 10px;
+    flex: 1; background: transparent; color: var(--orange);
+    border: 1.5px solid var(--orange); padding: 15px 20px; border-radius: 10px;
     font-size: 15px; font-weight: 500; cursor: pointer; transition: all .2s;
 }
-.qb-modal .btn-modal-cancel:hover { background: #fff4ee; }
+.qb-modal .btn-modal-cancel:hover { opacity: .8; }
 /* ── Industry Modal ─────────────────────────────────────────── */
 .ind-modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.45);
@@ -319,21 +321,21 @@
     color: #1a202c; background: #fff; outline: none; cursor: pointer;
     margin-bottom: 20px; transition: border-color .2s;
 }
-.ind-modal select:focus { border-color: #f06b25; }
+.ind-modal select:focus { border-color: var(--orange); }
 .ind-modal-actions { display: flex; gap: 12px; }
 .ind-btn-confirm {
-    flex: 1; background: #f06b25; color: white; border: none;
+    flex: 1; background: var(--orange); color: white; border: none;
     padding: 13px 20px; border-radius: 10px; font-size: 14px; font-weight: 600;
-    cursor: pointer; transition: background .2s;
+    cursor: pointer; transition: filter .2s;
 }
-.ind-btn-confirm:hover { background: #d95a1a; }
+.ind-btn-confirm:hover { filter: brightness(.85); }
 .ind-btn-confirm:disabled { opacity: .6; cursor: not-allowed; }
 .ind-btn-cancel {
-    flex: 1; background: transparent; color: #f06b25;
-    border: 1.5px solid #f06b25; padding: 12px 20px; border-radius: 10px;
+    flex: 1; background: transparent; color: var(--orange);
+    border: 1.5px solid var(--orange); padding: 12px 20px; border-radius: 10px;
     font-size: 14px; font-weight: 500; cursor: pointer; transition: all .2s;
 }
-.ind-btn-cancel:hover { background: #fff4ee; }
+.ind-btn-cancel:hover { opacity: .8; }
 /* ── Free Report Limit Reached Modal ───────────────────────── */
 .limit-modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,.45);
@@ -544,9 +546,7 @@
             <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
                 <h2>All Insights</h2>
                 @if(empty($isAdminView) && $qbConnection && !$limitReached)
-                <button id="btnGenerateNew" onclick="generateInsight()"
-                        style="background:#f06b25;color:white;padding:8px 18px;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .2s;"
-                        onmouseover="this.style.background='#d95a1a'" onmouseout="this.style.background='#f06b25'">
+                <button id="btnGenerateNew" onclick="generateInsight()" class="btn-generate-insight">
                     <i class="fa fa-sync-alt"></i> Generate New Insight
                 </button>
                 @elseif(!empty($isAdminView))

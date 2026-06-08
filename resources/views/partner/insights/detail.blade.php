@@ -561,8 +561,8 @@
                             <div style="width:70px;height:70px;background:#ecfdf5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
                                 <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#10b981" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
                             </div>
-                            <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">${redirectUrl ? 'Saved as v' + newVersion : 'Saved Successfully'}</h2>
-                            <p style="font-size:14px;color:#64748b;margin:0;">${redirectUrl ? 'Opening <strong>v' + newVersion + ' Published</strong>…' : 'Your changes have been saved.'}</p>
+                            <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Insight Updated</h2>
+                            <p style="font-size:14px;color:#64748b;margin:0;">${redirectUrl ? 'Your insight changes saved successfully as version <strong>v' + newVersion + '</strong>' : 'Your changes have been saved.'}</p>
                         </div>`,
                     showConfirmButton: true,
                     confirmButtonText: 'Got it',
@@ -573,7 +573,8 @@
                         const actions = popup.querySelector('.swal2-actions');
                         if (actions) { actions.style.cssText = 'width:100%;padding:0 24px;display:flex;'; }
                         const b = popup.querySelector('.swal2-confirm');
-                        if (b) { b.style.cssText = 'flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:#f06b25;border:none;color:#fff;cursor:pointer;'; }
+                        const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
+                        if (b) { b.style.cssText = `flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:${brandColor};border:none;color:#fff;cursor:pointer;`; }
                     },
                 }).then(() => {
                     if (redirectUrl) {

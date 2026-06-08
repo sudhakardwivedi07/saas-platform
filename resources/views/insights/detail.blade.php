@@ -38,6 +38,8 @@
 .rd-btn-edit.active { background:#1a6aa8;color:#fff; }
 .rd-btn-save { background:var(--orange);color:#fff;border:1.5px solid var(--orange); }
 .rd-btn-save:hover { filter:brightness(.85);text-decoration:none; }
+.rd-btn-outline { background:#fff;color:var(--blue,#1a6aa8);border:1.5px solid var(--blue,#1a6aa8); }
+.rd-btn-outline:hover { background:#eff6ff;text-decoration:none; }
 .rd-btn:disabled { opacity:.6;cursor:not-allowed; }
 
 /* ── Edit mode content area ── */
@@ -231,6 +233,10 @@
         </div>
         @if($report->insight_json_data)
         <div class="report-header-actions">
+            <a href="{{ route('insights.preview', $report->id) }}" class="rd-btn rd-btn-outline" id="ciBtnPdfPreview">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span>Preview</span>
+            </a>
             <button id="ciBtnEdit" class="rd-btn rd-btn-edit" onclick="ciToggleEdit()">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                 <span id="ciBtnEditLabel">Edit Insight</span>

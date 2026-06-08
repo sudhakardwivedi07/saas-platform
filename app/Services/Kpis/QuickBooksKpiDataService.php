@@ -126,6 +126,10 @@ class QuickBooksKpiDataService
             $qb->refreshTokenIfNeeded();
             $connection->refresh();
 
+            // Multiple sequential QB API calls can exceed PHP's default 30s limit.
+            // The curl layer has its own 60s per-request timeout, so we defer to that.
+            set_time_limit(0);
+
             $endDate = Carbon::now()->format('Y-m-d');
             $startDate = Carbon::now()->subMonths(23)->startOfMonth()->format('Y-m-d');
 

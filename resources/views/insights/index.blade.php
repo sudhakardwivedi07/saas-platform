@@ -716,6 +716,54 @@
     </div>
 </div>
 
+{{-- ── Download Report Modal ───────────────────────────────────────────── --}}
+<div id="downloadReportModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:16px;width:100%;max-width:440px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden">
+        <div style="padding:22px 24px 16px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between">
+            <div>
+                <div style="font-size:16px;font-weight:700;color:#0f172a">Download Report</div>
+                <div style="font-size:13px;color:#64748b;margin-top:2px">Choose the format to download</div>
+            </div>
+            <button onclick="closeDownloadModal()" style="border:none;background:transparent;cursor:pointer;color:#94a3b8;font-size:20px;line-height:1;padding:4px">&times;</button>
+        </div>
+        <div style="padding:20px 24px;display:flex;flex-direction:column;gap:10px">
+            <label id="dl-opt-zip" onclick="selectDownloadOption('zip')"
+                style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:2px solid #1a6aa8;border-radius:10px;cursor:pointer;transition:all .15s;background:#f0f7ff">
+                <span style="width:38px;height:38px;border-radius:9px;background:#1a6aa8;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/><line x1="12" y1="11" x2="12" y2="17" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M9 14l3 3 3-3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <div style="flex:1">
+                    <div style="font-size:14px;font-weight:600;color:#0f172a">KPI Data Report (ZIP)</div>
+                    <div style="font-size:12px;color:#64748b;margin-top:2px">Excel KPI data files packaged as a ZIP archive</div>
+                </div>
+                <span id="dl-radio-zip" style="width:18px;height:18px;border-radius:50%;border:2px solid #1a6aa8;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <span style="width:9px;height:9px;border-radius:50%;background:#1a6aa8;display:block"></span>
+                </span>
+            </label>
+            <label id="dl-opt-pdf" onclick="selectDownloadOption('pdf')"
+                style="display:flex;align-items:center;gap:14px;padding:14px 16px;border:2px solid #e2e8f0;border-radius:10px;cursor:pointer;transition:all .15s;background:#fff">
+                <span style="width:38px;height:38px;border-radius:9px;background:#64748b;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path d="M9 13h6M9 17h4" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </span>
+                <div style="flex:1">
+                    <div style="font-size:14px;font-weight:600;color:#0f172a">Insight Analysis Report (PDF)</div>
+                    <div style="font-size:12px;color:#64748b;margin-top:2px">Full insight analysis report exported as PDF</div>
+                </div>
+                <span id="dl-radio-pdf" style="width:18px;height:18px;border-radius:50%;border:2px solid #e2e8f0;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                    <span style="width:9px;height:9px;border-radius:50%;background:transparent;display:block"></span>
+                </span>
+            </label>
+        </div>
+        <div style="padding:12px 24px 20px;display:flex;align-items:center;justify-content:flex-end;gap:10px;border-top:1px solid #f1f5f9">
+            <button onclick="closeDownloadModal()" style="padding:9px 20px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;font-size:13px;font-weight:600;color:#64748b;cursor:pointer">Cancel</button>
+            <button id="dl-confirm-btn" onclick="confirmDownload()" style="padding:9px 20px;border:none;border-radius:8px;background:#1a6aa8;font-size:13px;font-weight:600;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Download
+            </button>
+        </div>
+    </div>
+</div>
+
 {{-- ── QB Sync Confirm Modal ────────────────────────────────────────────── --}}
 <div id="qbGenerateModal" class="qb-modal-overlay" style="display:none;" onclick="closeGenerateModal(event)">
     <div class="qb-modal">
@@ -1055,18 +1103,67 @@
     window.searchReports = window.applyFilters;
 
     // ── Download ──────────────────────────────────────────────────────────────
+    let _dlInsightId = null;
+    let _dlOption = 'zip';
+
     window.downloadInsight = function (id) {
-        Swal.fire({
-            title: 'Preparing Download',
-            html: '<p>Creating ZIP file with all attachments...</p>',
-            icon: 'info',
-            allowOutsideClick: false,
-            showConfirmButton: false,
-            willOpen: () => Swal.showLoading()
-        });
-        window.location.href = `/insights/${id}/download`;
-        setTimeout(() => Swal.close(), 2500);
+        _dlInsightId = id;
+        _dlOption = 'zip';
+        selectDownloadOption('zip');
+        document.getElementById('downloadReportModal').style.display = 'flex';
     };
+
+    window.closeDownloadModal = function () {
+        document.getElementById('downloadReportModal').style.display = 'none';
+    };
+
+    window.selectDownloadOption = function (opt) {
+        _dlOption = opt;
+        var isZip = opt === 'zip';
+
+        var zipOpt = document.getElementById('dl-opt-zip');
+        var pdfOpt = document.getElementById('dl-opt-pdf');
+        var zipRadioInner = document.querySelector('#dl-radio-zip span');
+        var pdfRadioInner = document.querySelector('#dl-radio-pdf span');
+        var zipIcon = zipOpt.querySelector('span:first-child');
+        var pdfIcon = pdfOpt.querySelector('span:first-child');
+
+        zipOpt.style.border = isZip ? '2px solid #1a6aa8' : '2px solid #e2e8f0';
+        zipOpt.style.background = isZip ? '#f0f7ff' : '#fff';
+        document.getElementById('dl-radio-zip').style.borderColor = isZip ? '#1a6aa8' : '#e2e8f0';
+        zipRadioInner.style.background = isZip ? '#1a6aa8' : 'transparent';
+        zipIcon.style.background = isZip ? '#1a6aa8' : '#cbd5e1';
+
+        pdfOpt.style.border = isZip ? '2px solid #e2e8f0' : '2px solid #1a6aa8';
+        pdfOpt.style.background = isZip ? '#fff' : '#f0f7ff';
+        document.getElementById('dl-radio-pdf').style.borderColor = isZip ? '#e2e8f0' : '#1a6aa8';
+        pdfRadioInner.style.background = isZip ? 'transparent' : '#1a6aa8';
+        pdfIcon.style.background = isZip ? '#64748b' : '#1a6aa8';
+    };
+
+    window.confirmDownload = function () {
+        if (!_dlInsightId) return;
+        var btn = document.getElementById('dl-confirm-btn');
+        btn.textContent = 'Downloading…';
+        btn.disabled = true;
+
+        if (_dlOption === 'pdf') {
+            window.location.href = '/insights/' + _dlInsightId + '/export-pdf';
+        } else {
+            window.location.href = '/insights/' + _dlInsightId + '/download';
+        }
+
+        setTimeout(function () {
+            closeDownloadModal();
+            btn.innerHTML = '<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg> Download';
+            btn.disabled = false;
+        }, 3000);
+    };
+
+    // Close modal on backdrop click
+    document.getElementById('downloadReportModal').addEventListener('click', function (e) {
+        if (e.target === this) closeDownloadModal();
+    });
 
     // ── Refresh usage bar after delete ────────────────────────────────────────
     function refreshUsageBar(used, limit, limitReached) {

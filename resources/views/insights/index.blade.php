@@ -546,9 +546,9 @@
             <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
                 <h2>All Insights</h2>
                 @if(empty($isAdminView) && $qbConnection && !$limitReached)
-                <button id="btnGenerateNew" onclick="generateInsight()" class="btn-generate-insight">
+                <!-- <button id="btnGenerateNew" onclick="generateInsight()" class="btn-generate-insight">
                     <i class="fa fa-sync-alt"></i> Generate New Insight
-                </button>
+                </button> -->
                 @elseif(!empty($isAdminView))
                 {{-- read-only mode: no generate button --}}
                 @elseif($limitReached)

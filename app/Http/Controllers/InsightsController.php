@@ -184,6 +184,9 @@ class InsightsController extends AccountBaseController
             (new QuickBooksService($connection, $credentials))->refreshTokenIfNeeded();
             $connection->refresh();
 
+            // Multiple sequential QB API calls can exceed PHP's default 30s limit.
+            set_time_limit(0);
+
             // Generate CSV files from QB
             $csvFiles = QuickBooksCSVExportService::generateAllCSVFiles(
                 $connection, $credentials, $startDate, $endDate
@@ -451,6 +454,33 @@ class InsightsController extends AccountBaseController
         $zip->close();
 
         return response()->download($tempZip, $zipName)->deleteFileAfterSend(true);
+    }
+
+    public function previewPdf(int $reportId)
+    {
+        $impersonatingAdminId = session('impersonating_client_original_id');
+
+        $report = Report::with(['user', 'company'])
+            ->where('id', $reportId)
+            ->where(function ($q) use ($impersonatingAdminId) {
+                $q->where('user_id', auth()->id());
+                if ($impersonatingAdminId) {
+                    $q->orWhere('user_id', $impersonatingAdminId);
+                }
+            })
+            ->firstOrFail();
+
+        if (empty($report->insight_json_data)) {
+            abort(404, 'No insight data available.');
+        }
+
+        $sections = $this->getReportSections($report);
+
+        $this->pageTitle = 'Preview — ' . ($report->report_name ?: 'Insight');
+        $this->report    = $report;
+        $this->sections  = $sections;
+
+        return view('insights.preview', $this->data);
     }
 
     public function exportPdf(int $reportId)

@@ -51,8 +51,8 @@
 .insight-slider-counter { color:#64748b;font-size:14px;font-weight:500; }
 .insight-slider-nav { display:flex;align-items:center;gap:16px; }
 .isnbc { display:flex;align-items:center;gap:10px;border:1px solid #dbdbdb;border-radius:30px;padding:5px;cursor:pointer;transition:all .3s;background:none;font-family:inherit;outline:none; }
-.isnbc:hover { border-color:#ef6a24; }
-.isnb { width:38px;height:38px;border-radius:50%;background:linear-gradient(124deg,#ef6a24 20%,#f99d3c 88%);color:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;pointer-events:none; }
+.isnbc:hover { border-color:var(--orange); }
+.isnb { width:38px;height:38px;border-radius:50%;background:var(--orange);color:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;pointer-events:none; }
 .isnl { font-size:13px;color:#474747;padding:0 10px 0 0;font-weight:400;max-width:160px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .isnl.last { padding:0 0 0 10px; }
 .insight-slider-slides { position:relative;overflow:hidden; }
@@ -171,12 +171,6 @@
 
         @if($report->insight_json_data)
         <div class="rd-header-actions">
-            @if($report->isPublished())
-            <button class="rd-btn rd-btn-share">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                <span>Share</span>
-            </button>
-            @endif
             <a href="{{ route('partner-insights.preview', $report->id) }}" class="rd-btn rd-btn-outline" id="rdBtnPdfPreview">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                 <span>Preview</span>
@@ -567,8 +561,8 @@
                             <div style="width:70px;height:70px;background:#ecfdf5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
                                 <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#10b981" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
                             </div>
-                            <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">${redirectUrl ? 'Saved as v' + newVersion : 'Saved Successfully'}</h2>
-                            <p style="font-size:14px;color:#64748b;margin:0;">${redirectUrl ? 'Opening <strong>v' + newVersion + ' Published</strong>…' : 'Your changes have been saved.'}</p>
+                            <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Insight Updated</h2>
+                            <p style="font-size:14px;color:#64748b;margin:0;">${redirectUrl ? 'Your insight changes saved successfully as version <strong>v' + newVersion + '</strong>' : 'Your changes have been saved.'}</p>
                         </div>`,
                     showConfirmButton: true,
                     confirmButtonText: 'Got it',
@@ -579,7 +573,8 @@
                         const actions = popup.querySelector('.swal2-actions');
                         if (actions) { actions.style.cssText = 'width:100%;padding:0 24px;display:flex;'; }
                         const b = popup.querySelector('.swal2-confirm');
-                        if (b) { b.style.cssText = 'flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:#f06b25;border:none;color:#fff;cursor:pointer;'; }
+                        const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
+                        if (b) { b.style.cssText = `flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:${brandColor};border:none;color:#fff;cursor:pointer;`; }
                     },
                 }).then(() => {
                     if (redirectUrl) {

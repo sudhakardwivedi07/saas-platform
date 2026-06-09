@@ -130,6 +130,12 @@ class ClientController extends AccountBaseController
 
         $this->brandingDone = $tenant?->branding?->logo !== null;
 
+        // Existing clients for the Add Company modal
+        $this->existingClients = User::whereHas('roles', fn ($q) => $q->where('name', 'client'))
+            ->whereHas('company', fn ($q) => $q->where('created_by', $companyId))
+            ->orderBy('name')
+            ->get();
+
         return view('clients.index', $this->data);
     }
 

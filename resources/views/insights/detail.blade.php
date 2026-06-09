@@ -36,8 +36,10 @@
 .rd-btn-edit { background:#fff;color:#1a6aa8;border:1.5px solid #1a6aa8; }
 .rd-btn-edit:hover { background:#f0f7ff;text-decoration:none; }
 .rd-btn-edit.active { background:#1a6aa8;color:#fff; }
-.rd-btn-save { background:#f06b25;color:#fff;border:1.5px solid #f06b25; }
-.rd-btn-save:hover { background:#d95a1a;border-color:#d95a1a;text-decoration:none; }
+.rd-btn-save { background:var(--orange);color:#fff;border:1.5px solid var(--orange); }
+.rd-btn-save:hover { filter:brightness(.85);text-decoration:none; }
+.rd-btn-outline { background:#fff;color:var(--blue,#1a6aa8);border:1.5px solid var(--blue,#1a6aa8); }
+.rd-btn-outline:hover { background:#eff6ff;text-decoration:none; }
 .rd-btn:disabled { opacity:.6;cursor:not-allowed; }
 
 /* ── Edit mode content area ── */
@@ -85,15 +87,15 @@
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    background: #F06B25;
+    background: var(--orange);
     border-radius: 5px;
     text-decoration: none;
     white-space: nowrap;
     flex-shrink: 0;
-    box-shadow: 0 5px 10px 0 rgba(240,107,37,.2);
+    box-shadow: 0 5px 10px 0 rgba(0,0,0,.15);
     transition: all .3s ease;
 }
-.export-pdf-btn:hover { background: #d95a1a; color: white; text-decoration: none; transform: translateY(-1px); }
+.export-pdf-btn:hover { filter: brightness(.85); color: white; text-decoration: none; transform: translateY(-1px); }
 
 /* ── Back btn ── */
 .btn-back {
@@ -131,10 +133,10 @@
     cursor: pointer; transition: all .3s ease;
     background: none; font-family: inherit; outline: none;
 }
-.insight-slider-nav-section-btn-container:hover { border-color: #EF6A24; }
+.insight-slider-nav-section-btn-container:hover { border-color: var(--orange); }
 .insight-slider-nav-btn {
     width: 40px; height: 40px; border-radius: 50%;
-    background: linear-gradient(124.07deg, #EF6A24 19.79%, #F99D3C 88.53%);
+    background: var(--orange);
     color: white; border: none;
     display: flex; align-items: center; justify-content: center;
     font-size: 14px; flex-shrink: 0; pointer-events: none;
@@ -155,7 +157,7 @@
 }
 .insight-slider-title { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
 .insight-slider-title-icon {
-    width: 44px; height: 44px; background: #F06B25; border-radius: 8px;
+    width: 44px; height: 44px; background: var(--orange); border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
     color: white; font-size: 18px; flex-shrink: 0;
 }
@@ -231,6 +233,10 @@
         </div>
         @if($report->insight_json_data)
         <div class="report-header-actions">
+            <a href="{{ route('insights.preview', $report->id) }}" class="rd-btn rd-btn-outline" id="ciBtnPdfPreview">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                <span>Preview</span>
+            </a>
             <button id="ciBtnEdit" class="rd-btn rd-btn-edit" onclick="ciToggleEdit()">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                 <span id="ciBtnEditLabel">Edit Insight</span>
@@ -876,18 +882,19 @@
                         <div style="width:70px;height:70px;background:#ecfdf5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
                             <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#10b981" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
                         </div>
-                        <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">${redirectUrl ? 'Saved as v' + newVersion : 'Saved Successfully'}</h2>
-                        <p style="font-size:14px;color:#64748b;margin:0;">${redirectUrl ? 'Opening <strong>v' + newVersion + '</strong>…' : 'Your changes have been saved.'}</p>
+                        <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Insight Updated</h2>
+                        <p style="font-size:14px;color:#64748b;margin:0;">${redirectUrl ? 'Your insight changes saved successfully as version <strong>v' + newVersion + '</strong>' : 'Your changes have been saved.'}</p>
                     </div>`,
                     showConfirmButton: true,
                     confirmButtonText: 'Got it',
-                    confirmButtonColor: '#f06b25',
+                    confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
                     allowOutsideClick: !redirectUrl,
                     didOpen: (popup) => {
                         const actions = popup.querySelector('.swal2-actions');
                         if (actions) { actions.style.cssText = 'width:100%;padding:0 24px;display:flex;'; }
                         const b = popup.querySelector('.swal2-confirm');
-                        if (b) { b.style.cssText = 'flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:#f06b25;border:none;color:#fff;cursor:pointer;'; }
+                        const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
+                        if (b) { b.style.cssText = `flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:${brandColor};border:none;color:#fff;cursor:pointer;`; }
                     },
                 }).then(() => {
                     if (redirectUrl) {

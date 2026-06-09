@@ -260,6 +260,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{encryptedId}/view',          [InsightsController::class, 'view'])->name('view');
         Route::get('/{id}/data',                   [InsightsController::class, 'getData'])->name('data');
         Route::post('/{id}/update-content',        [InsightsController::class, 'updateContent'])->name('update-content');
+        Route::get('/{id}/preview',                [InsightsController::class, 'previewPdf'])->name('preview');
         Route::get('/{id}/export-pdf',             [InsightsController::class, 'exportPdf'])->name('export-pdf');
         Route::get('/{id}/download',               [InsightsController::class, 'download'])->name('download');
         Route::delete('/{id}',                     [InsightsController::class, 'destroy'])->name('destroy');

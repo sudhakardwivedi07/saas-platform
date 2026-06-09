@@ -661,6 +661,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                 <tbody>
                     @php $systemRoles = ['admin', 'super_admin']; @endphp
                     @foreach($roles as $role)
+                    @if($role->name === 'super_admin') @continue @endif
                     @php
                         $isSystem  = in_array($role->name, $systemRoles);
                         $typeLabel = $isSystem ? 'System' : 'Custom';

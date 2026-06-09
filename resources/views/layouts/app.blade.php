@@ -428,7 +428,7 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 @if(session('impersonating_client_original_id'))
 <div class="ca-impersonate-bar" style="background:#1a6aa8;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap">
     <span>
-        👤 Logged in as <strong>{{ session('impersonating_client_name') }}</strong>
+        👤 Viewing as <strong>{{ session('impersonating_client_name') }}</strong>
         <span style="opacity:.75;font-weight:400"> — {{ session('impersonating_client_email') }}</span>
     </span>
     <a href="{{ route('clients.stop-impersonating') }}"

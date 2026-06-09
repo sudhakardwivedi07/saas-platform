@@ -125,7 +125,7 @@
                         $clientUser = $clientOf($company);
                     @endphp
                     <tr>
-                        <td>
+                        <td data-order="{{ $conn->created_at?->timestamp ?? $company->created_at?->timestamp ?? 0 }}">
                             <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $company->company_name }}</div>
                         </td>
                         @if($showPartnerColumn)
@@ -176,7 +176,7 @@
                 @else
                     {{-- No connection yet --}}
                     <tr>
-                        <td>
+                        <td data-order="{{ $company->created_at?->timestamp ?? 0 }}">
                             <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $company->company_name }}</div>
                         </td>
                         @if($showPartnerColumn)
@@ -242,7 +242,7 @@ $(document).ready(function () {
         paging: true, pageLength: 10, lengthChange: true,
         searching: true, ordering: true, info: true,
         dom: '<"dt-tscroll"t><"dt-footer"lip>',
-        order: [[0, 'asc']],
+        order: [[0, 'desc']],
         columnDefs: [{ orderable: false, targets: [-1] }],
         language: {
             info: 'Showing _START_ to _END_ of _TOTAL_ entries',

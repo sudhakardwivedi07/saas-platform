@@ -97,8 +97,7 @@ class QuickBooksController extends AccountBaseController
                 ->orderByDesc('created_at'),
         ]);
 
-        // Show the "Partner" column only when multiple admin companies are in scope
-        $this->showPartnerColumn = count($adminCompanyIds) > 1;
+        $this->showPartnerColumn = false;
 
         $this->connectedCount    = $this->managedCompanies->filter(
             fn($co) => $co->quickbooksConnections->contains(

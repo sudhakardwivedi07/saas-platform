@@ -116,12 +116,12 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 
     {{-- Tab Bar --}}
     <div class="sup-tabs">
-        <button class="sup-tab active" data-tab="client">
+        <button class="sup-tab active" data-tab="client" style="display:none">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
             Client Tickets
             <span class="tab-count" id="count-client">{{ count($clientTickets ?? []) }}</span>
         </button>
-        <button class="sup-tab" data-tab="my">
+        <button class="sup-tab active" data-tab="my">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
             My Tickets
             <span class="tab-count" id="count-my">{{ count($myTickets ?? []) }}</span>
@@ -129,7 +129,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
     </div>
 
     {{-- ── CLIENT TICKETS PANE ─────────────────────────────────────────── --}}
-    <div id="pane-client" class="tab-pane">
+    <div id="pane-client" class="tab-pane" style="display:none">
 
         <div class="filter-bar">
             <div class="srch-wrap" style="flex:1;min-width:180px">
@@ -247,7 +247,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
     </div>
 
     {{-- ── MY TICKETS PANE ─────────────────────────────────────────────── --}}
-    <div id="pane-my" class="tab-pane" style="display:none">
+    <div id="pane-my" class="tab-pane">
 
         <div class="filter-bar">
             <div class="srch-wrap" style="flex:1;min-width:180px">

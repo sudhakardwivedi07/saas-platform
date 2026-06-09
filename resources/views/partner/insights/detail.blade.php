@@ -99,7 +99,7 @@
 /* ── Rich-text toolbar ───────────────────────────────────────── */
 #rdEditToolbar {
     display:none;background:#fff;border:1px solid #e2e8f0;border-radius:9px;
-    padding:7px 12px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.07);
+    padding:7px 12px;margin:0 0 16px;box-shadow:0 2px 6px rgba(0,0,0,.07);
     align-items:center;gap:3px;flex-wrap:wrap;
 }
 #rdEditToolbar.visible { display:flex; }
@@ -383,6 +383,13 @@
 
         const active = document.getElementById('sl-slide-' + idx);
         if (active) active.classList.add('active');
+
+        // Move toolbar inside the active slide card, right after the section title
+        const toolbar = document.getElementById('rdEditToolbar');
+        if (toolbar && active) {
+            const title = active.querySelector('.insight-slider-title');
+            if (title) title.after(toolbar);
+        }
 
         const cur = document.getElementById('slCur'); if (cur) cur.textContent = idx + 1;
 

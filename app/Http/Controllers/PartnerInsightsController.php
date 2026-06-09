@@ -37,21 +37,27 @@ class PartnerInsightsController extends AccountBaseController
     {
         $subCompanyIds = $this->allClientCompanyIds();
 
-        // All reports for those sub-companies (not firm reports)
+        // All reports for those sub-companies (not firm reports) — latest version per insight only
         $this->reports = Report::withTrashed()
             ->with(['user', 'company'])
             ->whereIn('company_id', $subCompanyIds)
             ->where('is_firm_report', false)
             ->orderByDesc('created_at')
-            ->get();
+            ->get()
+            ->groupBy(fn($r) => $r->report_name . '||' . $r->company_id)
+            ->map(fn($group) => $group->sortByDesc('version')->first())
+            ->values();
 
-        // Billing-cycle usage: only count original AI-generated reports (not version copies)
+        // Billing-cycle usage: count unique insight series (not versions) created this month.
+        // Using unique() on report_name+company_id handles data where parent_report_id wasn't set.
         $cycleUsed = Report::whereIn('company_id', $subCompanyIds)
             ->where('is_firm_report', false)
             ->whereNull('deleted_at')
             ->whereNull('parent_report_id')
             ->where('created_at', '>=', Carbon::now()->startOfMonth())
             ->whereNotIn('status', ['Failed'])
+            ->get(['report_name', 'company_id'])
+            ->unique(fn($r) => $r->report_name . '||' . $r->company_id)
             ->count();
 
         // Package limit from the admin company's subscription plan
@@ -65,6 +71,7 @@ class PartnerInsightsController extends AccountBaseController
         $this->avgPerClient      = $subCompanyIds->count() > 0
             ? round($cycleUsed / $subCompanyIds->count(), 1)
             : 0;
+        $this->limitReached      = $monthlyLimit > 0 && $cycleUsed >= $monthlyLimit;
 
         return view('partner.insights.index', $this->data);
     }
@@ -178,6 +185,31 @@ class PartnerInsightsController extends AccountBaseController
 
         if (!$this->allClientCompanyIds()->contains($companyId)) {
             return response()->json(['status' => 'error', 'message' => 'Access denied.'], 403);
+        }
+
+        // Enforce the partner's monthly insight limit (from their subscription plan)
+        $adminPlan    = $this->company?->clientPackage ?? $this->company?->package;
+        $monthlyLimit = $adminPlan ? (int) ($adminPlan->insights_per_month ?? $adminPlan->max_insights_per_month ?? 0) : 0;
+
+        if ($monthlyLimit > 0) {
+            $subCompanyIds = $this->allClientCompanyIds();
+            $cycleUsed = Report::whereIn('company_id', $subCompanyIds)
+                ->where('is_firm_report', false)
+                ->whereNull('deleted_at')
+                ->whereNull('parent_report_id')
+                ->where('created_at', '>=', Carbon::now()->startOfMonth())
+                ->whereNotIn('status', ['Failed'])
+                ->get(['report_name', 'company_id'])
+                ->unique(fn($r) => $r->report_name . '||' . $r->company_id)
+                ->count();
+
+            if ($cycleUsed >= $monthlyLimit) {
+                return response()->json([
+                    'status'        => 'error',
+                    'limit_reached' => true,
+                    'message'       => "You have reached your monthly insight limit ({$monthlyLimit} insights/month). Please upgrade your plan or wait until next month.",
+                ], 422);
+            }
         }
 
         // Derive the primary user for this company (used as report owner)

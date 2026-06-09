@@ -167,6 +167,8 @@ class Report extends BaseModel
                         ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed']);
                 });
             })
+            ->get(['report_name', 'company_id'])
+            ->unique(fn($r) => $r->report_name . '||' . ($r->company_id ?? 0))
             ->count();
     }
 }

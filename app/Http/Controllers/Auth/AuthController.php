@@ -373,7 +373,10 @@ class AuthController extends Controller
 
     public function showForgotPassword()
     {
-        return view('auth.passwords.forgot');
+        $branding = company()?->branding;
+        $setting  = global_setting();
+
+        return view('auth.passwords.forgot', compact('branding', 'setting'));
     }
 
     public function sendResetLink(Request $request)

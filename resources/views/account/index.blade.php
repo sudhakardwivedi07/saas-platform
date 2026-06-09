@@ -14,11 +14,12 @@
 @php
 // Determine which My Account tabs this user may see, and which is first/active.
 $_atabs = [
-    'tab-profile'      => auth()->user()->can('view_account_profile'),
-    'tab-branding'     => auth()->user()->can('view_account_branding'),
-    'tab-login-page'   => auth()->user()->can('view_account_login_page'),
-    'tab-subscription' => auth()->user()->can('view_account_subscription'),
-    'tab-activity'     => auth()->user()->can('view_account_activity'),
+    'tab-profile'          => auth()->user()->can('view_account_profile'),
+    'tab-branding'         => auth()->user()->can('view_account_branding'),
+    'tab-login-page'       => auth()->user()->can('view_account_login_page'),
+    'tab-forgot-password'  => auth()->user()->can('view_account_forgot_password'),
+    'tab-subscription'     => auth()->user()->can('view_account_subscription'),
+    'tab-activity'         => auth()->user()->can('view_account_activity'),
 ];
 $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
 @endphp
@@ -41,6 +42,12 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
     <button class="tab-btn {{ $_afirst === 'tab-login-page' ? 'active' : '' }}" data-tab="tab-login-page">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>
         Login Page
+    </button>
+    @endif
+    @if($_atabs['tab-forgot-password'])
+    <button class="tab-btn {{ $_afirst === 'tab-forgot-password' ? 'active' : '' }}" data-tab="tab-forgot-password">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Forgot Password
     </button>
     @endif
     @if($_atabs['tab-subscription'])
@@ -594,6 +601,90 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
     </div>
 </div>
 @endif {{-- /tab-login-page --}}
+
+{{-- Tab 3b: Forgot Password Page --}}
+@if($_atabs['tab-forgot-password'])
+<div class="tab-panel {{ $_afirst === 'tab-forgot-password' ? 'active' : '' }}" id="tab-forgot-password">
+    <div class="acc-card" style="max-width:1200px">
+        <div class="acc-section-title" style="margin-bottom:24px">
+            <h3 style="font-size:16px;font-weight:700;color:#1a202c;margin:0 0 4px">Forgot Password Page</h3>
+            <p style="font-size:13px;color:#6b7280;margin:0">Customise the heading and subheading shown on the "Forgot Password" page. The background, logo, and colours are inherited from your Login Page settings.</p>
+        </div>
+        <div style="display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap">
+            {{-- LEFT: Form --}}
+            <div style="flex:1;min-width:320px;max-width:520px">
+                <form id="fp-page-form" onsubmit="submitFpPageForm(event)">
+                    @csrf
+                    <div style="margin-bottom:16px">
+                        <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Heading</label>
+                        <input type="text" name="fp_heading" id="fp-heading"
+                               value="{{ $branding?->fp_heading ?? 'Forgot your password?' }}"
+                               placeholder="Forgot your password?"
+                               oninput="fpUpdatePreview()"
+                               style="width:100%;height:40px;border:1.5px solid #e2e8f0;border-radius:8px;padding:0 12px;font-size:14px;outline:none">
+                    </div>
+                    <div style="margin-bottom:24px">
+                        <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Subheading</label>
+                        <input type="text" name="fp_subheading" id="fp-subheading"
+                               value="{{ $branding?->fp_subheading ?? "Enter your email and we'll send a reset link." }}"
+                               placeholder="Enter your email and we'll send a reset link."
+                               oninput="fpUpdatePreview()"
+                               style="width:100%;height:40px;border:1.5px solid #e2e8f0;border-radius:8px;padding:0 12px;font-size:14px;outline:none">
+                    </div>
+                    <div style="padding:12px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;margin-bottom:20px;display:flex;align-items:flex-start;gap:8px">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" width="14" height="14" style="flex-shrink:0;margin-top:2px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        <span style="font-size:12px;color:#1e40af;line-height:1.5">The background style, logo, card colour, and button colour are shared with your <strong>Login Page</strong> settings.</span>
+                    </div>
+                    <button type="submit" id="fp-submit" class="btn btn-primary">Save Forgot Password Page</button>
+                </form>
+            </div>
+            {{-- RIGHT: Live Preview --}}
+            <div style="flex:1;min-width:280px;max-width:440px">
+                <div style="position:sticky;top:80px">
+                    <p style="font-size:12px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Live Preview</p>
+                    <div style="border-radius:14px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.18);aspect-ratio:4/3;position:relative" id="fp-preview-outer">
+                        <div id="fp-preview-bg"
+                             data-bg-type="{{ $branding?->login_bg_type ?? 'gradient' }}"
+                             data-bg-color="{{ $branding?->login_bg_color ?? '#0d3d66' }}"
+                             data-bg-color-to="{{ $branding?->login_bg_color_to ?? '#f06b21' }}"
+                             @if($branding?->login_bg_type === 'image' && $branding?->login_background)
+                             data-bg-img-url="{{ asset('storage/'.$branding->login_background) }}"
+                             @endif
+                             style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px">
+                            <div id="fp-preview-card"
+                                 style="border-radius:14px;padding:28px 28px 22px;width:100%;max-width:320px;box-shadow:0 12px 40px rgba(0,0,0,.2);background:{{ $branding?->login_card_bg ?? '#ffffff' }}">
+                                <div style="text-align:center;margin-bottom:12px">
+                                    <div id="fp-preview-logo-wrap">
+                                        @if($branding?->logo)
+                                            <img src="{{ asset('storage/'.$branding->logo) }}" alt="Logo" style="max-height:36px;max-width:140px;object-fit:contain;display:block;margin:0 auto">
+                                        @else
+                                            <div style="display:inline-flex;align-items:center;justify-content:center;height:32px;min-width:120px;border:2px dashed #e2e8f0;border-radius:8px;padding:0 12px;color:#9ca3af;font-size:11px;font-weight:500">
+                                                {{ $branding?->app_name ?? config('app.name') }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div id="fp-preview-heading" style="font-size:14px;font-weight:700;color:#1a202c;text-align:center;margin-bottom:3px">
+                                    {{ $branding?->fp_heading ?? 'Forgot your password?' }}
+                                </div>
+                                <div id="fp-preview-subheading" style="font-size:10px;color:#6b7280;text-align:center;margin-bottom:12px">
+                                    {{ $branding?->fp_subheading ?? "Enter your email and we'll send a reset link." }}
+                                </div>
+                                <div style="height:28px;border:1.5px solid #e2e8f0;border-radius:7px;margin-bottom:10px;background:#fff"></div>
+                                <div id="fp-preview-btn" style="height:32px;border-radius:8px;background:{{ $branding?->login_btn_color ?? ($branding?->accent_color ?? '#f06b21') }}"></div>
+                                <div style="text-align:center;margin-top:10px">
+                                    <span style="font-size:9px;color:#6b7280">← Back to login</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <p style="font-size:11.5px;color:#9ca3af;margin-top:8px;text-align:center">Background &amp; colours reflect your Login Page settings.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif {{-- /tab-forgot-password --}}
 
 {{-- Tab 4: Subscription --}}
 @if($_atabs['tab-subscription'])
@@ -1457,6 +1548,74 @@ function submitLoginPageForm(e) {
         if (res.status === 'success') {
             var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
             Swal.fire({ icon: 'success', text: res.message || 'Login page saved.', confirmButtonText: 'Ok', confirmButtonColor: btnColor });
+        } else {
+            showToast(res.message || 'Something went wrong.', 'error');
+        }
+    })
+    .catch(function () { btn.disabled = false; showToast('Request failed.', 'error'); });
+}
+@endif
+
+// ── Forgot Password Page ──────────────────────────────────────────────────────
+@if($_atabs['tab-forgot-password'])
+document.addEventListener('DOMContentLoaded', function () {
+    var fpBtn = document.querySelector('[data-tab="tab-forgot-password"]');
+    if (fpBtn) {
+        fpBtn.addEventListener('click', function () {
+            setTimeout(function () { fpUpdatePreview(); }, 50);
+        });
+    }
+    fpUpdatePreview();
+});
+
+function fpUpdatePreview() {
+    var bg     = document.getElementById('fp-preview-bg');
+    var card   = document.getElementById('fp-preview-card');
+    var btn    = document.getElementById('fp-preview-btn');
+    var h      = document.getElementById('fp-preview-heading');
+    var sub    = document.getElementById('fp-preview-subheading');
+    if (!bg || !card) return;
+
+    var heading    = document.getElementById('fp-heading')?.value    || 'Forgot your password?';
+    var subheading = document.getElementById('fp-subheading')?.value || '';
+
+    // Background: read from data-* attributes (set server-side from login page branding)
+    var bgType    = bg.dataset.bgType    || 'gradient';
+    var bgColor   = bg.dataset.bgColor   || '#0d3d66';
+    var bgColorTo = bg.dataset.bgColorTo || '#f06b21';
+    var bgImgUrl  = bg.dataset.bgImgUrl  || '';
+
+    var bgStyle = '';
+    if (bgType === 'solid') {
+        bgStyle = 'background:' + bgColor;
+    } else if (bgType === 'image' && bgImgUrl) {
+        bgStyle = "background:url('" + bgImgUrl + "') center/cover no-repeat";
+    } else {
+        bgStyle = 'background:linear-gradient(135deg,' + bgColor + ' 0%,' + bgColorTo + ' 130%)';
+    }
+
+    bg.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;' + bgStyle;
+    if (h)   h.textContent   = heading    || 'Forgot your password?';
+    if (sub) sub.textContent = subheading || '';
+}
+
+function submitFpPageForm(e) {
+    e.preventDefault();
+    var form = document.getElementById('fp-page-form');
+    var btn  = document.getElementById('fp-submit');
+    var data = new FormData(form);
+    btn.disabled = true;
+    fetch('{{ parse_url(route("settings.forgot-password-page.update"), PHP_URL_PATH) }}', {
+        method: 'POST',
+        headers: {'X-Requested-With': 'XMLHttpRequest'},
+        body: data,
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (res) {
+        btn.disabled = false;
+        if (res.status === 'success') {
+            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+            Swal.fire({ icon: 'success', text: res.message || 'Forgot password page saved.', confirmButtonText: 'Ok', confirmButtonColor: btnColor });
         } else {
             showToast(res.message || 'Something went wrong.', 'error');
         }

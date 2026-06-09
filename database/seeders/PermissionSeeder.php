@@ -37,6 +37,7 @@ class PermissionSeeder extends Seeder
             'view_plan', 'add_plan', 'edit_plan', 'delete_plan',
             // My Account — tab visibility (controlled by SuperAdmin per role)
             'view_account_profile', 'view_account_branding', 'view_account_login_page',
+            'view_account_forgot_password',
             'view_account_subscription', 'view_account_activity',
         ];
 

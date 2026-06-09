@@ -154,22 +154,6 @@
             <div id="err-features_lines" style="display:none; color:#ef4444; font-size:12px; margin-top:4px;"></div>
         </div>
 
-        {{-- Options --}}
-        <div style="display:flex; flex-wrap:wrap; gap:18px; margin-bottom:22px;">
-            @foreach([
-                ['is_trial_allowed', 'Allow Free Trial',    true],
-                ['is_recommended',   'Mark as Recommended', false],
-                ['is_free',          'Free Plan',           false],
-            ] as [$field, $label, $default])
-            <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:#374151;">
-                <input type="checkbox" name="{{ $field }}" value="1"
-                       {{ old($field, ($package->{$field} ?? $default) ? '1' : '') ? 'checked' : '' }}
-                       style="accent-color:#f97316; width:15px; height:15px;">
-                {{ $label }}
-            </label>
-            @endforeach
-        </div>
-
         {{-- Action buttons --}}
         <div style="display:flex; justify-content:flex-end; gap:10px; padding-top:18px; border-top:1px solid #f0f0f0;">
             <a href="{{ route('superadmin.packages.index') }}"
@@ -338,11 +322,6 @@ document.getElementById('pkg-form').addEventListener('submit', async (e) => {
     const lines = (data.get('features_lines') || '').split('\n').map(f => f.trim()).filter(Boolean);
     data.delete('features_lines');
     lines.forEach(f => data.append('features[]', f));
-
-    // Ensure unchecked checkboxes send 0
-    if (!data.has('is_trial_allowed')) data.append('is_trial_allowed', '0');
-    if (!data.has('is_recommended'))   data.append('is_recommended', '0');
-    if (!data.has('is_free'))          data.append('is_free', '0');
 
     const btn = form.querySelector('button[type=submit]');
     btn.disabled = true;

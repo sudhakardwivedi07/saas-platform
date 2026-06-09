@@ -55,7 +55,7 @@
 /* ── Rich-text toolbar ── */
 #ciEditToolbar {
     display:none;background:#fff;border:1px solid #e2e8f0;border-radius:9px;
-    padding:7px 12px;margin-bottom:10px;box-shadow:0 2px 6px rgba(0,0,0,.07);
+    padding:7px 12px;margin:0 0 16px;box-shadow:0 2px 6px rgba(0,0,0,.07);
     align-items:center;gap:3px;flex-wrap:wrap;
 }
 #ciEditToolbar.visible { display:flex; }
@@ -683,6 +683,13 @@
         document.querySelectorAll('.insight-slider-slide').forEach(s => s.classList.remove('active'));
         const slide = document.querySelector(`.insight-slider-slide[data-slide-index="${index}"]`);
         if (slide) slide.classList.add('active');
+
+        // Move toolbar inside the active slide card, right after the section title
+        const toolbar = document.getElementById('ciEditToolbar');
+        if (toolbar && slide) {
+            const title = slide.querySelector('.insight-slider-title');
+            if (title) title.after(toolbar);
+        }
 
         document.querySelectorAll('.insight-slider-dot').forEach((d, i) => {
             d.classList.toggle('active', i === index);

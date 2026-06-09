@@ -327,7 +327,7 @@
                                     @if($report->user_id)
                                     <form method="POST" action="{{ route('clients.login-as', $report->user_id) }}" style="display:inline;">
                                         @csrf
-                                        <button type="submit" class="pi-btn-portal">View Client Portal</button>
+                                        <button type="submit" class="pi-btn-portal">View as Client</button>
                                     </form>
                                     @endif
                                 @endif
@@ -704,7 +704,7 @@
         if (actions) {
             const userId   = row.dataset.userId || '';
             const portalBtn = userId
-                ? `<form method="POST" action="/clients/${userId}/login-as" style="display:inline;"><input type="hidden" name="_token" value="${CSRF}"><button type="submit" class="pi-btn-portal">View Client Portal</button></form>`
+                ? `<form method="POST" action="/clients/${userId}/login-as" style="display:inline;"><input type="hidden" name="_token" value="${CSRF}"><button type="submit" class="pi-btn-portal">View as Client</button></form>`
                 : '';
             actions.innerHTML = `<a href="${viewUrl}" class="pi-btn-view">View Insights</a>${portalBtn}`;
         }

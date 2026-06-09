@@ -83,7 +83,6 @@ class QuickBooksController extends AccountBaseController
                     ->orderByDesc('created_at'),
                 'creatorCompany',
             ])
-            ->orderBy('company_name')
             ->get();
 
         // Auto-refresh any expired access tokens so the status stays current
@@ -96,6 +95,12 @@ class QuickBooksController extends AccountBaseController
                 ->where('is_active', true)
                 ->orderByDesc('created_at'),
         ]);
+
+        // Sort: connected companies first (by most recent connection), then unconnected by company name
+        $this->managedCompanies = $this->managedCompanies->sortByDesc(function ($co) {
+            $latest = $co->quickbooksConnections->max('created_at');
+            return $latest ?? '0000-00-00 00:00:00';
+        })->values();
 
         $this->showPartnerColumn = false;
 

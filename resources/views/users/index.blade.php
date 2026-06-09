@@ -44,13 +44,7 @@
     @endif
 </div>
 
-{{-- Info banner --}}
-<div class="info-banner" style="margin-bottom:18px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" width="15" height="15" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    <div style="font-size:12.5px;color:var(--blue)">
-        Users added here have access to the {{ $appName ?? config('app.name') }}. Assign roles carefully — Admin users have full access. Viewer users have read-only access.
-    </div>
-</div>
+{{-- Info banner hidden --}}
 
 
 <div class="tc">

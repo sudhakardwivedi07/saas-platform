@@ -84,9 +84,9 @@ class ClientController extends AccountBaseController
                 'clientPackage',
                 'package',
                 'quickbooksConnections',
-                'users' => fn($q) => $q->orderBy('id')->limit(1),
+                'users' => fn($q) => $q->orderBy('id')->limit(1)->with('quickbooksConnections'),
                 // managers covers existing clients assigned via pivot (company_id not changed)
-                'managers' => fn($q) => $q->whereHas('roles', fn($r) => $r->whereIn('name', ['client', 'client_admin'])),
+                'managers' => fn($q) => $q->whereHas('roles', fn($r) => $r->whereIn('name', ['client', 'client_admin']))->with('quickbooksConnections'),
             ])
             ->orderByDesc('created_at')
             ->get();
@@ -112,7 +112,7 @@ class ClientController extends AccountBaseController
                 'company.clientPackage',
                 'company.package',
                 // Load only managed companies that belong to this admin's portfolio
-                'managedCompanies' => fn($q) => $q->withoutGlobalScopes()->whereIn('companies.id', $subCompanyIdsArray),
+                'managedCompanies' => fn($q) => $q->withoutGlobalScopes()->whereIn('companies.id', $subCompanyIdsArray)->with('quickbooksConnections'),
             ])
             ->orderByDesc('created_at')
             ->get();

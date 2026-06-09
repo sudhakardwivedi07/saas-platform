@@ -34,15 +34,7 @@
     </div>
 </div>
 
-{{-- Info Banner --}}
-<div class="info-banner" style="margin-bottom:20px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    <div class="info-banner-txt">
-        <strong>How it works:</strong> For each client company, click <strong>Connect</strong> to link their accounting tool.
-        If you already have accountant access, you'll authenticate directly via OAuth. If you need access first, send an invite request
-        to your client — they'll grant you accountant access from their QuickBooks settings, then you can connect. Each company requires its own connection.
-    </div>
-</div>
+{{-- Info Banner hidden --}}
 
 {{-- Stats Cards --}}
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">

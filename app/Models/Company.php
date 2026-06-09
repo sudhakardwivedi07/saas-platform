@@ -131,7 +131,9 @@ class Company extends BaseModel
 
     public function quickbooksConnections(): HasMany
     {
-        return $this->hasMany(QuickBooksConnection::class);
+        // withoutGlobalScopes: the HasTenant scope on QuickBooksConnection would otherwise
+        // add WHERE company_id = [admin_company_id], hiding sub-company connections.
+        return $this->hasMany(QuickBooksConnection::class)->withoutGlobalScopes();
     }
 
     /** The SuperAdmin who created/onboarded this firm. */

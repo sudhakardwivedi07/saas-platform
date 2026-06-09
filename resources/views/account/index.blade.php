@@ -778,6 +778,98 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
 </div>
 @endif
 
+{{-- ── Payment History ──────────────────────────────────────────── --}}
+@if(!empty($payments) && $payments->count())
+<div style="margin-top:28px">
+    <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:14px">Payment History</div>
+
+    {{-- Filters --}}
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+        <div class="srch-wrap" style="min-width:220px">
+            <svg class="srch-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="phSearch" class="srch-inp" placeholder="Search payments…">
+        </div>
+
+        <select id="phStatusFilter" class="f-sel" style="height:34px;min-width:130px;font-size:13px">
+            <option value="">All Status</option>
+            <option value="complete">Complete</option>
+            <option value="failed">Failed</option>
+            <option value="pending">Pending</option>
+            <option value="refunded">Refunded</option>
+        </select>
+
+        <div class="dr-wrap" id="ph-dr">
+            <div class="dr-field" onclick="drOpen('ph-dr')">
+                <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <span class="dr-text" id="ph-dr-text">Start Date To End Date</span>
+                <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('ph-dr')" title="Clear date filter">&#x2715;</button>
+            </div>
+            <div class="dr-menu" id="ph-dr-menu">
+                <div class="dr-list">
+                    <div class="dr-item" onclick="drPickPreset('ph-dr','today')">Today</div>
+                    <div class="dr-item" onclick="drPickPreset('ph-dr','yesterday')">Yesterday</div>
+                    <div class="dr-item" onclick="drPickPreset('ph-dr','last7')">Last 7 days</div>
+                    <div class="dr-item" onclick="drPickPreset('ph-dr','last30')">Last 30 days</div>
+                    <div class="dr-item" onclick="drPickPreset('ph-dr','thisMonth')">This month</div>
+                    <div class="dr-item" onclick="drPickPreset('ph-dr','lastMonth')">Last month</div>
+                    <div class="dr-item" onclick="drPickPreset('ph-dr','thisYear')">This year</div>
+                </div>
+                <div class="dr-custom-row">
+                    <input type="date" id="ph-dr-from" class="dr-inp">
+                    <span style="color:var(--text-3);font-size:12px">–</span>
+                    <input type="date" id="ph-dr-to" class="dr-inp">
+                    <button class="dr-apply-btn" onclick="drApplyCustom('ph-dr')">Apply</button>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn btn-danger btn-sm" onclick="phReset()">Reset</button>
+    </div>
+
+    {{-- Table --}}
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;overflow:hidden">
+        <table id="ph-table" style="width:100%;border-collapse:collapse">
+            <thead>
+                <tr style="background:var(--bg-2);border-bottom:1.5px solid var(--border)">
+                    <th style="text-align:left;padding:10px 16px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3)">Plan</th>
+                    <th style="text-align:left;padding:10px 16px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3)">Billing Cycle</th>
+                    <th style="text-align:left;padding:10px 16px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3)">Amount</th>
+                    <th style="text-align:left;padding:10px 16px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3)">Status</th>
+                    <th style="text-align:left;padding:10px 16px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3)">Payment Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($payments as $ph)
+                @php
+                    $phStatus   = strtolower($ph->status ?? 'pending');
+                    $phBadge    = match($phStatus) {
+                        'complete'  => ['b-green',  'Complete'],
+                        'failed'    => ['b-red',    'Failed'],
+                        'refunded'  => ['b-orange', 'Refunded'],
+                        default     => ['b-gray',   'Pending'],
+                    };
+                    $phPlan     = $ph->subscription?->package?->name ?? '—';
+                    $phCycle    = ucfirst($ph->subscription?->billing_cycle ?? '—');
+                    $phDate     = $ph->paid_at ?? $ph->created_at;
+                @endphp
+                <tr style="border-bottom:1px solid var(--border)">
+                    <td style="padding:11px 16px;font-size:13px;color:var(--text-1);font-weight:500">{{ $phPlan }}</td>
+                    <td style="padding:11px 16px;font-size:13px;color:var(--text-2)">{{ $phCycle }}</td>
+                    <td style="padding:11px 16px;font-size:13px;color:var(--text-1);font-weight:600">${{ number_format((float)$ph->amount, 2) }} <span style="font-size:11px;color:var(--text-3);font-weight:400;text-transform:uppercase">{{ strtoupper($ph->currency ?? 'USD') }}</span></td>
+                    <td style="padding:11px 16px" data-search="{{ $phStatus }}">
+                        <span class="badge {{ $phBadge[0] }}">{{ $phBadge[1] }}</span>
+                    </td>
+                    <td style="padding:11px 16px;font-size:13px;color:var(--text-2)" data-date="{{ $phDate?->format('Y-m-d') ?? '' }}" data-order="{{ $phDate?->format('Y-m-d') ?? '' }}">
+                        {{ $phDate ? $phDate->format(active_date_format()) : '—' }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+
 </div>
 @endif {{-- /tab-subscription --}}
 
@@ -1211,11 +1303,35 @@ function _refreshAccountTab(tabId) {
                     }
                 }
 
+                // Tear down Payment History DataTable before swapping HTML
+                if (tabId === 'tab-subscription') {
+                    if (window.$ && $.fn.DataTable && $.fn.DataTable.isDataTable('#ph-table')) {
+                        try { $('#ph-table').DataTable().destroy(); phTable = null; } catch (ex) {}
+                    }
+                }
+
                 panel.innerHTML = fresh.innerHTML;
 
                 // Re-initialise tab-specific JS after new HTML is in the DOM
                 if (tabId === 'tab-activity' && typeof initActivityTable === 'function') {
                     initActivityTable();
+                }
+
+                // Re-initialise Payment History DataTable
+                if (tabId === 'tab-subscription' && document.getElementById('ph-table') && window.$) {
+                    phTable = $('#ph-table').DataTable({
+                        paging: true, pageLength: 5, lengthChange: false,
+                        searching: true, ordering: true, info: true,
+                        dom: '<"dt-tscroll"t><"dt-footer"ip>',
+                        order: [[4, 'desc']],
+                        columnDefs: [{ orderable: false, targets: [3] }],
+                        language: { info: 'Showing _START_ to _END_ of _TOTAL_ payments', infoEmpty: 'No payment records found', paginate: { previous: 'Previous', next: 'Next' }, emptyTable: 'No payment records found.' },
+                    });
+                    _drCbs['ph-dr'] = function () { if (phTable) phTable.draw(); };
+                    var phS = document.getElementById('phSearch');
+                    if (phS) phS.addEventListener('input', function () { if (phTable) phTable.search(this.value).draw(); });
+                    var phSt = document.getElementById('phStatusFilter');
+                    if (phSt) phSt.addEventListener('change', function () { if (phTable) phTable.column(3).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw(); });
                 }
             }
             panel.style.opacity       = '';
@@ -1436,6 +1552,66 @@ async function subReactivate() {
         Swal.fire({ icon: 'error', title: 'Network Error', text: 'Could not reach the server. Please try again.' });
     }
 }
+
+// ── Payment History DataTable ──────────────────────────────────────────────────
+var phTable = null;
+
+$(document).ready(function () {
+    if (!document.getElementById('ph-table')) return;
+
+    phTable = $('#ph-table').DataTable({
+        paging:       true,
+        pageLength:   5,
+        lengthChange: false,
+        searching:    true,
+        ordering:     true,
+        info:         true,
+        dom:          '<"dt-tscroll"t><"dt-footer"ip>',
+        order:        [[4, 'desc']],
+        columnDefs:   [{ orderable: false, targets: [3] }],
+        language: {
+            info:       'Showing _START_ to _END_ of _TOTAL_ payments',
+            infoEmpty:  'No payment records found',
+            paginate:   { previous: 'Previous', next: 'Next' },
+            emptyTable: 'No payment records found.',
+        },
+    });
+
+    // Date-range filter on Payment Date column (index 4)
+    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+        if (!settings.nTable || settings.nTable.id !== 'ph-table') return true;
+        var from = document.getElementById('ph-dr-from') ? document.getElementById('ph-dr-from').value : '';
+        var to   = document.getElementById('ph-dr-to')   ? document.getElementById('ph-dr-to').value   : '';
+        if (!from && !to) return true;
+        var row     = phTable.row(dataIndex).node();
+        var dateVal = row ? (row.querySelector('td[data-date]')?.getAttribute('data-date') || '') : '';
+        if (!dateVal) return false;
+        if (from && dateVal < from) return false;
+        if (to   && dateVal > to)   return false;
+        return true;
+    });
+
+    _drCbs['ph-dr'] = function () { if (phTable) phTable.draw(); };
+
+    // Search input
+    var phSearchEl = document.getElementById('phSearch');
+    if (phSearchEl) phSearchEl.addEventListener('input', function () {
+        if (phTable) phTable.search(this.value).draw();
+    });
+
+    // Status filter
+    var phStatusEl = document.getElementById('phStatusFilter');
+    if (phStatusEl) phStatusEl.addEventListener('change', function () {
+        if (phTable) phTable.column(3).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+    });
+});
+
+window.phReset = function () {
+    document.getElementById('phSearch').value       = '';
+    document.getElementById('phStatusFilter').value = '';
+    drClear('ph-dr');
+    if (phTable) phTable.search('').columns().search('').draw();
+};
 @endif
 
 // ── Admin Date Format (Branding tab) ─────────────────────────────────────────

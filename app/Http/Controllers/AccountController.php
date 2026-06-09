@@ -73,6 +73,12 @@ class AccountController extends AccountBaseController
         $this->subscription = $company?->subscription;
         $this->packages     = Package::active()->orderBy('sort')->get();
 
+        // Payment history for the subscription tab
+        $this->payments = \App\Models\Payment::where('company_id', $companyId)
+            ->with('subscription.package')
+            ->orderByDesc('paid_at')
+            ->get();
+
         // Lazy-sync payment method from Stripe for subscriptions that pre-date
         // the pm_* columns (i.e. pm_last4 is null but a Stripe sub ID exists).
         $this->syncPaymentMethodIfMissing($this->subscription);

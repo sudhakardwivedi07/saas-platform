@@ -87,12 +87,14 @@ class SubscriptionController extends AccountBaseController
 
     public function success()
     {
-        return redirect()->route('billing.index')->with('payment_success', true);
+        return redirect()->route('account.index', ['tab' => 'subscription'])
+            ->with('payment_success', true);
     }
 
     public function cancel()
     {
-        return redirect()->route('billing.index')->with('info', 'Checkout was cancelled.');
+        return redirect()->route('account.index', ['tab' => 'subscription'])
+            ->with('info', 'Checkout was cancelled.');
     }
 
     public function cancelSubscription(Request $request)

@@ -596,7 +596,7 @@
             showCancelButton:  true,
             cancelButtonText:  'Close',
             confirmButtonColor: '#f06b25',
-        }).then(result => { if (result.isConfirmed) window.location.href = '{{ route("my-account") }}'; });
+        }).then(result => { if (result.isConfirmed) window.location.href = '{{ route("account.index") }}'; });
     };
 
     window.piDoGenerate = function () {
@@ -636,7 +636,7 @@
                     showCancelButton:  true,
                     cancelButtonText:  'Close',
                     confirmButtonColor: '#f06b25',
-                }).then(result => { if (result.isConfirmed) window.location.href = '{{ route("my-account") }}'; });
+                }).then(result => { if (result.isConfirmed) window.location.href = '{{ route("account.index") }}'; });
             } else {
                 Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Failed to generate insights.' });
                 piSyncHeaderBtn();

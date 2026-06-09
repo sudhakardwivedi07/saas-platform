@@ -784,13 +784,13 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
     <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:14px">Payment History</div>
 
     {{-- Filters --}}
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-        <div class="srch-wrap" style="min-width:220px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:nowrap;margin-bottom:14px">
+        <div class="srch-wrap" style="flex:1;min-width:0;max-width:260px">
             <svg class="srch-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             <input type="text" id="phSearch" class="srch-inp" placeholder="Search payments…">
         </div>
 
-        <select id="phStatusFilter" class="f-sel" style="height:34px;min-width:130px;font-size:13px">
+        <select id="phStatusFilter" class="f-sel" style="width:auto;height:34px;min-width:130px;font-size:13px">
             <option value="">All Status</option>
             <option value="complete">Complete</option>
             <option value="failed">Failed</option>

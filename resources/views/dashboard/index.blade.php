@@ -512,7 +512,7 @@
         @if($modalClients->isNotEmpty())
         <button class="btn btn-primary btn-sm" onclick="openViewClientModal()" style="display:inline-flex;align-items:center;gap:6px">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-            View Client Portal
+            View as Client
         </button>
         @endif
         @if($canAddClient)
@@ -721,7 +721,7 @@
     <div style="background:#fff;border-radius:14px;width:100%;max-width:520px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.18);overflow:hidden">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 16px;border-bottom:1px solid var(--border)">
             <div>
-                <div style="font-size:15px;font-weight:700;color:var(--text-1)">View Client Portal</div>
+                <div style="font-size:15px;font-weight:700;color:var(--text-1)">View as Client</div>
                 <div style="font-size:12.5px;color:var(--text-3);margin-top:2px">Select a client to preview their portal experience</div>
             </div>
             <button onclick="closeViewClientModal()" style="border:none;background:none;cursor:pointer;color:var(--text-3);padding:4px;line-height:1;border-radius:6px" title="Close">

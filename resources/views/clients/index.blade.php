@@ -130,7 +130,7 @@
                     $lastActivity = $co?->last_active_at ?? $client->updated_at ?? $client->created_at;
                 @endphp
                 <tr data-search="{{ strtolower($client->name . ' ' . $client->email . ' ' . $status) }}" data-status="{{ $status }}">
-                    <td data-date="{{ $client->created_at?->format('Y-m-d') ?? '' }}">
+                    <td data-date="{{ $client->created_at?->format('Y-m-d') ?? '' }}" data-order="{{ $client->created_at?->timestamp ?? 0 }}">
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:34px;height:34px;border-radius:9px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:-.2px">{{ $initials }}</div>
                             <div>
@@ -176,7 +176,7 @@
                                     @csrf
                                     <button type="submit" class="dm-item" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                                        Login as Client
+                                        View as Client
                                     </button>
                                 </form>
                                 <div class="dm-divider"></div>
@@ -291,7 +291,7 @@
                               . strtoupper(substr(strstr($company->company_name, ' ') ?: '  ', 1, 1));
                 @endphp
                 <tr data-created="{{ $company->created_at->format('Y-m-d') }}" data-status="{{ $displayStatus }}">
-                    <td>
+                    <td data-order="{{ $company->created_at->timestamp }}">
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:34px;height:34px;border-radius:9px;background:{{ $avatarColor }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">{{ $initials }}</div>
                             <div>
@@ -848,6 +848,7 @@ $(document).ready(function() {
     var clientTable = $('#clients-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
+        order: [[0, 'desc']],
         columnDefs: [{ orderable: false, targets: [2, 5] }],
         language: {
             info: 'Showing _START_–_END_ of _TOTAL_ clients',
@@ -872,6 +873,7 @@ $(document).ready(function() {
     var coTable = $('#companies-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
+        order: [[0, 'desc']],
         columnDefs: [{ orderable: false, targets: [5] }],
         language: {
             info: 'Showing _START_–_END_ of _TOTAL_ companies',

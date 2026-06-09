@@ -93,7 +93,9 @@ class User extends Authenticatable
 
     public function quickbooksConnections(): HasMany
     {
-        return $this->hasMany(QuickBooksConnection::class);
+        // withoutGlobalScopes: HasTenant on QuickBooksConnection adds WHERE company_id = [admin_company_id],
+        // which hides connections belonging to sub-companies (client companies).
+        return $this->hasMany(QuickBooksConnection::class)->withoutGlobalScopes();
     }
 
     public function managedCompanies(): \Illuminate\Database\Eloquent\Relations\BelongsToMany

@@ -177,7 +177,7 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
         <button type="submit" class="login-btn">Sign In</button>
 </form>
  
-    @if($setting?->allow_registration)
+    @if($setting?->allow_registration && empty($tenantCompany))
 <div class="login-divider">
             Don't have an account? <a href="{{ route('register') }}">Create one free</a>
 </div>

@@ -184,6 +184,7 @@ Route::middleware(['auth'])->group(function () {
 
         // Login Page customisation
         Route::post('/login-page', [SettingsController::class, 'updateLoginPage'])->name('login-page.update');
+        Route::post('/forgot-password-page', [SettingsController::class, 'updateForgotPasswordPage'])->name('forgot-password-page.update');
 
         // QuickBooks Settings
         Route::post('/quickbooks-settings', [SettingsController::class, 'updateQuickbooksSettings'])->name('quickbooks-settings.update');

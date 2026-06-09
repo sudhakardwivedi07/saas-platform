@@ -121,6 +121,20 @@ class SettingsController extends AccountBaseController
         return Reply::success('Login page settings saved.');
     }
 
+    public function updateForgotPasswordPage(Request $request)
+    {
+        abort_403(!auth()->user()->can('edit_branding'));
+        $request->validate([
+            'fp_heading'    => 'nullable|string|max:255',
+            'fp_subheading' => 'nullable|string|max:255',
+        ]);
+        $branding = CompanyBranding::firstOrNew(['company_id' => company()->id]);
+        $branding->fill($request->only('fp_heading', 'fp_subheading'));
+        $branding->save();
+        cache()->forget('branding_parent_' . company()->id);
+        return Reply::success('Forgot password page settings saved.');
+    }
+
     public function updateQuickbooksSettings(Request $request)
     {
         abort_403(!auth()->user()->can('edit_settings'));

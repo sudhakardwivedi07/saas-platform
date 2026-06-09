@@ -33,6 +33,8 @@ class CompanyBranding extends BaseModel
         'login_bg_color_to',
         'login_card_bg',
         'login_btn_color',
+        'fp_heading',
+        'fp_subheading',
     ];
 
     // ─── Accessors ─────────────────────────────────────────────────────────────

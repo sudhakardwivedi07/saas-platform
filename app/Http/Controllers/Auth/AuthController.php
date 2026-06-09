@@ -11,6 +11,7 @@ use App\Models\GlobalSetting;
 use App\Models\SuperAdmin\Package;
 use App\Models\SuperAdmin\Subscription;
 use App\Models\User;
+use App\Services\EmailService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -382,11 +383,48 @@ class AuthController extends Controller
     public function sendResetLink(Request $request)
     {
         $request->validate(['email' => 'required|email']);
-        $status = Password::sendResetLink($request->only('email'));
 
-        return $status === Password::RESET_LINK_SENT
-            ? back()->with('success', 'Password reset link sent to your email.')
-            : back()->withErrors(['email' => __($status)]);
+        // Always return the same success message to avoid user enumeration.
+        $successMsg = 'If that email address is registered, you will receive a reset link shortly.';
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return back()->with('success', $successMsg);
+        }
+
+        // Generate a password-reset token via Laravel's built-in broker
+        // (stores hashed token in password_reset_tokens table as usual).
+        $token = Password::broker()->createToken($user);
+
+        // Build the reset URL — respects tenant domain when on a tenant request.
+        $resetUrl = url(route('password.reset', [
+            'token' => $token,
+            'email' => $user->email,
+        ], false));
+
+        // Resolve company context for SMTP selection and template lookup.
+        $company   = $user->company ?? company();
+        $companyId = $company?->id;
+        $appName   = $company?->app_name ?? global_setting()?->global_app_name ?? config('app.name');
+
+        $sent = app(EmailService::class)->send(
+            toEmail:      $user->email,
+            templateSlug: 'password_reset',
+            placeholders: [
+                '{{name}}'      => $user->name,
+                '{{app_name}}' => $appName,
+                '{{reset_url}}' => $resetUrl,
+            ],
+            companyId: $companyId
+        );
+
+        if (!$sent) {
+            // EmailService already logs the failure; show a generic error.
+            return back()->withErrors(['email' => 'Unable to send reset email. Please contact support.']);
+        }
+
+        return back()->with('success', $successMsg);
     }
 
     public function showResetPassword(Request $request, string $token)

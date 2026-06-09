@@ -680,42 +680,45 @@
             <td style="color:#64748b;">${companyName || '—'}</td>
             <td data-search="processing"><span class="badge badge-processing" id="pi-badge-${id}">Processing</span></td>
             <td><div class="pi-actions"><button class="pi-btn-view" disabled>Processing…</button></div></td>`;
-        table.row.add(tr).draw(false);
+        table.row.add(tr).draw();
         piSyncHeaderBtn();
     }
 
     // ── Mark ready ────────────────────────────────────────────────────────────
     function markReady(id, encId) {
+        const viewUrl = `/partner-insights/${encId}/view`;
         const row = document.getElementById('pi-row-' + id);
-        if (!row) return;
-        const badge = document.getElementById('pi-badge-' + id);
-        if (badge) { badge.className = 'badge badge-draft'; badge.textContent = 'Draft'; }
-        row.dataset.status = 'draft';
-        if (row.cells[5]) row.cells[5].setAttribute('data-search', 'draft');
 
-        const viewUrl  = `/partner-insights/${encId}/view`;
-        const nameCell = row.querySelector('.pi-name-cell span[style]');
-        if (nameCell) {
-            const a = document.createElement('a');
-            a.href = viewUrl; a.className = 'pi-name-link'; a.textContent = nameCell.textContent;
-            nameCell.replaceWith(a);
+        if (row) {
+            const badge = document.getElementById('pi-badge-' + id);
+            if (badge) { badge.className = 'badge badge-draft'; badge.textContent = 'Draft'; }
+            row.dataset.status = 'draft';
+            if (row.cells[5]) row.cells[5].setAttribute('data-search', 'draft');
+
+            const nameCell = row.querySelector('.pi-name-cell span[style]');
+            if (nameCell) {
+                const a = document.createElement('a');
+                a.href = viewUrl; a.className = 'pi-name-link'; a.textContent = nameCell.textContent;
+                nameCell.replaceWith(a);
+            }
+            const actions = row.querySelector('.pi-actions');
+            if (actions) {
+                const userId   = row.dataset.userId || '';
+                const portalBtn = userId
+                    ? `<form method="POST" action="/clients/${userId}/login-as" style="display:inline;"><input type="hidden" name="_token" value="${CSRF}"><button type="submit" class="pi-btn-portal">View as Client</button></form>`
+                    : '';
+                actions.innerHTML = `<a href="${viewUrl}" class="pi-btn-view">View Insights</a>${portalBtn}`;
+            }
+            if (table) table.row(row).invalidate().draw(false);
         }
-        const actions = row.querySelector('.pi-actions');
-        if (actions) {
-            const userId   = row.dataset.userId || '';
-            const portalBtn = userId
-                ? `<form method="POST" action="/clients/${userId}/login-as" style="display:inline;"><input type="hidden" name="_token" value="${CSRF}"><button type="submit" class="pi-btn-portal">View as Client</button></form>`
-                : '';
-            actions.innerHTML = `<a href="${viewUrl}" class="pi-btn-view">View Insights</a>${portalBtn}`;
-        }
-        if (table) table.row(row).invalidate().draw(false);
+
         piUpdateGenerateBtn();
         piSyncHeaderBtn();
 
         const compName = row?.cells[4]?.textContent?.trim() || '';
         Swal.fire({
             title: 'Insight Generated!',
-            html:  `<p style="color:#6b7280;font-size:14px;line-height:1.6">Your CFO level Financial Insight is ready to view for <strong>"${compName}"</strong>.</p>`,
+            html:  `<p style="color:#6b7280;font-size:14px;line-height:1.6">Your CFO level Financial Insight is ready to view${compName ? ` for <strong>"${compName}"</strong>` : ''}.</p>`,
             icon: 'success', confirmButtonText: 'View Insight', showCancelButton: false, confirmButtonColor: '#f06b25',
         }).then(result => { if (result.isConfirmed) window.location.href = viewUrl; });
     }

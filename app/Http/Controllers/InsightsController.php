@@ -81,7 +81,10 @@ class InsightsController extends AccountBaseController
                 }
             })
             ->orderByDesc('created_at')
-            ->get();
+            ->get()
+            ->groupBy(fn($r) => $r->report_name . '||' . $r->company_id)
+            ->map(fn($group) => $group->sortByDesc('version')->first())
+            ->values();
 
         // Monthly usage for limit enforcement (same scope as the reports list above)
         $this->monthlyUsed  = $this->countMonthlyInsights($user->id, (int) $selectedCompanyId, (int) $user->company_id);

@@ -98,8 +98,8 @@
                     <th>Client</th>
                     <th style="text-align:center">Companies</th>
                     <th style="text-align:center">QB Coverage</th>
-                    <th style="text-align:center">Insights Used</th>
-                    <th style="text-align:center">Remaining</th>
+                    <th style="text-align:center;">Insights Used</th>
+                    <th style="text-align:center;display:none">Remaining</th>
                     <th style="width:48px"></th>
                 </tr>
             </thead>
@@ -109,12 +109,18 @@
                     $initials     = strtoupper(substr($client->name, 0, 1)) . strtoupper(substr(strstr($client->name, ' ') ?: ' ', 1, 1));
                     $status       = $client->status ?? 'active';
                     $co           = $client->company;
-                    $qbConnected  = $co && $co->quickbooksConnections->where('is_active', true)->isNotEmpty() ? 1 : 0;
-                    $qbTotal      = $co ? 1 : 0;
                     // Count unique companies this client owns: primary company + pivot-linked companies
                     $_managedIds  = $client->managedCompanies->pluck('id');
                     $_primaryCounted = $client->company_id && $_managedIds->contains($client->company_id);
                     $companiesCount = $_managedIds->count() + ($client->company_id && !$_primaryCounted ? 1 : 0);
+                    // QB coverage across ALL managed companies (connections stored by company_id or user_id)
+                    $qbTotal     = $companiesCount;
+                    $qbConnected = $client->managedCompanies->filter(
+                        fn($c) => $c->quickbooksConnections->where('is_active', true)->isNotEmpty()
+                    )->count();
+                    if ($co && !$_primaryCounted && $co->quickbooksConnections->where('is_active', true)->isNotEmpty()) {
+                        $qbConnected++;
+                    }
                     $plan         = $co ? ($co->clientPackage ?? $co->package) : null;
                     $insightsUsed = $co?->insights_used ?? 0;
                     $maxInsights  = $plan
@@ -146,8 +152,8 @@
                             <span style="color:var(--text-3);font-size:13px">—</span>
                         @endif
                     </td>
-                    <td style="text-align:center;font-size:13px;font-weight:500;color:var(--text-1)">{{ $insightsUsed }}</td>
-                    <td style="text-align:center;font-size:13px;font-weight:500;color:{{ $remaining === 0 ? 'var(--red)' : 'var(--text-1)' }}">
+                    <td style="text-align:center;font-size:13px;font-weight:500;color:var(--text-1);">{{ $insightsUsed }}</td>
+                    <td style="text-align:center;font-size:13px;font-weight:500;color:{{ $remaining === 0 ? 'var(--red)' : 'var(--text-1)' }};display:none">
                         @if($remaining === null)
                             <span style="color:var(--text-3)">—</span>
                         @else
@@ -256,8 +262,8 @@
                     <th>Company</th>
                     <th>Client</th>
                     <th style="text-align:center">QB</th>
-                    <th style="text-align:center">Insights Used</th>
-                    <th style="text-align:center">Remaining</th>
+                    <th style="text-align:center;">Insights Used</th>
+                    <th style="text-align:center;display:none">Remaining</th>
                     <th style="width:48px"></th>
                 </tr>
             </thead>
@@ -265,7 +271,9 @@
                 @forelse($companies as $company)
                 @php
                     $owner        = $company->users->first() ?? $company->managers->first();
-                    $isQB         = $company->quickbooksConnections->where('is_active', true)->isNotEmpty();
+                    // QB connections may be stored by company_id or by user_id on the owner
+                    $isQB         = $company->quickbooksConnections->where('is_active', true)->isNotEmpty()
+                                 || ($owner && $owner->quickbooksConnections->where('is_active', true)->isNotEmpty());
                     $plan         = $company->clientPackage ?? $company->package;
                     $maxDocs      = $plan
                         ? ($plan->insights_per_month ?? $plan->max_insights_per_month ?? $plan->max_documents ?? null)
@@ -308,10 +316,10 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" width="17" height="17"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                         @endif
                     </td>
-                    <td style="text-align:center;font-size:13px;color:var(--text-1);font-weight:500">
+                    <td style="text-align:center;font-size:13px;color:var(--text-1);font-weight:500;">
                         {{ $insightsUsed }}
                     </td>
-                    <td style="text-align:center;font-size:13px;font-weight:600;color:{{ ($remaining !== null && $remaining === 0) ? 'var(--red)' : 'var(--text-1)' }}">
+                    <td style="text-align:center;font-size:13px;font-weight:600;color:{{ ($remaining !== null && $remaining === 0) ? 'var(--red)' : 'var(--text-1)' }};display:none">
                         @if($remaining === null)
                             <span style="color:var(--text-3);font-weight:500">—</span>
                         @else

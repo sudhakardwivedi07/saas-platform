@@ -253,7 +253,7 @@
     <h1>My Account</h1>
     <div class="ua-tabs">
         <button class="ua-tab active" data-tab="tab-account">Account Details</button>
-        <button class="ua-tab" data-tab="tab-support">Support</button>
+        <button class="ua-tab" data-tab="tab-support" style="display:none">Support</button>
     </div>
 </div>
 

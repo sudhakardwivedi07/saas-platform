@@ -137,12 +137,23 @@
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             Export
         </button>
-        <button id="piHeaderGenerateBtn" class="pi-btn-generate" onclick="piOpenGenerateModal()">
+        <button id="piHeaderGenerateBtn" class="pi-btn-generate" onclick="{{ $limitReached ?? false ? 'piShowLimitModal()' : 'piOpenGenerateModal()' }}"
+            @if($limitReached ?? false) title="Monthly insight limit reached" @endif>
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
             Generate New Insight
         </button>
     </div>
 </div>
+
+@if($limitReached ?? false)
+<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;align-items:center;gap:12px;">
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="2" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div>
+        <strong style="color:#b91c1c;font-size:14px;">Monthly insight limit reached</strong>
+        <p style="color:#991b1b;font-size:13px;margin:2px 0 0;">You have used all <strong>{{ $totalInsights }}</strong> insights for this month. Your limit resets on <strong>{{ now()->endOfMonth()->format(active_date_format()) }}</strong>. Please upgrade your plan for more insights.</p>
+    </div>
+</div>
+@endif
 
 {{-- Stats Row --}}
 <div class="pi-stats-row">
@@ -316,7 +327,7 @@
                                     @if($report->user_id)
                                     <form method="POST" action="{{ route('clients.login-as', $report->user_id) }}" style="display:inline;">
                                         @csrf
-                                        <button type="submit" class="pi-btn-portal">View Client Portal</button>
+                                        <button type="submit" class="pi-btn-portal">View as Client</button>
                                     </form>
                                     @endif
                                 @endif
@@ -576,6 +587,18 @@
         .catch(() => { compSel.innerHTML = '<option value="">Failed to load companies</option>'; compSel.disabled = false; });
     };
 
+    window.piShowLimitModal = function () {
+        Swal.fire({
+            icon:  'warning',
+            title: 'Monthly Limit Reached',
+            html:  `<p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0">You have used all <strong>{{ $totalInsights }}</strong> insights for this billing cycle. Your limit resets on <strong>{{ now()->endOfMonth()->format(active_date_format()) }}</strong>.<br><br>Please upgrade your plan to generate more insights.</p>`,
+            confirmButtonText: 'Upgrade Plan',
+            showCancelButton:  true,
+            cancelButtonText:  'Close',
+            confirmButtonColor: '#f06b25',
+        }).then(result => { if (result.isConfirmed) window.location.href = '{{ route("account.index") }}'; });
+    };
+
     window.piDoGenerate = function () {
         const clientId    = document.getElementById('piClientSelect').value;
         const companyId   = document.getElementById('piCompanySelect').value;
@@ -603,6 +626,17 @@
                 Swal.close();
                 prependRow(data.report_id, data.report_name, data.client_name || clientName, data.company_name || companyName, companyId, data.user_id || '');
                 pollStatus(data.report_id);
+            } else if (data.limit_reached) {
+                piSyncHeaderBtn();
+                Swal.fire({
+                    icon:  'warning',
+                    title: 'Monthly Limit Reached',
+                    html:  `<p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0">${data.message}</p>`,
+                    confirmButtonText: 'Upgrade Plan',
+                    showCancelButton:  true,
+                    cancelButtonText:  'Close',
+                    confirmButtonColor: '#f06b25',
+                }).then(result => { if (result.isConfirmed) window.location.href = '{{ route("account.index") }}'; });
             } else {
                 Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Failed to generate insights.' });
                 piSyncHeaderBtn();
@@ -670,7 +704,7 @@
         if (actions) {
             const userId   = row.dataset.userId || '';
             const portalBtn = userId
-                ? `<form method="POST" action="/clients/${userId}/login-as" style="display:inline;"><input type="hidden" name="_token" value="${CSRF}"><button type="submit" class="pi-btn-portal">View Client Portal</button></form>`
+                ? `<form method="POST" action="/clients/${userId}/login-as" style="display:inline;"><input type="hidden" name="_token" value="${CSRF}"><button type="submit" class="pi-btn-portal">View as Client</button></form>`
                 : '';
             actions.innerHTML = `<a href="${viewUrl}" class="pi-btn-view">View Insights</a>${portalBtn}`;
         }

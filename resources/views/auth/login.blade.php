@@ -180,7 +180,7 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
     @if($setting?->allow_registration && empty($tenantCompany))
 <div class="login-divider">
             Don't have an account? <a href="{{ route('register') }}">Create one free</a>
-</div>
+</div> -->
     @endif
 </div>
 

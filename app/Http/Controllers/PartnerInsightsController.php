@@ -37,13 +37,16 @@ class PartnerInsightsController extends AccountBaseController
     {
         $subCompanyIds = $this->allClientCompanyIds();
 
-        // All reports for those sub-companies (not firm reports)
+        // All reports for those sub-companies (not firm reports) — latest version per insight only
         $this->reports = Report::withTrashed()
             ->with(['user', 'company'])
             ->whereIn('company_id', $subCompanyIds)
             ->where('is_firm_report', false)
             ->orderByDesc('created_at')
-            ->get();
+            ->get()
+            ->groupBy(fn($r) => $r->report_name . '||' . $r->company_id)
+            ->map(fn($group) => $group->sortByDesc('version')->first())
+            ->values();
 
         // Billing-cycle usage: only count original AI-generated reports (not version copies)
         $cycleUsed = Report::whereIn('company_id', $subCompanyIds)

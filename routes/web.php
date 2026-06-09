@@ -263,6 +263,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{id}/update-content',        [InsightsController::class, 'updateContent'])->name('update-content');
         Route::get('/{id}/preview',                [InsightsController::class, 'previewPdf'])->name('preview');
         Route::get('/{id}/export-pdf',             [InsightsController::class, 'exportPdf'])->name('export-pdf');
+        Route::get('/{id}/versions',               [InsightsController::class, 'getVersions'])->name('versions');
         Route::get('/{id}/download',               [InsightsController::class, 'download'])->name('download');
         Route::delete('/{id}',                     [InsightsController::class, 'destroy'])->name('destroy');
         Route::get('/delete-all',                  [InsightsController::class, 'deleteAllReports'])->name('delete-all');
@@ -281,6 +282,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{id}/publish',               [PartnerInsightsController::class, 'publish'])->name('publish');
         Route::get('/{id}/preview',                [PartnerInsightsController::class, 'previewPdf'])->name('preview');
         Route::get('/{id}/export-pdf',             [PartnerInsightsController::class, 'exportPdf'])->name('export-pdf');
+        Route::get('/{id}/versions',               [PartnerInsightsController::class, 'getVersions'])->name('versions');
         Route::get('/{id}/download',               [PartnerInsightsController::class, 'download'])->name('download');
         Route::delete('/{id}',                     [PartnerInsightsController::class, 'destroy'])->name('destroy');
     });

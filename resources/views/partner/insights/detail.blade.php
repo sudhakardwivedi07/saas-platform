@@ -84,6 +84,23 @@
 
 @keyframes rdSpin { to { transform: rotate(360deg); } }
 
+/* ── Version dropdown ────────────────────────────────────────── */
+.rd-version-wrap { position:relative;display:inline-flex;align-items:center; }
+.rd-version-btn { display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 10px 0 8px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:5px;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;white-space:nowrap;transition:all .15s;outline:none; }
+.rd-version-btn:hover,.rd-version-btn.open { background:#e2e8f0;color:#475569; }
+.rd-version-btn .rd-vchev { transition:transform .2s; }
+.rd-version-btn.open .rd-vchev { transform:rotate(180deg); }
+.rd-version-menu { position:absolute;top:calc(100% + 6px);left:0;min-width:220px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.13);z-index:600;overflow:hidden; }
+.rd-version-menu-inner { max-height:270px;overflow-y:auto; }
+.rd-version-item { display:flex;align-items:center;justify-content:space-between;padding:9px 14px;font-size:13px;color:#374151;cursor:pointer;transition:background .1s;text-decoration:none;gap:10px; }
+.rd-version-item:hover { background:#f8fafc;text-decoration:none;color:#1a202c; }
+.rd-version-item.rd-vi-current { background:#eff6ff;color:#1d4ed8;font-weight:600;pointer-events:none; }
+.rd-vi-left { display:flex;align-items:center;gap:8px; }
+.rd-vi-badge { padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600; }
+.rd-vi-badge.draft { background:#fef3c7;color:#92400e; }
+.rd-vi-badge.published { background:#d1fae5;color:#065f46; }
+.rd-vi-date { font-size:11.5px;color:#94a3b8; }
+
 /* ── Edit mode content area ──────────────────────────────────── */
 .edit-mode-active .insight-slider-content[contenteditable] {
     border:2px solid #f59e0b;
@@ -155,7 +172,17 @@
                 </div>
                 <div class="rd-meta-item">
                     <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#94a3b8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5l5 5v13a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
-                    <span id="rdVersionBadge" style="font-size:13px;color:#64748b;font-weight:500;">v{{ $report->version ?? 1 }}</span>
+                    <div class="rd-version-wrap" id="rdVersionWrap">
+                        <button class="rd-version-btn" id="rdVersionBtn" onclick="rdToggleVersionDropdown(event)">
+                            <span id="rdVersionBadge">v{{ $report->version ?? 1 }}</span>
+                            <svg class="rd-vchev" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="rd-version-menu" id="rdVersionMenu" style="display:none;">
+                            <div class="rd-version-menu-inner" id="rdVersionList">
+                                <div style="padding:12px 14px;font-size:12.5px;color:#94a3b8;">Loading versions…</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="rd-meta-item">
                     <span class="rd-publish-badge {{ $report->publish_status ?? 'draft' }}" id="rdPublishBadge">
@@ -797,6 +824,78 @@
             return html+'</tbody></table></div>';
         });
     }
+}());
+
+// ── Version dropdown ──────────────────────────────────────────────────────
+(function () {
+    const REPORT_ID    = {{ $report->id }};
+    const CURRENT_ID   = REPORT_ID;
+    const VERSIONS_URL = '/partner-insights/' + REPORT_ID + '/versions';
+    let versionsLoaded = false;
+
+    window.rdToggleVersionDropdown = function (e) {
+        e && e.stopPropagation();
+        const btn  = document.getElementById('rdVersionBtn');
+        const menu = document.getElementById('rdVersionMenu');
+        const open = menu.style.display !== 'none';
+
+        if (open) {
+            menu.style.display = 'none';
+            btn.classList.remove('open');
+        } else {
+            menu.style.display = 'block';
+            btn.classList.add('open');
+            if (!versionsLoaded) loadVersions();
+        }
+    };
+
+    function loadVersions() {
+        fetch(VERSIONS_URL, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.json())
+            .then(resp => {
+                versionsLoaded = true;
+                if (resp.status === 'success' && resp.versions && resp.versions.length) {
+                    renderVersions(resp.versions);
+                } else {
+                    document.getElementById('rdVersionList').innerHTML =
+                        '<div style="padding:12px 14px;font-size:12.5px;color:#94a3b8;">No versions found.</div>';
+                }
+            })
+            .catch(() => {
+                document.getElementById('rdVersionList').innerHTML =
+                    '<div style="padding:12px 14px;font-size:12.5px;color:#e53e3e;">Failed to load versions.</div>';
+            });
+    }
+
+    function renderVersions(versions) {
+        const list = document.getElementById('rdVersionList');
+        list.innerHTML = versions.map(v => {
+            const isCurrent = v.id === CURRENT_ID;
+            const label     = v.publish_status === 'published' ? 'Published' : 'Draft';
+            const badgeCls  = v.publish_status === 'published' ? 'published' : 'draft';
+            const href      = '/partner-insights/' + v.encrypted_id + '/view';
+            return `<a href="${isCurrent ? '#' : href}"
+                       class="rd-version-item${isCurrent ? ' rd-vi-current' : ''}"
+                       onclick="${isCurrent ? 'return false;' : ''}">
+                        <div class="rd-vi-left">
+                            <span style="font-weight:600;">v${v.version}</span>
+                            <span class="rd-vi-badge ${badgeCls}">${label}</span>
+                        </div>
+                        <span class="rd-vi-date">${v.created_at}</span>
+                    </a>`;
+        }).join('');
+    }
+
+    // Close when clicking outside
+    document.addEventListener('click', function (e) {
+        const wrap = document.getElementById('rdVersionWrap');
+        const menu = document.getElementById('rdVersionMenu');
+        const btn  = document.getElementById('rdVersionBtn');
+        if (wrap && !wrap.contains(e.target) && menu && menu.style.display !== 'none') {
+            menu.style.display = 'none';
+            btn && btn.classList.remove('open');
+        }
+    });
 }());
 </script>
 @endpush

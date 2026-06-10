@@ -254,7 +254,7 @@ class QuickBooksController extends AccountBaseController
             ->onQueue('quickbooks');
 
         return Reply::successWithData('Sync job dispatched. Results will appear shortly.', [
-            'last_synced_at' => $connection->last_synced_at->format('M j, Y'),
+            'last_synced_at' => $connection->last_synced_at->format(active_date_format()),
         ]);
     }
 
@@ -351,7 +351,7 @@ class QuickBooksController extends AccountBaseController
             $service->refreshTokenIfNeeded();
             $connection->refresh();
             return Reply::successWithData('Token refreshed successfully!', [
-                'access_token_expires_at' => $connection->access_token_expires_at->format('M d, Y h:i A'),
+                'access_token_expires_at' => $connection->access_token_expires_at->format(active_date_format() . ' h:i A'),
             ]);
         } catch (\Throwable $e) {
             Log::error('QuickBooks user refresh token error: ' . $e->getMessage());

@@ -507,7 +507,7 @@
         </div>
         <span style="font-size:12px;color:var(--text-3)">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="display:inline-block;vertical-align:middle;margin-right:3px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Last updated: {{ now()->format('M j, Y · g:i A') }}
+            Last updated: {{ now()->format(active_date_format() . ' · g:i A') }}
         </span>
         @if($modalClients->isNotEmpty())
         <button class="btn btn-primary btn-sm" onclick="openViewClientModal()" style="display:inline-flex;align-items:center;gap:6px">

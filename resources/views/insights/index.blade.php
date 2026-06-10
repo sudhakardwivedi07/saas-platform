@@ -489,6 +489,7 @@
             @endif
         </div>
 
+        @unless(session('impersonating_client_original_id'))
         <h3 style="font-size:18px;font-weight:600;color:#1a202c;margin:24px 0 16px 0;">
             {{ $qbConnection ? 'Generate your first insights' : 'Access your first insights' }}
         </h3>
@@ -529,6 +530,7 @@
                 @endif
             </div>
         </div>
+        @endunless
 
         <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e5e7eb;text-align:center;">
             <p style="color:#64748b;font-size:14px;margin:0;">

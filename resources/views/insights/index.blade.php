@@ -607,7 +607,11 @@
                             @if($isDeleted)
                                 <span class="badge danger">Deleted</span>
                             @elseif($report->isReady())
-                                <span class="badge success">Analyzed</span>
+                                @if(($report->publish_status ?? 'draft') === 'published')
+                                    <span class="badge success">Published</span>
+                                @else
+                                    <span class="badge warning">Draft</span>
+                                @endif
                             @elseif(strtolower($report->status) === 'failed')
                                 <span class="badge danger">Failed</span>
                             @elseif(in_array(strtolower($report->status), ['uploading','analyzing']))

@@ -658,7 +658,7 @@
     }
 
     // ── Prepend new row into DataTable ────────────────────────────────────────
-    // Columns: Insight Report | Generated | Version | Client | Company | Status | Action
+    // Columns: Insight Report | Generated | Client | Company | Status | Action
     function prependRow(id, name, clientName, companyName, companyId, userId) {
         if (!table) return;
         const today = new Date().toISOString().slice(0, 10);
@@ -672,8 +672,7 @@
                 <span class="pi-name-icon"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span>
                 <span style="font-weight:500;">${name || 'Generating…'}</span>
             </div></td>
-            <td style="color:#64748b;" data-date="" data-order="${today}">Just now</td>
-            <td style="color:#64748b;font-weight:500;">v1</td>
+            <td style="color:#64748b;" data-date="${today}" data-order="${today}">Just now</td>
             <td style="color:#64748b;">${clientName || '—'}</td>
             <td style="color:#64748b;">${companyName || '—'}</td>
             <td data-search="processing"><span class="badge badge-processing" id="pi-badge-${id}">Processing</span></td>
@@ -691,7 +690,7 @@
             const badge = document.getElementById('pi-badge-' + id);
             if (badge) { badge.className = 'badge badge-draft'; badge.textContent = 'Draft'; }
             row.dataset.status = 'draft';
-            if (row.cells[5]) row.cells[5].setAttribute('data-search', 'draft');
+            if (row.cells[4]) row.cells[4].setAttribute('data-search', 'draft');
 
             const nameCell = row.querySelector('.pi-name-cell span[style]');
             if (nameCell) {
@@ -713,7 +712,7 @@
         piUpdateGenerateBtn();
         piSyncHeaderBtn();
 
-        const compName = row?.cells[4]?.textContent?.trim() || '';
+        const compName = row?.cells[3]?.textContent?.trim() || '';
         Swal.fire({
             title: 'Insight Generated!',
             html:  `<p style="color:#6b7280;font-size:14px;line-height:1.6">Your CFO level Financial Insight is ready to view${compName ? ` for <strong>"${compName}"</strong>` : ''}.</p>`,
@@ -728,7 +727,7 @@
         const badge = document.getElementById('pi-badge-' + id);
         if (badge) { badge.className = 'badge badge-failed'; badge.textContent = 'Failed'; }
         row.dataset.status = 'failed';
-        if (row.cells[5]) row.cells[5].setAttribute('data-search', 'failed');
+        if (row.cells[4]) row.cells[4].setAttribute('data-search', 'failed');
         const vb = row.querySelector('.pi-btn-view');
         if (vb) { vb.textContent = 'Failed'; vb.style.background = '#9ca3af'; }
         if (table) table.row(row).invalidate().draw(false);

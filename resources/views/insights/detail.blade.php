@@ -256,6 +256,12 @@
                         </div>
                     </div>
                 </div>
+                <div class="report-meta-item">
+                    <span class="ci-vi-badge {{ ($report->publish_status ?? 'draft') === 'published' ? 'published' : 'draft' }}">
+                        <i class="fas fa-pencil-alt" style="font-size:10px;margin-right:3px;"></i>
+                        {{ ($report->publish_status ?? 'draft') === 'published' ? 'Published' : 'Draft' }}
+                    </span>
+                </div>
             </div>
         </div>
         @if($report->insight_json_data)

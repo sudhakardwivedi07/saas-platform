@@ -12,6 +12,7 @@ use App\Models\SuperAdmin\Subscription;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -686,37 +687,44 @@ class ClientController extends AccountBaseController
     {
         abort_403(!auth()->user()->hasAnyRole(['admin', 'manager']));
 
-        // Capture admin identity BEFORE switching auth, so it survives session migration.
-        $adminId    = (int) auth()->id();
-        $companyId  = company()?->id ?? auth()->user()->company_id;
+        $adminId   = (int) auth()->id();
+        $companyId = company()?->id ?? auth()->user()->company_id;
 
-        // Resolve the sub-company IDs that this admin owns
         $subCompanyIds = Company::withoutGlobalScopes()
             ->where('created_by', $companyId)
             ->pluck('id');
 
-        // Ensure the target user belongs to one of those sub-companies
         $client = User::whereIn('company_id', $subCompanyIds)->findOrFail($id);
 
-        // Switch auth to the client — this migrates the session (new session ID).
-        Auth::loginUsingId($client->id);
+        // ── Token-based "View as Client" ───────────────────────────────────────
+        // We deliberately do NOT touch the session. Browsers share the session
+        // cookie across ALL tabs, so any session change here would break the
+        // original admin tab. Instead, we generate a long-lived token stored in
+        // the cache. Every request from the client-view tab carries ?_imp=TOKEN;
+        // ImpersonateClientViaToken middleware swaps auth per-request only.
+        // sessionStorage (tab-specific in the browser) keeps the token alive
+        // across navigations within the client-view tab.
+        $token = Str::random(64);
+        Cache::put('imp_view_' . $token, [
+            'admin_id'     => $adminId,
+            'client_id'    => $client->id,
+            'client_name'  => $client->name,
+            'client_email' => $client->email,
+        ], now()->addHours(8));
 
-        // Write impersonation markers AFTER the session has been migrated so they
-        // are guaranteed to land on the new session that the browser will receive.
-        session([
-            'impersonating_client_original_id' => $adminId,
-            'impersonating_client_name'         => $client->name,
-            'impersonating_client_email'        => $client->email,
-        ]);
-
-        // Allow callers to specify a redirect destination (e.g. /insights)
         $redirectTo = $request->input('redirect_to');
         $allowed    = ['/dashboard', '/insights'];
-        if ($redirectTo && in_array($redirectTo, $allowed, true)) {
-            return redirect($redirectTo);
+        $startPath  = ($redirectTo && in_array($redirectTo, $allowed, true))
+            ? $redirectTo
+            : '/dashboard';
+
+        $tokenUrl = url($startPath) . '?_imp=' . $token;
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['token_url' => $tokenUrl]);
         }
 
-        return redirect('/dashboard');
+        return redirect($tokenUrl);
     }
 
     public function stopImpersonating()

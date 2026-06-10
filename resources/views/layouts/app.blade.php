@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', $appName ?? config('app.name'))</title>
+    <title>@yield('page-title', $appName ?? config('app.name'))</title>
 
     {{-- Favicon --}}
     @if($branding)
@@ -424,8 +424,20 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 </div>
 @endif
 
-{{-- Client Impersonation Banner --}}
-@if(session('impersonating_client_original_id'))
+{{-- Client Impersonation Banner (token-based: no session change) --}}
+@if(isset($__imp))
+<div class="ca-impersonate-bar" style="background:#1a6aa8;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap">
+    <span>
+        👤 Viewing as <strong>{{ $__imp['client_name'] }}</strong>
+        <span style="opacity:.75;font-weight:400"> — {{ $__imp['client_email'] }}</span>
+    </span>
+    <button onclick="__exitClientImpersonation()"
+       style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:6px;padding:3px 12px;font-size:12.5px;font-weight:600;cursor:pointer">
+        ↩ Exit — Return to Admin
+    </button>
+</div>
+@elseif(session('impersonating_client_original_id'))
+{{-- Legacy session-based banner (fallback) --}}
 <div class="ca-impersonate-bar" style="background:#1a6aa8;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap">
     <span>
         👤 Viewing as <strong>{{ session('impersonating_client_name') }}</strong>
@@ -455,9 +467,9 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 
     <nav class="ca-nav">
     @php
-        // When admin is impersonating a client always render the client nav,
-        // regardless of what role the client user happens to have.
-        $__navRole  = session('impersonating_client_original_id')
+        // When admin is impersonating a client (token-based OR legacy session-based)
+        // always render the client nav, regardless of the client's actual role.
+        $__navRole  = (isset($__imp) || session('impersonating_client_original_id'))
             ? 'client'
             : (auth()->user()->getRoleNames()->first() ?? 'client');
         $__navItems = \App\Models\NavItem::getForRole($__navRole, auth()->user());
@@ -498,8 +510,6 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
     {{-- Topbar --}}
     <header class="ca-topbar">
         <div class="ca-topbar-bc">
-            {{ $appName ?? config('app.name') }}
-            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
             <span>@yield('page-title', 'Dashboard')</span>
         </div>
         <div class="ca-tb-right">
@@ -1288,5 +1298,121 @@ function drCalHoverEnd(id) {
 }
 </script>
 @stack('scripts')
+
+{{-- ══════════════════════════════════════════════════════════════════════════
+     VIEW-AS-CLIENT  —  tab-isolated impersonation
+     ══════════════════════════════════════════════════════════════════════════
+
+     WHY this approach:
+       Browsers share the session cookie across ALL tabs for the same domain.
+       Any response that sets a new Set-Cookie header (from session invalidate /
+       regenerate) updates the cookie jar for EVERY tab, instantly breaking the
+       admin session in the original tab.
+
+     HOW it works:
+       1. "View as Client" form is intercepted by JS → fetch → server returns
+          { token_url: "/dashboard?_imp=TOKEN" } → window.open() in a new tab.
+       2. Tab 2 opens /dashboard?_imp=TOKEN.  ImpersonateClientViaToken middleware
+          reads the token, calls Auth::setUser($client) for that request only.
+          The session (and its cookie) is NEVER changed.
+       3. JS in Tab 2 saves the token to sessionStorage (tab-specific!).
+          On every subsequent page load in Tab 2, if ?_imp is missing from the
+          URL the JS immediately redirects to the same URL with ?_imp=TOKEN added.
+          All link clicks and form submits in Tab 2 also inject the token.
+       4. Tab 1 keeps its session and cookie completely untouched. ✅
+
+     EXIT:
+       __exitClientImpersonation() clears sessionStorage and navigates back to
+       the admin clients page — no server session changes needed.
+──────────────────────────────────────────────────────────────────────────────--}}
+<script>
+/* ── 1. Intercept "View as Client" forms → open token URL in new tab ──────── */
+(function () {
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form || !form.action || form.action.indexOf('/login-as') === -1) return;
+
+        e.preventDefault();
+        e.stopImmediatePropagation();
+
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn) { btn.disabled = true; btn.style.opacity = '0.55'; }
+
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            credentials: 'same-origin',
+        })
+        .then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
+        .then(function (data) {
+            if (data.token_url) {
+                window.open(data.token_url, '_blank', 'noopener');
+            }
+        })
+        .catch(function () {
+            if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+            form.submit(); // non-JS fallback
+        })
+        .finally(function () {
+            if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+        });
+    });
+}());
+
+/* ── 2. Client-view tab: keep ?_imp=TOKEN in every navigation ─────────────── */
+(function () {
+    /* Read token from URL or sessionStorage */
+    var urlToken = (new URLSearchParams(location.search)).get('_imp');
+    if (urlToken) sessionStorage.setItem('__imp_token', urlToken);
+    var IMP = sessionStorage.getItem('__imp_token');
+    if (!IMP) return; /* not in a client-view tab */
+
+    /* If this page loaded without the token in the URL (e.g. server redirect),
+       immediately replace the URL so the middleware can authenticate the request. */
+    if (!urlToken) {
+        var u = new URL(location.href);
+        u.searchParams.set('_imp', IMP);
+        location.replace(u.toString());
+        return;
+    }
+
+    /* Inject token into every same-origin link click */
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href]');
+        if (!a) return;
+        var raw = a.getAttribute('href');
+        if (!raw || /^(#|javascript:|mailto:|tel:)/.test(raw)) return;
+        try {
+            var lu = new URL(raw, location.origin);
+            if (lu.origin !== location.origin) return;
+            if (/\/(stop-impersonating|login|register)/.test(lu.pathname)) return;
+            lu.searchParams.set('_imp', IMP);
+            a.href = lu.toString();
+        } catch (_) {}
+    }, true); /* capture phase so dynamic content is covered */
+
+    /* Inject token into every form submit (except login-as, handled above) */
+    document.addEventListener('submit', function (e) {
+        var form = e.target;
+        if (!form) return;
+        if (form.action && form.action.indexOf('/login-as') !== -1) return;
+        if (!form.querySelector('input[name="_imp"]')) {
+            var inp = document.createElement('input');
+            inp.type = 'hidden'; inp.name = '_imp'; inp.value = IMP;
+            form.appendChild(inp);
+        }
+    });
+}());
+
+/* ── 3. Exit client-view ───────────────────────────────────────────────────── */
+function __exitClientImpersonation() {
+    sessionStorage.removeItem('__imp_token');
+    window.location.href = '/clients';
+}
+</script>
 </body>
 </html>

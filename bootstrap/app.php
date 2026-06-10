@@ -23,8 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // ── Global middleware ──────────────────────────────────────────────────
         $middleware->web(append: [
             IdentifyTenant::class,
-            \App\Http\Middleware\AutoMigrate::class,  // 1. Migrations first
-            \App\Http\Middleware\AutoSeed::class,     // 2. Seeders after (needs seeder_runs table)
+            \App\Http\Middleware\AutoMigrate::class,          // 1. Migrations first
+            \App\Http\Middleware\AutoSeed::class,             // 2. Seeders after
+            \App\Http\Middleware\ImpersonateClientViaToken::class, // 3. Per-request client view (no session change)
             LogClientAdminActivity::class,
         ]);
 

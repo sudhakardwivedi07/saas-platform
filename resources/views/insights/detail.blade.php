@@ -197,6 +197,23 @@
     .insight-slider-slide { display: block !important; page-break-after: always; }
     .insight-slider-card { box-shadow: none; border: 1px solid #e2e8f0; }
 }
+
+/* ── Version dropdown ────────────────────────────────────────── */
+.ci-version-wrap { position:relative;display:inline-flex;align-items:center; }
+.ci-version-btn { display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 10px 0 8px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:5px;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;white-space:nowrap;transition:all .15s;outline:none; }
+.ci-version-btn:hover,.ci-version-btn.open { background:#e2e8f0;color:#475569; }
+.ci-version-btn .ci-vchev { transition:transform .2s; }
+.ci-version-btn.open .ci-vchev { transform:rotate(180deg); }
+.ci-version-menu { position:absolute;top:calc(100% + 6px);left:0;min-width:220px;background:#fff;border:1px solid #e2e8f0;border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.13);z-index:600;overflow:hidden; }
+.ci-version-menu-inner { max-height:270px;overflow-y:auto; }
+.ci-version-item { display:flex;align-items:center;justify-content:space-between;padding:9px 14px;font-size:13px;color:#374151;cursor:pointer;transition:background .1s;text-decoration:none;gap:10px; }
+.ci-version-item:hover { background:#f8fafc;text-decoration:none;color:#1a202c; }
+.ci-version-item.ci-vi-current { background:#eff6ff;color:#1d4ed8;font-weight:600;pointer-events:none; }
+.ci-vi-left { display:flex;align-items:center;gap:8px; }
+.ci-vi-badge { padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600; }
+.ci-vi-badge.draft { background:#fef3c7;color:#92400e; }
+.ci-vi-badge.published { background:#d1fae5;color:#065f46; }
+.ci-vi-date { font-size:11.5px;color:#94a3b8; }
 </style>
 @endpush
 
@@ -227,7 +244,17 @@
                 </div>
                 <div class="report-meta-item">
                     <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#94a3b8"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5l5 5v13a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
-                    <span id="ciVersionBadge" style="font-size:13px;color:#64748b;font-weight:500;">v{{ $report->version ?? 1 }}</span>
+                    <div class="ci-version-wrap" id="ciVersionWrap">
+                        <button class="ci-version-btn" id="ciVersionBtn" onclick="ciToggleVersionDropdown(event)">
+                            <span id="ciVersionBadge">v{{ $report->version ?? 1 }}</span>
+                            <svg class="ci-vchev" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <div class="ci-version-menu" id="ciVersionMenu" style="display:none;">
+                            <div class="ci-version-menu-inner" id="ciVersionList">
+                                <div style="padding:12px 14px;font-size:12.5px;color:#94a3b8;">Loading versions…</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -921,6 +948,78 @@
         });
     };
 
+}());
+
+// ── Version dropdown ──────────────────────────────────────────────────────
+(function () {
+    const REPORT_ID    = {{ $report->id }};
+    const CURRENT_ID   = REPORT_ID;
+    const VERSIONS_URL = '/insights/' + REPORT_ID + '/versions';
+    let versionsLoaded = false;
+
+    window.ciToggleVersionDropdown = function (e) {
+        e && e.stopPropagation();
+        const btn  = document.getElementById('ciVersionBtn');
+        const menu = document.getElementById('ciVersionMenu');
+        const open = menu.style.display !== 'none';
+
+        if (open) {
+            menu.style.display = 'none';
+            btn.classList.remove('open');
+        } else {
+            menu.style.display = 'block';
+            btn.classList.add('open');
+            if (!versionsLoaded) loadVersions();
+        }
+    };
+
+    function loadVersions() {
+        fetch(VERSIONS_URL, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.json())
+            .then(resp => {
+                versionsLoaded = true;
+                if (resp.status === 'success' && resp.versions && resp.versions.length) {
+                    renderVersions(resp.versions);
+                } else {
+                    document.getElementById('ciVersionList').innerHTML =
+                        '<div style="padding:12px 14px;font-size:12.5px;color:#94a3b8;">No versions found.</div>';
+                }
+            })
+            .catch(() => {
+                document.getElementById('ciVersionList').innerHTML =
+                    '<div style="padding:12px 14px;font-size:12.5px;color:#e53e3e;">Failed to load versions.</div>';
+            });
+    }
+
+    function renderVersions(versions) {
+        const list = document.getElementById('ciVersionList');
+        list.innerHTML = versions.map(v => {
+            const isCurrent = v.id === CURRENT_ID;
+            const label     = v.publish_status === 'published' ? 'Published' : 'Draft';
+            const badgeCls  = v.publish_status === 'published' ? 'published' : 'draft';
+            const href      = '/insights/' + v.encrypted_id + '/view';
+            return `<a href="${isCurrent ? '#' : href}"
+                       class="ci-version-item${isCurrent ? ' ci-vi-current' : ''}"
+                       onclick="${isCurrent ? 'return false;' : ''}">
+                        <div class="ci-vi-left">
+                            <span style="font-weight:600;">v${v.version}</span>
+                            <span class="ci-vi-badge ${badgeCls}">${label}</span>
+                        </div>
+                        <span class="ci-vi-date">${v.created_at}</span>
+                    </a>`;
+        }).join('');
+    }
+
+    // Close when clicking outside
+    document.addEventListener('click', function (e) {
+        const wrap = document.getElementById('ciVersionWrap');
+        const menu = document.getElementById('ciVersionMenu');
+        const btn  = document.getElementById('ciVersionBtn');
+        if (wrap && !wrap.contains(e.target) && menu && menu.style.display !== 'none') {
+            menu.style.display = 'none';
+            btn && btn.classList.remove('open');
+        }
+    });
 }());
 </script>
 @endpush

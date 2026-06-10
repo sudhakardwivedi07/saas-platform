@@ -174,7 +174,7 @@ class InsightsController extends AccountBaseController
         // Build "Company Name (Analysis N)" report name
         $reportCompany   = Company::withoutGlobalScopes()->find($reportCompanyId);
         $companyLabel    = trim($reportCompany?->company_name ?? '');
-        $analysisNumber  = Report::withTrashed()->where('company_id', $reportCompanyId)->count() + 1;
+        $analysisNumber  = Report::withTrashed()->where('company_id', $reportCompanyId)->whereNull('parent_report_id')->count() + 1;
         $generatedName   = $companyLabel
             ? $companyLabel . ' (Analysis ' . $analysisNumber . ')'
             : 'Analysis ' . $analysisNumber;
@@ -588,10 +588,62 @@ class InsightsController extends AccountBaseController
         ]);
     }
 
+    // ── Get all versions of an insight series (AJAX) ──────────────────────────
+
+    public function getVersions(int $reportId)
+    {
+        $impersonatingAdminId = session('impersonating_client_original_id');
+
+        $report = Report::withTrashed()
+            ->where('id', $reportId)
+            ->where(function ($q) use ($impersonatingAdminId) {
+                $q->where('user_id', auth()->id());
+                if ($impersonatingAdminId) {
+                    $q->orWhere('user_id', $impersonatingAdminId);
+                }
+            })
+            ->first();
+
+        if (!$report) {
+            return response()->json(['status' => 'error', 'message' => 'Report not found'], 404);
+        }
+
+        $rootId = $report->parent_report_id ?? $report->id;
+
+        $versions = Report::withTrashed()
+            ->where(function ($q) use ($rootId) {
+                $q->where('id', $rootId)
+                  ->orWhere('parent_report_id', $rootId);
+            })
+            ->orderBy('version')
+            ->get(['id', 'version', 'publish_status', 'created_at', 'deleted_at']);
+
+        return response()->json([
+            'status'   => 'success',
+            'versions' => $versions->map(fn($v) => [
+                'id'             => $v->id,
+                'encrypted_id'   => $v->encrypted_id,
+                'version'        => $v->version ?? 1,
+                'publish_status' => $v->publish_status ?? 'draft',
+                'created_at'     => $v->created_at->format('M d, Y'),
+                'is_deleted'     => !is_null($v->deleted_at),
+            ]),
+        ]);
+    }
+
     // ── Version helper ────────────────────────────────────────────────────────
 
     private function spawnVersion(Report $source, mixed $jsonData): Report
     {
+        $rootId = $source->parent_report_id ?? $source->id;
+
+        $maxVersion = Report::withTrashed()
+            ->where(function ($q) use ($rootId) {
+                $q->where('id', $rootId)
+                  ->orWhere('parent_report_id', $rootId);
+            })
+            ->max('version') ?? 1;
+
         return Report::create([
             'user_id'           => $source->user_id,
             'company_id'        => $source->company_id,
@@ -602,8 +654,8 @@ class InsightsController extends AccountBaseController
             'status'            => 'Analyzed',
             'publish_status'    => $source->publish_status,
             'insight_json_data' => $jsonData,
-            'version'           => ($source->version ?? 1) + 1,
-            'parent_report_id'  => $source->parent_report_id ?? $source->id,
+            'version'           => $maxVersion + 1,
+            'parent_report_id'  => $rootId,
         ]);
     }
 

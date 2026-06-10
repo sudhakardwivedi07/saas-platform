@@ -249,7 +249,6 @@
                 <tr>
                     <th>Insight Report</th>
                     <th>Generated</th>
-                    <th>Version</th>
                     <th>Client Name</th>
                     <th>Company Name</th>
                     <th>Status</th>
@@ -293,7 +292,6 @@
                         </div>
                     </td>
                     <td style="color:#64748b;" data-date="{{ $report->created_at->format('Y-m-d') }}" data-order="{{ $report->created_at->format('Y-m-d') }}">{{ $report->created_at->format(active_date_format()) }}</td>
-                    <td style="color:#64748b;font-weight:500;">v{{ $report->version ?? 1 }}</td>
                     <td style="color:#64748b;">{{ $clientName }}</td>
                     <td style="color:#64748b;">{{ $companyName }}</td>
                     <td data-search="{{ $rowStatus }}">

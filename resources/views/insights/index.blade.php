@@ -566,7 +566,6 @@
                         <th>Insight Name</th>
                         <th>Generated</th>
                         <th>Size</th>
-                        <th>Version</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -602,11 +601,6 @@
                         </td>
                         <td style="color:#64748b;">{{ $report->created_at->format(active_date_format()) }}</td>
                         <td style="color:#64748b;">{{ $report->formatted_file_size }}</td>
-                        <td>
-                            <span style="display:inline-flex;align-items:center;height:22px;padding:0 8px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:5px;font-size:11.5px;font-weight:600;color:#64748b;white-space:nowrap;">
-                                v{{ $report->version ?? 1 }}
-                            </span>
-                        </td>
                         <td>
                             @if($isDeleted)
                                 <span class="badge danger">Deleted</span>

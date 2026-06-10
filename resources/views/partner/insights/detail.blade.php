@@ -309,6 +309,7 @@
     let insightSections  = [];
     let currentSlide     = 0;
     let editMode         = false;
+    let rdOriginalContent = []; // per-slide HTML snapshots taken when edit mode opens
 
     // ── Fetch data ────────────────────────────────────────────────────────────
     fetch(DATA_URL, { headers: { 'Accept':'application/json', 'X-Requested-With':'XMLHttpRequest' } })
@@ -464,6 +465,11 @@
         const toolbar     = document.getElementById('rdEditToolbar');
 
         if (editMode) {
+            // Snapshot every slide so Cancel can restore them
+            rdOriginalContent = [];
+            document.querySelectorAll('.insight-slider-content').forEach(el => {
+                rdOriginalContent.push(el.innerHTML);
+            });
             if (btnLabel) btnLabel.textContent = 'Cancel Edit';
             btn?.classList.add('active');
             if (pdfBtn)   { pdfBtn.style.opacity = '.4'; pdfBtn.style.pointerEvents = 'none'; }
@@ -474,6 +480,13 @@
             toast?.classList.add('show');
             setTimeout(() => toast?.classList.remove('show'), 4000);
         } else {
+            // Restore snapshot if available (snapshot is cleared on successful save)
+            if (rdOriginalContent.length > 0) {
+                document.querySelectorAll('.insight-slider-content').forEach((el, i) => {
+                    if (rdOriginalContent[i] !== undefined) el.innerHTML = rdOriginalContent[i];
+                });
+                rdOriginalContent = [];
+            }
             if (btnLabel) btnLabel.textContent = 'Edit Insight';
             btn?.classList.remove('active');
             if (pdfBtn)   { pdfBtn.style.opacity = ''; pdfBtn.style.pointerEvents = ''; }
@@ -614,6 +627,7 @@
                     if (redirectUrl) {
                         window.location.href = redirectUrl;
                     } else {
+                        rdOriginalContent = []; // saved — don't restore on toggle-off
                         rdToggleEdit();
                     }
                 });

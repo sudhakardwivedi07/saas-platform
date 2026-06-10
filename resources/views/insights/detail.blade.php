@@ -811,6 +811,7 @@
     const CI_CSRF      = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     const CI_SAVE_URL  = '/insights/' + CI_REPORT_ID + '/update-content';
     let ciEditMode = false;
+    let ciOriginalContent = []; // per-slide HTML snapshots taken when edit mode opens
 
     window.ciToggleEdit = function () {
         ciEditMode = !ciEditMode;
@@ -822,6 +823,11 @@
         const toolbar  = document.getElementById('ciEditToolbar');
 
         if (ciEditMode) {
+            // Snapshot every slide so Cancel can restore them
+            ciOriginalContent = [];
+            document.querySelectorAll('.insight-slider-content').forEach(el => {
+                ciOriginalContent.push(el.innerHTML);
+            });
             if (btnLabel) btnLabel.textContent = 'Cancel Edit';
             btn?.classList.add('active');
             if (pdfBtn) { pdfBtn.style.opacity = '.4'; pdfBtn.style.pointerEvents = 'none'; }
@@ -829,6 +835,13 @@
             toolbar?.classList.add('visible');
             ciMakeEditable(true);
         } else {
+            // Restore snapshot if available (snapshot is cleared on successful save)
+            if (ciOriginalContent.length > 0) {
+                document.querySelectorAll('.insight-slider-content').forEach((el, i) => {
+                    if (ciOriginalContent[i] !== undefined) el.innerHTML = ciOriginalContent[i];
+                });
+                ciOriginalContent = [];
+            }
             if (btnLabel) btnLabel.textContent = 'Edit Insight';
             btn?.classList.remove('active');
             if (pdfBtn) { pdfBtn.style.opacity = ''; pdfBtn.style.pointerEvents = ''; }
@@ -940,6 +953,7 @@
                     if (redirectUrl) {
                         window.location.href = redirectUrl;
                     } else {
+                        ciOriginalContent = []; // saved — don't restore on toggle-off
                         ciToggleEdit();
                     }
                 });

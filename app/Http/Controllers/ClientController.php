@@ -141,7 +141,42 @@ class ClientController extends AccountBaseController
 
     public function show($id)
     {
-        $this->client = User::with(['company.quickbooksConnections'])->findOrFail($id);
+        $this->client = User::with(['company.quickbooksConnections', 'managedCompanies.quickbooksConnections'])->findOrFail($id);
+
+        $companyIds = collect([$this->client->company_id])
+            ->merge($this->client->managedCompanies->pluck('id'))
+            ->filter()->unique()->values();
+
+        $this->activityLogs = \App\Models\EventLog::withoutGlobalScopes()
+            ->where(function ($q) use ($id, $companyIds) {
+                // Events logged directly by the client user
+                $q->where('user_id', $id)
+                // Events stored against client's own companies
+                  ->orWhereIn('company_id', $companyIds);
+
+                // QB / company-creation events: stored under admin company but with
+                // metadata->actor_company_id = the actual client company ID.
+                foreach ($companyIds as $coId) {
+                    $q->orWhere('metadata->actor_company_id', $coId);
+                }
+
+                // Middleware events (Client Updated, Company Updated, etc.) store
+                // the entity ID only in metadata->path, e.g. /clients/24 or /my-companies/45.
+                $q->orWhereRaw(
+                    "JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.path')) REGEXP ?",
+                    ['^/clients/' . (int)$id . '(/|$)']
+                );
+                foreach ($companyIds as $coId) {
+                    $q->orWhereRaw(
+                        "JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.path')) REGEXP ?",
+                        ['^/my-companies/' . (int)$coId . '(/|$)']
+                    );
+                }
+            })
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get();
+
         $this->pageTitle = $this->client->name;
         return view('clients.show', $this->data);
     }

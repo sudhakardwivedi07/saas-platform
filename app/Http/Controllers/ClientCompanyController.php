@@ -13,6 +13,7 @@ use App\Services\StripeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use App\Models\EventLog;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
@@ -305,6 +306,23 @@ class ClientCompanyController extends AccountBaseController
         $authUser->managedCompanies()->syncWithoutDetaching([
             $company->id => ['role' => 'admin'],
         ]);
+
+        try {
+            EventLog::create([
+                'company_id'  => $createdByKey,
+                'user_id'     => auth()->id(),
+                'event_type'  => 'company_created',
+                'description' => "Company '{$company->company_name}' was created",
+                'metadata'    => [
+                    'actor_company_id' => $company->id,
+                    'company_name'     => $company->company_name,
+                ],
+                'ip_address'  => request()->ip(),
+                'created_at'  => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Company creation activity log failed: ' . $e->getMessage());
+        }
 
         $this->activateCompany($company, $newUser, null, $setting);
 

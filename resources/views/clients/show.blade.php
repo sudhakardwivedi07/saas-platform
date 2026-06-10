@@ -4,6 +4,13 @@
 
 @section('content')
 
+@php
+$allClientCompanies = collect($client->company ? [$client->company] : [])
+    ->merge($client->managedCompanies ?? collect())
+    ->unique('id');
+$totalCompanies = $allClientCompanies->count();
+@endphp
+
 {{-- Back Button --}}
 <a href="{{ route('clients.index') }}" class="back-btn">
     <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -35,13 +42,10 @@
 
         {{-- Quick Actions --}}
         <div style="display:flex;gap:8px;">
-            <button class="btn btn-ghost btn-sm">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                </svg>
-                Email
+            <button class="btn btn-secondary btn-sm"
+                    onclick="openEditClientModal({{ $client->id }}, '{{ addslashes($client->name) }}', '{{ $client->email }}', '{{ addslashes($client->mobile ?? '') }}')">
+                Edit Client
             </button>
-            <button class="btn btn-secondary btn-sm">Edit Client</button>
         </div>
     </div>
 
@@ -49,27 +53,8 @@
     <div class="cd-stat-chips" style="margin-top:1.25rem;">
 
         <div class="cd-chip">
-            <span class="cd-chip-val">{{ $client->company ? 1 : 0 }}</span>
+            <span class="cd-chip-val">{{ $totalCompanies }}</span>
             <span class="cd-chip-lbl">Companies</span>
-        </div>
-
-        <div class="cd-chip">
-            @if($client->qb_connected ?? false)
-                <span class="cd-chip-val" style="color:#16a34a;">
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:-2px;margin-right:3px;">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                    </svg>
-                    Connected
-                </span>
-            @else
-                <span class="cd-chip-val" style="color:var(--text-3);">None</span>
-            @endif
-            <span class="cd-chip-lbl">QB Status</span>
-        </div>
-
-        <div class="cd-chip">
-            <span class="cd-chip-val">$0</span>
-            <span class="cd-chip-lbl">MRR</span>
         </div>
 
         <div class="cd-chip">
@@ -94,7 +79,7 @@
     <button class="tab-btn" onclick="switchTab('companies', this)">
         Companies
         <span style="margin-left:5px;background:var(--blue);color:#fff;font-size:0.65rem;font-weight:700;padding:1px 6px;border-radius:99px;">
-            {{ $client->company ? 1 : 0 }}
+            {{ $totalCompanies }}
         </span>
     </button>
     <button class="tab-btn" onclick="switchTab('activity', this)">Activity</button>
@@ -144,12 +129,12 @@
                 </div>
                 @endforeach
 
-                @if($client->company)
+                @if($totalCompanies > 0)
                 <div style="position:relative;display:flex;align-items:flex-start;gap:10px;">
                     <div style="width:14px;height:14px;border-radius:50%;background:#7c3aed;flex-shrink:0;margin-top:2px;box-shadow:0 0 0 3px #fff,0 0 0 4px #7c3aed44;"></div>
                     <div>
                         <div style="font-size:0.875rem;font-weight:500;color:var(--text-1);">
-                            1 company connected
+                            {{ $totalCompanies }} {{ $totalCompanies === 1 ? 'company' : 'companies' }} connected
                         </div>
                         <div style="font-size:0.75rem;color:var(--text-3);margin-top:1px;">Active</div>
                     </div>
@@ -170,7 +155,7 @@
             <div class="card-sub">All companies associated with {{ $client->name }}.</div>
         </div>
 
-        @if(!$client->company)
+        @if($totalCompanies === 0)
             <div style="text-align:center;padding:2.5rem 1rem;">
                 <div style="width:48px;height:48px;border-radius:50%;background:#f0f4f8;display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem auto;">
                     <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="var(--text-3)" stroke-width="1.5">
@@ -181,7 +166,6 @@
                 <p style="font-size:0.8125rem;color:var(--text-2);margin:0;">This client has no companies connected yet.</p>
             </div>
         @else
-        @php $company = $client->company; $isQB = $company->quickbooksConnections?->where('is_active', true)->isNotEmpty(); @endphp
             <div class="tc">
                 <table style="width:100%;border-collapse:collapse">
                     <thead>
@@ -194,6 +178,8 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @foreach($allClientCompanies as $company)
+                        @php $isQB = $company->quickbooksConnections?->where('is_active', true)->isNotEmpty(); @endphp
                         <tr>
                             <td>
                                 <div style="font-weight:600;color:var(--text-1);font-size:0.875rem;">{{ $company->company_name }}</div>
@@ -227,6 +213,7 @@
                                 </div>
                             </td>
                         </tr>
+                        @endforeach
                     </tbody>
                 </table>
             </div>
@@ -237,8 +224,10 @@
 {{-- ==================== TAB: Activity ==================== --}}
 <div class="tab-panel" id="tab-activity" style="display:none;margin-top:1.25rem;">
     <div class="card">
-        <div class="card-title" style="margin-bottom:0.5rem;">Activity</div>
-        <div class="card-sub" style="margin-bottom:1.5rem;">Recent actions taken by or on behalf of this client.</div>
+        <div class="card-title" style="margin-bottom:0.25rem;">Activity</div>
+        <div class="card-sub" style="margin-bottom:1.25rem;">Recent actions taken by or on behalf of this client and their companies.</div>
+
+        @if($activityLogs->isEmpty())
         <div style="text-align:center;padding:2.5rem 1rem;">
             <div style="width:48px;height:48px;border-radius:50%;background:#f0f4f8;display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem auto;">
                 <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="var(--text-3)" stroke-width="1.5">
@@ -248,10 +237,80 @@
             <p style="font-size:0.9rem;font-weight:600;color:var(--text-1);margin:0 0 4px 0;">No activity recorded</p>
             <p style="font-size:0.8125rem;color:var(--text-2);margin:0;">Activity for this client will appear here once events are logged.</p>
         </div>
+        @else
+        <div>
+            @foreach($activityLogs as $log)
+            @php
+                $evtType = strtolower($log->event_type ?? '');
+                $iconColor = match(true) {
+                    str_contains($evtType, 'login')        => '#3b82f6',
+                    str_contains($evtType, 'quickbooks')   => '#10b981',
+                    str_contains($evtType, 'deleted')      => '#ef4444',
+                    str_contains($evtType, 'created')      => '#f06b21',
+                    default                                 => '#6b7280',
+                };
+            @endphp
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)">
+                <div style="width:32px;height:32px;border-radius:8px;background:{{ $iconColor }}18;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="{{ $iconColor }}" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-size:13px;font-weight:600;color:var(--text-1)">{{ $log->display_event }}</div>
+                    @if($log->display_description !== $log->display_event)
+                    <div style="font-size:12.5px;color:var(--text-2);margin-top:1px">{{ $log->display_description }}</div>
+                    @endif
+                </div>
+                <div style="font-size:11.5px;color:var(--text-3);white-space:nowrap;flex-shrink:0">
+                    {{ $log->created_at->format('M j, Y g:i A') }}
+                </div>
+            </div>
+            @endforeach
+        </div>
+        @endif
+    </div>
+</div>
+
+{{-- Edit Client Modal --}}
+<div class="modal-overlay" id="modal-edit-client" onclick="if(event.target===this)this.classList.remove('open')">
+    <div class="modal-box" style="width:480px">
+        <button class="modal-close" onclick="document.getElementById('modal-edit-client').classList.remove('open')">&times;</button>
+        <div class="modal-title">Edit Client</div>
+        <form id="edit-client-form" method="POST">
+            @csrf
+            <input type="hidden" id="edit-client-id">
+            <div class="mf-field" style="margin-top:4px">
+                <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
+                <input type="text" name="name" id="edit-client-name" class="mf-inp" required>
+            </div>
+            <div class="mf-field">
+                <label class="mf-label">Email ID</label>
+                <input type="email" id="edit-client-email" class="mf-inp" disabled style="opacity:.6;cursor:not-allowed">
+                <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Email address cannot be changed.</div>
+            </div>
+            <div class="mf-field">
+                <label class="mf-label">Phone Number</label>
+                <input type="tel" name="phone" id="edit-client-phone" class="mf-inp" placeholder="+1 (555) 000-0000">
+            </div>
+            <div class="mf-foot">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-edit-client').classList.remove('open')">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+            </div>
+        </form>
     </div>
 </div>
 
 <script>
+function openEditClientModal(clientId, name, email, phone) {
+    document.getElementById('edit-client-id').value = clientId;
+    document.getElementById('edit-client-name').value = name;
+    document.getElementById('edit-client-email').value = email;
+    document.getElementById('edit-client-phone').value = phone || '';
+    document.getElementById('edit-client-form').action = '{{ route("clients.update", ":id") }}'.replace(':id', clientId);
+    document.getElementById('modal-edit-client').classList.add('open');
+}
+
 function switchTab(tabName, btn) {
     document.querySelectorAll('.tab-panel').forEach(function(p) { p.style.display = 'none'; });
     document.querySelectorAll('#clientTabBar .tab-btn').forEach(function(b) { b.classList.remove('active'); });

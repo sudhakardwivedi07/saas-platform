@@ -205,37 +205,96 @@ class ClientController extends AccountBaseController
         $handle = fopen($file->getRealPath(), 'r');
 
         // Skip header row
-        $header = fgetcsv($handle);
+        fgetcsv($handle);
 
-        $created = 0;
-        $skipped = 0;
-        $errors  = [];
-
+        // ── Read all rows for pre-flight checks ───────────────
+        $rows = [];
         while (($row = fgetcsv($handle)) !== false) {
-            try {
-                $this->enforceMaxCompaniesLimit($parentCompanyId);
-            } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
-                if ($e->getStatusCode() === 422) {
-                    $errors[] = $e->getMessage();
-                    break;
+            $rows[] = $row;
+        }
+        fclose($handle);
+
+        // ── Pre-flight: enforce 200-row cap ───────────────────
+        $totalRows = count($rows);
+        if ($totalRows > 200) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => "The CSV contains {$totalRows} rows. Maximum allowed is 200 clients per upload. Please split the file and retry.",
+            ], 422);
+        }
+
+        // ── Pre-flight: plan client-limit check ───────────────
+        // Uses max_users which exists on both Package and ClientPackage.
+        $ownerCompany  = Company::withoutGlobalScopes()->find($parentCompanyId);
+        $plan          = $ownerCompany?->activePlan();
+        $planLimit     = (int) ($plan?->max_users ?? 0);
+        $currentCount  = Company::withoutGlobalScopes()
+                            ->where('created_by', $parentCompanyId)
+                            ->count();
+
+        if ($planLimit > 0) {
+            // Count genuinely new (valid + non-duplicate) emails in the file.
+            $candidateEmails = [];
+            foreach ($rows as $row) {
+                if (count($row) < 2) continue;
+                $email = strtolower(trim($row[1]));
+                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $candidateEmails[] = $email;
                 }
-                throw $e;
+            }
+            $candidateEmails = array_unique($candidateEmails);
+            $newCount = 0;
+            foreach ($candidateEmails as $email) {
+                if (!User::where('email', $email)->exists()) {
+                    $newCount++;
+                }
             }
 
-            if (count($row) < 2) continue;
+            if ($currentCount + $newCount > $planLimit) {
+                $excess = ($currentCount + $newCount) - $planLimit;
+                return response()->json([
+                    'status'  => 'error',
+                    'message' => "Cannot upload: your plan allows {$planLimit} client" . ($planLimit !== 1 ? 's' : '') . ". "
+                                . "You currently have {$currentCount} and this file would add {$newCount} more, "
+                                . "exceeding your limit by {$excess}. Please upgrade your plan or reduce the file.",
+                ], 422);
+            }
+        }
 
-            [$clientName, $email] = array_map('trim', $row);
+        // ── Row processing ─────────────────────────────────────
+        $added      = 0;
+        $duplicates = 0;
+        $invalid    = 0;
 
-            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $skipped++;
+        foreach ($rows as $row) {
+            // Must have at least 2 columns
+            if (count($row) < 2) {
+                $invalid++;
                 continue;
             }
 
+            $clientName = trim($row[0]);
+            $email      = strtolower(trim($row[1]));
+
+            // Validate client_name: must not exceed 255 chars
+            if (strlen($clientName) > 255) {
+                $invalid++;
+                continue;
+            }
+
+            // Validate email: must be a valid address, max 255 chars
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255) {
+                $invalid++;
+                continue;
+            }
+
+            // Duplicate check: email already registered
             if (User::where('email', $email)->exists()) {
-                $skipped++;
+                $duplicates++;
                 continue;
             }
 
+            // Create sub-company and client user
             $subCompany = Company::create([
                 'created_by'    => $parentCompanyId,
                 'company_name'  => $clientName ?: ($email . "'s Company"),
@@ -251,14 +310,14 @@ class ClientController extends AccountBaseController
                 'password'   => Hash::make(Str::random(16)),
             ]);
             $user->assignRole('client');
-            $created++;
+            $added++;
         }
 
-        fclose($handle);
-
         return response()->json([
-            'status'  => 'success',
-            'message' => "$created client(s) imported" . ($skipped ? ", $skipped skipped." : '.') . (!empty($errors) ? ' ' . $errors[0] : ''),
+            'status'     => 'success',
+            'added'      => $added,
+            'duplicates' => $duplicates,
+            'invalid'    => $invalid,
         ]);
     }
 

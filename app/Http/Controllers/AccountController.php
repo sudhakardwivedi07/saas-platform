@@ -177,6 +177,12 @@ class AccountController extends AccountBaseController
         // null / empty string = clear override and fall back to SuperAdmin default
         $company->update(['date_format' => $request->filled('date_format') ? $request->date_format : null]);
 
+        try {
+            EventLog::record('account_settings_updated', 'Account date format updated', [
+                'date_format' => $request->filled('date_format') ? $request->date_format : 'default',
+            ]);
+        } catch (\Throwable $e) {}
+
         // Bust the per-company date format cache used by active_date_format()
         cache()->forget('company_date_format_' . $company->id);
         cache()->forget('company_' . $company->id);

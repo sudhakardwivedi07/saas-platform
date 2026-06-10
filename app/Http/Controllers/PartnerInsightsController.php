@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\ProcessReportInsightsJob;
 use App\Models\Company;
+use App\Models\EventLog;
 use App\Models\CompanyQuickbooksSetting;
 use App\Models\QuickBooksConnection;
 use App\Models\Report;
@@ -342,6 +343,14 @@ class PartnerInsightsController extends AccountBaseController
 
                 ProcessReportInsightsJob::dispatch($report->id, $apiFiles, $style, $industry, keepFiles: true)->onConnection('sync');
 
+                try {
+                    EventLog::record('insight_generated', 'Insight report generated for client', [
+                        'report_id'         => $report->id ?? null,
+                        'report_name'       => $report->report_name ?? null,
+                        'client_company_id' => $report->company_id ?? null,
+                    ]);
+                } catch (\Throwable $e) {}
+
                 // Re-refresh token after the sync job so the connection stays "Connected"
                 // (the job can take 10–30 min; the access token may expire during that time)
                 try {
@@ -530,6 +539,14 @@ class PartnerInsightsController extends AccountBaseController
         if ($report->isPublished()) {
             $next = $this->spawnVersion($report, $jsonData, 'published');
 
+            try {
+                EventLog::record('insight_saved', 'Insight report draft saved', [
+                    'report_id'   => $report->id ?? null,
+                    'report_name' => $report->report_name ?? null,
+                    'status'      => $report->status ?? null,
+                ]);
+            } catch (\Throwable $e) {}
+
             return response()->json([
                 'status'       => 'success',
                 'message'      => 'Saved as new version.',
@@ -541,6 +558,14 @@ class PartnerInsightsController extends AccountBaseController
         // Draft → update in place
         $report->insight_json_data = $jsonData;
         $report->save();
+
+        try {
+            EventLog::record('insight_saved', 'Insight report draft saved', [
+                'report_id'   => $report->id ?? null,
+                'report_name' => $report->report_name ?? null,
+                'status'      => $report->status ?? null,
+            ]);
+        } catch (\Throwable $e) {}
 
         return response()->json(['status' => 'success', 'message' => 'Insight updated.']);
     }
@@ -577,6 +602,14 @@ class PartnerInsightsController extends AccountBaseController
 
         // Create a new published record so v1 Draft stays in the list alongside v2 Published
         $next = $this->spawnVersion($report, $report->insight_json_data, 'published');
+
+        try {
+            EventLog::record('insight_published', 'Insight report published to client', [
+                'report_id'         => $report->id ?? null,
+                'report_name'       => $report->report_name ?? null,
+                'client_company_id' => $report->company_id ?? null,
+            ]);
+        } catch (\Throwable $e) {}
 
         return response()->json([
             'status'       => 'success',

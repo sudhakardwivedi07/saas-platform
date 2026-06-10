@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Company;
+use App\Models\EventLog;
 use App\Models\SupportTicket;
 use Illuminate\Http\Request;
 
@@ -104,6 +105,8 @@ class SupportController extends AccountBaseController
             'note'   => 'nullable|string|max:1000',
         ]);
 
+        $oldStatus = $ticket->status;
+
         $ticket->status = $request->status;
 
         if ($request->filled('note')) {
@@ -112,6 +115,17 @@ class SupportController extends AccountBaseController
         }
 
         $ticket->save();
+
+        if ($oldStatus !== $ticket->status) {
+            try {
+                EventLog::record('ticket_status_changed', 'Support ticket status updated', [
+                    'ticket_id'  => $ticket->id,
+                    'subject'    => $ticket->subject ?? null,
+                    'old_status' => $oldStatus,
+                    'new_status' => $ticket->status,
+                ]);
+            } catch (\Throwable $e) {}
+        }
 
         return response()->json([
             'success'   => true,

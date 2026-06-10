@@ -6,6 +6,7 @@ use App\Helper\Reply;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendEmailJob;
 use App\Models\Company;
+use App\Models\EventLog;
 use App\Models\CompanyBranding;
 use App\Models\GlobalSetting;
 use App\Models\SuperAdmin\Package;
@@ -71,6 +72,13 @@ class AuthController extends Controller
         Auth::login($user, $request->boolean('remember'));
         $user->update(['last_login' => now()]);
         $request->session()->regenerate();
+
+        try {
+            EventLog::record('login', 'User logged in', [
+                'email'      => auth()->user()->email,
+                'company_id' => auth()->user()->company_id,
+            ]);
+        } catch (\Throwable $e) {}
 
         return redirect()->intended($this->redirectPath($user));
     }
@@ -282,6 +290,15 @@ class AuthController extends Controller
             ]);
         }
 
+        try {
+            EventLog::record('company_registered', 'New company registered', [
+                'company_id'   => $company->id,
+                'company_name' => $company->company_name ?? $company->app_name,
+                'user_id'      => $user->id,
+                'email'        => $user->email,
+            ]);
+        } catch (\Throwable $e) {}
+
         // Welcome email
         try {
             \App\Jobs\SendEmailJob::dispatch(
@@ -364,6 +381,12 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        try {
+            EventLog::record('logout', 'User logged out', [
+                'email' => auth()->user()?->email,
+            ]);
+        } catch (\Throwable $e) {}
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
@@ -404,10 +427,12 @@ class AuthController extends Controller
         ], false));
 
         // Resolve company context for SMTP selection and template lookup.
-        $company   = $user->company ?? company();
-        $companyId = $company?->id;
-        $appName   = $company?->app_name ?? global_setting()?->global_app_name ?? config('app.name');
+        $company = $user->company ?? company();
+        $appName = $company?->app_name ?? global_setting()?->global_app_name ?? config('app.name');
 
+        // Always use the SuperAdmin global SMTP (companyId: null) for password-reset
+        // emails so the Super Admin's configured mail settings are used regardless
+        // of whether the tenant has their own SMTP set up.
         $sent = app(EmailService::class)->send(
             toEmail:      $user->email,
             templateSlug: 'password_reset',
@@ -416,7 +441,7 @@ class AuthController extends Controller
                 '{{app_name}}' => $appName,
                 '{{reset_url}}' => $resetUrl,
             ],
-            companyId: $companyId
+            companyId: null
         );
 
         if (!$sent) {
@@ -444,6 +469,11 @@ class AuthController extends Controller
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user, $password) {
                 $user->forceFill(['password' => Hash::make($password)])->save();
+                try {
+                    EventLog::record('account_password_changed', 'Password reset via email link', [
+                        'email' => $user->email,
+                    ]);
+                } catch (\Throwable $e) {}
             }
         );
 

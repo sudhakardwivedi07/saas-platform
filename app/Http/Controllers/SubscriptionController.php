@@ -6,6 +6,7 @@ use App\Helper\Reply;
 use App\Services\EmailService;
 use App\Models\Company;
 use App\Models\EmailSmtpSetting;
+use App\Models\EventLog;
 use App\Models\SuperAdmin\Package;
 use App\Models\SuperAdmin\Subscription;
 use App\Services\StripeService;
@@ -119,6 +120,14 @@ class SubscriptionController extends AccountBaseController
                 'canceled_at' => now(),
             ]);
 
+            try {
+                EventLog::record('subscription_canceled', 'Subscription canceled', [
+                    'package_name'  => $sub->package?->name,
+                    'stripe_sub_id' => $sub->stripe_subscription_id,
+                    'canceled_at'   => now()->toDateTimeString(),
+                ]);
+            } catch (\Throwable $e) {}
+
             $this->dispatchCancellationEmail($company, $sub);
 
             return Reply::success('Subscription canceled.');
@@ -139,6 +148,14 @@ class SubscriptionController extends AccountBaseController
                 'status'      => 'canceled',
                 'canceled_at' => now(),
             ]);
+
+            try {
+                EventLog::record('subscription_canceled', 'Subscription canceled', [
+                    'package_name'  => $sub->package?->name,
+                    'stripe_sub_id' => $sub->stripe_subscription_id,
+                    'canceled_at'   => now()->toDateTimeString(),
+                ]);
+            } catch (\Throwable $e) {}
 
             $this->dispatchCancellationEmail($company, $sub);
 
@@ -178,6 +195,12 @@ class SubscriptionController extends AccountBaseController
 
         if (!$sub->stripe_subscription_id) {
             $sub->update(['status' => 'active', 'canceled_at' => null]);
+            try {
+                EventLog::record('subscription_reactivated', 'Subscription reactivated', [
+                    'package_name'  => $sub->package?->name,
+                    'stripe_sub_id' => $sub->stripe_subscription_id,
+                ]);
+            } catch (\Throwable $e) {}
             $this->dispatchReactivationEmail($company, $sub);
             return Reply::success('Subscription reactivated successfully.');
         }
@@ -190,6 +213,13 @@ class SubscriptionController extends AccountBaseController
             ]);
 
             $sub->update(['status' => 'active', 'canceled_at' => null]);
+
+            try {
+                EventLog::record('subscription_reactivated', 'Subscription reactivated', [
+                    'package_name'  => $sub->package?->name,
+                    'stripe_sub_id' => $sub->stripe_subscription_id,
+                ]);
+            } catch (\Throwable $e) {}
 
             $this->dispatchReactivationEmail($company, $sub);
 

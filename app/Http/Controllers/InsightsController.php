@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Jobs\ProcessReportInsightsJob;
 use App\Models\Company;
+use App\Models\EventLog;
 use App\Models\CompanyQuickbooksSetting;
 use App\Models\QuickBooksConnection;
 use App\Models\Report;
@@ -268,6 +269,13 @@ class InsightsController extends AccountBaseController
 
                 ProcessReportInsightsJob::dispatch($report->id, $apiFiles, $style, $industry)->onConnection('sync');
 
+                try {
+                    EventLog::record('insight_generated', 'Insight report generated', [
+                        'report_id'   => $report->id ?? null,
+                        'report_name' => $report->report_name ?? null,
+                    ]);
+                } catch (\Throwable $e) {}
+
                 return response()->json([
                     'status'      => 'processing',
                     'message'     => 'QuickBooks data synced successfully! Insights have been generated.',
@@ -422,6 +430,13 @@ class InsightsController extends AccountBaseController
         }
 
         $next = $this->spawnVersion($report, $jsonData);
+
+        try {
+            EventLog::record('insight_saved', 'Insight report saved', [
+                'report_id'   => $report->id ?? null,
+                'report_name' => $report->report_name ?? null,
+            ]);
+        } catch (\Throwable $e) {}
 
         return response()->json([
             'status'       => 'success',

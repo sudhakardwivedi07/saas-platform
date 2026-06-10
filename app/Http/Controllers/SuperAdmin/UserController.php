@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Helper\Reply;
 use App\Http\Controllers\AccountBaseController;
+use App\Models\EventLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -63,6 +64,15 @@ class UserController extends AccountBaseController
 
         $user->assignRole($request->role);
 
+        try {
+            EventLog::record('users_created', 'Admin user created by super admin', [
+                'user_id' => $user->id,
+                'name'    => $user->name,
+                'email'   => $user->email,
+                'role'    => $request->role ?? null,
+            ]);
+        } catch (\Throwable $e) {}
+
         return Reply::successWithData('User created successfully.', ['redirect' => route('superadmin.users.index')]);
     }
 
@@ -96,6 +106,14 @@ class UserController extends AccountBaseController
 
         $user->syncRoles([$request->role]);
 
+        try {
+            EventLog::record('users_updated', 'Admin user updated by super admin', [
+                'user_id' => $user->id,
+                'name'    => $user->name,
+                'email'   => $user->email,
+            ]);
+        } catch (\Throwable $e) {}
+
         return Reply::success('User updated successfully.');
     }
 
@@ -103,6 +121,15 @@ class UserController extends AccountBaseController
     {
         $user = User::withoutGlobalScopes()->whereNull('company_id')->findOrFail($id);
         abort_403($user->is_superadmin);
+
+        try {
+            EventLog::record('users_deleted', 'Admin user deleted by super admin', [
+                'user_id' => $user->id,
+                'name'    => $user->name,
+                'email'   => $user->email,
+            ]);
+        } catch (\Throwable $e) {}
+
         $user->delete();
         return Reply::success('User deleted.');
     }
@@ -112,6 +139,14 @@ class UserController extends AccountBaseController
         $user = User::withoutGlobalScopes()->whereNull('company_id')->findOrFail($id);
         abort_403($user->is_superadmin);
         $user->update(['status' => $user->status === 'active' ? 'inactive' : 'active']);
+
+        try {
+            EventLog::record('users_status_changed', 'Admin user status changed by super admin', [
+                'user_id'    => $user->id,
+                'new_status' => $user->status,
+            ]);
+        } catch (\Throwable $e) {}
+
         return Reply::success('User status updated.');
     }
 }

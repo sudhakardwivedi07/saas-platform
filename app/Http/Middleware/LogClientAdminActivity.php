@@ -120,7 +120,15 @@ class LogClientAdminActivity
             default               => Str::of($action)->replace('-', '_')->value(),
         };
 
-        return $resource . '_' . $normalizedAction;
+        $eventType = $resource . '_' . $normalizedAction;
+
+        $overrides = [
+            'account_profile_profile'         => 'account_profile_updated',
+            'account_password_password'        => 'account_password_changed',
+            'account_date-format_date-format'  => 'account_settings_updated',
+        ];
+
+        return $overrides[$eventType] ?? $eventType;
     }
 
     private function resolveDescription(?string $routeName, string $method, string $path): string

@@ -153,10 +153,13 @@ class ClientController extends AccountBaseController
         $request->validate([
             'name'          => 'required|string|max:255',
             'email'         => 'required|email|max:255|unique:users,email',
-            'phone'         => 'nullable|string|max:30',
+            'phone'         => 'required|digits:10',
             'company_name'  => 'required|string|max:255',
-            'industry_type' => 'required|string|max:100',
-            'entity_type'   => 'required|string|max:100',
+            'industry_type' => 'nullable|string|max:100',
+            'entity_type'   => 'nullable|string|max:100',
+        ], [
+            'phone.required' => 'Phone number is required.',
+            'phone.digits'   => 'Phone number must be exactly 10 digits.',
         ]);
 
         $parentCompanyId = company()->id;
@@ -267,23 +270,37 @@ class ClientController extends AccountBaseController
         $invalid    = 0;
 
         foreach ($rows as $row) {
-            // Must have at least 2 columns
-            if (count($row) < 2) {
+            // All 4 columns are required: client_name, email, phone, company_name
+            if (count($row) < 4) {
                 $invalid++;
                 continue;
             }
 
-            $clientName = trim($row[0]);
-            $email      = strtolower(trim($row[1]));
+            $clientName  = trim($row[0]);
+            $email       = strtolower(trim($row[1]));
+            $phone       = preg_replace('/\D/', '', trim($row[2]));
+            $companyName = trim($row[3]);
 
-            // Validate client_name: must not exceed 255 chars
-            if (strlen($clientName) > 255) {
+            // Validate client_name: required, max 255 chars
+            if (!$clientName || strlen($clientName) > 255) {
                 $invalid++;
                 continue;
             }
 
-            // Validate email: must be a valid address, max 255 chars
+            // Validate email: required, valid format, max 255 chars
             if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255) {
+                $invalid++;
+                continue;
+            }
+
+            // Validate phone: required, exactly 10 digits
+            if (!$phone || strlen($phone) !== 10) {
+                $invalid++;
+                continue;
+            }
+
+            // Validate company_name: required, max 255 chars
+            if (!$companyName || strlen($companyName) > 255) {
                 $invalid++;
                 continue;
             }
@@ -297,7 +314,7 @@ class ClientController extends AccountBaseController
             // Create sub-company and client user
             $subCompany = Company::create([
                 'created_by'    => $parentCompanyId,
-                'company_name'  => $clientName ?: ($email . "'s Company"),
+                'company_name'  => $companyName ?: ($clientName ?: ($email . "'s Company")),
                 'company_email' => $email,
                 'status'        => 'active',
                 'package_id'    => $this->resolveFallbackPackageId(),
@@ -305,8 +322,9 @@ class ClientController extends AccountBaseController
 
             $user = User::create([
                 'company_id' => $subCompany->id,
-                'name'       => $clientName ?: $email,
+                'name'       => $clientName,
                 'email'      => $email,
+                'mobile'     => $phone ?: null,
                 'password'   => Hash::make(Str::random(16)),
             ]);
             $user->assignRole('client');

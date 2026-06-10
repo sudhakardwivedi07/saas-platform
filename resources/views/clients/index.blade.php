@@ -1127,28 +1127,59 @@ function downloadSampleCsv() {
     a.click();
 }
 function submitBulkUpload() {
-    var errBox = document.getElementById('bulk-error');
+    var errBox  = document.getElementById('bulk-error');
+    var uploadBtn = document.querySelector('#panel-bulk .btn-primary');
     errBox.style.display = 'none';
+
     if (!_csvFile) {
         errBox.textContent   = 'Please select a CSV file first.';
         errBox.style.display = 'block';
         return;
     }
+
+    // Show loading state
+    if (uploadBtn) { uploadBtn.disabled = true; uploadBtn.textContent = 'Uploading…'; }
+
     var formData = new FormData();
     formData.append('_token', '{{ csrf_token() }}');
     formData.append('csv_file', _csvFile);
+
     fetch('{{ route("clients.bulk-upload") }}', { method: 'POST', body: formData })
-        .then(r => r.json())
+        .then(function(r) { return r.json(); })
         .then(function(data) {
+            if (uploadBtn) { uploadBtn.disabled = false; uploadBtn.textContent = 'Upload Clients'; }
+
             if (data.status === 'success') {
                 document.getElementById('modal-add-client').classList.remove('open');
-                window.location.reload();
+
+                // Build result summary
+                var lines = [];
+                if (data.added > 0)
+                    lines.push('<b>' + data.added + '</b> client' + (data.added !== 1 ? 's' : '') + ' successfully added');
+                if (data.duplicates > 0)
+                    lines.push('<b>' + data.duplicates + '</b> duplicate' + (data.duplicates !== 1 ? 's' : '') + ' skipped <span style="font-size:12px;color:#6b7280">(email already exists)</span>');
+                if (data.invalid > 0)
+                    lines.push('<b>' + data.invalid + '</b> invalid row' + (data.invalid !== 1 ? 's' : '') + ' skipped <span style="font-size:12px;color:#6b7280">(bad format)</span>');
+
+                var htmlMsg = lines.length ? lines.join('<br>') : 'No clients were imported.';
+                var icon    = data.added > 0 ? 'success' : 'info';
+                var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
+
+                Swal.fire({
+                    icon: icon,
+                    title: 'Upload Complete',
+                    html: '<div style="text-align:left;line-height:2">' + htmlMsg + '</div>',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: btnColor,
+                }).then(function() { window.location.reload(); });
+
             } else {
-                errBox.textContent   = data.message || 'Upload failed.';
+                errBox.innerHTML     = data.message || 'Upload failed.';
                 errBox.style.display = 'block';
             }
         })
         .catch(function() {
+            if (uploadBtn) { uploadBtn.disabled = false; uploadBtn.textContent = 'Upload Clients'; }
             errBox.textContent   = 'Network error. Please try again.';
             errBox.style.display = 'block';
         });

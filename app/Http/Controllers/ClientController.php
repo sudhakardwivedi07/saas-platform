@@ -270,17 +270,16 @@ class ClientController extends AccountBaseController
         $invalid    = 0;
 
         foreach ($rows as $row) {
-            // Must have at least 2 columns (name + email are required)
-            if (count($row) < 2) {
+            // All 4 columns are required: client_name, email, phone, company_name
+            if (count($row) < 4) {
                 $invalid++;
                 continue;
             }
 
-            // Columns: client_name, email, phone (optional), company_name (optional)
             $clientName  = trim($row[0]);
             $email       = strtolower(trim($row[1]));
-            $phone       = isset($row[2]) ? preg_replace('/\D/', '', trim($row[2])) : '';
-            $companyName = isset($row[3]) ? trim($row[3]) : '';
+            $phone       = preg_replace('/\D/', '', trim($row[2]));
+            $companyName = trim($row[3]);
 
             // Validate client_name: required, max 255 chars
             if (!$clientName || strlen($clientName) > 255) {
@@ -288,15 +287,22 @@ class ClientController extends AccountBaseController
                 continue;
             }
 
-            // Validate email: must be a valid address, max 255 chars
+            // Validate email: required, valid format, max 255 chars
             if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255) {
                 $invalid++;
                 continue;
             }
 
-            // Validate phone if provided: must be exactly 10 digits
-            if ($phone && strlen($phone) !== 10) {
-                $phone = null; // ignore invalid phone, don't skip the row
+            // Validate phone: required, exactly 10 digits
+            if (!$phone || strlen($phone) !== 10) {
+                $invalid++;
+                continue;
+            }
+
+            // Validate company_name: required, max 255 chars
+            if (!$companyName || strlen($companyName) > 255) {
+                $invalid++;
+                continue;
             }
 
             // Duplicate check: email already registered

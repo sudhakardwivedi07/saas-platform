@@ -548,12 +548,12 @@
             <div style="margin-top:18px">
                 <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:10px">CSV Format</div>
                 <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px">
-                    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:10px">Your CSV must include the following columns in order:</div>
+                    <div style="font-size:12.5px;color:var(--text-2);margin-bottom:10px">Your CSV must include all 4 columns in order <span style="color:var(--red)">*</span>:</div>
                     <div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 14px;font-family:monospace;font-size:13px;color:var(--text-1)">
                         client_name, email, phone, company_name
                     </div>
                     <div style="font-size:11.5px;color:var(--text-3);margin-top:8px">
-                        <span style="color:var(--red);font-weight:600">*</span> <strong>client_name</strong> and <strong>email</strong> are required &nbsp;·&nbsp; <strong>phone</strong> and <strong>company_name</strong> are optional
+                        All 4 columns are required. Rows with missing or invalid values will be skipped.
                     </div>
                     <div style="font-size:12px;color:var(--text-3);margin-top:6px">
                         Example: <em>Sarah Chen, sarah@chen.com, 4085551234, TechCorp Inc.</em>
@@ -1121,7 +1121,7 @@ function downloadSampleCsv() {
     var csv = 'client_name,email,phone,company_name\n'
             + 'Sarah Chen,sarah@chen.com,4085551234,TechCorp Inc.\n'
             + 'John Smith,john@acme.com,3125559876,Acme Corp\n'
-            + 'Emily Davis,emily@startup.com,,Startup LLC\n';
+            + 'Emily Davis,emily@startup.com,6502223344,Startup LLC\n';
     var a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
     a.download = 'sample_clients.csv';

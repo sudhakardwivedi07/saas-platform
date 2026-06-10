@@ -86,7 +86,6 @@
             <thead>
                 <tr>
                     <th>Company</th>
-                    <th>Subscription</th>
                     <th>QB</th>
                     <th>Status</th>
                     <th>Created</th>
@@ -141,32 +140,11 @@
                             </div>
                         </div>
                     </td>
-                    <td>
-                        @if($sub)
-                            @php
-                                $subBadge = match($sub->status) {
-                                    'active'   => 'b-green',
-                                    'trialing' => 'b-amber',
-                                    'past_due' => 'b-red',
-                                    default    => 'b-gray',
-                                };
-                            @endphp
-                            <span class="badge {{ $subBadge }}" style="font-size:11.5px">{{ $subStatus }}</span>
-                            @if($co->trial_ends_at && $co->trial_ends_at->isFuture())
-                            <div style="font-size:11px;color:var(--amber);margin-top:2px">Ends {{ $co->trial_ends_at->format(active_date_format()) }}</div>
-                            @endif
-                        @else
-                            <span style="color:var(--text-3);font-size:13px">None</span>
-                        @endif
-                    </td>
-                    <td>
+                    <td style="text-align:center">
                         @if($isQB)
-                            <span class="badge b-green" style="font-size:11.5px">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg>
-                                Connected
-                            </span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
                         @else
-                            <span style="color:var(--text-3);font-size:13px">—</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                         @endif
                     </td>
                     <td data-search="{{ $displayStatus }}">
@@ -217,8 +195,8 @@ $(document).ready(function() {
     var table = $('#co-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
-        order: [[4, 'desc']],
-        columnDefs: [{ orderable: false, targets: [5] }],
+        order: [[3, 'desc']],
+        columnDefs: [{ orderable: false, targets: [4] }],
         language: {
             info: 'Showing _START_–_END_ of _TOTAL_ companies',
             infoEmpty: 'No companies found',

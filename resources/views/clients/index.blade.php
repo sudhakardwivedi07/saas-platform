@@ -435,7 +435,7 @@
 {{-- ── Add Client Modal ─────────────────────────────────── --}}
 {{-- ── Add New Client Modal ──────────────────────────────── --}}
 <div class="modal-overlay {{ $errors->any() ? 'open' : '' }}" id="modal-add-client" onclick="if(event.target===this)this.classList.remove('open')">
-    <div class="modal-box" style="width:560px">
+    <div class="modal-box" style="width:900px;max-width: 92vw;">
         <button class="modal-close" onclick="document.getElementById('modal-add-client').classList.remove('open')">&times;</button>
         <div class="modal-title">Add New Client</div>
         <div class="modal-sub">Invite a new client to your partner portal</div>

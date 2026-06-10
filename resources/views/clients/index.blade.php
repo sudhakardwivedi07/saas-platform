@@ -484,7 +484,7 @@
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
                     <div class="mf-field" style="margin:0 0 4px">
-                        <label class="mf-label">Phone Number</label>
+                        <label class="mf-label">Phone Number <span style="color:var(--red)">*</span></label>
                         <input type="tel" name="phone" id="ac-phone" class="mf-inp" placeholder="10-digit number" value="{{ old('phone') }}" maxlength="10">
                         <div id="err-phone" class="ac-err" style="display:none"></div>
                     </div>
@@ -496,7 +496,7 @@
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
                     <div class="mf-field">
-                        <label class="mf-label">Industry Type <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Industry Type</label>
                         <select name="industry_type" id="ac-industry" class="mf-sel" style="height:40px">
                             <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select Industry Type</option>
                             @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
@@ -506,7 +506,7 @@
                         <div id="err-industry" class="ac-err" style="display:none"></div>
                     </div>
                     <div class="mf-field">
-                        <label class="mf-label">Entity Type <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Entity Type</label>
                         <select name="entity_type" class="mf-sel" style="height:40px">
                             <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
                             @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
@@ -550,10 +550,13 @@
                 <div style="border:1px solid var(--border);border-radius:10px;padding:14px 16px">
                     <div style="font-size:12.5px;color:var(--text-2);margin-bottom:10px">Your CSV must include the following columns in order:</div>
                     <div style="background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 14px;font-family:monospace;font-size:13px;color:var(--text-1)">
-                        client_name, email
+                        client_name, email, phone, company_name
                     </div>
-                    <div style="font-size:12px;color:var(--text-3);margin-top:10px">
-                        Example: <em>TechCorp Inc., info@techcorp.com</em>
+                    <div style="font-size:11.5px;color:var(--text-3);margin-top:8px">
+                        <span style="color:var(--red);font-weight:600">*</span> <strong>client_name</strong> and <strong>email</strong> are required &nbsp;·&nbsp; <strong>phone</strong> and <strong>company_name</strong> are optional
+                    </div>
+                    <div style="font-size:12px;color:var(--text-3);margin-top:6px">
+                        Example: <em>Sarah Chen, sarah@chen.com, 4085551234, TechCorp Inc.</em>
                     </div>
                     <a href="javascript:void(0)" onclick="downloadSampleCsv()" style="display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--blue);margin-top:10px;text-decoration:none;font-weight:500">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -986,15 +989,15 @@ function validateAndSubmitAddClient() {
         setErr('ac-email', 'err-email', 'Please enter a valid email address.');
     }
 
-    // Phone Number (optional — if filled must be exactly 10 digits)
+    // Phone Number (required — must be exactly 10 digits)
     var rawPhone = (document.getElementById('ac-phone').value || '').trim();
     clearErr('ac-phone', 'err-phone');
-    if (rawPhone) {
+    if (!rawPhone) {
+        setErr('ac-phone', 'err-phone', 'Phone number is required.');
+    } else {
         var digitsOnly = rawPhone.replace(/\D/g, '');
-        if (!/^\d+$/.test(rawPhone.replace(/\s/g, ''))) {
-            setErr('ac-phone', 'err-phone', 'Please enter a valid phone number.');
-        } else if (digitsOnly.length !== 10) {
-            setErr('ac-phone', 'err-phone', 'Phone number must be 10 digits.');
+        if (digitsOnly.length !== 10) {
+            setErr('ac-phone', 'err-phone', 'Phone number must be exactly 10 digits.');
         }
     }
 
@@ -1003,16 +1006,11 @@ function validateAndSubmitAddClient() {
     clearErr('ac-company', 'err-company');
     if (!company) {
         setErr('ac-company', 'err-company', 'Company Name is required.');
-    } else if (company.length < 2 || company.length > 100 || !/^[a-zA-Z0-9\s.\&\-_]+$/.test(company)) {
-        setErr('ac-company', 'err-company', 'Please enter a valid Company Name.');
+    } else if (company.length < 2 || company.length > 100) {
+        setErr('ac-company', 'err-company', 'Company Name must be between 2 and 100 characters.');
     }
 
-    // Industry Type
-    var industry = document.getElementById('ac-industry');
-    clearErr('ac-industry', 'err-industry');
-    if (!industry || !industry.value) {
-        setErr('ac-industry', 'err-industry', 'Please select an Industry Type.');
-    }
+    // Industry Type — optional, no validation required
 
     if (valid) {
         document.getElementById('add-client-form').submit();
@@ -1120,7 +1118,10 @@ function handleCsvDrop(e) {
     if (file && file.name.endsWith('.csv')) handleCsvFile(file);
 }
 function downloadSampleCsv() {
-    var csv = 'client_name,email\nTechCorp Inc.,info@techcorp.com\nAcme Corp,hello@acme.com\n';
+    var csv = 'client_name,email,phone,company_name\n'
+            + 'Sarah Chen,sarah@chen.com,4085551234,TechCorp Inc.\n'
+            + 'John Smith,john@acme.com,3125559876,Acme Corp\n'
+            + 'Emily Davis,emily@startup.com,,Startup LLC\n';
     var a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
     a.download = 'sample_clients.csv';

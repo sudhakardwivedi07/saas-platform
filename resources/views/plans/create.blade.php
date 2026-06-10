@@ -94,6 +94,36 @@
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
 
+            {{-- Free Plan --}}
+            <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;background:#fff;transition:border-color .14s" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
+                <input type="hidden" name="is_free" value="0">
+                <input type="checkbox" name="is_free" value="1" id="chk_free" style="width:15px;height:15px;accent-color:var(--orange);flex-shrink:0;cursor:pointer" {{ old('is_free') ? 'checked' : '' }} onchange="toggleFree(this)">
+                <div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-1)">Free Plan</div>
+                    <div style="font-size:11.5px;color:var(--text-3)">Set price to $0 and mark as free</div>
+                </div>
+            </label>
+
+            {{-- Recommended --}}
+            <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;background:#fff;transition:border-color .14s" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
+                <input type="hidden" name="is_recommended" value="0">
+                <input type="checkbox" name="is_recommended" value="1" style="width:15px;height:15px;accent-color:var(--orange);flex-shrink:0;cursor:pointer" {{ old('is_recommended') ? 'checked' : '' }}>
+                <div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-1)">Recommended</div>
+                    <div style="font-size:11.5px;color:var(--text-3)">Highlight this plan to users</div>
+                </div>
+            </label>
+
+            {{-- Free Trial --}}
+            <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;background:#fff;transition:border-color .14s" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
+                <input type="hidden" name="is_trial_allowed" value="0">
+                <input type="checkbox" name="is_trial_allowed" value="1" id="chk_trial" style="width:15px;height:15px;accent-color:var(--orange);flex-shrink:0;cursor:pointer" {{ old('is_trial_allowed') ? 'checked' : '' }} onchange="document.getElementById('trial_days_group').style.display=this.checked?'block':'none'">
+                <div>
+                    <div style="font-size:13px;font-weight:500;color:var(--text-1)">Free Trial</div>
+                    <div style="font-size:11.5px;color:var(--text-3)">Allow trial before payment</div>
+                </div>
+            </label>
+
             {{-- Active --}}
             <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;background:#fff;transition:border-color .14s" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
                 <input type="hidden" name="is_active" value="0">
@@ -104,6 +134,15 @@
                 </div>
             </label>
 
+        </div>
+
+        {{-- Trial days (conditional) --}}
+        <div id="trial_days_group" style="{{ old('is_trial_allowed') ? '' : 'display:none' }};margin-top:14px">
+            <div class="f-group">
+                <label class="f-label">Trial Period (days)</label>
+                <input type="number" name="trial_days" min="1" max="365" class="f-inp" style="max-width:160px" value="{{ old('trial_days', 14) }}">
+                <div style="font-size:12px;color:var(--text-3);margin-top:5px">Number of days users can trial before payment is required.</div>
+            </div>
         </div>
 
         {{-- ── Section: Features ────────────────────────────── --}}

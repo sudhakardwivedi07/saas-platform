@@ -23,63 +23,8 @@
     line-height: 1.6;
     margin: 0 0 12px 0;
 }
-/* ── Action Card ─────────────────────────────────────────────── */
-.dashboard-action-cards-row {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    margin-bottom: 30px;
-}
-.dashboard-action-card {
-    background: white;
-    border: 1px solid #dbdbdb;
-    border-radius: 5px;
-    padding: 24px;
-    transition: all 0.3s ease;
-}
-.dashboard-action-card:hover {
-    border-color: #f06b25;
-    box-shadow: 0 4px 12px rgba(21,89,166,0.1);
-}
-.dashboard-action-card-icon {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 16px;
-}
-.dashboard-action-card h3 {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1a202c;
-    margin: 0 0 8px 0;
-}
-.dashboard-action-card p {
-    color: #000;
-    font-size: 15px;
-    line-height: 1.5;
-    margin: 0 0 20px 0;
-}
-.dashboard-action-card-btn {
-    width: 100%;
-    padding: 16px 24px;
-    border-radius: 8px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-.dashboard-action-card-btn.primary { background: var(--orange); color: white; }
-.dashboard-action-card-btn.primary:hover { filter: brightness(.85); color: white; }
 .btn-generate-insight { background:var(--orange);color:white;padding:8px 18px;border:none;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;transition:filter .2s; }
 .btn-generate-insight:hover { filter:brightness(.85); }
-.dashboard-action-card-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 /* ── Company / Filter Bar ────────────────────────────────────── */
 .insights-company-bar {
     background: white;
@@ -474,11 +419,11 @@
 {{-- ── Welcome (no reports yet) ────────────────────────────────────────── --}}
 <div id="insightsWelcomeMessage" style="{{ $reports->isEmpty() ? '' : 'display:none;' }}">
     <div class="insights-welcome-message">
-        <div class="welcome-header" style="margin-bottom:30px;">
+        <div class="welcome-header">
             <h2>Welcome to Insights</h2>
             <p>You're one step away from accessing your first <strong>financial insights.</strong></p>
             @if($qbConnection)
-                <p>Your <span style="color:#f06b25;">QuickBooks</span> is connected. Sync your data to generate insights. Your insights will appear here once the analysis is complete.</p>
+                <p>Your insights will appear here once the analysis is complete.</p>
             @else
                 <p>Connect <span style="color:#f06b25;">QuickBooks</span> to begin the analysis. Your insights will appear here once the analysis is complete.</p>
             @endif
@@ -488,49 +433,6 @@
                 </div>
             @endif
         </div>
-
-        @unless(session('impersonating_client_original_id'))
-        <h3 style="font-size:18px;font-weight:600;color:#1a202c;margin:24px 0 16px 0;">
-            {{ $qbConnection ? 'Generate your first insights' : 'Access your first insights' }}
-        </h3>
-
-        <div class="dashboard-action-cards-row" style="grid-template-columns:repeat(1,minmax(0,460px));">
-            <div class="dashboard-action-card">
-                <div class="dashboard-action-card-icon">
-                    <svg width="40" height="40" viewBox="0 0 40 40">
-                        <circle cx="20" cy="20" r="20" fill="#2CA01C"/>
-                        <text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle"
-                              fill="white" font-size="16" font-weight="700" font-family="Arial,sans-serif">QB</text>
-                    </svg>
-                </div>
-                @if(!empty($isAdminView))
-                    <h3>View-Only Mode</h3>
-                    <p>You are viewing this client's insights in read-only mode. Insight generation is managed by the client.</p>
-                    <button class="dashboard-action-card-btn primary" disabled style="opacity:.55;cursor:not-allowed">Read-Only View</button>
-                @elseif($qbConnection && !$limitReached)
-                    <h3>Sync QuickBooks Data</h3>
-                    <p>Fetch your latest financial data from QuickBooks and generate CFO-level insights.</p>
-                    <button class="dashboard-action-card-btn primary" id="insightsSyncQBBtn" onclick="generateInsight()">
-                        <i class="fa fa-sync-alt"></i> Generate Insights
-                    </button>
-                @elseif($qbConnection && $limitReached)
-                    <h3>Monthly Limit Reached</h3>
-                    <p>You've used all your insights for this month. Upgrade your plan or wait until next month.</p>
-                    <button class="dashboard-action-card-btn primary" disabled>Limit Reached</button>
-                @elseif($qbConfigured)
-                    <h3>Connect QuickBooks</h3>
-                    <p>Automatically sync your financial data and generate real-time insights.</p>
-                    <a href="{{ route('quickbooks.user-connect') }}" class="dashboard-action-card-btn primary" style="text-decoration:none;">
-                        <i class="fa fa-link"></i> Connect QuickBooks
-                    </a>
-                @else
-                    <h3>QuickBooks Not Configured</h3>
-                    <p>QuickBooks credentials are not set up yet. Please contact your administrator to configure QuickBooks in Settings.</p>
-                    <button class="dashboard-action-card-btn primary" disabled>QuickBooks Not Configured</button>
-                @endif
-            </div>
-        </div>
-        @endunless
 
         <div style="margin-top:24px;padding-top:20px;border-top:1px solid #e5e7eb;text-align:center;">
             <p style="color:#64748b;font-size:14px;margin:0;">

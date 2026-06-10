@@ -140,7 +140,7 @@
                             </div>
                         </div>
                     </td>
-                    <td style="text-align:center">
+                    <td>
                         @if($isQB)
                             <svg viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5" width="18" height="18"><polyline points="20 6 9 17 4 12"/></svg>
                         @else

@@ -313,6 +313,10 @@ table.dataTable thead th { cursor:pointer }
 <script src="{{ asset(config('assets.jquery')) }}"></script>
 <script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
+/* DR globals — must be defined before the IIFE that sets _drCbs['ticket-dr'] */
+var _drCbs = {};
+var _drCal = {};
+
 (function () {
     var CSRF = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
@@ -581,9 +585,7 @@ table.dataTable thead th { cursor:pointer }
 
 /* ── Date Range Picker (DR) functions ────────────────────────────────── */
 var DR_FMT   = '{{ active_date_format() }}';
-var _drCbs   = {};
-var _drCal   = {};
-var _DR_MON  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+var _DR_MON  =['January','February','March','April','May','June','July','August','September','October','November','December'];
 var _DR_DAY  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 function drFmt(ymd) {

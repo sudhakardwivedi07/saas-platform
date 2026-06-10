@@ -118,9 +118,25 @@ class InsightsController extends AccountBaseController
         $user      = auth()->user();
         $companyId = $user->company_id;
 
-        $connection = QuickBooksConnection::where('user_id', $user->id)
+        // Look up QB connection by company (same as index()) so that connections
+        // made by an admin on the client's behalf are found during impersonation.
+        $portfolioIds = $user->portfolioCompanies()->pluck('id');
+        if ($portfolioIds->isEmpty()) {
+            $portfolioIds = collect([$companyId])->filter();
+        }
+        $connection = QuickBooksConnection::withoutGlobalScopes()
+            ->whereIn('company_id', $portfolioIds)
             ->where('is_active', true)
             ->first();
+
+        // Fallback: if viewing as client, also check using the impersonating admin's user_id
+        if (!$connection && session('impersonating_client_original_id')) {
+            $adminId    = session('impersonating_client_original_id');
+            $connection = QuickBooksConnection::withoutGlobalScopes()
+                ->whereIn('company_id', $portfolioIds)
+                ->where('user_id', $adminId)
+                ->first();
+        }
 
         if (!$connection) {
             return response()->json([
@@ -211,6 +227,7 @@ class InsightsController extends AccountBaseController
                     'upload_date'     => now()->toDateString(),
                     'total_file_size' => 0,
                     'status'          => 'Uploading',
+                    'publish_status'  => 'draft',
                 ]);
 
                 $totalSize = 0;
@@ -391,7 +408,19 @@ class InsightsController extends AccountBaseController
         $jsonData['sections'] = $sections;
         $jsonData['report']   = trim($reportText);
 
-        // Always spawn a new version to preserve history
+        // Draft insights: update in place — only one draft per insight series.
+        // Published insights: spawn a new version to preserve history.
+        if ($report->isDraft()) {
+            $report->update(['insight_json_data' => $jsonData]);
+
+            return response()->json([
+                'status'       => 'success',
+                'message'      => 'Draft updated.',
+                'redirect_url' => route('insights.view', $report->encrypted_id),
+                'version'      => $report->version ?? 1,
+            ]);
+        }
+
         $next = $this->spawnVersion($report, $jsonData);
 
         return response()->json([

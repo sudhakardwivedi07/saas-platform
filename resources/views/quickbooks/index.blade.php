@@ -209,11 +209,6 @@
                     </tr>
                 @endif
             @empty
-            <tr>
-                <td colspan="{{ $showPartnerColumn ? 7 : 6 }}" style="text-align:center;padding:48px 20px;color:var(--text-3)">
-                    No client companies found.
-                </td>
-            </tr>
             @endforelse
         </tbody>
     </table>

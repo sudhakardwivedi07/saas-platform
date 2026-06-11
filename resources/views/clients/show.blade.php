@@ -277,6 +277,7 @@ $totalCompanies = $allClientCompanies->count();
     <div class="modal-box" style="width:480px">
         <button class="modal-close" onclick="document.getElementById('modal-edit-client').classList.remove('open')">&times;</button>
         <div class="modal-title">Edit Client</div>
+        <div class="modal-sub">Update the details for this client.</div>
         <form id="edit-client-form" method="POST">
             @csrf
             <input type="hidden" id="edit-client-id">

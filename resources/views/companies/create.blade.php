@@ -207,12 +207,6 @@
             </div>
 
             <div class="mf-field">
-                <label class="mf-label">State / Jurisdiction</label>
-                <input type="text" name="state" class="mf-inp"
-                       placeholder="e.g. Delaware, California" value="{{ old('state') }}">
-            </div>
-
-            <div class="mf-field">
                 <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
                 <input type="email" name="company_email" id="co-email" class="mf-inp"
                        placeholder="info@acme.com" value="{{ old('company_email') }}" maxlength="100">

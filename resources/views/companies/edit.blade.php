@@ -30,8 +30,13 @@
 @endpush
 
 @section('content')
+@php
+    $backUrl = ($isClientUserFlow ?? auth()->user()->hasRole('client'))
+        ? route('my-companies.index')
+        : (route('clients.index') . '?tab=companies');
+@endphp
 <div style="margin-bottom:18px">
-    <a href="{{ route('clients.index') }}?tab=companies" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text-2);text-decoration:none">
+    <a href="{{ $backUrl }}" style="display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--text-2);text-decoration:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
         Back to Companies
     </a>
@@ -102,11 +107,6 @@
             </div>
 
             <div class="mf-field">
-                <label class="mf-label">State / Jurisdiction</label>
-                <input type="text" name="state" class="mf-inp" value="{{ old('state', $company->state) }}">
-            </div>
-
-            <div class="mf-field">
                 <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
                 <input type="email" name="company_email" id="company_email" class="mf-inp" required value="{{ old('company_email', $company->company_email) }}">
             </div>
@@ -114,7 +114,7 @@
             @if($isClientUserFlow)
             <div style="display:flex;align-items:center;gap:10px;margin-top:18px">
                 <button type="submit" class="btn btn-primary">Save Changes</button>
-                <a href="{{ route('clients.index') }}?tab=companies" class="btn btn-ghost">Cancel</a>
+                <a href="{{ $backUrl }}" class="btn btn-ghost">Cancel</a>
             </div>
             @endif
         </div>
@@ -147,7 +147,7 @@
 
         <div style="display:flex;align-items:center;gap:10px;margin-top:16px">
             <button type="submit" class="btn btn-primary">Save Changes</button>
-            <a href="{{ route('clients.index') }}?tab=companies" class="btn btn-ghost">Cancel</a>
+            <a href="{{ $backUrl }}" class="btn btn-ghost">Cancel</a>
         </div>
         @endif
     </div>

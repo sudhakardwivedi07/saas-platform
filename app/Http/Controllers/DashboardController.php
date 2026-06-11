@@ -145,12 +145,8 @@ class DashboardController extends AccountBaseController
                 ->whereBetween('updated_at', [$startDate, $endDate])
                 ->count();
 
-            $totalInsightsUsed = Company::withoutGlobalScopes()
-                ->whereIn('id', $reportCompanyIds)
-                ->sum('insights_used');
-
             $this->insightsAvailable = $monthlyInsightLimit > 0
-                ? max(0, $monthlyInsightLimit - (int) $totalInsightsUsed)
+                ? max(0, $monthlyInsightLimit - $this->insightsGenerated)
                 : 0;
         }
 

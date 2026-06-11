@@ -58,7 +58,7 @@
                     <input type="text" class="srch-inp" id="client-search" placeholder="Search clients…" autocomplete="off">
                 </div>
                 <select class="sel" id="client-status-filter" autocomplete="off">
-                    <option value="">All Status</option>
+                    <option value="">Select Status</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                     <option value="suspended">Suspended</option>
@@ -204,7 +204,7 @@
                     <input type="text" class="srch-inp" id="company-search" placeholder="Search companies…" autocomplete="off">
                 </div>
                 <select class="sel" id="company-status-filter" autocomplete="off">
-                    <option value="">All Status</option>
+                    <option value="">Select Status</option>
                     <option value="active">Active</option>
                     <option value="quota full">Quota Full</option>
                     <option value="inactive">Inactive</option>
@@ -212,12 +212,12 @@
                     <option value="suspended">Suspended</option>
                 </select>
                 <select class="sel" id="company-qb-filter" autocomplete="off">
-                    <option value="">QB Status</option>
+                    <option value="">Select QB Status</option>
                     <option value="connected">Connected</option>
                     <option value="not connected">Not Connected</option>
                 </select>
                 <select class="sel" id="company-client-filter" autocomplete="off">
-                    <option value="">All Clients</option>
+                    <option value="">Select Client</option>
                     @foreach($clientsList as $cl)
                     <option value="{{ $cl->name }}">{{ $cl->name }}</option>
                     @endforeach

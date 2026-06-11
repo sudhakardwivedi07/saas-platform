@@ -161,6 +161,12 @@ class ClientController extends AccountBaseController
                     $q->orWhere('metadata->actor_company_id', $coId);
                 }
 
+                // Insight events (generated/published by admin via PartnerInsightsController)
+                // store the client's company in metadata->client_company_id.
+                foreach ($companyIds as $coId) {
+                    $q->orWhere('metadata->client_company_id', $coId);
+                }
+
                 // Middleware events (Client Updated, Company Updated, etc.) store
                 // the entity ID only in metadata->path, e.g. /clients/24 or /my-companies/45.
                 $q->orWhereRaw(

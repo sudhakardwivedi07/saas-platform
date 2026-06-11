@@ -599,7 +599,6 @@
     <div class="modal-box" style="width:640px;max-height:90vh;overflow-y:auto;padding-bottom:0">
         <button class="modal-close" onclick="closeAddCompanyModal()">&times;</button>
         <div class="modal-title">Add New Company</div>
-        <div class="modal-sub">Create a new client company and assign an admin account</div>
 
         @if($errors->any() && old('_form_source') === 'add_company')
         <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 13px;margin:12px 0">
@@ -620,7 +619,7 @@
             <div style="margin-bottom:20px">
                 <div style="font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
                     <span style="width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">1</span>
-                    Company Admin Account
+                    Company Client Account
                 </div>
 
                 <div style="display:flex;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:3px;gap:3px;margin-bottom:16px">
@@ -638,7 +637,6 @@
 
                 {{-- New admin panel --}}
                 <div id="modal-panel-admin-new">
-                    <div style="font-size:12.5px;color:var(--text-3);margin-bottom:12px">Create login credentials for this company's administrator.</div>
                     <div class="mf-field">
                         <label class="mf-label">Client Full Name <span style="color:var(--red)">*</span></label>
                         <input type="text" name="admin_name" id="modal-co-admin-name" class="mf-inp"
@@ -651,19 +649,11 @@
                                placeholder="jane@acme.com" value="{{ old('admin_email') }}" maxlength="100">
                         <div id="modal-err-co-admin-email" class="co-err" style="display:none"></div>
                     </div>
-                    <div class="form-2col">
-                        <div class="mf-field">
-                            <label class="mf-label">Password <span style="color:var(--red)">*</span></label>
-                            <input type="password" name="admin_password" id="modal-co-admin-pwd" class="mf-inp"
-                                   placeholder="Min. 8 characters" autocomplete="new-password">
-                            <div id="modal-err-co-admin-pwd" class="co-err" style="display:none"></div>
-                        </div>
-                        <div class="mf-field">
-                            <label class="mf-label">Confirm Password <span style="color:var(--red)">*</span></label>
-                            <input type="password" name="admin_password_confirmation" id="modal-co-admin-confirm" class="mf-inp"
-                                   placeholder="Repeat password" autocomplete="new-password">
-                            <div id="modal-err-co-admin-confirm" class="co-err" style="display:none"></div>
-                        </div>
+                    <div class="mf-field">
+                        <label class="mf-label">Phone Number <span style="color:var(--red)">*</span></label>
+                        <input type="text" name="admin_phone" id="modal-co-admin-phone" class="mf-inp"
+                               placeholder="10-digit number" value="{{ old('admin_phone') }}" maxlength="10" inputmode="numeric">
+                        <div id="modal-err-co-admin-phone" class="co-err" style="display:none"></div>
                     </div>
                 </div>
 
@@ -710,7 +700,7 @@
                 </div>
                 <div class="form-2col">
                     <div class="mf-field">
-                        <label class="mf-label">Industry Type <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Industry Type</label>
                         <select name="industry_type" id="modal-co-industry" class="mf-sel" style="height:38px">
                             <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select industry</option>
                             @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
@@ -720,7 +710,7 @@
                         <div id="modal-err-co-industry" class="co-err" style="display:none"></div>
                     </div>
                     <div class="mf-field">
-                        <label class="mf-label">Entity Type <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Entity Type</label>
                         <select name="entity_type" id="modal-co-entity" class="mf-sel" style="height:38px">
                             <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
                             @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
@@ -1411,22 +1401,6 @@ function validateAndSubmitCompanyModal() {
         modalCoErr('modal-err-co-name', ''); modalCoMark('modal-company-name', false);
     }
 
-    // Industry Type
-    var indEl = document.getElementById('modal-co-industry');
-    if (!indEl || !indEl.value) {
-        modalCoErr('modal-err-co-industry', 'Please select an industry.'); modalCoMark('modal-co-industry', true); ok = false;
-    } else {
-        modalCoErr('modal-err-co-industry', ''); modalCoMark('modal-co-industry', false);
-    }
-
-    // Entity Type
-    var entEl = document.getElementById('modal-co-entity');
-    if (!entEl || !entEl.value) {
-        modalCoErr('modal-err-co-entity', 'Please select an entity type.'); modalCoMark('modal-co-entity', true); ok = false;
-    } else {
-        modalCoErr('modal-err-co-entity', ''); modalCoMark('modal-co-entity', false);
-    }
-
     // Company Email
     var coEmailEl = document.getElementById('modal-co-email');
     var coEmailVal = coEmailEl ? coEmailEl.value.trim() : '';
@@ -1457,31 +1431,21 @@ function validateAndSubmitCompanyModal() {
             var adminEmailEl = document.getElementById('modal-co-admin-email');
             var adminEmailVal = adminEmailEl ? adminEmailEl.value.trim() : '';
             if (!adminEmailVal) {
-                modalCoErr('modal-err-co-admin-email', 'Admin email is required.'); modalCoMark('modal-co-admin-email', true); ok = false;
+                modalCoErr('modal-err-co-admin-email', 'Client email is required.'); modalCoMark('modal-co-admin-email', true); ok = false;
             } else if (!emailRx.test(adminEmailVal)) {
                 modalCoErr('modal-err-co-admin-email', 'Enter a valid email address.'); modalCoMark('modal-co-admin-email', true); ok = false;
             } else {
                 modalCoErr('modal-err-co-admin-email', ''); modalCoMark('modal-co-admin-email', false);
             }
 
-            var pwdEl = document.getElementById('modal-co-admin-pwd');
-            var pwdVal = pwdEl ? pwdEl.value : '';
-            if (!pwdVal) {
-                modalCoErr('modal-err-co-admin-pwd', 'Password is required.'); modalCoMark('modal-co-admin-pwd', true); ok = false;
-            } else if (pwdVal.length < 8) {
-                modalCoErr('modal-err-co-admin-pwd', 'Password must be at least 8 characters.'); modalCoMark('modal-co-admin-pwd', true); ok = false;
+            var phoneEl = document.getElementById('modal-co-admin-phone');
+            var phoneVal = phoneEl ? phoneEl.value.replace(/\D/g, '') : '';
+            if (!phoneVal) {
+                modalCoErr('modal-err-co-admin-phone', 'Phone number is required.'); modalCoMark('modal-co-admin-phone', true); ok = false;
+            } else if (phoneVal.length !== 10) {
+                modalCoErr('modal-err-co-admin-phone', 'Phone number must be exactly 10 digits.'); modalCoMark('modal-co-admin-phone', true); ok = false;
             } else {
-                modalCoErr('modal-err-co-admin-pwd', ''); modalCoMark('modal-co-admin-pwd', false);
-            }
-
-            var confirmEl = document.getElementById('modal-co-admin-confirm');
-            var confirmVal = confirmEl ? confirmEl.value : '';
-            if (!confirmVal) {
-                modalCoErr('modal-err-co-admin-confirm', 'Please confirm the password.'); modalCoMark('modal-co-admin-confirm', true); ok = false;
-            } else if (confirmVal !== pwdVal) {
-                modalCoErr('modal-err-co-admin-confirm', 'Passwords do not match.'); modalCoMark('modal-co-admin-confirm', true); ok = false;
-            } else {
-                modalCoErr('modal-err-co-admin-confirm', ''); modalCoMark('modal-co-admin-confirm', false);
+                modalCoErr('modal-err-co-admin-phone', ''); modalCoMark('modal-co-admin-phone', false);
             }
         } else {
             var existingEl = document.getElementById('modal-existing-client-id');

@@ -135,8 +135,6 @@
 }
 .monthly-usage-bar .usage-label { color: #64748b; font-size: 12px; }
 .monthly-usage-bar .usage-count { font-weight: 700; }
-.usage-progress-wrap { flex: 1; background: #e2e8f0; border-radius: 999px; height: 6px; min-width: 80px; }
-.usage-progress-fill { height: 100%; border-radius: 999px; background: #1a6aa8; transition: width .3s; }
 .usage-progress-fill.warn  { background: #f59e0b; }
 .usage-progress-fill.full  { background: #ef4444; }
 /* ── Reports Table ───────────────────────────────────────────── */
@@ -153,10 +151,10 @@
     margin-bottom: 20px;
 }
 .table-header h2 { font-size: 20px; font-weight: 600; color: #1a202c; margin: 0; }
-.reports-table { width: 100%; border-collapse: collapse; }
+.reports-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .reports-table th {
     text-align: left;
-    padding: 10px 14px;
+    padding: 10px 20px;
     font-size: 12px;
     font-weight: 700;
     color: #64748b;
@@ -164,17 +162,27 @@
     background: #f8fafc;
     text-transform: uppercase;
     letter-spacing: .04em;
+    white-space: nowrap;
+    overflow: hidden;
 }
 .reports-table td {
-    padding: 14px 14px;
+    padding: 14px 20px;
     font-size: 14px;
     color: #1a202c;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
+.reports-table th:nth-child(1), .reports-table td:nth-child(1) { width: 36%; }
+.reports-table th:nth-child(2), .reports-table td:nth-child(2) { width: 16%; }
+.reports-table th:nth-child(3), .reports-table td:nth-child(3) { width: 12%; }
+.reports-table th:nth-child(4), .reports-table td:nth-child(4) { width: 14%; }
+.reports-table th:nth-child(5), .reports-table td:nth-child(5) { width: 22%; white-space: nowrap; }
 .reports-table tr:last-child td { border-bottom: none; }
 .reports-table tr:hover td { background: #f8fafc; }
-.insight-name-cell { display: flex; align-items: center; gap: 10px; }
+.insight-name-cell { display: flex; align-items: center; gap: 10px; overflow: hidden; }
 .insight-name-icon { color: #94a3b8; flex-shrink: 0; }
 .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
 .badge.success { background: #d4f4dd; color: #10b981; }
@@ -359,8 +367,10 @@
     <!-- <div class="viewing-company">{{ $selectedCompany?->company_name ?? 'Your Company' }}</div> -->
 
     {{-- Company selector: dropdown for multiple companies, label for single --}}
+    @php $hasReports = $reports->isNotEmpty(); @endphp
     @if($companies->count() > 1)
-    <div class="company-selector-wrap">
+    <div class="company-selector-wrap" style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:13px;font-weight:600;color:#64748b;white-space:nowrap;">Company:</span>
         <div class="bar-select-wrap">
             <select class="bar-select" onchange="switchCompany(this.value)">
                 @foreach($companies as $co)
@@ -375,7 +385,8 @@
         </div>
     </div>
     @elseif($companies->count() === 1)
-    <div class="company-selector-wrap">
+    <div class="company-selector-wrap" style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:13px;font-weight:600;color:#64748b;white-space:nowrap;">Company:</span>
         <span style="display:inline-flex;align-items:center;height:36px;padding:0 14px;background:#f1f5f9;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;font-weight:500;color:#1a202c;white-space:nowrap;gap:6px">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
             {{ $companies->first()->company_name }}
@@ -385,33 +396,29 @@
 
     {{-- Right: usage bar + status filter + search --}}
     <div class="bar-right">
-        @if($monthlyLimit !== null)
         <div class="monthly-usage-bar" style="margin-left:0">
             <span class="usage-label">This month</span>
             <span class="usage-count" style="color:{{ $limitReached ? '#ef4444' : '#1a202c' }}">
-                {{ $monthlyUsed }} / {{ $monthlyLimit }}
+                {{ $monthlyUsed }}
             </span>
-            <div class="usage-progress-wrap">
-                <div class="usage-progress-fill {{ $usageClass }}" style="width:{{ $usagePct }}%"></div>
-            </div>
         </div>
-        @endif
 
         {{-- Status filter --}}
-        <select id="statusFilter" class="bar-select" style="min-width:140px;" onchange="applyFilters()">
+        <select id="statusFilter" class="bar-select" style="min-width:140px;{{ !$hasReports ? 'opacity:0.5;cursor:not-allowed;pointer-events:none;' : '' }}" {{ !$hasReports ? 'disabled' : '' }} onchange="applyFilters()">
             <option value="">Select Status</option>
-            <option value="analyzed">Analyzed</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
             <option value="processing">Processing</option>
             <option value="failed">Failed</option>
             <option value="deleted">Deleted</option>
         </select>
 
         {{-- Search --}}
-        <div class="bar-search-wrap">
+        <div class="bar-search-wrap" style="{{ !$hasReports ? 'opacity:0.5;pointer-events:none;' : '' }}">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
             </svg>
-            <input type="text" id="searchInput" class="bar-search-inp" placeholder="Search insights…" oninput="applyFilters()">
+            <input type="text" id="searchInput" class="bar-search-inp" placeholder="Search insights…" {{ !$hasReports ? 'disabled' : '' }} oninput="applyFilters()">
         </div>
     </div>
 </div>
@@ -480,7 +487,8 @@
                         $isDeleted  = $report->trashed() || strtolower($report->status) === 'deleted';
                         $rowStatus  = $isDeleted ? 'deleted'
                             : (in_array(strtolower($report->status), ['uploading','analyzing']) ? 'processing'
-                            : strtolower($report->status));
+                            : ($report->isReady() ? ($report->publish_status ?? 'draft')
+                            : strtolower($report->status)));
                     @endphp
                     <tr id="insight-row-{{ $report->id }}"
                         data-search="{{ strtolower($report->report_name) }}"
@@ -552,6 +560,9 @@
                         </td>
                     </tr>
                     @endforeach
+                    <tr id="insightNoMatch" style="display:none;">
+                        <td colspan="5" style="text-align:center;padding:28px 16px;color:#64748b;font-size:13.5px;">No matching records found</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -929,7 +940,8 @@
         const row   = document.getElementById('insight-row-' + id);
         const badge = document.getElementById('status-badge-' + id);
         if (!row) { return; }
-        if (badge) { badge.className = 'badge success'; badge.textContent = 'Analyzed'; }
+        if (badge) { badge.className = 'badge warning'; badge.textContent = 'Draft'; }
+        if (row) row.dataset.status = 'draft';
         const viewUrl = encryptedId ? `/insights/${encryptedId}/view` : `/insights/${id}/view`;
         const actions = row.querySelector('.action-buttons');
         if (actions) {
@@ -996,11 +1008,16 @@
     window.applyFilters = function () {
         const q      = (document.getElementById('searchInput')?.value ?? '').toLowerCase();
         const status = (document.getElementById('statusFilter')?.value ?? '').toLowerCase();
-        document.querySelectorAll('#reportsTableBody tr').forEach(row => {
+        let visible  = 0;
+        document.querySelectorAll('#reportsTableBody tr[data-status]').forEach(row => {
             const matchSearch = !q      || (row.dataset.search || '').includes(q);
             const matchStatus = !status || (row.dataset.status || '') === status;
-            row.style.display = (matchSearch && matchStatus) ? '' : 'none';
+            const show = matchSearch && matchStatus;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
         });
+        const noMatch = document.getElementById('insightNoMatch');
+        if (noMatch) noMatch.style.display = visible === 0 ? '' : 'none';
     };
     window.searchReports = window.applyFilters;
 

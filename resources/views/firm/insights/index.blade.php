@@ -93,8 +93,9 @@
     <div style="font-size:14px;font-weight:600;color:#1a202c;">Firm Insights</div>
     <div class="bar-right">
         <select id="fiFiStatusFilter" class="bar-select" onchange="fiFiApplyFilters()">
-            <option value="">All Statuses</option>
-            <option value="analyzed">Analyzed</option>
+            <option value="">All Status</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
             <option value="processing">Processing</option>
             <option value="failed">Failed</option>
             <option value="deleted">Deleted</option>
@@ -213,7 +214,8 @@
                         $isDeleted = $report->trashed() || strtolower($report->status) === 'deleted';
                         $rowStatus = $isDeleted ? 'deleted'
                             : (in_array(strtolower($report->status), ['uploading','analyzing']) ? 'processing'
-                            : strtolower($report->status));
+                            : ($report->isReady() ? ($report->publish_status ?? 'draft')
+                            : strtolower($report->status)));
                     @endphp
                     <tr id="fi-row-{{ $report->id }}"
                         data-search="{{ strtolower($report->report_name) }}"
@@ -242,7 +244,11 @@
                             @if($isDeleted)
                                 <span class="badge danger">Deleted</span>
                             @elseif($report->isReady())
-                                <span class="badge success">Analyzed</span>
+                                @if(($report->publish_status ?? 'draft') === 'published')
+                                    <span class="badge success">Published</span>
+                                @else
+                                    <span class="badge warning">Draft</span>
+                                @endif
                             @elseif(strtolower($report->status) === 'failed')
                                 <span class="badge danger">Failed</span>
                             @elseif(in_array(strtolower($report->status), ['uploading','analyzing']))
@@ -515,7 +521,8 @@
         const row   = document.getElementById('fi-row-' + id);
         const badge = document.getElementById('fi-status-' + id);
         if (!row) { return; }
-        if (badge) { badge.className = 'badge success'; badge.textContent = 'Analyzed'; }
+        if (badge) { badge.className = 'badge warning'; badge.textContent = 'Draft'; }
+        if (row) row.dataset.status = 'draft';
         const viewUrl = encId ? `/firm-insights/${encId}/view` : `/firm-insights/${id}/view`;
         const actions = row.querySelector('.action-buttons');
         if (actions) {

@@ -149,7 +149,7 @@ class User extends Authenticatable
             $companies->prepend($primaryCompany);
         }
 
-        return $companies->unique('id')->values();
+        return $companies->unique('id')->sortByDesc('created_at')->values();
     }
 
     public function companyHasFinancialKpiSource(int $companyId): bool

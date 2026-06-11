@@ -96,7 +96,6 @@ class PartnerInsightsController extends AccountBaseController
         $qbConnectedCompanyIds = QuickBooksConnection::withoutGlobalScopes()
             ->whereIn('company_id', $allClientIds)
             ->where('is_active', true)
-            ->where('access_token_expires_at', '>', now()->addMinutes(10))
             ->pluck('company_id')
             ->unique();
 
@@ -160,7 +159,6 @@ class PartnerInsightsController extends AccountBaseController
         $qbConnectedIds = QuickBooksConnection::withoutGlobalScopes()
             ->whereIn('company_id', $inScope)
             ->where('is_active', true)
-            ->where('access_token_expires_at', '>', now()->addMinutes(10))
             ->pluck('company_id')
             ->unique();
 
@@ -871,7 +869,7 @@ class PartnerInsightsController extends AccountBaseController
             })
             ->max('version') ?? 1;
 
-        return Report::create([
+        $next = Report::create([
             'user_id'          => $source->user_id,
             'company_id'       => $source->company_id,
             'is_firm_report'   => $source->is_firm_report,
@@ -884,6 +882,19 @@ class PartnerInsightsController extends AccountBaseController
             'version'          => $maxVersion + 1,
             'parent_report_id' => $rootId,
         ]);
+
+        $rootAttachments = Report::find($rootId)?->attachments ?? collect();
+        foreach ($rootAttachments as $attachment) {
+            ReportAttachment::create([
+                'report_id'         => $next->id,
+                'attachment'        => $attachment->attachment,
+                'file_size'         => $attachment->file_size,
+                'file_type'         => $attachment->file_type,
+                'original_filename' => $attachment->original_filename,
+            ]);
+        }
+
+        return $next;
     }
 
     // ── PDF helpers ───────────────────────────────────────────────────────────

@@ -172,8 +172,12 @@ class ClientCompanyController extends AccountBaseController
 
         $company->update($safeData);
 
-        return redirect()->route('my-companies.index')
-            ->with('success', "Company '{$company->company_name}' updated successfully!");
+        $isClientUserFlow = auth()->user()->hasRole('client');
+        $successRedirect  = $isClientUserFlow
+            ? redirect()->route('my-companies.index')
+            : redirect()->to(route('clients.index') . '?tab=companies');
+
+        return $successRedirect->with('success', "Company '{$company->company_name}' updated successfully!");
     }
 
     public function destroy(int $id)
@@ -224,8 +228,8 @@ class ClientCompanyController extends AccountBaseController
         $rules = [
             'company_name'  => 'required|string|max:255',
             'company_email' => 'required|email|max:255',
-            'industry_type' => 'required|string|max:100',
-            'entity_type'   => 'required|string|max:100',
+            'industry_type' => 'nullable|string|max:100',
+            'entity_type'   => 'nullable|string|max:100',
             'state'         => 'nullable|string|max:100',
         ];
 
@@ -235,9 +239,9 @@ class ClientCompanyController extends AccountBaseController
             if ($adminType === 'existing') {
                 $rules['existing_client_id'] = 'required|exists:users,id';
             } else {
-                $rules['admin_name']     = 'required|string|max:255';
-                $rules['admin_email']    = 'required|email|max:255|unique:users,email';
-                $rules['admin_password'] = 'required|string|min:8|confirmed';
+                $rules['admin_name']  = 'required|string|max:255';
+                $rules['admin_email'] = 'required|email|max:255|unique:users,email';
+                $rules['admin_phone'] = 'required|digits:10';
             }
         }
 
@@ -293,7 +297,8 @@ class ClientCompanyController extends AccountBaseController
                     'company_id'        => $company->id,
                     'name'              => $request->admin_name,
                     'email'             => $request->admin_email,
-                    'password'          => Hash::make($request->admin_password),
+                    'mobile'            => $request->admin_phone,
+                    'password'          => Hash::make(Str::random(16)),
                     'status'            => 'active',
                     'admin_approval'    => true,
                     'email_verified_at' => $setting?->email_verification ? null : now(),
@@ -488,8 +493,8 @@ class ClientCompanyController extends AccountBaseController
 
         $data = $request->validate([
             'company_name'  => 'required|string|max:255',
-            'industry_type' => 'required|string|max:100',
-            'entity_type'   => 'required|string|max:100',
+            'industry_type' => 'nullable|string|max:100',
+            'entity_type'   => 'nullable|string|max:100',
             'state'         => 'nullable|string|max:100',
             'client_id'     => 'nullable|exists:users,id',
         ]);

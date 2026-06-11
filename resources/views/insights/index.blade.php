@@ -405,7 +405,7 @@
 
         {{-- Status filter --}}
         <select id="statusFilter" class="bar-select" style="min-width:140px;{{ !$hasReports ? 'opacity:0.5;cursor:not-allowed;pointer-events:none;' : '' }}" {{ !$hasReports ? 'disabled' : '' }} onchange="applyFilters()">
-            <option value="">All Status</option>
+            <option value="">Select Status</option>
             <option value="published">Published</option>
             <option value="draft">Draft</option>
             <option value="processing">Processing</option>

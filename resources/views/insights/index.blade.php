@@ -369,7 +369,8 @@
     {{-- Company selector: dropdown for multiple companies, label for single --}}
     @php $hasReports = $reports->isNotEmpty(); @endphp
     @if($companies->count() > 1)
-    <div class="company-selector-wrap">
+    <div class="company-selector-wrap" style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:13px;font-weight:600;color:#64748b;white-space:nowrap;">Company:</span>
         <div class="bar-select-wrap">
             <select class="bar-select" onchange="switchCompany(this.value)">
                 @foreach($companies as $co)
@@ -384,7 +385,8 @@
         </div>
     </div>
     @elseif($companies->count() === 1)
-    <div class="company-selector-wrap">
+    <div class="company-selector-wrap" style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:13px;font-weight:600;color:#64748b;white-space:nowrap;">Company:</span>
         <span style="display:inline-flex;align-items:center;height:36px;padding:0 14px;background:#f1f5f9;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;font-weight:500;color:#1a202c;white-space:nowrap;gap:6px">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
             {{ $companies->first()->company_name }}

@@ -12,7 +12,7 @@
     <div class="ph-actions">
         @if(auth()->user()->can('add_company') || auth()->user()->hasRole('client'))
         @if($canAddCompany)
-        <a href="{{ route('my-companies.create') }}" class="btn btn-primary">
+        <a href="javascript:void(0)" class="btn btn-primary" onclick="openAddCoModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add New Company
         </a>
@@ -46,7 +46,7 @@
                 <input type="text" class="srch-inp" id="co-search" placeholder="Search companies…" autocomplete="off">
             </div>
             <select class="sel" id="co-status-filter" autocomplete="off">
-                <option value="">All Status</option>
+                <option value="">Select Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
                 <option value="suspended">Suspended</option>
@@ -160,7 +160,14 @@
                         <div class="dm-wrap">
                             <button class="dot-menu" data-menu="dm-co-{{ $co->id }}" title="Actions">•••</button>
                             <div class="dm-popup" id="dm-co-{{ $co->id }}">
-                                <a href="{{ route('my-companies.edit', $co->id) }}" class="dm-item">
+                                <a href="javascript:void(0)" class="dm-item"
+                                   onclick="openClientEditCoModal(
+                                       {{ $co->id }},
+                                       '{{ addslashes($co->company_name) }}',
+                                       '{{ addslashes($co->company_email ?? '') }}',
+                                       '{{ addslashes($co->industry_type ?? '') }}',
+                                       '{{ addslashes($co->entity_type ?? '') }}'
+                                   )">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
                                     Edit
                                 </a>
@@ -180,6 +187,118 @@
                 @endforeach
             </tbody>
         </table>
+</div>
+
+{{-- ── Add Company Modal ── --}}
+<div class="modal-overlay" id="modal-add-co" onclick="if(event.target===this)closeAddCoModal()">
+    <div class="modal-box" style="width:560px;max-height:90vh;overflow-y:auto;padding-bottom:0">
+        <button class="modal-close" onclick="closeAddCoModal()">&times;</button>
+        <div class="modal-title">Add New Company</div>
+        <div class="modal-sub">Enter the details for the new company you want to add.</div>
+        <form method="POST" action="{{ route('my-companies.store') }}" id="modal-add-co-form" novalidate>
+            @csrf
+
+            <div style="font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:14px;display:flex;align-items:center;gap:8px">
+                <span style="width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">1</span>
+                Company Information
+            </div>
+
+            <div class="mf-field">
+                <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
+                <input type="text" name="company_name" id="co-modal-name" class="mf-inp" placeholder="Acme Inc." maxlength="100" autocomplete="off">
+                <div id="co-modal-err-name" class="co-err" style="display:none"></div>
+            </div>
+
+            <div class="form-2col">
+                <div class="mf-field">
+                    <label class="mf-label">Industry Type</label>
+                    <select name="industry_type" id="co-modal-industry" class="mf-sel" style="height:38px">
+                        <option value="">Select industry</option>
+                        @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
+                        <option value="{{ $ind }}">{{ $ind }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mf-field">
+                    <label class="mf-label">Entity Type</label>
+                    <select name="entity_type" id="co-modal-entity" class="mf-sel" style="height:38px">
+                        <option value="">Select entity type</option>
+                        @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
+                        <option value="{{ $ent }}">{{ $ent }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="mf-field" style="margin-bottom:0">
+                <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
+                <input type="email" name="company_email" id="co-modal-email" class="mf-inp" placeholder="info@acme.com" maxlength="100" autocomplete="off">
+                <div id="co-modal-err-email" class="co-err" style="display:none"></div>
+            </div>
+
+            <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;border-top:1px solid var(--border);margin-top:20px">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="closeAddCoModal()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitAddCoModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                    Create Company
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- ── Edit Company Modal ── --}}
+<div class="modal-overlay" id="modal-client-edit-co" onclick="if(event.target===this)closeClientEditCoModal()">
+    <div class="modal-box" style="width:560px;max-height:90vh;overflow-y:auto;padding-bottom:0">
+        <button class="modal-close" onclick="closeClientEditCoModal()">&times;</button>
+        <div class="modal-title">Edit Company</div>
+        <div class="modal-sub">Update the details for this company.</div>
+        <form method="POST" id="modal-client-edit-co-form" novalidate>
+            @csrf
+            @method('PUT')
+
+            <div class="mf-field">
+                <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
+                <input type="text" name="company_name" id="client-edit-co-name" class="mf-inp" placeholder="Acme Inc." maxlength="100">
+                <div id="client-edit-err-co-name" class="co-err" style="display:none"></div>
+            </div>
+
+            <div class="form-2col">
+                <div class="mf-field">
+                    <label class="mf-label">Industry Type</label>
+                    <select name="industry_type" id="client-edit-co-industry" class="mf-sel" style="height:38px">
+                        <option value="">Select industry</option>
+                        @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
+                        <option value="{{ $ind }}">{{ $ind }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mf-field">
+                    <label class="mf-label">Entity Type</label>
+                    <select name="entity_type" id="client-edit-co-entity" class="mf-sel" style="height:38px">
+                        <option value="">Select entity type</option>
+                        @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
+                        <option value="{{ $ent }}">{{ $ent }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="mf-field" style="margin-bottom:0">
+                <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
+                <input type="email" name="company_email" id="client-edit-co-email" class="mf-inp" placeholder="info@acme.com" maxlength="100">
+                <div id="client-edit-err-co-email" class="co-err" style="display:none"></div>
+            </div>
+
+            <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;border-top:1px solid var(--border);margin-top:20px">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="closeClientEditCoModal()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitClientEditCoModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 @endsection
@@ -257,6 +376,124 @@ function resetCoFilters() {
     if (window.$ && $('#co-table').length) {
         $('#co-table').DataTable().search('').columns().search('').draw();
     }
+}
+
+/* ── Shared modal field helpers ── */
+function _cliCoErr(id, msg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = msg ? 'flex' : 'none';
+}
+function _cliCoMark(id, hasErr) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('co-invalid', hasErr);
+}
+
+/* ── Add Company Modal ── */
+function openAddCoModal() {
+    document.getElementById('modal-add-co').classList.add('open');
+    setTimeout(function() {
+        var f = document.getElementById('co-modal-name');
+        if (f) f.focus();
+    }, 80);
+}
+
+function closeAddCoModal() {
+    document.getElementById('modal-add-co').classList.remove('open');
+    document.getElementById('modal-add-co-form').reset();
+    ['co-modal-err-name','co-modal-err-email'].forEach(function(id) { _cliCoErr(id, ''); });
+    ['co-modal-name','co-modal-email'].forEach(function(id) { _cliCoMark(id, false); });
+}
+
+function validateAndSubmitAddCoModal() {
+    var ok = true;
+    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    var nameVal = (document.getElementById('co-modal-name')?.value || '').trim();
+    if (!nameVal) {
+        _cliCoErr('co-modal-err-name', 'Company name is required.');
+        _cliCoMark('co-modal-name', true);
+        ok = false;
+    } else {
+        _cliCoErr('co-modal-err-name', '');
+        _cliCoMark('co-modal-name', false);
+    }
+
+    var emailVal = (document.getElementById('co-modal-email')?.value || '').trim();
+    if (!emailVal) {
+        _cliCoErr('co-modal-err-email', 'Company email is required.');
+        _cliCoMark('co-modal-email', true);
+        ok = false;
+    } else if (!emailRx.test(emailVal)) {
+        _cliCoErr('co-modal-err-email', 'Enter a valid email address.');
+        _cliCoMark('co-modal-email', true);
+        ok = false;
+    } else {
+        _cliCoErr('co-modal-err-email', '');
+        _cliCoMark('co-modal-email', false);
+    }
+
+    if (ok) { document.getElementById('modal-add-co-form').submit(); }
+}
+
+/* ── Edit Company Modal ── */
+function openClientEditCoModal(id, name, email, industry, entity) {
+    var updateUrl = '{{ route("my-companies.update", ":id") }}'.replace(':id', id);
+    document.getElementById('modal-client-edit-co-form').action = updateUrl;
+    document.getElementById('client-edit-co-name').value  = name;
+    document.getElementById('client-edit-co-email').value = email;
+
+    var indSel = document.getElementById('client-edit-co-industry');
+    for (var i = 0; i < indSel.options.length; i++) {
+        indSel.options[i].selected = indSel.options[i].value === industry;
+    }
+    var entSel = document.getElementById('client-edit-co-entity');
+    for (var i = 0; i < entSel.options.length; i++) {
+        entSel.options[i].selected = entSel.options[i].value === entity;
+    }
+
+    ['client-edit-err-co-name','client-edit-err-co-email'].forEach(function(id) { _cliCoErr(id, ''); });
+    ['client-edit-co-name','client-edit-co-email'].forEach(function(id) { _cliCoMark(id, false); });
+
+    document.getElementById('modal-client-edit-co').classList.add('open');
+    setTimeout(function() { document.getElementById('client-edit-co-name').focus(); }, 80);
+}
+
+function closeClientEditCoModal() {
+    document.getElementById('modal-client-edit-co').classList.remove('open');
+}
+
+function validateAndSubmitClientEditCoModal() {
+    var ok = true;
+    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    var nameVal = (document.getElementById('client-edit-co-name')?.value || '').trim();
+    if (!nameVal) {
+        _cliCoErr('client-edit-err-co-name', 'Company name is required.');
+        _cliCoMark('client-edit-co-name', true);
+        ok = false;
+    } else {
+        _cliCoErr('client-edit-err-co-name', '');
+        _cliCoMark('client-edit-co-name', false);
+    }
+
+    var emailVal = (document.getElementById('client-edit-co-email')?.value || '').trim();
+    if (!emailVal) {
+        _cliCoErr('client-edit-err-co-email', 'Company email is required.');
+        _cliCoMark('client-edit-co-email', true);
+        ok = false;
+    } else if (!emailRx.test(emailVal)) {
+        _cliCoErr('client-edit-err-co-email', 'Enter a valid email address.');
+        _cliCoMark('client-edit-co-email', true);
+        ok = false;
+    } else {
+        _cliCoErr('client-edit-err-co-email', '');
+        _cliCoMark('client-edit-co-email', false);
+    }
+
+    if (ok) { document.getElementById('modal-client-edit-co-form').submit(); }
 }
 </script>
 @endpush

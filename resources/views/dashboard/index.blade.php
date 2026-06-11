@@ -673,35 +673,26 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
             <div>
                 <div class="db-card-title">Recent Activity</div>
-                <div class="db-card-sub" style="margin-bottom:0">Latest events across your clients</div>
+                <div class="db-card-sub" style="margin-bottom:0">Your 5 most recent actions</div>
             </div>
             <a href="{{ route('activity.index') }}" style="font-size:12.5px;color:var(--blue);font-weight:500;white-space:nowrap">View all →</a>
         </div>
 
+        @forelse($recentActivities as $log)
         @php
-            $actItems = collect();
-            foreach($recentDocs->take(4) as $doc) {
-                $actItems->push([
-                    'color' => 'var(--blue)',
-                    'text'  => ($doc->name ?? 'Document') . ' uploaded',
-                    'time'  => $doc->created_at->diffForHumans(),
-                ]);
-            }
-            foreach($qbConnections->take(2) as $conn) {
-                $actItems->push([
-                    'color' => 'var(--green)',
-                    'text'  => ($conn->company?->company_name ?? $conn->qb_company_name ?? 'Account') . ' connected QuickBooks',
-                    'time'  => $conn->created_at?->diffForHumans() ?? '',
-                ]);
-            }
-            $actItems = $actItems->sortByDesc('time')->values();
+            $dotColor = match(true) {
+                str_contains($log->event_type, 'quickbooks') => 'var(--green)',
+                str_contains($log->event_type, 'insight')    => 'var(--teal, #0d9488)',
+                str_contains($log->event_type, 'login')      => 'var(--blue)',
+                str_contains($log->event_type, 'ticket')     => 'var(--orange)',
+                str_contains($log->event_type, 'subscription') => '#8b5cf6',
+                default                                      => 'var(--blue)',
+            };
         @endphp
-
-        @forelse($actItems as $item)
         <div class="act-item">
-            <div class="act-dot" style="background:{{ $item['color'] }}"></div>
-            <div class="act-txt">{{ $item['text'] }}</div>
-            <div class="act-time">{{ $item['time'] }}</div>
+            <div class="act-dot" style="background:{{ $dotColor }}"></div>
+            <div class="act-txt">{{ $log->display_description }}</div>
+            <div class="act-time">{{ $log->created_at->diffForHumans() }}</div>
         </div>
         @empty
         <div style="text-align:center;padding:32px 0;color:var(--text-3)">
@@ -800,6 +791,11 @@ function setTP(el, period) {
 function applyCustomRange(from, to) {
     var start = from !== undefined ? from : (document.getElementById('db-dr-from') ? document.getElementById('db-dr-from').value : '');
     var end   = to   !== undefined ? to   : (document.getElementById('db-dr-to')   ? document.getElementById('db-dr-to').value   : '');
+    // Cleared (× button) — reset to default period silently
+    if (!start && !end) {
+        window.location.href = '{{ url()->current() }}?period=1M';
+        return;
+    }
     if (!start || !end) {
         Swal.fire({ icon: 'warning', title: 'Select both dates', text: 'Please select both a start and end date.', confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21' });
         return;

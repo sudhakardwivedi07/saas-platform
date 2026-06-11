@@ -513,11 +513,7 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
             <span>@yield('page-title', 'Dashboard')</span>
         </div>
         <div class="ca-tb-right">
-            <div class="ca-tb-notif">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
-                <div class="ca-notif-dot"></div>
-            </div>
-            <div class="ca-tb-user">
+<div class="ca-tb-user">
                 <div class="ca-tb-av">{{ strtoupper(substr($authUser->name ?? 'U', 0, 2)) }}</div>
                 <div>
                     <div class="ca-tb-uname">{{ $authUser->name }}</div>

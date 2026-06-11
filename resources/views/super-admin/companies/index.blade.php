@@ -72,14 +72,14 @@ table.dataTable thead th:after { font-size: 10px; }
                 <input type="text" id="firm-search" class="srch-inp" placeholder="Search firms…">
             </div>
             <select class="sel" id="status-filter">
-                <option value="">All Status</option>
+                <option value="">Select Status</option>
                 <option value="active">Active</option>
                 <option value="trial">Trial</option>
                 <option value="suspended">Suspended</option>
                 <option value="inactive">Inactive</option>
             </select>
             <select class="sel" id="plan-filter">
-                <option value="">All Plans</option>
+                <option value="">Select Plan</option>
                 @foreach($packages as $pkg)
                 <option value="{{ $pkg->name }}">{{ $pkg->name }}</option>
                 @endforeach

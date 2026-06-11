@@ -882,7 +882,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
         </div>
 
         <select id="phStatusFilter" class="f-sel" style="width:auto;height:34px;min-width:130px;font-size:13px">
-            <option value="">All Status</option>
+            <option value="">Select Status</option>
             <option value="complete">Complete</option>
             <option value="failed">Failed</option>
             <option value="pending">Pending</option>
@@ -984,7 +984,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
             <div style="display:flex;flex-direction:column;gap:4px;">
                 <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">Event Type</label>
                 <select class="sel" id="actFilterEventType" style="min-width:190px;">
-                    <option value="">All Events</option>
+                    <option value="">Select Event Type</option>
                     @foreach(($eventTypes ?? collect()) as $eventType)
                         <option value="{{ $eventType }}">{{ ucwords(str_replace(['_', '-'], ' ', $eventType)) }}</option>
                     @endforeach
@@ -1271,7 +1271,8 @@ document.addEventListener('DOMContentLoaded', function () {
     var tabParam = new URLSearchParams(window.location.search).get('tab');
     var target  = hash || tabParam;
     if (target) {
-        var btn = document.querySelector('[data-tab="tab-' + target + '"]');
+        var dataTabVal = target.startsWith('tab-') ? target : ('tab-' + target);
+        var btn = document.querySelector('[data-tab="' + dataTabVal + '"]');
         if (btn) { btn.click(); return; }
     }
     // Legacy: plain "#branding" without "tab-" prefix

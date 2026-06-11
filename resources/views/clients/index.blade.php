@@ -58,7 +58,7 @@
                     <input type="text" class="srch-inp" id="client-search" placeholder="Search clients…" autocomplete="off">
                 </div>
                 <select class="sel" id="client-status-filter" autocomplete="off">
-                    <option value="">All Status</option>
+                    <option value="">Select Status</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                     <option value="suspended">Suspended</option>
@@ -204,7 +204,7 @@
                     <input type="text" class="srch-inp" id="company-search" placeholder="Search companies…" autocomplete="off">
                 </div>
                 <select class="sel" id="company-status-filter" autocomplete="off">
-                    <option value="">All Status</option>
+                    <option value="">Select Status</option>
                     <option value="active">Active</option>
                     <option value="quota full">Quota Full</option>
                     <option value="inactive">Inactive</option>
@@ -212,12 +212,12 @@
                     <option value="suspended">Suspended</option>
                 </select>
                 <select class="sel" id="company-qb-filter" autocomplete="off">
-                    <option value="">QB Status</option>
+                    <option value="">Select QB Status</option>
                     <option value="connected">Connected</option>
                     <option value="not connected">Not Connected</option>
                 </select>
                 <select class="sel" id="company-client-filter" autocomplete="off">
-                    <option value="">All Clients</option>
+                    <option value="">Select Client</option>
                     @foreach($clientsList as $cl)
                     <option value="{{ $cl->name }}">{{ $cl->name }}</option>
                     @endforeach
@@ -330,7 +330,14 @@
                         <div class="dm-wrap">
                             <button class="dot-menu" data-menu="dm-co-{{ $company->id }}" title="Actions">•••</button>
                             <div class="dm-popup" id="dm-co-{{ $company->id }}">
-                                <a href="{{ route('my-companies.edit', $company->id) }}" class="dm-item">
+                                <a href="javascript:void(0)" class="dm-item"
+                                   onclick="openEditCompanyModal(
+                                       {{ $company->id }},
+                                       '{{ addslashes($company->company_name) }}',
+                                       '{{ addslashes($company->company_email ?? '') }}',
+                                       '{{ addslashes($company->industry_type ?? '') }}',
+                                       '{{ addslashes($company->entity_type ?? '') }}'
+                                   )">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
                                     Edit
                                 </a>
@@ -382,6 +389,7 @@
     <div class="modal-box" style="width:480px">
         <button class="modal-close" onclick="document.getElementById('modal-edit-client').classList.remove('open')">&times;</button>
         <div class="modal-title">Edit Client</div>
+        <div class="modal-sub">Update the details for this client.</div>
         <form id="edit-client-form" method="POST">
             @csrf
             <input type="hidden" id="edit-client-id">
@@ -599,7 +607,7 @@
     <div class="modal-box" style="width:640px;max-height:90vh;overflow-y:auto;padding-bottom:0">
         <button class="modal-close" onclick="closeAddCompanyModal()">&times;</button>
         <div class="modal-title">Add New Company</div>
-
+        <div class="modal-sub">Enter the details for the new company you want to add.</div>
         @if($errors->any() && old('_form_source') === 'add_company')
         <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 13px;margin:12px 0">
             @foreach($errors->all() as $error)
@@ -720,11 +728,6 @@
                         <div id="modal-err-co-entity" class="co-err" style="display:none"></div>
                     </div>
                 </div>
-                <div class="mf-field">
-                    <label class="mf-label">State / Jurisdiction</label>
-                    <input type="text" name="state" class="mf-inp"
-                           placeholder="e.g. Delaware, California" value="{{ old('state') }}">
-                </div>
                 <div class="mf-field" style="margin-bottom:0">
                     <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
                     <input type="email" name="company_email" id="modal-co-email" class="mf-inp"
@@ -738,6 +741,61 @@
                 <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitCompanyModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
                     Create Company
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- ── Edit Company Modal ───────────────────────────────── --}}
+<div class="modal-overlay" id="modal-edit-company" onclick="if(event.target===this)closeEditCompanyModal()">
+    <div class="modal-box" style="width:640px;max-height:90vh;overflow-y:auto;padding-bottom:0">
+        <button class="modal-close" onclick="closeEditCompanyModal()">&times;</button>
+        <div class="modal-title">Edit Company</div>
+        <div class="modal-sub">Update the details for this company.</div>
+        <form method="POST" id="modal-edit-company-form" novalidate>
+            @csrf
+
+            <div style="margin-bottom:20px">
+                <div class="mf-field">
+                    <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="company_name" id="edit-co-company-name" class="mf-inp"
+                           placeholder="Acme Inc." maxlength="100">
+                    <div id="edit-err-co-name" class="co-err" style="display:none"></div>
+                </div>
+                <div class="form-2col">
+                    <div class="mf-field">
+                        <label class="mf-label">Industry Type</label>
+                        <select name="industry_type" id="edit-co-industry" class="mf-sel" style="height:38px">
+                            <option value="">Select industry</option>
+                            @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
+                            <option value="{{ $ind }}">{{ $ind }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mf-field">
+                        <label class="mf-label">Entity Type</label>
+                        <select name="entity_type" id="edit-co-entity" class="mf-sel" style="height:38px">
+                            <option value="">Select entity type</option>
+                            @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
+                            <option value="{{ $ent }}">{{ $ent }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="mf-field" style="margin-bottom:0">
+                    <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
+                    <input type="email" name="company_email" id="edit-co-email" class="mf-inp"
+                           placeholder="info@acme.com" maxlength="100">
+                    <div id="edit-err-co-email" class="co-err" style="display:none"></div>
+                </div>
+            </div>
+
+            <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;border-top:1px solid var(--border);margin-top:20px">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="closeEditCompanyModal()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitEditCompanyModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+                    Save Changes
                 </button>
             </div>
         </form>
@@ -1347,6 +1405,76 @@ function openAddCompanyModal() {
 
 function closeAddCompanyModal() {
     document.getElementById('modal-add-company').classList.remove('open');
+}
+
+function openEditCompanyModal(id, name, email, industry, entity) {
+    var updateUrl = '{{ route("my-companies.update", ":id") }}'.replace(':id', id);
+    document.getElementById('modal-edit-company-form').action = updateUrl;
+    document.getElementById('edit-co-company-name').value = name;
+    document.getElementById('edit-co-email').value = email;
+
+    var indSel = document.getElementById('edit-co-industry');
+    for (var i = 0; i < indSel.options.length; i++) {
+        indSel.options[i].selected = indSel.options[i].value === industry;
+    }
+    var entSel = document.getElementById('edit-co-entity');
+    for (var i = 0; i < entSel.options.length; i++) {
+        entSel.options[i].selected = entSel.options[i].value === entity;
+    }
+
+    // Clear previous errors
+    ['edit-err-co-name', 'edit-err-co-email'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) { el.textContent = ''; el.style.display = 'none'; }
+    });
+    ['edit-co-company-name', 'edit-co-email'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('co-invalid');
+    });
+
+    document.getElementById('modal-edit-company').classList.add('open');
+    setTimeout(function() { document.getElementById('edit-co-company-name').focus(); }, 80);
+}
+
+function closeEditCompanyModal() {
+    document.getElementById('modal-edit-company').classList.remove('open');
+}
+
+function validateAndSubmitEditCompanyModal() {
+    var ok = true;
+    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    var nameEl = document.getElementById('edit-co-company-name');
+    var nameVal = nameEl ? nameEl.value.trim() : '';
+    var nameErr = document.getElementById('edit-err-co-name');
+    if (!nameVal) {
+        if (nameErr) { nameErr.textContent = 'Company name is required.'; nameErr.style.display = 'flex'; }
+        if (nameEl) nameEl.classList.add('co-invalid');
+        ok = false;
+    } else {
+        if (nameErr) { nameErr.textContent = ''; nameErr.style.display = 'none'; }
+        if (nameEl) nameEl.classList.remove('co-invalid');
+    }
+
+    var emailEl = document.getElementById('edit-co-email');
+    var emailVal = emailEl ? emailEl.value.trim() : '';
+    var emailErr = document.getElementById('edit-err-co-email');
+    if (!emailVal) {
+        if (emailErr) { emailErr.textContent = 'Company email is required.'; emailErr.style.display = 'flex'; }
+        if (emailEl) emailEl.classList.add('co-invalid');
+        ok = false;
+    } else if (!emailRx.test(emailVal)) {
+        if (emailErr) { emailErr.textContent = 'Enter a valid email address.'; emailErr.style.display = 'flex'; }
+        if (emailEl) emailEl.classList.add('co-invalid');
+        ok = false;
+    } else {
+        if (emailErr) { emailErr.textContent = ''; emailErr.style.display = 'none'; }
+        if (emailEl) emailEl.classList.remove('co-invalid');
+    }
+
+    if (ok) {
+        document.getElementById('modal-edit-company-form').submit();
+    }
 }
 
 function modalSetAdminType(type) {

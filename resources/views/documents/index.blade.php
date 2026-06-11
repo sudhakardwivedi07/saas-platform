@@ -27,7 +27,7 @@
                     <input name="search" value="{{ request('search') }}" placeholder="Search documents…" class="srch-inp">
                 </div>
                 <select name="type" class="sel">
-                    <option value="">All Types</option>
+                    <option value="">Select Type</option>
                     <option value="pdf"   {{ request('type')==='pdf'   ? 'selected':'' }}>PDF</option>
                     <option value="image" {{ request('type')==='image' ? 'selected':'' }}>Images</option>
                     <option value="word"  {{ request('type')==='word'  ? 'selected':'' }}>Word Docs</option>

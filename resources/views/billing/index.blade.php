@@ -401,7 +401,7 @@
                 <input type="text" class="srch-inp" id="usage-search" placeholder="Search companies…" autocomplete="off">
             </div>
             <select class="sel" id="usage-status-filter" autocomplete="off">
-                <option value="">All Status</option>
+                <option value="">Select Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
                 <option value="quota full">Quota Full</option>

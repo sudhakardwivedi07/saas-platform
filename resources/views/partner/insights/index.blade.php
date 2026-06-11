@@ -206,7 +206,7 @@
         <input type="text" id="piSearch" class="pi-search-inp" placeholder="Search insights…" oninput="piApplyFilters()">
     </div>
     <select id="piStatusFilter" class="pi-status-sel" onchange="piApplyFilters()">
-        <option value="">All Statuses</option>
+        <option value="">All Status</option>
         <option value="draft">Draft</option>
         <option value="published">Published</option>
         <option value="processing">Processing</option>

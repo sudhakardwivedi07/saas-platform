@@ -399,8 +399,9 @@
 
         {{-- Status filter --}}
         <select id="statusFilter" class="bar-select" style="min-width:140px;" onchange="applyFilters()">
-            <option value="">All Statuses</option>
-            <option value="analyzed">Analyzed</option>
+            <option value="">All Status</option>
+            <option value="published">Published</option>
+            <option value="draft">Draft</option>
             <option value="processing">Processing</option>
             <option value="failed">Failed</option>
             <option value="deleted">Deleted</option>
@@ -480,7 +481,8 @@
                         $isDeleted  = $report->trashed() || strtolower($report->status) === 'deleted';
                         $rowStatus  = $isDeleted ? 'deleted'
                             : (in_array(strtolower($report->status), ['uploading','analyzing']) ? 'processing'
-                            : strtolower($report->status));
+                            : ($report->isReady() ? ($report->publish_status ?? 'draft')
+                            : strtolower($report->status)));
                     @endphp
                     <tr id="insight-row-{{ $report->id }}"
                         data-search="{{ strtolower($report->report_name) }}"
@@ -552,6 +554,9 @@
                         </td>
                     </tr>
                     @endforeach
+                    <tr id="insightNoMatch" style="display:none;">
+                        <td colspan="5" style="text-align:center;padding:28px 16px;color:#64748b;font-size:13.5px;">No matching records found</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -929,7 +934,8 @@
         const row   = document.getElementById('insight-row-' + id);
         const badge = document.getElementById('status-badge-' + id);
         if (!row) { return; }
-        if (badge) { badge.className = 'badge success'; badge.textContent = 'Analyzed'; }
+        if (badge) { badge.className = 'badge warning'; badge.textContent = 'Draft'; }
+        if (row) row.dataset.status = 'draft';
         const viewUrl = encryptedId ? `/insights/${encryptedId}/view` : `/insights/${id}/view`;
         const actions = row.querySelector('.action-buttons');
         if (actions) {
@@ -996,11 +1002,16 @@
     window.applyFilters = function () {
         const q      = (document.getElementById('searchInput')?.value ?? '').toLowerCase();
         const status = (document.getElementById('statusFilter')?.value ?? '').toLowerCase();
-        document.querySelectorAll('#reportsTableBody tr').forEach(row => {
+        let visible  = 0;
+        document.querySelectorAll('#reportsTableBody tr[data-status]').forEach(row => {
             const matchSearch = !q      || (row.dataset.search || '').includes(q);
             const matchStatus = !status || (row.dataset.status || '') === status;
-            row.style.display = (matchSearch && matchStatus) ? '' : 'none';
+            const show = matchSearch && matchStatus;
+            row.style.display = show ? '' : 'none';
+            if (show) visible++;
         });
+        const noMatch = document.getElementById('insightNoMatch');
+        if (noMatch) noMatch.style.display = visible === 0 ? '' : 'none';
     };
     window.searchReports = window.applyFilters;
 

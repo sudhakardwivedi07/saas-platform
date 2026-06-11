@@ -327,7 +327,7 @@ class ClientCompanyController extends AccountBaseController
         $this->activateCompany($company, $newUser, null, $setting);
 
         return redirect()->to(route('clients.index') . '?tab=companies')
-            ->with('success', "Company '{$company->company_name}' created successfully!");
+            ->with('success', "Company '{$company->company_name}' added successfully!");
     }
 
     // ── Called by Stripe after successful payment ────────────────────────────

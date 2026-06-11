@@ -97,7 +97,7 @@ table.dataTable thead th { cursor:pointer }
             <input type="text" class="srch-inp" id="ticket-search" placeholder="Search tickets..." autocomplete="off">
         </div>
         <select class="sel" id="status-filter" autocomplete="off">
-            <option value="">All Status</option>
+            <option value="">Select Status</option>
             <option value="open">Open</option>
             <option value="in_progress">In Progress</option>
             <option value="on_hold">On Hold</option>
@@ -105,7 +105,7 @@ table.dataTable thead th { cursor:pointer }
             <option value="resolved">Resolved</option>
         </select>
         <select class="sel" id="priority-filter" autocomplete="off">
-            <option value="">All Priority</option>
+            <option value="">Select Priority</option>
             <option value="high">High</option>
             <option value="medium">Medium</option>
             <option value="low">Low</option>

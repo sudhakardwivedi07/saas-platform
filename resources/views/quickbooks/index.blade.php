@@ -64,7 +64,7 @@
                 <input type="text" class="srch-inp" id="qb-search" placeholder="Search companies…" autocomplete="off">
             </div>
             <select class="sel" id="qb-status-filter" autocomplete="off">
-                <option value="">All Statuses</option>
+                <option value="">Select Status</option>
                 <option value="connected">Connected</option>
                 <option value="not connected">Not Connected</option>
                 <option value="auth expired">Auth Expired</option>

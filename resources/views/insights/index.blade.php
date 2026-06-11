@@ -399,7 +399,7 @@
 
         {{-- Status filter --}}
         <select id="statusFilter" class="bar-select" style="min-width:140px;" onchange="applyFilters()">
-            <option value="">All Statuses</option>
+            <option value="">Select Status</option>
             <option value="analyzed">Analyzed</option>
             <option value="processing">Processing</option>
             <option value="failed">Failed</option>

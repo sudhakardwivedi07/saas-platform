@@ -60,7 +60,7 @@
         <div style="display:flex;flex-direction:column;gap:4px;">
             <label style="font-size:0.75rem;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:0.04em;">Event Type</label>
             <select class="sel" id="filterEventType" style="min-width:190px;">
-                <option value="">All Events</option>
+                <option value="">Select Event Type</option>
                 @foreach(($eventTypes ?? collect()) as $eventType)
                     <option value="{{ $eventType }}" {{ request('event_type') === $eventType ? 'selected' : '' }}>
                         {{ ucwords(str_replace(['_', '-'], ' ', $eventType)) }}

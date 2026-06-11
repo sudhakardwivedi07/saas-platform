@@ -137,14 +137,14 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <input type="text" class="srch-inp" id="ct-search" placeholder="Search tickets…" autocomplete="off">
             </div>
             <select class="filter-sel" id="ct-status-filter">
-                <option value="">All Status</option>
+                <option value="">Select Status</option>
                 <option value="Open">Open</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Resolved">Resolved</option>
                 <option value="Closed">Closed</option>
             </select>
             <select class="filter-sel" id="ct-priority-filter">
-                <option value="">All Priority</option>
+                <option value="">Select Priority</option>
                 <option value="High">High</option>
                 <option value="Medium">Medium</option>
                 <option value="Low">Low</option>
@@ -255,14 +255,14 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <input type="text" class="srch-inp" id="mt-search" placeholder="Search tickets…" autocomplete="off">
             </div>
             <select class="filter-sel" id="mt-status-filter">
-                <option value="">All Status</option>
+                <option value="">Select Status</option>
                 <option value="Open">Open</option>
                 <option value="In Progress">In Progress</option>
                 <option value="Resolved">Resolved</option>
                 <option value="Closed">Closed</option>
             </select>
             <select class="filter-sel" id="mt-priority-filter">
-                <option value="">All Priority</option>
+                <option value="">Select Priority</option>
                 <option value="High">High</option>
                 <option value="Medium">Medium</option>
                 <option value="Low">Low</option>

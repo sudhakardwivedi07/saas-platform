@@ -56,13 +56,13 @@
                 <input type="text" class="srch-inp" id="user-search" placeholder="Search users…" autocomplete="off">
             </div>
             <select class="sel" id="user-role-filter" autocomplete="off">
-                <option value="">All Roles</option>
+                <option value="">Select Role</option>
                 @foreach($roles as $role)
                 <option value="{{ $role->name }}">{{ $role->display_name }}</option>
                 @endforeach
             </select>
             <select class="sel" id="user-status-filter" autocomplete="off">
-                <option value="">All Status</option>
+                <option value="">Select Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
             </select>

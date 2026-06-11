@@ -608,7 +608,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                     <input type="text" class="srch-inp" id="role-search" placeholder="Search roles…" autocomplete="off">
                 </div>
                 <select class="sel" id="role-type-filter" autocomplete="off">
-                    <option value="">All Types</option>
+                    <option value="">Select Type</option>
                     <option value="system">System</option>
                     <option value="custom">Custom</option>
                 </select>

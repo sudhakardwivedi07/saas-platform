@@ -30,7 +30,7 @@
                 @endforeach
             </select>
             <select name="status" class="sel" onchange="this.form.submit()">
-                <option value="">All Status</option>
+                <option value="">Select Status</option>
                 <option value="active"   {{ request('status')==='active'   ? 'selected':'' }}>Active</option>
                 <option value="inactive" {{ request('status')==='inactive' ? 'selected':'' }}>Inactive</option>
             </select>

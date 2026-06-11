@@ -114,7 +114,7 @@
             @if($isClientUserFlow)
             <div style="display:flex;align-items:center;gap:10px;margin-top:18px">
                 <button type="submit" class="btn btn-primary">Save Changes</button>
-                <a href="{{ route('my-companies.index') }}" class="btn btn-ghost">Cancel</a>
+                <a href="{{ route('clients.index') }}?tab=companies" class="btn btn-ghost">Cancel</a>
             </div>
             @endif
         </div>
@@ -123,37 +123,31 @@
         <div class="acc-card" style="margin-bottom:16px;opacity:.88">
             <div style="display:flex;align-items:center;margin-bottom:6px">
                 <span class="step-num">2</span>
-                <div style="font-size:15px;font-weight:600;color:var(--text-1)">Company Admin Account</div>
+                <div style="font-size:15px;font-weight:600;color:var(--text-1)">Company Client Account</div>
             </div>
             <div style="font-size:12.5px;color:var(--text-3);margin-bottom:18px;padding-left:32px">
                 This section is shown for reference and cannot be edited from this page.
             </div>
 
             <div class="mf-field">
-                <label class="mf-label">Admin Full Name</label>
+                <label class="mf-label">Client Full Name</label>
                 <input type="text" class="mf-inp" value="{{ $adminUser?->name ?? '—' }}" disabled>
             </div>
 
             <div class="mf-field">
-                <label class="mf-label">Admin Email</label>
+                <label class="mf-label">Client Email</label>
                 <input type="email" class="mf-inp" value="{{ $adminUser?->email ?? '—' }}" disabled>
             </div>
 
-            <div class="form-2col">
-                <div class="mf-field">
-                    <label class="mf-label">Password</label>
-                    <input type="password" class="mf-inp" value="********" disabled>
-                </div>
-                <div class="mf-field">
-                    <label class="mf-label">Confirm Password</label>
-                    <input type="password" class="mf-inp" value="********" disabled>
-                </div>
+            <div class="mf-field">
+                <label class="mf-label">Phone Number</label>
+                <input type="text" class="mf-inp" value="{{ $adminUser?->mobile ?? '—' }}" disabled>
             </div>
         </div>
 
         <div style="display:flex;align-items:center;gap:10px;margin-top:16px">
             <button type="submit" class="btn btn-primary">Save Changes</button>
-            <a href="{{ route('my-companies.index') }}" class="btn btn-ghost">Cancel</a>
+            <a href="{{ route('clients.index') }}?tab=companies" class="btn btn-ghost">Cancel</a>
         </div>
         @endif
     </div>

@@ -82,7 +82,7 @@
         <div class="acc-card" style="margin-bottom:16px">
             <div style="display:flex;align-items:center;margin-bottom:6px">
                 <span class="step-num">1</span>
-                <div style="font-size:15px;font-weight:600;color:var(--text-1)">Company Admin Account</div>
+                <div style="font-size:15px;font-weight:600;color:var(--text-1)">Company Client Account</div>
             </div>
 
             {{-- Admin type toggle --}}
@@ -103,9 +103,6 @@
 
             {{-- Panel: New Admin --}}
             <div id="panel-admin-new">
-                <div style="font-size:12.5px;color:var(--text-3);margin-bottom:14px;padding-left:0">
-                    Create login credentials for this company's administrator.
-                </div>
                 <div class="mf-field">
                     <label class="mf-label">Client Full Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="admin_name" id="co-admin-name" class="mf-inp"
@@ -124,22 +121,14 @@
                     @enderror
                     <div id="err-co-admin-email" class="co-err" style="display:none"></div>
                 </div>
-                <div class="form-2col">
-                    <div class="mf-field">
-                        <label class="mf-label">Password <span style="color:var(--red)">*</span></label>
-                        <input type="password" name="admin_password" id="co-admin-pwd" class="mf-inp"
-                               placeholder="Min. 8 characters" autocomplete="new-password">
-                        @error('admin_password')
-                        <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
-                        @enderror
-                        <div id="err-co-admin-pwd" class="co-err" style="display:none"></div>
-                    </div>
-                    <div class="mf-field">
-                        <label class="mf-label">Confirm Password <span style="color:var(--red)">*</span></label>
-                        <input type="password" name="admin_password_confirmation" id="co-admin-confirm" class="mf-inp"
-                               placeholder="Repeat password" autocomplete="new-password">
-                        <div id="err-co-admin-confirm" class="co-err" style="display:none"></div>
-                    </div>
+                <div class="mf-field">
+                    <label class="mf-label">Phone Number <span style="color:var(--red)">*</span></label>
+                    <input type="text" name="admin_phone" id="co-admin-phone" class="mf-inp"
+                           placeholder="10-digit number" value="{{ old('admin_phone') }}" maxlength="10" inputmode="numeric">
+                    @error('admin_phone')
+                    <div style="font-size:11.5px;color:var(--red);margin-top:4px">{{ $message }}</div>
+                    @enderror
+                    <div id="err-co-admin-phone" class="co-err" style="display:none"></div>
                 </div>
             </div>
 
@@ -196,7 +185,7 @@
 
             <div class="form-2col">
                 <div class="mf-field">
-                    <label class="mf-label">Industry Type <span style="color:var(--red)">*</span></label>
+                    <label class="mf-label">Industry Type</label>
                     <select name="industry_type" id="co-industry" class="mf-sel" style="height:38px">
                         <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select industry</option>
                         @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
@@ -206,7 +195,7 @@
                     <div id="err-co-industry" class="co-err" style="display:none"></div>
                 </div>
                 <div class="mf-field">
-                    <label class="mf-label">Entity Type <span style="color:var(--red)">*</span></label>
+                    <label class="mf-label">Entity Type</label>
                     <select name="entity_type" id="co-entity" class="mf-sel" style="height:38px">
                         <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
                         @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
@@ -315,7 +304,7 @@ function setAdminType(type) {
     document.getElementById('panel-admin-new').style.display = isNew ? '' : 'none';
     document.getElementById('panel-admin-existing').style.display = isNew ? 'none' : '';
 
-    ['admin_name', 'admin_email', 'admin_password', 'admin_password_confirmation'].forEach(function(n) {
+    ['admin_name', 'admin_email', 'admin_phone'].forEach(function(n) {
         var el = document.querySelector('[name="' + n + '"]');
         if (el) el.required = isNew;
     });
@@ -364,22 +353,6 @@ function validateCompanyForm(e) {
         coErr('err-co-name', ''); coMark('company_name', false);
     }
 
-    // Industry Type
-    var indEl = document.getElementById('co-industry');
-    if (!indEl || !indEl.value) {
-        coErr('err-co-industry', 'Please select an industry.'); coMark('co-industry', true); ok = false;
-    } else {
-        coErr('err-co-industry', ''); coMark('co-industry', false);
-    }
-
-    // Entity Type
-    var entEl = document.getElementById('co-entity');
-    if (!entEl || !entEl.value) {
-        coErr('err-co-entity', 'Please select an entity type.'); coMark('co-entity', true); ok = false;
-    } else {
-        coErr('err-co-entity', ''); coMark('co-entity', false);
-    }
-
     // Company Email
     var coEmailEl = document.getElementById('co-email');
     var coEmailVal = coEmailEl ? coEmailEl.value.trim() : '';
@@ -412,33 +385,22 @@ function validateCompanyForm(e) {
             var adminEmailEl = document.getElementById('co-admin-email');
             var adminEmailVal = adminEmailEl ? adminEmailEl.value.trim() : '';
             if (!adminEmailVal) {
-                coErr('err-co-admin-email', 'Admin email is required.'); coMark('co-admin-email', true); ok = false;
+                coErr('err-co-admin-email', 'Client email is required.'); coMark('co-admin-email', true); ok = false;
             } else if (!emailRx.test(adminEmailVal)) {
                 coErr('err-co-admin-email', 'Enter a valid email address.'); coMark('co-admin-email', true); ok = false;
             } else {
                 coErr('err-co-admin-email', ''); coMark('co-admin-email', false);
             }
 
-            // Password
-            var pwdEl = document.getElementById('co-admin-pwd');
-            var pwdVal = pwdEl ? pwdEl.value : '';
-            if (!pwdVal) {
-                coErr('err-co-admin-pwd', 'Password is required.'); coMark('co-admin-pwd', true); ok = false;
-            } else if (pwdVal.length < 8) {
-                coErr('err-co-admin-pwd', 'Password must be at least 8 characters.'); coMark('co-admin-pwd', true); ok = false;
+            // Phone Number
+            var phoneEl = document.getElementById('co-admin-phone');
+            var phoneVal = phoneEl ? phoneEl.value.replace(/\D/g, '') : '';
+            if (!phoneVal) {
+                coErr('err-co-admin-phone', 'Phone number is required.'); coMark('co-admin-phone', true); ok = false;
+            } else if (phoneVal.length !== 10) {
+                coErr('err-co-admin-phone', 'Phone number must be exactly 10 digits.'); coMark('co-admin-phone', true); ok = false;
             } else {
-                coErr('err-co-admin-pwd', ''); coMark('co-admin-pwd', false);
-            }
-
-            // Confirm Password
-            var confirmEl = document.getElementById('co-admin-confirm');
-            var confirmVal = confirmEl ? confirmEl.value : '';
-            if (!confirmVal) {
-                coErr('err-co-admin-confirm', 'Please confirm the password.'); coMark('co-admin-confirm', true); ok = false;
-            } else if (confirmVal !== pwdVal) {
-                coErr('err-co-admin-confirm', 'Passwords do not match.'); coMark('co-admin-confirm', true); ok = false;
-            } else {
-                coErr('err-co-admin-confirm', ''); coMark('co-admin-confirm', false);
+                coErr('err-co-admin-phone', ''); coMark('co-admin-phone', false);
             }
         } else {
             // Existing client

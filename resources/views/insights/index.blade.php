@@ -135,8 +135,6 @@
 }
 .monthly-usage-bar .usage-label { color: #64748b; font-size: 12px; }
 .monthly-usage-bar .usage-count { font-weight: 700; }
-.usage-progress-wrap { flex: 1; background: #e2e8f0; border-radius: 999px; height: 6px; min-width: 80px; }
-.usage-progress-fill { height: 100%; border-radius: 999px; background: #1a6aa8; transition: width .3s; }
 .usage-progress-fill.warn  { background: #f59e0b; }
 .usage-progress-fill.full  { background: #ef4444; }
 /* ── Reports Table ───────────────────────────────────────────── */
@@ -153,10 +151,10 @@
     margin-bottom: 20px;
 }
 .table-header h2 { font-size: 20px; font-weight: 600; color: #1a202c; margin: 0; }
-.reports-table { width: 100%; border-collapse: collapse; }
+.reports-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .reports-table th {
     text-align: left;
-    padding: 10px 14px;
+    padding: 10px 20px;
     font-size: 12px;
     font-weight: 700;
     color: #64748b;
@@ -164,17 +162,27 @@
     background: #f8fafc;
     text-transform: uppercase;
     letter-spacing: .04em;
+    white-space: nowrap;
+    overflow: hidden;
 }
 .reports-table td {
-    padding: 14px 14px;
+    padding: 14px 20px;
     font-size: 14px;
     color: #1a202c;
     border-bottom: 1px solid #f1f5f9;
     vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
+.reports-table th:nth-child(1), .reports-table td:nth-child(1) { width: 36%; }
+.reports-table th:nth-child(2), .reports-table td:nth-child(2) { width: 16%; }
+.reports-table th:nth-child(3), .reports-table td:nth-child(3) { width: 12%; }
+.reports-table th:nth-child(4), .reports-table td:nth-child(4) { width: 14%; }
+.reports-table th:nth-child(5), .reports-table td:nth-child(5) { width: 22%; white-space: nowrap; }
 .reports-table tr:last-child td { border-bottom: none; }
 .reports-table tr:hover td { background: #f8fafc; }
-.insight-name-cell { display: flex; align-items: center; gap: 10px; }
+.insight-name-cell { display: flex; align-items: center; gap: 10px; overflow: hidden; }
 .insight-name-icon { color: #94a3b8; flex-shrink: 0; }
 .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
 .badge.success { background: #d4f4dd; color: #10b981; }
@@ -363,7 +371,7 @@
     @if($companies->count() > 1)
     <div class="company-selector-wrap">
         <div class="bar-select-wrap">
-            <select class="bar-select" onchange="switchCompany(this.value)" {{ !$hasReports ? 'disabled' : '' }} style="{{ !$hasReports ? 'opacity:0.5;cursor:not-allowed;pointer-events:none;' : '' }}">
+            <select class="bar-select" onchange="switchCompany(this.value)">
                 @foreach($companies as $co)
                     <option value="{{ $co->id }}" {{ $co->id == $selectedCompanyId ? 'selected' : '' }}>
                         {{ $co->company_name }}
@@ -386,17 +394,12 @@
 
     {{-- Right: usage bar + status filter + search --}}
     <div class="bar-right">
-        @if($monthlyLimit !== null)
         <div class="monthly-usage-bar" style="margin-left:0">
             <span class="usage-label">This month</span>
             <span class="usage-count" style="color:{{ $limitReached ? '#ef4444' : '#1a202c' }}">
-                {{ $monthlyUsed }} / {{ $monthlyLimit }}
+                {{ $monthlyUsed }}
             </span>
-            <div class="usage-progress-wrap">
-                <div class="usage-progress-fill {{ $usageClass }}" style="width:{{ $usagePct }}%"></div>
-            </div>
         </div>
-        @endif
 
         {{-- Status filter --}}
         <select id="statusFilter" class="bar-select" style="min-width:140px;{{ !$hasReports ? 'opacity:0.5;cursor:not-allowed;pointer-events:none;' : '' }}" {{ !$hasReports ? 'disabled' : '' }} onchange="applyFilters()">

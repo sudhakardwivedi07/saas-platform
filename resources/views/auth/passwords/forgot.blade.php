@@ -98,9 +98,6 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
     <div class="login-title">{{ $heading }}</div>
     <div class="login-sub">{{ $subheading }}</div>
 
-    @if($errors->any())
-        <div class="login-error">{{ $errors->first() }}</div>
-    @endif
     @if(session('error'))
         <div class="login-error">{{ session('error') }}</div>
     @endif

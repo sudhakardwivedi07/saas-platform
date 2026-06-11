@@ -486,7 +486,8 @@
         const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
         const a = document.createElement('a');
         a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-        a.download = 'insights_' + new Date().toISOString().slice(0, 10) + '.csv';
+        const nd = new Date(); const mm = String(nd.getMonth()+1).padStart(2,'0'); const dd = String(nd.getDate()).padStart(2,'0'); const yyyy = nd.getFullYear();
+        a.download = 'insights_' + mm + '-' + dd + '-' + yyyy + '.csv';
         a.click();
     };
 

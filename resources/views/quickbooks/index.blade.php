@@ -238,6 +238,7 @@ $(document).ready(function () {
         searching: true, ordering: true, info: true,
         dom: '<"dt-tscroll"t><"dt-footer"lip>',
         order: [[0, 'desc']],
+        columns: @json(array_fill(0, $showPartnerColumn ? 7 : 6, null)),
         columnDefs: [{ orderable: false, targets: [-1] }],
         language: {
             info: 'Showing _START_ to _END_ of _TOTAL_ entries',
@@ -356,9 +357,34 @@ async function syncAllConnected(btn) {
             body: JSON.stringify({ sync_type: 'customers' }),
         }).catch(() => {});
     }
-    showToast('Sync dispatched for ' + connectedIds.length + ' company' + (connectedIds.length !== 1 ? 'ies' : 'y') + '.', 'success');
     btn.disabled = false;
     btn.innerHTML = orig;
+    const syncMsg = 'Sync dispatched for ' + connectedIds.length + ' ' + (connectedIds.length !== 1 ? 'companies' : 'company') + '.';
+    if (window.Swal) {
+        Swal.fire({
+            html: `
+                <div style="display:flex;flex-direction:column;align-items:center;padding:8px 0 4px">
+                    <div style="width:64px;height:64px;border-radius:50%;background:#f0fdf4;display:flex;align-items:center;justify-content:center;margin-bottom:18px">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" width="30" height="30"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div style="font-size:18px;font-weight:700;color:#111827;margin-bottom:10px">Data Synced Successfully</div>
+                    <div style="font-size:14px;color:#6b7280;line-height:1.6;text-align:center">${syncMsg}</div>
+                </div>`,
+            showConfirmButton: true,
+            confirmButtonText: 'Got it',
+            buttonsStyling: false,
+            width: 380,
+            padding: '32px 28px 28px',
+            didOpen: (popup) => {
+                const confirmBtn = popup.querySelector('.swal2-confirm');
+                if (confirmBtn) confirmBtn.style.cssText = 'width:100%;padding:13px 0;background:#f06b25;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;';
+                const actions = popup.querySelector('.swal2-actions');
+                if (actions) actions.style.cssText = 'width:100%;padding:0;margin-top:24px;display:flex;';
+            },
+        });
+    } else {
+        showToast(syncMsg, 'success');
+    }
 }
 
 async function disconnectQB(id) {

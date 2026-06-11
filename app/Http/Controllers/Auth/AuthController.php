@@ -430,18 +430,17 @@ class AuthController extends Controller
         $company = $user->company ?? company();
         $appName = $company?->app_name ?? global_setting()?->global_app_name ?? config('app.name');
 
-        // Always use the SuperAdmin global SMTP (companyId: null) for password-reset
-        // emails so the Super Admin's configured mail settings are used regardless
-        // of whether the tenant has their own SMTP set up.
+        // Use the company's own SMTP if configured; EmailService falls back to the
+        // SuperAdmin global SMTP automatically when no company-specific setting exists.
         $sent = app(EmailService::class)->send(
             toEmail:      $user->email,
             templateSlug: 'password_reset',
             placeholders: [
-                '{{name}}'      => $user->name,
-                '{{app_name}}' => $appName,
-                '{{reset_url}}' => $resetUrl,
+                '{{name}}'       => $user->name,
+                '{{app_name}}'   => $appName,
+                '{{reset_url}}'  => $resetUrl,
             ],
-            companyId: null
+            companyId: $company?->id
         );
 
         if (!$sent) {

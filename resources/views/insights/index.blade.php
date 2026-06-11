@@ -359,10 +359,11 @@
     <!-- <div class="viewing-company">{{ $selectedCompany?->company_name ?? 'Your Company' }}</div> -->
 
     {{-- Company selector: dropdown for multiple companies, label for single --}}
+    @php $hasReports = $reports->isNotEmpty(); @endphp
     @if($companies->count() > 1)
     <div class="company-selector-wrap">
         <div class="bar-select-wrap">
-            <select class="bar-select" onchange="switchCompany(this.value)">
+            <select class="bar-select" onchange="switchCompany(this.value)" {{ !$hasReports ? 'disabled' : '' }} style="{{ !$hasReports ? 'opacity:0.5;cursor:not-allowed;pointer-events:none;' : '' }}">
                 @foreach($companies as $co)
                     <option value="{{ $co->id }}" {{ $co->id == $selectedCompanyId ? 'selected' : '' }}>
                         {{ $co->company_name }}
@@ -398,7 +399,7 @@
         @endif
 
         {{-- Status filter --}}
-        <select id="statusFilter" class="bar-select" style="min-width:140px;" onchange="applyFilters()">
+        <select id="statusFilter" class="bar-select" style="min-width:140px;{{ !$hasReports ? 'opacity:0.5;cursor:not-allowed;pointer-events:none;' : '' }}" {{ !$hasReports ? 'disabled' : '' }} onchange="applyFilters()">
             <option value="">All Status</option>
             <option value="published">Published</option>
             <option value="draft">Draft</option>
@@ -408,11 +409,11 @@
         </select>
 
         {{-- Search --}}
-        <div class="bar-search-wrap">
+        <div class="bar-search-wrap" style="{{ !$hasReports ? 'opacity:0.5;pointer-events:none;' : '' }}">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
             </svg>
-            <input type="text" id="searchInput" class="bar-search-inp" placeholder="Search insights…" oninput="applyFilters()">
+            <input type="text" id="searchInput" class="bar-search-inp" placeholder="Search insights…" {{ !$hasReports ? 'disabled' : '' }} oninput="applyFilters()">
         </div>
     </div>
 </div>

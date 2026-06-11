@@ -216,7 +216,7 @@ class DashboardController extends AccountBaseController
         $this->recentActivities = EventLog::query()
             ->where('company_id', $companyId)
             ->orderByDesc('created_at')
-            ->limit(6)
+            ->limit(5)
             ->get();
 
         // Dashboard "Recent Activity" cards — documents & QB connections across client companies
@@ -628,7 +628,7 @@ class DashboardController extends AccountBaseController
                 $end = $request->filled('end_date')
                     ? Carbon::parse($request->input('end_date'))->endOfDay()
                     : now()->endOfDay();
-                $label = $start->format('M j') . ' – ' . $end->format('M j, Y');
+                $label = $start->format(active_date_format()) . ' – ' . $end->format(active_date_format());
                 return [$start, $end, $label];
             default: // 1M
                 return [now()->startOfMonth(), now()->endOfMonth(), now()->format('F Y')];

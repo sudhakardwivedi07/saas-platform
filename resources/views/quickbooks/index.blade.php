@@ -238,6 +238,7 @@ $(document).ready(function () {
         searching: true, ordering: true, info: true,
         dom: '<"dt-tscroll"t><"dt-footer"lip>',
         order: [[0, 'desc']],
+        columns: @json(array_fill(0, $showPartnerColumn ? 7 : 6, null)),
         columnDefs: [{ orderable: false, targets: [-1] }],
         language: {
             info: 'Showing _START_ to _END_ of _TOTAL_ entries',

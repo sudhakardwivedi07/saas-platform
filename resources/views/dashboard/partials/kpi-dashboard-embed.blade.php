@@ -43,6 +43,8 @@
     const KPI_DATA_URL       = @json($kpiDataUrl);
     const KPI_DETAIL_BASE    = @json(rtrim($kpiDetailBaseUrl, '/'));
     const CLIENT_HIDDEN_KPIS = @json(array_values($clientHiddenKpis ?? []));
+    // Forward _imp token so impersonation AJAX requests authenticate as the client, not the admin.
+    const _IMP_TOKEN = new URLSearchParams(window.location.search).get('_imp');
     // Build detail routes from the context-aware base URL so admin view uses /clients/{id}/kpi-detail/...
     const KPI_DETAIL_ROUTES = (function (base) {
         return {
@@ -134,6 +136,7 @@
         const u = new URL(KPI_DATA_URL, window.location.origin);
         u.searchParams.set('company_id', String(selectedCompanyId ?? ''));
         u.searchParams.set('kpi', kpiType);
+        if (_IMP_TOKEN) u.searchParams.set('_imp', _IMP_TOKEN);
         fetch(u.toString(), { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) { return r.json(); })
             .then(function (response) {
@@ -694,6 +697,7 @@
             const u = new URL(KPI_DATA_URL, window.location.origin);
             u.searchParams.set('company_id', String(selectedCompanyId ?? ''));
             u.searchParams.set('kpi', kpiType);
+            if (_IMP_TOKEN) u.searchParams.set('_imp', _IMP_TOKEN);
             const r = await fetch(u.toString(), { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
             if (!r.ok) return;
             const response = await r.json();

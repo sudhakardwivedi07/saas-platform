@@ -333,12 +333,12 @@
 }
 .swal-del-confirm.swal2-confirm:focus { box-shadow: none !important; }
 .swal-del-cancel.swal2-cancel {
-    background: transparent !important;
-    color: var(--orange) !important;
-    border: 1.5px solid var(--orange) !important;
+    background: #fff !important;
+    color: #64748b !important;
+    border: 1px solid #e2e8f0 !important;
     box-shadow: none !important;
 }
-.swal-del-cancel.swal2-cancel:hover { opacity: .8; }
+.swal-del-cancel.swal2-cancel:hover { background: #f8fafc !important; }
 .swal-del-cancel.swal2-cancel:focus { box-shadow: none !important; }
 </style>
 @endpush

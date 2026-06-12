@@ -99,21 +99,23 @@
 
 /* ── Back btn ── */
 .btn-back {
-    background: #fff;
-    color: #0788BE;
-    padding: 12px 20px;
-    border-radius: 5px;
-    border: 1px solid #0788be;
-    text-decoration: none;
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 20px;
+    height: 40px;
+    padding: 0 18px;
+    background: #fff;
+    color: #1a6aa8;
+    border-radius: 7px;
+    border: 1px solid #1a6aa8;
+    font-size: 13.5px;
     font-weight: 500;
+    text-decoration: none;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.08);
     transition: all .2s;
-    box-shadow: 0 5px 10px 0 rgba(16,134,190,.2);
 }
-.btn-back:hover { background: #f0f9ff; color: #1559a6; text-decoration: none; }
+.btn-back:hover { background: #eff6ff; color: #1a6aa8; text-decoration: none; }
 
 /* ── Slider ── */
 .insight-slider-container { position: relative; background: #f5f7fa; border-radius: 12px; min-height: 500px; margin-top: 0; }
@@ -220,9 +222,9 @@
 @section('content')
 <div class="report-detail-container">
 
-    <a href="{{ route('insights.index') }}" class="btn-back">
-        <i class="fas fa-arrow-left"></i>
-        Go Back
+    <a href="{{ route('insights.index') }}{{ isset($__imp) ? '?_imp='.$__imp['token'] : '' }}" class="btn-back">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        Back to Insight
     </a>
 
     {{-- ── Report Header ──────────────────────────────────────────────────── --}}

@@ -123,7 +123,7 @@ $totalCompanies = $allClientCompanies->count();
                     <div>
                         <div style="font-size:0.875rem;font-weight:500;color:var(--text-1);">{{ $item['label'] }}</div>
                         <div style="font-size:0.75rem;color:var(--text-3);margin-top:1px;">
-                            {{ $item['date'] ? \Carbon\Carbon::parse($item['date'])->format('M j, Y \a\t g:i A') : 'Not yet' }}
+                            {{ $item['date'] ? \Carbon\Carbon::parse($item['date'])->format(active_date_format() . ' \a\t g:i A') : 'Not yet' }}
                         </div>
                     </div>
                 </div>
@@ -263,7 +263,7 @@ $totalCompanies = $allClientCompanies->count();
                     @endif
                 </div>
                 <div style="font-size:11.5px;color:var(--text-3);white-space:nowrap;flex-shrink:0">
-                    {{ $log->created_at->format('M j, Y g:i A') }}
+                    {{ $log->created_at->format(active_date_format() . ' g:i A') }}
                 </div>
             </div>
             @endforeach

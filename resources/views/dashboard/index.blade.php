@@ -649,7 +649,7 @@
             </div>
         </div>
         <div class="db-kpi-val orange">{{ $pendingReview ?? 0 }}</div>
-        <div class="db-kpi-ctx">Drafts awaiting review &amp; publish</div>
+        <div class="db-kpi-ctx">Drafts pending review</div>
     </div>
 
 </div>

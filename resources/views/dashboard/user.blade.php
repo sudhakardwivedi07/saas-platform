@@ -599,7 +599,7 @@
                  style="display:inline-block;vertical-align:middle;margin-right:4px;stroke:#9ca3af">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
-            Last updated {{ now()->format('M d, Y g:i A') }}
+            Last updated {{ now()->format(active_date_format() . ' g:i A') }}
         </p>
         <div class="cfo-kpi-exec-actions">
             @if(!empty($isQuickbooksConnected))

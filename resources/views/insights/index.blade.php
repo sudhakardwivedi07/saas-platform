@@ -191,7 +191,7 @@
 .badge.info    { background: #e0f2fe; color: #0369a1; }
 .action-buttons { display: flex; gap: 8px; align-items: center; }
 .btn-view-insight {
-    background: #1a6aa8;
+    background: var(--orange);
     color: white;
     padding: 6px 16px;
     border-radius: 6px;
@@ -205,7 +205,7 @@
     gap: 6px;
     transition: background .2s;
 }
-.btn-view-insight:hover { background: #155a8a; color: white; text-decoration: none; }
+.btn-view-insight:hover { background: var(--orange-dark); color: white; text-decoration: none; }
 .btn-view-insight:disabled { background: #9ca3af; cursor: not-allowed; opacity: .7; }
 .btn-icon {
     width: 32px; height: 32px;
@@ -325,6 +325,21 @@
     font-size: 14.5px; font-weight: 500; cursor: pointer; transition: all .2s;
 }
 .limit-btn-later:hover { background: #fff4ee; }
+/* ── SweetAlert2 Delete Insight Modal Buttons ────────────────── */
+.swal-del-confirm.swal2-confirm {
+    background: var(--orange) !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+.swal-del-confirm.swal2-confirm:focus { box-shadow: none !important; }
+.swal-del-cancel.swal2-cancel {
+    background: transparent !important;
+    color: var(--orange) !important;
+    border: 1.5px solid var(--orange) !important;
+    box-shadow: none !important;
+}
+.swal-del-cancel.swal2-cancel:hover { opacity: .8; }
+.swal-del-cancel.swal2-cancel:focus { box-shadow: none !important; }
 </style>
 @endpush
 
@@ -637,7 +652,7 @@
                 <div style="font-size:16px;font-weight:700;color:#0f172a">Download Report</div>
                 <div style="font-size:13px;color:#64748b;margin-top:2px">Choose the format to download</div>
             </div>
-            <button onclick="closeDownloadModal()" style="width:28px;height:28px;border-radius:50%;border:1.5px solid #ef4444;background:#fee2e2;color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;flex-shrink:0;transition:background .15s" onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'">&times;</button>
+            <button onclick="closeDownloadModal()" style="width:28px;height:28px;border-radius:6px;border:1.5px solid #ef4444;background:#fee2e2;color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;flex-shrink:0;transition:background .15s" onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'">&times;</button>
         </div>
         <div style="padding:20px 24px;display:flex;flex-direction:column;gap:10px">
             <label id="dl-opt-zip" onclick="selectDownloadOption('zip')"
@@ -669,7 +684,7 @@
         </div>
         <div style="padding:12px 24px 20px;display:flex;align-items:center;justify-content:flex-end;gap:10px;border-top:1px solid #f1f5f9">
             <button onclick="closeDownloadModal()" style="padding:9px 20px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;font-size:13px;font-weight:600;color:#64748b;cursor:pointer">Cancel</button>
-            <button id="dl-confirm-btn" onclick="confirmDownload()" style="padding:9px 20px;border:none;border-radius:8px;background:#1a6aa8;font-size:13px;font-weight:600;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px">
+            <button id="dl-confirm-btn" onclick="confirmDownload()" style="padding:9px 20px;border:none;border-radius:8px;background:var(--orange);font-size:13px;font-weight:600;color:#fff;cursor:pointer;display:flex;align-items:center;gap:6px">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                 Download
             </button>
@@ -1149,9 +1164,11 @@
             showCancelButton: true,
             confirmButtonText: 'Delete Insights',
             cancelButtonText: 'Cancel',
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#6b7280',
             reverseButtons: true,
+            customClass: {
+                confirmButton: 'swal-del-confirm',
+                cancelButton: 'swal-del-cancel',
+            },
         }).then(function(result) {
             if (!result.isConfirmed) return;
 

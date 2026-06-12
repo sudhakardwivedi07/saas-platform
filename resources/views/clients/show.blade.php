@@ -2,6 +2,20 @@
 
 @section('page-title', 'Client Detail')
 
+@push('styles')
+<style>
+.ac-err {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--red, #ef4444);
+    margin-top: 4px;
+}
+.mf-inp.ac-invalid { border-color: var(--red, #ef4444) !important; }
+</style>
+@endpush
+
 @section('content')
 
 @php
@@ -182,7 +196,7 @@ $totalCompanies = $allClientCompanies->count();
                         @php $isQB = $company->quickbooksConnections?->where('is_active', true)->isNotEmpty(); @endphp
                         <tr>
                             <td>
-                                <div style="font-weight:600;color:var(--text-1);font-size:0.875rem;">{{ $company->company_name }}</div>
+                                <div style="font-weight:600;color:var(--text-1);font-size:0.875rem;text-transform:capitalize">{{ $company->company_name }}</div>
                                 @if($company->company_email)
                                     <div style="font-size:0.75rem;color:var(--text-2);">{{ $company->company_email }}</div>
                                 @endif
@@ -286,17 +300,18 @@ $totalCompanies = $allClientCompanies->count();
                 <input type="text" name="name" id="edit-client-name" class="mf-inp" required>
             </div>
             <div class="mf-field">
-                <label class="mf-label">Email ID</label>
+                <label class="mf-label">Email</label>
                 <input type="email" id="edit-client-email" class="mf-inp" disabled style="opacity:.6;cursor:not-allowed">
                 <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Email address cannot be changed.</div>
             </div>
             <div class="mf-field">
                 <label class="mf-label">Phone Number</label>
-                <input type="tel" name="phone" id="edit-client-phone" class="mf-inp" placeholder="+1 (555) 000-0000">
+                <input type="tel" name="phone" id="edit-client-phone" class="mf-inp" placeholder="10-digit number" maxlength="10" inputmode="numeric">
+                <div id="err-edit-phone" class="ac-err" style="display:none"></div>
             </div>
             <div class="mf-foot">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-edit-client').classList.remove('open')">Cancel</button>
-                <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitEditClient()">Save Changes</button>
             </div>
         </form>
     </div>
@@ -307,10 +322,41 @@ function openEditClientModal(clientId, name, email, phone) {
     document.getElementById('edit-client-id').value = clientId;
     document.getElementById('edit-client-name').value = name;
     document.getElementById('edit-client-email').value = email;
-    document.getElementById('edit-client-phone').value = phone || '';
+    document.getElementById('edit-client-phone').value = (phone || '').replace(/\D/g, '').slice(0, 10);
     document.getElementById('edit-client-form').action = '{{ route("clients.update", ":id") }}'.replace(':id', clientId);
+    var errEl = document.getElementById('err-edit-phone');
+    var phoneEl = document.getElementById('edit-client-phone');
+    if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+    if (phoneEl) phoneEl.classList.remove('ac-invalid');
     document.getElementById('modal-edit-client').classList.add('open');
 }
+
+function validateAndSubmitEditClient() {
+    var phoneEl = document.getElementById('edit-client-phone');
+    var errEl   = document.getElementById('err-edit-phone');
+    var rawPhone = phoneEl ? phoneEl.value.replace(/\D/g, '') : '';
+    var ok = true;
+    if (phoneEl) phoneEl.classList.remove('ac-invalid');
+    if (errEl)   { errEl.textContent = ''; errEl.style.display = 'none'; }
+    if (rawPhone && rawPhone.length !== 10) {
+        if (phoneEl) phoneEl.classList.add('ac-invalid');
+        if (errEl)   { errEl.textContent = 'Phone number must be exactly 10 digits.'; errEl.style.display = 'flex'; }
+        ok = false;
+    }
+    if (ok) document.getElementById('edit-client-form').submit();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    var ph = document.getElementById('edit-client-phone');
+    if (!ph) return;
+    ph.addEventListener('input', function() {
+        var cleaned = this.value.replace(/\D/g, '');
+        if (cleaned !== this.value) this.value = cleaned;
+        this.classList.remove('ac-invalid');
+        var err = document.getElementById('err-edit-phone');
+        if (err) { err.textContent = ''; err.style.display = 'none'; }
+    });
+});
 
 function switchTab(tabName, btn) {
     document.querySelectorAll('.tab-panel').forEach(function(p) { p.style.display = 'none'; });

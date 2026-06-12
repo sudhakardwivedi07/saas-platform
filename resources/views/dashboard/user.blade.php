@@ -73,8 +73,8 @@
     font-size: 12.5px;
     font-weight: 500;
     text-decoration: none;
-    padding: 5px 10px;
-    border-radius: 6px;
+    padding: 6px 14px;
+    border-radius: 7px;
     border: 1px solid rgba(255,255,255,.15);
     transition: background .12s;
     flex-shrink: 0;
@@ -183,7 +183,7 @@
 </style>
 <div id="cdbToast" class="cdb-toast" role="status" aria-live="polite"></div>
 <div class="cdb-admin-bar" id="cdbAdminBar">
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:15px;flex-wrap:wrap">
         <a href="{{ $backUrl ?? route('dashboard') }}" class="cdb-exit-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="15 18 9 12 15 6"/></svg>
             Exit
@@ -562,6 +562,10 @@
 </style>
 
 @if(!empty($showKpiDashboard))
+<script>
+// Per-company insights availability map — used by the company switcher to toggle embed/placeholder.
+window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
+</script>
 <div class="user-kpi-fullbleed">
 @php
     $__kpiCoList     = $kpiCompanies ?? collect();
@@ -599,7 +603,11 @@
                  style="display:inline-block;vertical-align:middle;margin-right:4px;stroke:#9ca3af">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
+            @if(!empty($kpiLastUpdatedAt))
+            Last updated {{ $kpiLastUpdatedAt->format(active_date_format() . ' g:i A') }}
+            @else
             Last updated {{ now()->format(active_date_format() . ' g:i A') }}
+            @endif
         </p>
         <div class="cfo-kpi-exec-actions">
             @if(!empty($isQuickbooksConnected))

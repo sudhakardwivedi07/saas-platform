@@ -134,7 +134,7 @@
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:34px;height:34px;border-radius:9px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:-.2px">{{ $initials }}</div>
                             <div>
-                                <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $client->name }}</div>
+                                <div style="font-weight:500;font-size:13px;color:var(--text-1);text-transform:capitalize">{{ $client->name }}</div>
                                 <div style="font-size:11.5px;color:var(--text-3)">{{ $client->email }}</div>
                             </div>
                         </div>
@@ -295,7 +295,7 @@
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:34px;height:34px;border-radius:9px;background:{{ $avatarColor }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">{{ $initials }}</div>
                             <div>
-                                <div style="font-weight:600;font-size:13px;color:var(--text-1)">{{ $company->company_name }}</div>
+                                <div style="font-weight:600;font-size:13px;color:var(--text-1);text-transform:capitalize">{{ $company->company_name }}</div>
                                 @if($company->company_email)
                                 <div style="font-size:11px;color:var(--text-3)">{{ $company->company_email }}</div>
                                 @endif
@@ -304,7 +304,7 @@
                     </td>
                     <td style="font-size:13px;color:var(--text-2)">
                         @if($owner)
-                        <a href="{{ route('clients.show', $owner->id) }}" style="color:var(--blue);text-decoration:none;font-size:13px">{{ $owner->name }}</a>
+                        <a href="{{ route('clients.show', $owner->id) }}" style="color:var(--blue);text-decoration:none;font-size:13px;text-transform:capitalize">{{ $owner->name }}</a>
                         @else
                         <span style="color:var(--text-3)">—</span>
                         @endif
@@ -398,17 +398,18 @@
                 <input type="text" name="name" id="edit-client-name" class="mf-inp" required>
             </div>
             <div class="mf-field">
-                <label class="mf-label">Email ID</label>
+                <label class="mf-label">Email</label>
                 <input type="email" id="edit-client-email" class="mf-inp" disabled style="opacity:.6;cursor:not-allowed">
                 <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Email address cannot be changed.</div>
             </div>
             <div class="mf-field">
                 <label class="mf-label">Phone Number</label>
-                <input type="tel" name="phone" id="edit-client-phone" class="mf-inp" placeholder="+1 (555) 000-0000">
+                <input type="tel" name="phone" id="edit-client-phone" class="mf-inp" placeholder="10-digit number" maxlength="10" inputmode="numeric">
+                <div id="err-edit-phone" class="ac-err" style="display:none"></div>
             </div>
             <div class="mf-foot">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-edit-client').classList.remove('open')">Cancel</button>
-                <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitEditClient()">Save Changes</button>
             </div>
         </form>
     </div>
@@ -442,9 +443,9 @@
 
 {{-- ── Add Client Modal ─────────────────────────────────── --}}
 {{-- ── Add New Client Modal ──────────────────────────────── --}}
-<div class="modal-overlay {{ $errors->any() ? 'open' : '' }}" id="modal-add-client" onclick="if(event.target===this)this.classList.remove('open')">
+<div class="modal-overlay {{ $errors->any() ? 'open' : '' }}" id="modal-add-client" onclick="if(event.target===this){resetAddClientForm();this.classList.remove('open');}">
     <div class="modal-box" style="width:900px;max-width: 92vw;">
-        <button class="modal-close" onclick="document.getElementById('modal-add-client').classList.remove('open')">&times;</button>
+        <button class="modal-close" onclick="resetAddClientForm();document.getElementById('modal-add-client').classList.remove('open')">&times;</button>
         <div class="modal-title">Add New Client</div>
         <div class="modal-sub">Invite a new client to your partner portal</div>
 
@@ -483,7 +484,7 @@
                         <div id="err-name" class="ac-err" style="display:none"></div>
                     </div>
                     <div class="mf-field" style="margin:0 0 4px">
-                        <label class="mf-label">Email ID <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Email <span style="color:var(--red)">*</span></label>
                         <input type="text" name="email" id="ac-email" class="mf-inp"
                             placeholder="sarah@chen.com" value="{{ old('email') }}"
                             autocomplete="off" maxlength="100">
@@ -516,7 +517,7 @@
                     <div class="mf-field">
                         <label class="mf-label">Entity Type</label>
                         <select name="entity_type" class="mf-sel" style="height:40px">
-                            <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
+                            <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select Entity Type</option>
                             @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
                             <option value="{{ $ent }}" {{ old('entity_type') === $ent ? 'selected' : '' }}>{{ $ent }}</option>
                             @endforeach
@@ -524,7 +525,7 @@
                     </div>
                 </div>
                 <div class="mf-foot">
-                    <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-add-client').classList.remove('open')">Cancel</button>
+                    <button type="button" class="btn btn-ghost btn-sm" onclick="resetAddClientForm();document.getElementById('modal-add-client').classList.remove('open')">Cancel</button>
                     <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitAddClient()">Add Client</button>
                 </div>
             </form>
@@ -576,7 +577,7 @@
             <div id="bulk-error" style="display:none;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 13px;margin-bottom:14px;font-size:12.5px;color:var(--red)"></div>
 
             <div class="mf-foot">
-                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-add-client').classList.remove('open')">Cancel</button>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="resetAddClientForm();document.getElementById('modal-add-client').classList.remove('open')">Cancel</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="submitBulkUpload()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     Upload Clients
@@ -627,7 +628,7 @@
             <div style="margin-bottom:20px">
                 <div style="font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:12px;display:flex;align-items:center;gap:8px">
                     <span style="width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">1</span>
-                    Company Client Account
+                    Client Account
                 </div>
 
                 <div style="display:flex;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:3px;gap:3px;margin-bottom:16px">
@@ -646,13 +647,13 @@
                 {{-- New admin panel --}}
                 <div id="modal-panel-admin-new">
                     <div class="mf-field">
-                        <label class="mf-label">Client Full Name <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
                         <input type="text" name="admin_name" id="modal-co-admin-name" class="mf-inp"
                                placeholder="Jane Smith" value="{{ old('admin_name') }}" maxlength="100">
                         <div id="modal-err-co-admin-name" class="co-err" style="display:none"></div>
                     </div>
                     <div class="mf-field">
-                        <label class="mf-label">Client Email <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Email <span style="color:var(--red)">*</span></label>
                         <input type="email" name="admin_email" id="modal-co-admin-email" class="mf-inp"
                                placeholder="jane@acme.com" value="{{ old('admin_email') }}" maxlength="100">
                         <div id="modal-err-co-admin-email" class="co-err" style="display:none"></div>
@@ -710,7 +711,7 @@
                     <div class="mf-field">
                         <label class="mf-label">Industry Type</label>
                         <select name="industry_type" id="modal-co-industry" class="mf-sel" style="height:38px">
-                            <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select industry</option>
+                            <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select Industry Type</option>
                             @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
                             <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
                             @endforeach
@@ -720,7 +721,7 @@
                     <div class="mf-field">
                         <label class="mf-label">Entity Type</label>
                         <select name="entity_type" id="modal-co-entity" class="mf-sel" style="height:38px">
-                            <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
+                            <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select Entity Type</option>
                             @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
                             <option value="{{ $ent }}" {{ old('entity_type') === $ent ? 'selected' : '' }}>{{ $ent }}</option>
                             @endforeach
@@ -767,7 +768,7 @@
                     <div class="mf-field">
                         <label class="mf-label">Industry Type</label>
                         <select name="industry_type" id="edit-co-industry" class="mf-sel" style="height:38px">
-                            <option value="">Select industry</option>
+                            <option value="">Select Industry Type</option>
                             @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
                             <option value="{{ $ind }}">{{ $ind }}</option>
                             @endforeach
@@ -776,7 +777,7 @@
                     <div class="mf-field">
                         <label class="mf-label">Entity Type</label>
                         <select name="entity_type" id="edit-co-entity" class="mf-sel" style="height:38px">
-                            <option value="">Select entity type</option>
+                            <option value="">Select Entity Type</option>
                             @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
                             <option value="{{ $ent }}">{{ $ent }}</option>
                             @endforeach
@@ -903,7 +904,9 @@ $(document).ready(function() {
         columnDefs: [{ orderable: false, targets: [2, 5] }],
         language: {
             info: 'Showing _START_–_END_ of _TOTAL_ clients',
-            infoEmpty: 'No clients added yet',
+            infoEmpty: 'No clients found',
+            infoFiltered: '(filtered from _MAX_ total clients)',
+            zeroRecords: 'No clients found matching your search',
             paginate: { previous: '‹', next: '›' },
             emptyTable: {!! json_encode($dtEmptyClientsHtml) !!},
         },
@@ -928,7 +931,9 @@ $(document).ready(function() {
         columnDefs: [{ orderable: false, targets: [5] }],
         language: {
             info: 'Showing _START_–_END_ of _TOTAL_ companies',
-            infoEmpty: 'No companies added yet',
+            infoEmpty: 'No companies found',
+            infoFiltered: '(filtered from _MAX_ total companies)',
+            zeroRecords: 'No companies found matching your search',
             paginate: { previous: '‹', next: '›' },
             emptyTable: {!! json_encode($dtEmptyCompaniesHtml) !!},
         }
@@ -1028,11 +1033,11 @@ function validateAndSubmitAddClient() {
         setErr('ac-name', 'err-name', 'Please enter a valid Full Name.');
     }
 
-    // Email ID
+    // Email
     var email = (document.getElementById('ac-email').value || '').trim();
     clearErr('ac-email', 'err-email');
     if (!email) {
-        setErr('ac-email', 'err-email', 'Email ID is required.');
+        setErr('ac-email', 'err-email', 'Email is required.');
     } else if (email.length < 5 || email.length > 100 || !/^[a-zA-Z0-9@.\-_]+$/.test(email) || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
         setErr('ac-email', 'err-email', 'Please enter a valid email address.');
     }
@@ -1065,25 +1070,44 @@ function validateAndSubmitAddClient() {
     }
 }
 
+// ── Reset Add Client form (fields + errors + CSV state) ──────
+function resetAddClientForm() {
+    // Clear text inputs
+    ['ac-name','ac-email','ac-phone','ac-company'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) { el.value = ''; el.removeAttribute('readonly'); el.classList.remove('ac-invalid'); }
+    });
+    // Reset selects to first option
+    var industryEl = document.getElementById('ac-industry');
+    if (industryEl) { industryEl.selectedIndex = 0; industryEl.classList.remove('ac-invalid'); }
+    var entityEl = document.querySelector('#add-client-form select[name="entity_type"]');
+    if (entityEl) entityEl.selectedIndex = 0;
+    // Clear validation error messages
+    ['err-name','err-email','err-phone','err-company','err-industry'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) { el.textContent = ''; el.style.display = 'none'; }
+    });
+    // Reset CSV state
+    _csvFile = null;
+    var csvName = document.getElementById('csv-file-name');
+    if (csvName) { csvName.textContent = ''; csvName.style.display = 'none'; }
+    var csvInput = document.getElementById('csv-file-input');
+    if (csvInput) csvInput.value = '';
+    var dropZone = document.getElementById('csv-drop-zone');
+    if (dropZone) dropZone.style.borderColor = '#c7d9f0';
+    var bulkErr = document.getElementById('bulk-error');
+    if (bulkErr) { bulkErr.textContent = ''; bulkErr.style.display = 'none'; }
+}
+
 // ── Add Client modal open helper ─────────────────────────────
 function openAddClientModal() {
-    var emailField = document.getElementById('ac-email');
-    if (emailField) { emailField.value = ''; emailField.removeAttribute('readonly'); }
+    resetAddClientForm();
+    switchAddClientTab('manual');
     document.getElementById('modal-add-client').classList.add('open');
     setTimeout(function() {
         var nameField = document.querySelector('#modal-add-client input[name="name"]');
         if (nameField) nameField.focus();
     }, 80);
-
-    // Clear all validation errors when modal opens
-    [['ac-name','err-name'],['ac-email','err-email'],['ac-phone','err-phone'],
-     ['ac-company','err-company'],['ac-industry','err-industry']
-    ].forEach(function(pair) {
-        var inp = document.getElementById(pair[0]);
-        var err = document.getElementById(pair[1]);
-        if (inp) inp.classList.remove('ac-invalid');
-        if (err) { err.textContent = ''; err.style.display = 'none'; }
-    });
 }
 
 // Clear field error on user input + character restrictions
@@ -1139,6 +1163,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ── Add Client Modal tabs ────────────────────────────────────
 function switchAddClientTab(tab) {
+    resetAddClientForm();
     var isManual = tab === 'manual';
     document.getElementById('panel-manual').style.display = isManual ? '' : 'none';
     document.getElementById('panel-bulk').style.display   = isManual ? 'none' : '';
@@ -1290,10 +1315,45 @@ function openEditClientModal(clientId, name, email, phone) {
     document.getElementById('edit-client-id').value = clientId;
     document.getElementById('edit-client-name').value = name;
     document.getElementById('edit-client-email').value = email;
-    document.getElementById('edit-client-phone').value = phone || '';
+    document.getElementById('edit-client-phone').value = (phone || '').replace(/\D/g, '').slice(0, 10);
     document.getElementById('edit-client-form').action = '{{ route("clients.update", ":id") }}'.replace(':id', clientId);
+    // Clear any prior phone error
+    var errEl = document.getElementById('err-edit-phone');
+    var phoneEl = document.getElementById('edit-client-phone');
+    if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+    if (phoneEl) phoneEl.classList.remove('ac-invalid');
     document.getElementById('modal-edit-client').classList.add('open');
 }
+
+function validateAndSubmitEditClient() {
+    var phoneEl = document.getElementById('edit-client-phone');
+    var errEl   = document.getElementById('err-edit-phone');
+    var rawPhone = phoneEl ? phoneEl.value.replace(/\D/g, '') : '';
+    var ok = true;
+    if (phoneEl) phoneEl.classList.remove('ac-invalid');
+    if (errEl)   { errEl.textContent = ''; errEl.style.display = 'none'; }
+    if (rawPhone && rawPhone.length !== 10) {
+        if (phoneEl) phoneEl.classList.add('ac-invalid');
+        if (errEl)   { errEl.textContent = 'Phone number must be exactly 10 digits.'; errEl.style.display = 'flex'; }
+        ok = false;
+    }
+    if (ok) document.getElementById('edit-client-form').submit();
+}
+
+// Strip non-digits from edit-client phone as user types
+(function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        var ph = document.getElementById('edit-client-phone');
+        if (!ph) return;
+        ph.addEventListener('input', function() {
+            var cleaned = this.value.replace(/\D/g, '');
+            if (cleaned !== this.value) this.value = cleaned;
+            this.classList.remove('ac-invalid');
+            var err = document.getElementById('err-edit-phone');
+            if (err) { err.textContent = ''; err.style.display = 'none'; }
+        });
+    });
+})();
 
 function confirmDelete(id, name) {
     document.getElementById('delete-msg').textContent = 'Delete "' + name + '"? This cannot be undone.';
@@ -1395,7 +1455,30 @@ if (new URLSearchParams(window.location.search).get('add') === '1') {
 }
 
 // ── Add Company Modal ────────────────────────────────────────
+function resetAddCompanyForm() {
+    // Text / email inputs
+    ['modal-co-admin-name','modal-co-admin-email','modal-co-admin-phone',
+     'modal-company-name','modal-co-email'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) { el.value = ''; el.classList.remove('co-invalid'); }
+    });
+    // Selects
+    ['modal-co-industry','modal-co-entity','modal-existing-client-id'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) { el.selectedIndex = 0; el.classList.remove('co-invalid'); }
+    });
+    // Error messages
+    ['modal-err-co-admin-name','modal-err-co-admin-email','modal-err-co-admin-phone',
+     'modal-err-co-name','modal-err-co-email','modal-err-co-industry',
+     'modal-err-co-entity','modal-err-existing-client'].forEach(function(id) {
+        modalCoErr(id, '');
+    });
+    // Reset to New Client tab
+    modalSetAdminType('new');
+}
+
 function openAddCompanyModal() {
+    resetAddCompanyForm();
     document.getElementById('modal-add-company').classList.add('open');
     setTimeout(function() {
         var f = document.getElementById('modal-co-admin-name');
@@ -1404,6 +1487,7 @@ function openAddCompanyModal() {
 }
 
 function closeAddCompanyModal() {
+    resetAddCompanyForm();
     document.getElementById('modal-add-company').classList.remove('open');
 }
 
@@ -1491,6 +1575,22 @@ function modalSetAdminType(type) {
     if (btnExisting) {
         btnExisting.style.background = isNew ? 'transparent' : 'var(--orange)';
         btnExisting.style.color = isNew ? 'var(--text-2)' : '#fff';
+    }
+    // Clear the panel being hidden so stale data doesn't persist on switch-back
+    if (isNew) {
+        // Switched to New Client — clear Existing Client select + its error
+        var exSel = document.getElementById('modal-existing-client-id');
+        if (exSel) { exSel.selectedIndex = 0; exSel.classList.remove('co-invalid'); }
+        modalCoErr('modal-err-existing-client', '');
+    } else {
+        // Switched to Existing Client — clear New Client fields + their errors
+        ['modal-co-admin-name','modal-co-admin-email','modal-co-admin-phone'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) { el.value = ''; el.classList.remove('co-invalid'); }
+        });
+        ['modal-err-co-admin-name','modal-err-co-admin-email','modal-err-co-admin-phone'].forEach(function(id) {
+            modalCoErr(id, '');
+        });
     }
 }
 

@@ -1060,16 +1060,19 @@
         pdfIcon.style.background = isZip ? '#64748b' : '#1a6aa8';
     };
 
+    var _impToken = @json(isset($__imp) ? $__imp['token'] : null);
+
     window.confirmDownload = function () {
         if (!_dlInsightId) return;
         var btn = document.getElementById('dl-confirm-btn');
         btn.textContent = 'Downloading…';
         btn.disabled = true;
 
+        var suffix = _impToken ? '?_imp=' + encodeURIComponent(_impToken) : '';
         if (_dlOption === 'pdf') {
-            window.location.href = '/insights/' + _dlInsightId + '/export-pdf';
+            window.location.href = '/insights/' + _dlInsightId + '/export-pdf' + suffix;
         } else {
-            window.location.href = '/insights/' + _dlInsightId + '/download';
+            window.location.href = '/insights/' + _dlInsightId + '/download' + suffix;
         }
 
         setTimeout(function () {
@@ -1156,7 +1159,8 @@
                 ? document.querySelector('meta[name="csrf-token"]').content
                 : '{{ csrf_token() }}';
 
-            fetch('/insights/' + id, {
+            var deleteUrl = '/insights/' + id + (_impToken ? '?_imp=' + encodeURIComponent(_impToken) : '');
+            fetch(deleteUrl, {
                 method: 'DELETE',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',

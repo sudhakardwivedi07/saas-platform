@@ -75,7 +75,13 @@
       "Bash(Select-Object FullName)",
       "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\htdocs\\\\whitelabel-saas\" -Name)",
       "Bash(Select-Object -First 20)",
-      "Bash(php -r ' *)"
+      "Bash(php -r ' *)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -u root -e \"SELECT id, company_id, user_id, status, report_name, created_at FROM whitelabel_saas.reports WHERE LOWER\\(TRIM\\(status\\)\\) = 'analyzed' ORDER BY created_at DESC LIMIT 10;\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -u root whitelabel_saas -e \"SHOW TABLES;\")",
+      "Bash(mysql --version)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -u root whitelabel_saas -e ' *)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -u root -proot whitelabel_saas -e \"SELECT r.id, r.company_id, r.status, r.title, LEFT\\(r.created_at,19\\) as created FROM reports r WHERE LOWER\\(TRIM\\(r.status\\)\\)='analyzed' ORDER BY r.created_at DESC LIMIT 10;\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot whitelabel_saas -e \"SELECT r.id, r.company_id, r.status, r.title, LEFT\\(r.created_at,19\\) as created FROM reports r WHERE LOWER\\(TRIM\\(r.status\\)\\)='analyzed' ORDER BY r.created_at DESC LIMIT 10;\")"
     ]
   }
 }

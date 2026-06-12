@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot \"saas-platform\" -e \"DESCRIBE reports;\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot saas-platform -e ' *)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -uroot \"saas-platform\" -e \"DESCRIBE report_attachments;\")"
+    ]
+  }
+}

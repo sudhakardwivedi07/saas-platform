@@ -160,10 +160,6 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                         <div style="font-size:13px;color:var(--text-3);margin-top:2px">Customise the look and feel of your client portal</div>
                     </div>
                     <div style="display:flex;gap:8px">
-                        <button type="button" class="btn btn-ghost btn-sm" id="reset-branding-btn" onclick="resetBranding()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                            Reset
-                        </button>
                         <button type="submit" class="btn btn-primary btn-sm">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                             Save Branding
@@ -298,19 +294,6 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                                 @endforeach
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                {{-- Custom Domain --}}
-                <div class="brand-sec">
-                    <div class="brand-sec-title">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-                        Domain Settings
-                    </div>
-                    <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Your sub-companies will be hosted on a custom subdomain</div>
-                    <div style="display:flex;align-items:stretch;border:1.5px solid var(--border);border-radius:9px;overflow:hidden;background:#fff">
-                        <input type="text" name="custom_domain" class="f-inp" placeholder="yourcompany" value="{{ $branding->custom_domain ?? '' }}" style="border:none;border-radius:0;flex:1;background:#fff">
-                        <div style="display:flex;align-items:center;padding:0 13px;background:var(--bg);border-left:1px solid var(--border);font-size:13px;font-weight:500;color:var(--text-2);white-space:nowrap;flex-shrink:0">.saas.app</div>
                     </div>
                 </div>
 
@@ -553,12 +536,19 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                     </div>
                     <div style="margin-bottom:24px">
                         <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Logo (shown on login card)</label>
-                        <input type="file" name="logo" id="lp-logo" accept="image/*"
-                               onchange="lpPreviewLogoImage(this)"
-                               style="font-size:13px">
-                        @if($branding?->logo)
-                            <p style="font-size:12px;color:#6b7280;margin-top:4px">Current: <a href="{{ asset('storage/'.$branding->logo) }}" target="_blank" style="color:#1a6aa8">view logo</a></p>
-                        @endif
+                        <label id="lp-logo-drop-zone" for="lp-logo" style="display:block;border:2px dashed #bfdbfe;border-radius:10px;background:var(--blue-pale);padding:32px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s" ondragover="event.preventDefault();this.style.borderColor='var(--blue)'" ondragleave="this.style.borderColor='#bfdbfe'" ondrop="lpHandleLogoDrop(event)">
+                            <div id="lp-logo-drop-content">
+                                @if($branding?->logo)
+                                <img src="{{ asset('storage/' . $branding->logo) }}" alt="Logo" style="max-height:52px;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px">
+                                <p style="font-size:12.5px;color:var(--text-2)">Drag &amp; drop a new logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p>
+                                @else
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="1.6" width="28" height="28" style="display:block;margin:0 auto 10px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                <p style="font-size:13px;color:var(--text-2)">Drag &amp; drop your logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p>
+                                @endif
+                                <p style="font-size:12px;color:var(--text-3);margin-top:5px">PNG, SVG, JPG &middot; up to 2 MB &middot; Recommended: 200&times;60px</p>
+                            </div>
+                        </label>
+                        <input type="file" name="logo" id="lp-logo" accept="image/png,image/jpeg,image/jpg,image/svg+xml" style="display:none" onchange="lpPreviewLogoImage(this)">
                     </div>
                     <button type="submit" id="lp-submit" class="btn btn-primary">Save Login Page</button>
                 </form>
@@ -1525,11 +1515,29 @@ function lpPreviewLogoImage(input) {
     if (input.files && input.files[0]) {
         var reader = new FileReader();
         reader.onload = function (e) {
+            // Update live preview
             var wrap = document.getElementById('lp-preview-logo-wrap');
             if (wrap) wrap.innerHTML = '<img src="' + e.target.result + '" alt="Logo" style="max-height:36px;max-width:140px;object-fit:contain;display:block;margin:0 auto">';
+            // Update drop zone to show selected image
+            var content = document.getElementById('lp-logo-drop-content');
+            if (content) content.innerHTML = '<img src="' + e.target.result + '" style="max-height:52px;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px"><p style="font-size:12.5px;color:var(--text-2)">Drag &amp; drop a new logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p><p style="font-size:12px;color:var(--text-3);margin-top:5px">PNG, SVG, JPG &middot; up to 2 MB &middot; Recommended: 200&times;60px</p>';
         };
         reader.readAsDataURL(input.files[0]);
     }
+}
+
+function lpHandleLogoDrop(event) {
+    event.preventDefault();
+    var zone = document.getElementById('lp-logo-drop-zone');
+    if (zone) { zone.style.borderColor = '#bfdbfe'; }
+    var files = event.dataTransfer && event.dataTransfer.files;
+    if (!files || !files[0]) return;
+    var input = document.getElementById('lp-logo');
+    if (!input) return;
+    var dt = new DataTransfer();
+    dt.items.add(files[0]);
+    input.files = dt.files;
+    lpPreviewLogoImage(input);
 }
 
 function submitLoginPageForm(e) {
@@ -1651,9 +1659,13 @@ async function subStartCheckout(packageId, btn) {
 }
 
 function subCancel() {
+    var planName  = @json($planName ?? 'your current');
+    var periodEnd = @json($renewsAt ? $renewsAt->format(active_date_format()) : null);
+    var msg = 'You are about to cancel your ' + planName + ' plan. Your plan will remain active until the end of the current billing period'
+        + (periodEnd ? ' on ' + periodEnd : '') + '. After this date, you will lose access to all ' + planName + ' features.\n\nYou can re-subscribe at any time.';
     Swal.fire({
         title: 'Cancel Subscription?',
-        text: 'Your plan will remain active until the end of the current billing period. You can re-subscribe at any time.',
+        text: msg,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Yes, Cancel Subscription',

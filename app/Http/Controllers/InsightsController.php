@@ -460,12 +460,12 @@ class InsightsController extends AccountBaseController
         return preg_replace('/\n{3,}/', "\n\n", trim($html));
     }
 
-    public function download(int $reportId)
+    public function download(int $id)
     {
         $impersonatingAdminId = session('impersonating_client_original_id');
 
         $report = Report::with('attachments')
-            ->where('id', $reportId)
+            ->where('id', $id)
             ->where(function ($q) use ($impersonatingAdminId) {
                 $q->where('user_id', auth()->id());
                 if ($impersonatingAdminId) {
@@ -503,12 +503,12 @@ class InsightsController extends AccountBaseController
         return response()->download($tempZip, $zipName)->deleteFileAfterSend(true);
     }
 
-    public function previewPdf(int $reportId)
+    public function previewPdf(int $id)
     {
         $impersonatingAdminId = session('impersonating_client_original_id');
 
         $report = Report::with(['user', 'company'])
-            ->where('id', $reportId)
+            ->where('id', $id)
             ->where(function ($q) use ($impersonatingAdminId) {
                 $q->where('user_id', auth()->id());
                 if ($impersonatingAdminId) {
@@ -530,12 +530,12 @@ class InsightsController extends AccountBaseController
         return view('insights.preview', $this->data);
     }
 
-    public function exportPdf(int $reportId)
+    public function exportPdf(int $id)
     {
         $impersonatingAdminId = session('impersonating_client_original_id');
 
         $report = Report::with(['user', 'company'])
-            ->where('id', $reportId)
+            ->where('id', $id)
             ->where(function ($q) use ($impersonatingAdminId) {
                 $q->where('user_id', auth()->id());
                 if ($impersonatingAdminId) {

@@ -7,7 +7,7 @@
 <div class="ph">
     <div class="ph-left">
         <h1>My Account</h1>
-        <p>Manage your profile, password, and branding settings</p>
+        <p>Manage your profile, branding, login page, forgot password, subscription, and activity log</p>
     </div>
 </div>
 
@@ -112,16 +112,18 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
 
         {{-- Password Form --}}
         <div>
-            <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:4px">Change Password</div>
-            <div style="font-size:12.5px;color:var(--text-3);margin-bottom:16px">Use a strong password that you don't use elsewhere.</div>
+            <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:16px">Change Password</div>
             <form method="POST" action="{{ route('account.password') }}" id="password-form" novalidate>
                 @csrf
-                <div class="f-group" style="max-width:400px">
-                    <label class="f-label">Current Password <span style="color:var(--red)">*</span></label>
-                    <input type="password" name="current_password" id="ac-cur-pwd" class="f-inp" placeholder="Enter your current password" autocomplete="current-password">
-                    <div id="err-cur-pwd" class="ac-err" style="display:none"></div>
+                <div class="form-2col">
+                    <div class="f-group">
+                        <label class="f-label">Current Password <span style="color:var(--red)">*</span></label>
+                        <input type="password" name="current_password" id="ac-cur-pwd" class="f-inp" placeholder="Enter your current password" autocomplete="current-password">
+                        <div id="err-cur-pwd" class="ac-err" style="display:none"></div>
+                    </div>
+                    <div></div>
                 </div>
-                <div class="form-2col" style="max-width:400px">
+                <div class="form-2col">
                     <div class="f-group">
                         <label class="f-label">New Password <span style="color:var(--red)">*</span></label>
                         <input type="password" name="password" id="ac-new-pwd" class="f-inp" placeholder="Min. 8 characters" autocomplete="new-password">
@@ -133,7 +135,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                         <div id="err-confirm-pwd" class="ac-err" style="display:none"></div>
                     </div>
                 </div>
-                <button type="button" class="btn btn-ghost btn-sm" onclick="validateAndSubmitPassword()">
+                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitPassword()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                     Save Password
                 </button>
@@ -157,13 +159,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
                     <div>
                         <div style="font-size:16px;font-weight:700;color:var(--text-1)">Branding Settings</div>
-                        <div style="font-size:13px;color:var(--text-3);margin-top:2px">Customise the look and feel of your client portal</div>
-                    </div>
-                    <div style="display:flex;gap:8px">
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                            Save Branding
-                        </button>
+                        <div style="font-size:13px;color:var(--text-3);margin-top:2px">Customize your client portal's look and feel</div>
                     </div>
                 </div>
 
@@ -405,15 +401,9 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                 <span id="adf-preview" style="font-weight:600;color:var(--text-1);margin-left:4px">{{ $today->format($effectiveFmt) }}</span>
             </div>
             <div style="display:flex;gap:8px">
-                @if($companyDateFormat)
-                <button class="btn btn-ghost btn-sm" onclick="adfClear()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                    Reset to Default
-                </button>
-                @endif
-                <button class="btn btn-primary btn-sm" id="adf-save-btn" onclick="adfSave()">
+                <button type="button" class="btn btn-primary btn-sm" id="adf-save-btn" onclick="saveAll()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                    Save Date Format
+                    Save
                 </button>
             </div>
         </div>
@@ -1188,72 +1178,6 @@ function handleLogoDrop(event) {
     if (p && a) updatePreview(p.value, a.value);
 })();
 
-// Submit branding form via AJAX and show toast
-document.getElementById('branding-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const btn = this.querySelector('[type=submit]');
-    const origText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = 'Saving…';
-
-    try {
-        const fd = new FormData(this);
-        const res  = await fetch(this.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        const json = await res.json();
-        if (json.status === 'success') {
-            // Update CSS variables immediately
-            const primary = document.getElementById('primary-color-inp').value;
-            const accent  = document.getElementById('accent-color-inp').value;
-            document.documentElement.style.setProperty('--blue',   primary);
-            document.documentElement.style.setProperty('--orange', accent);
-
-            // Update browser tab favicon live if a new one was saved
-            if (json.favicon_url) {
-                let link = document.querySelector("link[rel='icon']");
-                if (!link) {
-                    link = document.createElement('link');
-                    link.rel = 'icon';
-                    document.head.appendChild(link);
-                }
-                link.href = json.favicon_url;
-                // Update preview in the upload zone
-                const wrap = document.getElementById('favicon-preview-wrap');
-                if (wrap) {
-                    wrap.innerHTML = '<img id="favicon-preview-img" src="' + json.favicon_url + '" style="width:32px;height:32px;object-fit:contain;display:block">';
-                }
-            }
-
-            // Update sidebar logo and drop zone if a new logo was saved
-            if (json.logo_url) {
-                // Sidebar logo
-                const sidebarLogoZone = document.querySelector('.ca-logo-zone');
-                if (sidebarLogoZone) {
-                    sidebarLogoZone.innerHTML = '<img src="' + json.logo_url + '" alt="Logo" class="ca-logo-img">';
-                }
-                // Drop zone
-                const content = document.getElementById('logo-drop-content');
-                if (content) {
-                    content.innerHTML = '<img src="' + json.logo_url + '" style="max-height:52px;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px"><p style="font-size:12.5px;color:var(--text-2)">Drag &amp; drop a new logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p>';
-                }
-                // Preview panel
-                const wrap = document.getElementById('preview-logo-wrap');
-                if (wrap) {
-                    wrap.innerHTML = '<img src="' + json.logo_url + '" style="max-width:44px;max-height:28px;object-fit:contain;display:block">';
-                }
-            }
-
-            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
-            Swal.fire({ icon: 'success', text: json.message || 'Branding updated successfully.', confirmButtonText: 'Ok', confirmButtonColor: btnColor });
-        } else {
-            showToast(json.message || 'Failed to save branding.', 'error');
-        }
-    } catch (err) {
-        showToast('An error occurred. Please try again.', 'error');
-    }
-
-    btn.disabled  = false;
-    btn.innerHTML = origText;
-});
 
 // Auto-switch tab based on URL hash or ?tab= query param
 document.addEventListener('DOMContentLoaded', function () {
@@ -1810,26 +1734,58 @@ function adfPickFormat(fmt) {
     });
 }
 
-async function adfSave() {
+async function saveAll() {
     const btn = document.getElementById('adf-save-btn');
     if (!btn) return;
     const orig = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = 'Saving…';
     try {
-        const fd = new FormData();
-        fd.append('date_format', adfCurrent);
-        const r = await fetch('{{ parse_url(route("account.date-format"), PHP_URL_PATH) }}', {
-            method: 'POST', body: fd,
+        // 1. Save date format
+        const fd1 = new FormData();
+        fd1.append('date_format', adfCurrent);
+        const r1 = await fetch('{{ parse_url(route("account.date-format"), PHP_URL_PATH) }}', {
+            method: 'POST', body: fd1,
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
         });
-        let j;
-        try { j = await r.json(); } catch(_) { j = { status: 'fail', message: 'Server error (HTTP ' + r.status + ').' }; }
-        if (j.status === 'success') {
+        let j1;
+        try { j1 = await r1.json(); } catch(_) { j1 = { status: 'fail', message: 'Server error saving date format.' }; }
+        if (j1.status !== 'success') {
+            showToast(j1.message || 'Error saving date format.', 'error');
+            btn.disabled = false; btn.innerHTML = orig;
+            return;
+        }
+
+        // 2. Save branding
+        const form = document.getElementById('branding-form');
+        const fd2  = new FormData(form);
+        const res  = await fetch(form.action, { method: 'POST', body: fd2, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const json = await res.json();
+        if (json.status === 'success') {
+            const primary = document.getElementById('primary-color-inp').value;
+            const accent  = document.getElementById('accent-color-inp').value;
+            document.documentElement.style.setProperty('--blue',   primary);
+            document.documentElement.style.setProperty('--orange', accent);
+            if (json.favicon_url) {
+                let link = document.querySelector("link[rel='icon']");
+                if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+                link.href = json.favicon_url;
+                const wrap = document.getElementById('favicon-preview-wrap');
+                if (wrap) wrap.innerHTML = '<img id="favicon-preview-img" src="' + json.favicon_url + '" style="width:32px;height:32px;object-fit:contain;display:block">';
+            }
+            if (json.logo_url) {
+                const sidebarLogoZone = document.querySelector('.ca-logo-zone');
+                if (sidebarLogoZone) sidebarLogoZone.innerHTML = '<img src="' + json.logo_url + '" alt="Logo" class="ca-logo-img">';
+                const content = document.getElementById('logo-drop-content');
+                if (content) content.innerHTML = '<img src="' + json.logo_url + '" style="max-height:52px;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px"><p style="font-size:12.5px;color:var(--text-2)">Drag &amp; drop a new logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p>';
+                const wrap = document.getElementById('preview-logo-wrap');
+                if (wrap) wrap.innerHTML = '<img src="' + json.logo_url + '" style="max-width:44px;max-height:28px;object-fit:contain;display:block">';
+            }
             var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
-            Swal.fire({ icon: 'success', text: j.message, confirmButtonText: 'OK', confirmButtonColor: btnColor })
-                .then(() => window.location.reload());
-        } else { showToast(j.message || 'Error saving.', 'error'); }
-    } catch(e) { showToast('Request failed. Please try again.', 'error'); }
+            Swal.fire({ icon: 'success', text: json.message || 'Branding updated successfully.', confirmButtonText: 'OK', confirmButtonColor: btnColor });
+        } else {
+            showToast(json.message || 'Failed to save branding.', 'error');
+        }
+    } catch(e) { showToast('An error occurred. Please try again.', 'error'); }
     btn.disabled = false; btn.innerHTML = orig;
 }
 

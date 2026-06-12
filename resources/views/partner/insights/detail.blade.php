@@ -7,7 +7,7 @@
 .rdc { background:#f5f7fa;min-height:100vh; }
 
 /* ── Back link ───────────────────────────────────────────────── */
-.rd-back { display:inline-flex;align-items:center;gap:8px;color:var(--blue);font-size:13.5px;font-weight:500;text-decoration:none;margin-bottom:18px;padding:9px 16px;border:1px solid var(--blue);border-radius:7px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.08);transition:all .2s; }
+.rd-back { display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;color:var(--blue);font-size:13.5px;font-weight:500;text-decoration:none;margin-bottom:18px;border:1px solid var(--blue);border-radius:7px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.08);transition:all .2s; }
 .rd-back:hover { background:var(--blue-pale);color:var(--blue);text-decoration:none; }
 
 /* ── Header card ─────────────────────────────────────────────── */
@@ -19,7 +19,7 @@
 .rd-header-actions { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
 
 /* ── Buttons ─────────────────────────────────────────────────── */
-.rd-btn { height:38px;padding:0 18px;border-radius:7px;font-size:13.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;border:none;transition:all .2s;white-space:nowrap; }
+.rd-btn { height:40px;padding:0 18px;border-radius:7px;font-size:13.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;border:none;transition:all .2s;white-space:nowrap; }
 .rd-btn-outline { background:#fff;color:#374151;border:1.5px solid #e2e8f0; }
 .rd-btn-outline:hover { background:#f8fafc;color:#1a202c;text-decoration:none; }
 .rd-btn-edit { background:#fff;color:var(--blue);border:1.5px solid var(--blue); }

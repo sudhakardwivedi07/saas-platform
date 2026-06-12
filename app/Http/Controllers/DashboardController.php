@@ -488,8 +488,21 @@ class DashboardController extends AccountBaseController
         $this->kpiCompanies = $allPortfolioCompanies->isNotEmpty() ? $allPortfolioCompanies->unique('id')->values() : collect([$company]);
         $this->selectedKpiCompanyId = (int) ($latestAnalyzedReport?->company_id ?: $tenantId);
         $this->hasAnalyzedInsights = (bool) $latestAnalyzedReport;
-        // Executive KPI layout only after at least one analyzed insight (QB alone → classic dashboard).
-        $this->showKpiDashboard = $this->hasAnalyzedInsights;
+        // Show the KPI executive layout (with company dropdown) when insights exist OR when the user
+        // manages multiple companies — so the company selector is always visible for multi-company users.
+        $this->showKpiDashboard = $this->hasAnalyzedInsights || ($this->kpiCompanies->count() > 1);
+        // Timestamp of the most recent analyzed insight — shown as "Last updated" on the dashboard.
+        // Null when no insights exist (falls back to hiding the timestamp gracefully).
+        $this->kpiLastUpdatedAt = $latestAnalyzedReport?->updated_at ?? $latestAnalyzedReport?->created_at;
+
+        // Per-company insights flag used by the client-side company switch to toggle embed/placeholder.
+        $kpiCompanyInsightsMap = [];
+        foreach ($this->kpiCompanies as $__co) {
+            $kpiCompanyInsightsMap[(int) $__co->id] = Report::where('company_id', $__co->id)
+                ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
+                ->exists();
+        }
+        $this->kpiCompanyInsightsMap = $kpiCompanyInsightsMap;
 
         if ($this->showKpiDashboard) {
             $this->plans = collect();

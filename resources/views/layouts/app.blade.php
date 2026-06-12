@@ -293,7 +293,7 @@ tbody tr:hover td{background:#fafcff}
 /* ── CLIENT DETAIL ────────────────────────────────────── */
 .cd-header-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:24px 28px;box-shadow:var(--sh-sm);margin-bottom:16px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:18px}
 .cd-avatar-ring{width:64px;height:64px;border-radius:14px;background:linear-gradient(135deg,var(--blue),#0c84bc);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:-.5px}
-.cd-name{font-size:20px;font-weight:700;line-height:1.2}
+.cd-name{font-size:20px;font-weight:700;line-height:1.2;text-transform:capitalize}
 .cd-email{font-size:13px;color:var(--text-3);margin-top:2px}
 .cd-stat-chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .cd-chip{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:12.5px}

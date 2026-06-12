@@ -637,7 +637,7 @@
                 <div style="font-size:16px;font-weight:700;color:#0f172a">Download Report</div>
                 <div style="font-size:13px;color:#64748b;margin-top:2px">Choose the format to download</div>
             </div>
-            <button onclick="closeDownloadModal()" style="border:none;background:transparent;cursor:pointer;color:#94a3b8;font-size:20px;line-height:1;padding:4px">&times;</button>
+            <button onclick="closeDownloadModal()" style="width:28px;height:28px;border-radius:50%;border:1.5px solid #ef4444;background:#fee2e2;color:#ef4444;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;flex-shrink:0;transition:background .15s" onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'">&times;</button>
         </div>
         <div style="padding:20px 24px;display:flex;flex-direction:column;gap:10px">
             <label id="dl-opt-zip" onclick="selectDownloadOption('zip')"

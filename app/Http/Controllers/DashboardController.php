@@ -42,12 +42,15 @@ class DashboardController extends AccountBaseController
 
             // If an admin is impersonating this client, inject the admin bar data
             // so Edit Mode / Save Draft / Publish remain available.
-            if (session('impersonating_client_original_id')) {
+            // impersonating_admin_id() handles token-based (_imp=TOKEN) and legacy session.
+            $adminImpId = impersonating_admin_id();
+
+            if ($adminImpId) {
                 $clientUser = auth()->user();
 
                 // Filter kpiCompanies to only show companies owned by this admin,
                 // so the entity dropdown doesn't include companies from other admins.
-                $adminUser        = User::withoutGlobalScopes()->find(session('impersonating_client_original_id'));
+                $adminUser        = User::withoutGlobalScopes()->find($adminImpId);
                 $adminCompanyId   = $adminUser?->company_id;
                 if ($adminCompanyId) {
                     $adminSubIds = Company::withoutGlobalScopes()
@@ -73,7 +76,11 @@ class DashboardController extends AccountBaseController
                 $this->viewingAsUser          = $clientUser;
                 $this->dashboardPublishStatus = $dashSetting->publish_status ?? 'published';
                 $this->draftHiddenKpis        = $dashSetting->draft_hidden_kpis ?? [];
-                $this->backUrl                = route('clients.stop-impersonating');
+                // Token-based: Exit is handled by JS __exitClientImpersonation().
+                // Session-based (legacy): server route restores the admin session.
+                $this->backUrl = $request->query('_imp')
+                    ? 'javascript:__exitClientImpersonation()'
+                    : route('clients.stop-impersonating');
             }
 
             return view('dashboard.user', $this->data);

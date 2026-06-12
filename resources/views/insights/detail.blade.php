@@ -953,7 +953,7 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
                     },
                 }).then(() => {
                     if (redirectUrl) {
-                        window.location.href = redirectUrl;
+                        window.location.href = redirectUrl + IMP_PARAM;
                     } else {
                         ciOriginalContent = []; // saved — don't restore on toggle-off
                         ciToggleEdit();

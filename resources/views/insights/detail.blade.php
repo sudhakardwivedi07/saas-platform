@@ -814,6 +814,9 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
     const CI_SAVE_URL  = '/insights/' + CI_REPORT_ID + '/update-content' + IMP_PARAM;
     let ciEditMode = false;
     let ciOriginalContent = []; // per-slide HTML snapshots taken when edit mode opens
+    let ciDirty = false;        // true only when the user has actually typed/edited
+
+    function ciMarkDirty() { ciDirty = true; }
 
     window.ciToggleEdit = function () {
         ciEditMode = !ciEditMode;
@@ -825,6 +828,7 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
         const toolbar  = document.getElementById('ciEditToolbar');
 
         if (ciEditMode) {
+            ciDirty = false; // reset on each edit session open
             // Snapshot every slide so Cancel can restore them
             ciOriginalContent = [];
             document.querySelectorAll('.insight-slider-content').forEach(el => {
@@ -844,6 +848,7 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
                 });
                 ciOriginalContent = [];
             }
+            ciDirty = false;
             if (btnLabel) btnLabel.textContent = 'Edit Insight';
             btn?.classList.remove('active');
             if (pdfBtn) { pdfBtn.style.opacity = ''; pdfBtn.style.pointerEvents = ''; }
@@ -859,10 +864,12 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
                 container.setAttribute('contenteditable', 'true');
                 container.setAttribute('spellcheck', 'false');
                 container.style.outline = 'none';
+                container.addEventListener('input', ciMarkDirty);
             } else {
                 container.removeAttribute('contenteditable');
                 container.removeAttribute('spellcheck');
                 container.style.outline = '';
+                container.removeEventListener('input', ciMarkDirty);
             }
         });
     }
@@ -915,6 +922,19 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
             return { title: sec.title, html: content ? content.innerHTML : (sec.content || '') };
         });
 
+        // Only save if the user actually typed or edited something (dirty flag set by input events)
+        if (!ciDirty) {
+            const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
+            Swal.fire({
+                icon: 'info',
+                title: 'No Changes',
+                text: 'No modifications were made to the report content.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: brandColor,
+            });
+            return;
+        }
+
         const btn = document.getElementById('ciBtnSave');
         if (btn) btn.disabled = true;
         document.getElementById('ciBtnSaveLabel').textContent = 'Saving…';
@@ -929,6 +949,7 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
             if (btn) btn.disabled = false;
             document.getElementById('ciBtnSaveLabel').textContent = 'Save';
             if (data.status === 'success') {
+                ciDirty = false; // reset so re-saving without further edits is blocked
                 window.insightSections = sections.map(s => ({ title: s.title, content: s.html }));
                 const redirectUrl = data.redirect_url || null;
                 const newVersion  = data.version      || null;
@@ -953,7 +974,7 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
                     },
                 }).then(() => {
                     if (redirectUrl) {
-                        window.location.href = redirectUrl;
+                        window.location.href = redirectUrl + IMP_PARAM;
                     } else {
                         ciOriginalContent = []; // saved — don't restore on toggle-off
                         ciToggleEdit();

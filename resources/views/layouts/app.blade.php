@@ -404,6 +404,15 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 .dr-cal-btn-cancel:hover{background:#b91c1c}
 .dr-cal-btn-apply{padding:6px 18px;border:none;border-radius:7px;background:#2563eb;color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .12s}
 .dr-cal-btn-apply:hover{background:#1d4ed8}
+
+/* ── PAGE LOADER BAR ──────────────────────────────────── */
+#pg-loader{position:fixed;top:0;left:0;right:0;height:3px;z-index:99999;pointer-events:none;opacity:0;transition:opacity .2s}
+#pg-loader.on{opacity:1}
+#pg-loader-fill{height:100%;width:0;background:linear-gradient(90deg,var(--orange),#ffb36b);border-radius:0 2px 2px 0;box-shadow:0 0 8px rgba(240,107,33,.55)}
+/* ── BUTTON LOADING STATE ─────────────────────────────── */
+.btn-loading{pointer-events:none!important;opacity:.75!important}
+.btn-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0;vertical-align:middle}
+.btn-ghost .btn-spin,.btn-secondary .btn-spin{border-color:rgba(0,0,0,.12)!important;border-top-color:currentColor!important}
     </style>
     @stack('styles')
     <link rel="stylesheet" href="{{ asset(config('assets.sweetalert2_css')) }}">
@@ -415,6 +424,9 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
     </style>
 </head>
 <body>
+
+{{-- Global page-load progress bar --}}
+<div id="pg-loader" aria-hidden="true"><div id="pg-loader-fill"></div></div>
 
 {{-- Impersonation Banner --}}
 @if(session('impersonating_company'))
@@ -1408,6 +1420,164 @@ function drCalHoverEnd(id) {
 function __exitClientImpersonation() {
     sessionStorage.removeItem('__imp_token');
     window.location.href = '/clients';
+}
+</script>
+
+<script>
+/* ════════════════════════════════════════════════════════
+   GLOBAL LOADING SYSTEM
+   - Top progress bar: page navigation, form submit, AJAX > 300 ms
+   - Inline spinner:   on .btn links, .dm-item links (navigation)
+   - Button spinner:   auto on submit buttons, callable for AJAX actions
+   ════════════════════════════════════════════════════════ */
+
+/* ── Progress bar controller ──────────────────────────── */
+(function () {
+    var fill = document.getElementById('pg-loader-fill');
+    var wrap = document.getElementById('pg-loader');
+    if (!fill) return;
+
+    var _active = false, _pct = 0, _timer = null;
+
+    function pgStart() {
+        if (_active) return;
+        _active = true; _pct = 0;
+        clearInterval(_timer);
+        fill.style.transition = 'none'; fill.style.width = '0%';
+        wrap.classList.add('on');
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                fill.style.transition = 'width .45s ease';
+                fill.style.width = '25%'; _pct = 25;
+                _timer = setInterval(function () {
+                    if (_pct >= 80) return clearInterval(_timer);
+                    _pct += Math.random() * 6 + 2;
+                    fill.style.transition = 'width 1s ease';
+                    fill.style.width = Math.min(_pct, 80) + '%';
+                }, 1200);
+            });
+        });
+    }
+
+    function pgDone() {
+        if (!_active) return;
+        clearInterval(_timer);
+        fill.style.transition = 'width .18s ease';
+        fill.style.width = '100%';
+        setTimeout(function () {
+            wrap.classList.remove('on');
+            setTimeout(function () {
+                fill.style.transition = 'none';
+                fill.style.width = '0%';
+                _active = false; _pct = 0;
+            }, 200);
+        }, 280);
+    }
+
+    window.__pgStart = pgStart;
+    window.__pgDone  = pgDone;
+
+    /* ── Trigger: navigating link clicks ───────────────── */
+    document.addEventListener('click', function (e) {
+        var a = e.target.closest('a[href]');
+        if (!a) return;
+        var h = a.getAttribute('href');
+        if (!h || /^(#|javascript:|mailto:|tel:|void)/.test(h)) return;
+        if (a.target === '_blank' || a.dataset.noLoader !== undefined) return;
+        if (e.ctrlKey || e.metaKey || e.shiftKey) return;
+        if (a._pgLoading) { e.preventDefault(); return; }
+        pgStart();
+        /* Show inline spinner on action links (.btn or .dm-item) */
+        if (a.classList.contains('btn') || a.classList.contains('dm-item')) {
+            __linkLoad(a);
+        }
+    });
+
+    /* ── Trigger: form submit (non-AJAX) ───────────────── */
+    document.addEventListener('submit', function (e) {
+        var f = e.target;
+        if (!f || f.dataset.noLoader !== undefined) return;
+        pgStart();
+    });
+
+    /* ── Trigger: fetch AJAX > 300 ms ──────────────────── */
+    var _orig = window.fetch, _pending = 0;
+    window.fetch = function () {
+        _pending++;
+        var shown = false;
+        var showT = setTimeout(function () { shown = true; pgStart(); }, 300);
+        var p = _orig.apply(this, arguments);
+        function cleanup() {
+            clearTimeout(showT);
+            _pending = Math.max(0, _pending - 1);
+            if (_pending === 0 && shown) pgDone();
+        }
+        p.then(cleanup, cleanup);
+        return p;
+    };
+
+    /* ── Finish on page show (handles bfcache too) ─────── */
+    window.addEventListener('pageshow', pgDone);
+}());
+
+/* ── Submit button auto-spinner ───────────────────────── */
+(function () {
+    var _lastBtn = null;
+    document.addEventListener('mousedown', function (e) {
+        _lastBtn = e.target.closest('button[type="submit"]') || null;
+    }, true);
+
+    document.addEventListener('submit', function (e) {
+        var f = e.target;
+        if (!f) return;
+        /* skip login-as (handled separately) and AJAX forms */
+        if (f.action && f.action.indexOf('/login-as') !== -1) return;
+        if (f.dataset.noLoader !== undefined) return;
+
+        var btn = _lastBtn || f.querySelector('button[type="submit"]');
+        _lastBtn = null;
+        if (!btn || btn.disabled) return;
+
+        __btnLoad(btn);
+        /* safety: re-enable after 12 s or on pageshow */
+        var t = setTimeout(function () { __btnUnload(btn); }, 12000);
+        window.addEventListener('pageshow', function () {
+            clearTimeout(t); __btnUnload(btn);
+        }, { once: true });
+    });
+}());
+
+/* ── Inline spinner for navigation <a> links ──────────── */
+function __linkLoad(a) {
+    if (!a || a._pgLoading) return;
+    a._pgLoading  = true;
+    a._pgOrigHtml = a.innerHTML;
+    var dark = a.classList.contains('dm-item') || a.classList.contains('btn-ghost') || a.classList.contains('btn-secondary');
+    var spinStyle = dark ? ' style="border-color:rgba(0,0,0,.15);border-top-color:currentColor"' : '';
+    a.innerHTML = '<span class="btn-spin"' + spinStyle + '></span>' + a.innerHTML;
+    a.style.pointerEvents = 'none';
+    a.style.opacity = '0.72';
+}
+
+/* ── Public helpers (call from page-specific JS) ──────── */
+function __btnLoad(btn) {
+    if (!btn || btn._pgLoading) return;
+    btn._pgLoading  = true;
+    btn._pgOrigHtml = btn.innerHTML;
+    var dark = btn.classList.contains('btn-ghost') || btn.classList.contains('btn-secondary');
+    var spinStyle = dark ? ' style="border-color:rgba(0,0,0,.15);border-top-color:currentColor"' : '';
+    btn.innerHTML = '<span class="btn-spin"' + spinStyle + '></span>' + btn.innerHTML;
+    btn.disabled = true;
+    btn.classList.add('btn-loading');
+}
+
+function __btnUnload(btn) {
+    if (!btn || !btn._pgLoading) return;
+    btn.disabled = false;
+    btn.classList.remove('btn-loading');
+    if (btn._pgOrigHtml !== undefined) btn.innerHTML = btn._pgOrigHtml;
+    btn._pgLoading  = false;
+    btn._pgOrigHtml = null;
 }
 </script>
 </body>

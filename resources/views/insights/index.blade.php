@@ -1159,7 +1159,8 @@
                 ? document.querySelector('meta[name="csrf-token"]').content
                 : '{{ csrf_token() }}';
 
-            fetch('/insights/' + id, {
+            var deleteUrl = '/insights/' + id + (_impToken ? '?_imp=' + encodeURIComponent(_impToken) : '');
+            fetch(deleteUrl, {
                 method: 'DELETE',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',

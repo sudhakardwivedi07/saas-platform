@@ -51,14 +51,14 @@
 
             <div>
                 <div style="font-size:11.5px;color:var(--text-3);margin-bottom:3px">Connected Since</div>
-                <div style="font-size:14px;color:var(--text-1)">{{ $conn->created_at?->format('M d, Y h:i A') ?? '—' }}</div>
+                <div style="font-size:14px;color:var(--text-1)">{{ $conn->created_at?->format(active_date_format() . ' h:i A') ?? '—' }}</div>
             </div>
 
             <div>
                 <div style="font-size:11.5px;color:var(--text-3);margin-bottom:4px">Access Token Expires</div>
                 <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
                     <span style="font-size:14px;color:var(--text-1)" id="fqb-token-expires-at">
-                        {{ $conn->access_token_expires_at?->format('M d, Y h:i A') ?? '—' }}
+                        {{ $conn->access_token_expires_at?->format(active_date_format() . ' h:i A') ?? '—' }}
                     </span>
                     @if($tokenActive)
                     <span style="background:#166534;color:#fff;border-radius:5px;padding:2px 9px;font-size:11.5px;font-weight:600">Active</span>
@@ -73,7 +73,7 @@
             <div>
                 <div style="font-size:11.5px;color:var(--text-3);margin-bottom:4px">Authorization Valid Until</div>
                 <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-                    <span style="font-size:14px;color:var(--text-1)">{{ $conn->refresh_token_expires_at->format('M d, Y h:i A') }}</span>
+                    <span style="font-size:14px;color:var(--text-1)">{{ $conn->refresh_token_expires_at->format(active_date_format() . ' h:i A') }}</span>
                     @if($daysLeft !== null)
                     <span style="background:{{ $daysLeft > 14 ? '#166534' : '#92400e' }};color:#fff;border-radius:5px;padding:2px 9px;font-size:11.5px;font-weight:600">
                         {{ $daysLeft }} {{ $daysLeft === 1 ? 'day' : 'days' }} remaining

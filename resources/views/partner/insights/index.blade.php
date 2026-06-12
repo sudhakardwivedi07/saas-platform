@@ -438,9 +438,9 @@
             table.search(this.value).draw();
         });
 
-        // Wire status filter — col 5 (Status), search by data-search value
+        // Wire status filter — col 4 (Status), search by data-search value
         document.getElementById('piStatusFilter').addEventListener('change', function () {
-            table.column(5).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+            table.column(4).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
         });
 
         piSyncHeaderBtn();
@@ -457,7 +457,7 @@
         const q  = (document.getElementById('piSearch')?.value ?? '').trim();
         const st = (document.getElementById('piStatusFilter')?.value ?? '');
         table.search(q);
-        table.column(5).search(st ? '^' + st + '$' : '', true, false, true);
+        table.column(4).search(st ? '^' + st + '$' : '', true, false, true);
         table.draw();
     };
 

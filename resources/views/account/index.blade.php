@@ -689,7 +689,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
     $planPrice   = $subPkg ? ($subscription?->billing_cycle === 'annual'
                     ? ($subPkg->annual_price ?? $subPkg->monthly_price * 12)
                     : $subPkg->monthly_price) : 0;
-    $priceLabel  = $subPkg ? ('$' . number_format($planPrice, 2) . '/' . ($subscription?->billing_cycle === 'annual' ? 'year' : 'month')) : '—';
+    $priceLabel  = $subPkg ? ('$' . number_format($planPrice, 0) . '/' . ($subscription?->billing_cycle === 'annual' ? 'year' : 'month')) : '—';
     $billingLabel= ucfirst($subscription?->billing_cycle ?? 'monthly');
     $nextBilling = $renewsAt ? $renewsAt->format(active_date_format()) : '—';
     $planDesc    = $subPkg?->description ?? 'Your current subscription plan';
@@ -725,7 +725,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
             <div style="font-size:15px;font-weight:700;color:var(--text-1)">{{ $billingLabel }}</div>
         </div>
         <div>
-            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:5px">Next Billing Date</div>
+            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:5px">Renews</div>
             <div style="font-size:15px;font-weight:700;color:var(--text-1)">{{ $nextBilling }}</div>
         </div>
         <div>
@@ -751,7 +751,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
             <div style="font-size:15px;font-weight:600;color:var(--text-1);letter-spacing:.08em">
                 •••• •••• •••• {{ $subscription->pm_last4 }}
                 &nbsp;&nbsp;
-                <span style="font-size:13px;font-weight:400;color:var(--text-3)">Expire:
+                <span style="font-size:13px;font-weight:400;color:var(--text-3)">Expires:
                     {{ str_pad($subscription->pm_exp_month, 2, '0', STR_PAD_LEFT) }}/{{ substr($subscription->pm_exp_year, -2) }}
                 </span>
             </div>

@@ -581,8 +581,7 @@ class InsightsController extends AccountBaseController
             'reportDate'  => $report->created_at->format('M d, Y'),
         ]);
 
-        $timestamp = $report->created_at->format('mdyHis');
-        $base      = preg_replace('/[^A-Za-z0-9\-_ ]/', '', $report->report_name ?: 'Insight') . '_' . $timestamp;
+        $base = Str::slug($report->report_name ?: 'Insight');
 
         return $pdf->download($base . '.pdf');
     }

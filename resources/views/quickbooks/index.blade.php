@@ -236,18 +236,17 @@ $(document).ready(function () {
     document.getElementById('qb-status-filter').value = '';
 
     var table = $('#qb-table').DataTable({
-        paging: true, pageLength: 10, lengthChange: true,
+        paging: true, pageLength: 10, lengthChange: false,
         searching: true, ordering: true, info: true,
-        dom: '<"dt-tscroll"t><"dt-footer"lip>',
+        dom: '<"dt-tscroll"t><"dt-footer"ip>',
         order: [[0, 'desc']],
         columns: @json(array_fill(0, $showPartnerColumn ? 7 : 6, null)),
         columnDefs: [{ orderable: false, targets: [-1] }],
         language: {
-            info: 'Showing _START_ to _END_ of _TOTAL_ entries',
+            info: 'Showing _START_–_END_ of _TOTAL_ companies',
             infoEmpty: 'No companies',
-            paginate: { previous: 'Previous', next: 'Next' },
+            paginate: { previous: '‹', next: '›' },
             emptyTable: '<div style="text-align:center;padding:48px 20px;color:var(--text-3)">No companies found.</div>',
-            lengthMenu: 'Show _MENU_',
         },
     });
 

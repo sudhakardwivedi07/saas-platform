@@ -50,6 +50,7 @@
 .pi-btn-generate:disabled { background:#9ca3af !important;cursor:not-allowed;pointer-events:none; }
 .pi-btn-export { height:38px;padding:0 16px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;color:#374151;font-size:13.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s; }
 .pi-btn-export:hover { background:#f8fafc;color:#1a202c; }
+.pi-btn-export:disabled { opacity:.45;cursor:not-allowed;pointer-events:none; }
 
 /* ── Table ───────────────────────────────────────── */
 .pi-table-card { background:#fff;border-radius:12px;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden; }
@@ -133,7 +134,7 @@
         <p class="pi-page-subtitle">All CFO financial insights generated across your client portfolio</p>
     </div>
     <div class="pi-page-header-actions">
-        <button class="pi-btn-export" onclick="piExportCSV()">
+        <button id="piExportBtn" class="pi-btn-export" onclick="piExportCSV()">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             Export
         </button>
@@ -347,12 +348,12 @@
         <h3>Generate New Insight</h3>
         <p class="pi-modal-sub">Select a client and company to generate CFO financial insights</p>
 
-        <label for="piClientSelect">Select Client</label>
+        <label for="piClientSelect">Select Client <span style="color:#ef4444">*</span></label>
         <select id="piClientSelect" onchange="piOnClientChange()">
             <option value="">Choose a client…</option>
         </select>
 
-        <label for="piCompanySelect">Select Company</label>
+        <label for="piCompanySelect">Select Company <span style="color:#ef4444">*</span></label>
         <select id="piCompanySelect" disabled>
             <option value="">Choose a company…</option>
         </select>
@@ -388,11 +389,17 @@
 
     // ── Header button sync ────────────────────────────────────────────────────
     function piSyncHeaderBtn() {
-        const btn = document.getElementById('piHeaderGenerateBtn');
-        if (!btn) return;
+        const btn       = document.getElementById('piHeaderGenerateBtn');
+        const exportBtn = document.getElementById('piExportBtn');
         const anyProcessing = !!document.querySelector('#pi-table tbody tr[data-status="processing"]');
-        btn.disabled  = anyProcessing;
-        btn.innerHTML = anyProcessing ? HDR_SPIN + ' Generating...' : HDR_ICON + ' Generate New Insight';
+        if (btn) {
+            btn.disabled  = anyProcessing;
+            btn.innerHTML = anyProcessing ? HDR_SPIN + ' Generating...' : HDR_ICON + ' Generate New Insight';
+        }
+        if (exportBtn) {
+            exportBtn.disabled = anyProcessing;
+            exportBtn.title    = anyProcessing ? 'Export unavailable while insight generation is in progress' : '';
+        }
     }
 
     // ── DataTable init ────────────────────────────────────────────────────────

@@ -391,14 +391,17 @@
     function piSyncHeaderBtn() {
         const btn       = document.getElementById('piHeaderGenerateBtn');
         const exportBtn = document.getElementById('piExportBtn');
-        const anyProcessing = !!document.querySelector('#pi-table tbody tr[data-status="processing"]');
+        // Use DataTables API when available so all pages are checked, not just the visible DOM
+        const anyProcessing = table
+            ? table.rows('[data-status="processing"]').count() > 0
+            : !!document.querySelector('#pi-table tbody tr[data-status="processing"]');
         if (btn) {
             btn.disabled  = anyProcessing;
             btn.innerHTML = anyProcessing ? HDR_SPIN + ' Generating...' : HDR_ICON + ' Generate New Insight';
         }
         if (exportBtn) {
             exportBtn.disabled = anyProcessing;
-            exportBtn.title    = anyProcessing ? 'Export unavailable while insight generation is in progress' : '';
+            exportBtn.title    = anyProcessing ? 'Export unavailable while generation is in progress' : '';
         }
     }
 
@@ -611,8 +614,10 @@
         const companyName = document.getElementById('piCompanySelect').options[document.getElementById('piCompanySelect').selectedIndex]?.textContent?.trim() || '';
         const clientName  = document.getElementById('piClientSelect').options[document.getElementById('piClientSelect').selectedIndex]?.textContent?.split(' (')[0]?.trim() || '';
         if (!clientId || !companyId) return;
-        const hdrBtn = document.getElementById('piHeaderGenerateBtn');
-        if (hdrBtn) { hdrBtn.disabled = true; hdrBtn.innerHTML = HDR_SPIN + ' Generating...'; }
+        const hdrBtn   = document.getElementById('piHeaderGenerateBtn');
+        const exportBtn = document.getElementById('piExportBtn');
+        if (hdrBtn)    { hdrBtn.disabled = true; hdrBtn.innerHTML = HDR_SPIN + ' Generating...'; }
+        if (exportBtn) { exportBtn.disabled = true; exportBtn.title = 'Export unavailable while generation is in progress'; }
         piCloseGenerateModal();
         Swal.fire({
             title: 'Generating insights',
@@ -724,7 +729,7 @@
         Swal.fire({
             title: 'Insight Generated!',
             html:  `<p style="color:#6b7280;font-size:14px;line-height:1.6">Your CFO level Financial Insight is ready to view${compName ? ` for <strong>"${compName}"</strong>` : ''}.</p>`,
-            icon: 'success', confirmButtonText: 'View Insight', showCancelButton: false, confirmButtonColor: '#f06b25',
+            icon: 'success', confirmButtonText: 'View Insight', showCancelButton: false, confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
         }).then(result => { if (result.isConfirmed) window.location.href = viewUrl; });
     }
 

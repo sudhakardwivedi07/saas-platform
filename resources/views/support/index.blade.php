@@ -544,8 +544,10 @@ $(document).ready(function () {
         order:[[0,'desc']],
         dom:'t<"dt-footer"ip>',
         columnDefs:[{orderable:false,targets:[1,6]}],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'tickets' : 'ticket');
+        },
         language:{
-            info:'Showing _START_–_END_ of _TOTAL_ tickets',
             infoEmpty:'No tickets found',
             paginate:{previous:'‹',next:'›'},
             emptyTable:
@@ -593,8 +595,10 @@ $(document).ready(function () {
         order:[[0,'desc']],
         dom:'t<"dt-footer"ip>',
         columnDefs:[{orderable:false,targets:[5]}],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'tickets' : 'ticket');
+        },
         language:{
-            info:'Showing _START_–_END_ of _TOTAL_ tickets',
             infoEmpty:'No tickets found',
             paginate:{previous:'‹',next:'›'},
             emptyTable:

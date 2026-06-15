@@ -90,7 +90,7 @@
                 </div>
                 <button class="btn btn-danger" onclick="resetClientTabFilters()">Reset</button>
             </div>
-            <span class="badge b-gray" id="client-count-badge">{{ $clients->count() }} clients</span>
+            <span class="badge b-gray" id="client-count-badge">{{ $clients->count() }} client{{ $clients->count() !== 1 ? 's' : '' }}</span>
         </div>
         <table id="clients-table" style="width:100%;border-collapse:collapse">
             <thead>
@@ -404,7 +404,7 @@
                 <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Email address cannot be changed.</div>
             </div>
             <div class="mf-field">
-                <label class="mf-label">Phone Number</label>
+                <label class="mf-label">Phone Number <span style="color:var(--red)">*</span></label>
                 <input type="tel" name="phone" id="edit-client-phone" class="mf-inp" placeholder="10-digit number" maxlength="10" inputmode="numeric">
                 <div id="err-edit-phone" class="ac-err"></div>
             </div>
@@ -884,8 +884,10 @@ $(document).ready(function() {
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         order: [[0, 'desc']],
         columnDefs: [{ orderable: false, targets: [2, 5] }],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'clients' : 'client');
+        },
         language: {
-            info: 'Showing _START_–_END_ of _TOTAL_ clients',
             infoEmpty: 'No clients found',
             infoFiltered: '(filtered from _MAX_ total clients)',
             zeroRecords: 'No clients found matching your search',
@@ -911,8 +913,10 @@ $(document).ready(function() {
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         order: [[0, 'desc']],
         columnDefs: [{ orderable: false, targets: [5] }],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'companies' : 'company');
+        },
         language: {
-            info: 'Showing _START_–_END_ of _TOTAL_ companies',
             infoEmpty: 'No companies found',
             infoFiltered: '(filtered from _MAX_ total companies)',
             zeroRecords: 'No companies found matching your search',
@@ -1033,6 +1037,8 @@ function validateAndSubmitAddClient() {
         var digitsOnly = rawPhone.replace(/\D/g, '');
         if (digitsOnly.length !== 10) {
             setErr('ac-phone', 'err-phone', 'Phone number must be exactly 10 digits.');
+        } else if (/^(\d)\1{9}$/.test(digitsOnly)) {
+            setErr('ac-phone', 'err-phone', 'Please enter a valid phone number.');
         }
     }
 
@@ -1345,7 +1351,6 @@ function validateAndSubmitEditClient() {
     var phoneEl  = document.getElementById('edit-client-phone');
     var phoneErr = document.getElementById('err-edit-phone');
     var rawPhone = phoneEl ? phoneEl.value.replace(/\D/g, '') : '';
-    var origPhone = phoneEl ? (phoneEl.dataset.original || '') : '';
     if (phoneEl) phoneEl.classList.remove('ac-invalid');
     if (phoneErr) { phoneErr.textContent = ''; phoneErr.style.display = 'none'; }
     if (!rawPhone) {
@@ -1356,9 +1361,9 @@ function validateAndSubmitEditClient() {
         if (phoneEl) phoneEl.classList.add('ac-invalid');
         if (phoneErr) { phoneErr.textContent = 'Phone number must be exactly 10 digits.'; phoneErr.style.display = 'block'; }
         ok = false;
-    } else if (rawPhone === origPhone) {
+    } else if (/^(\d)\1{9}$/.test(rawPhone)) {
         if (phoneEl) phoneEl.classList.add('ac-invalid');
-        if (phoneErr) { phoneErr.textContent = 'New phone number must be different from the current one.'; phoneErr.style.display = 'block'; }
+        if (phoneErr) { phoneErr.textContent = 'Please enter a valid phone number.'; phoneErr.style.display = 'block'; }
         ok = false;
     }
 
@@ -1706,6 +1711,8 @@ function validateAndSubmitCompanyModal() {
                 modalCoErr('modal-err-co-admin-phone', 'Phone number is required.'); modalCoMark('modal-co-admin-phone', true); ok = false;
             } else if (phoneVal.length !== 10) {
                 modalCoErr('modal-err-co-admin-phone', 'Phone number must be exactly 10 digits.'); modalCoMark('modal-co-admin-phone', true); ok = false;
+            } else if (/^(\d)\1{9}$/.test(phoneVal)) {
+                modalCoErr('modal-err-co-admin-phone', 'Please enter a valid phone number.'); modalCoMark('modal-co-admin-phone', true); ok = false;
             } else {
                 modalCoErr('modal-err-co-admin-phone', ''); modalCoMark('modal-co-admin-phone', false);
             }

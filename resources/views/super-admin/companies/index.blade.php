@@ -360,8 +360,10 @@ $(document).ready(function() {
         ordering: true,
         info:     true,
         dom: '<"dt-scroll"t><"dt-footer"ip>',
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'firms' : 'firm');
+        },
         language: {
-            info:      'Showing _START_–_END_ of _TOTAL_ firms',
             infoEmpty: 'No firms found',
             paginate:  { previous: '‹', next: '›' },
             emptyTable: 'No firms registered yet',

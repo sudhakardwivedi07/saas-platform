@@ -149,8 +149,10 @@ $(document).ready(function () {
         dom:          '<"dt-scroll"t><"dt-footer"ip>',
         order:        [[0, 'asc']],
         columnDefs:   [{ orderable: false, targets: [3] }],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'roles' : 'role');
+        },
         language: {
-            info:       'Showing _START_–_END_ of _TOTAL_ roles',
             infoEmpty:  'No roles found',
             paginate:   { previous: '‹', next: '›' },
             emptyTable: 'No roles registered yet',

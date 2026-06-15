@@ -332,8 +332,10 @@ $(document).ready(function() {
         searching: true, ordering: true, info: true,
         dom: '<"dt-tscroll"t><"dt-footer"ip>',
         columnDefs: [{ orderable: false, targets: [3, 6] }],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'users' : 'user');
+        },
         language: {
-            info: 'Showing _START_–_END_ of _TOTAL_ users',
             infoEmpty: 'No users found',
             paginate: { previous: '‹', next: '›' },
             emptyTable: '<div style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No users yet</div>',

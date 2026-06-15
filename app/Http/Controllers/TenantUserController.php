@@ -59,8 +59,11 @@ class TenantUserController extends AccountBaseController
                     ->count();
 
                 if ($currentCount >= (int) $plan->max_users) {
-                    return redirect()->route('users.index')
-                        ->with('error', 'Maximum limit exceeded. Please update your plan to add more clients.');
+                    $errorMsg = 'Maximum limit exceeded. Please update your plan to add more clients.';
+                    if ($request->expectsJson()) {
+                        return response()->json(['message' => $errorMsg], 422);
+                    }
+                    return redirect()->route('users.index')->with('error', $errorMsg);
                 }
             }
         }
@@ -91,6 +94,9 @@ class TenantUserController extends AccountBaseController
             \Illuminate\Support\Facades\Log::warning('User invitation email failed: ' . $e->getMessage());
         }
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'User "' . $user->name . '" added successfully.']);
+        }
         return redirect()->route('users.index')
             ->with('success', 'User "' . $user->name . '" added successfully.');
     }

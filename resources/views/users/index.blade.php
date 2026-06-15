@@ -27,11 +27,11 @@
 <div class="ph">
     <div class="ph-left">
         <h1>Users</h1>
-        <p>Manage team members in your organisation — assign roles and control access</p>
+        <p>Manage team members in your organization — assign roles and control access</p>
     </div>
     @if(auth()->user()->can('create_users'))
     <div class="ph-actions">
-        <button class="btn btn-primary" onclick="document.getElementById('modal-add-user').classList.add('open')">
+        <button class="btn btn-primary" onclick="openAddUserModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add User
         </button>
@@ -101,6 +101,7 @@
                 <th>Last Login</th>
                 <th>Status</th>
                 <th style="width:48px"></th>
+                <th>Created</th>
             </tr>
         </thead>
         <tbody>
@@ -171,6 +172,7 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 Edit User
                             </a>
+                            @if($user->id !== auth()->id())
                             <div class="dm-divider"></div>
                             @if($isActive)
                             <a href="javascript:void(0)" class="dm-item dm-danger toggle-status-link" onclick="toggleUserStatus({{ $user->id }}, '{{ $status }}')">
@@ -184,6 +186,7 @@
                             </a>
                             @endif
                             @endif
+                            @endif
                             @if(auth()->user()->can('delete_users') && $user->id !== auth()->id())
                             <div class="dm-divider"></div>
                             <a href="javascript:void(0)" class="dm-item dm-danger" onclick="removeUser({{ $user->id }}, '{{ addslashes($user->name) }}')">
@@ -194,6 +197,7 @@
                         </div>
                     </div>
                 </td>
+                <td>{{ $user->created_at?->format('Y-m-d H:i:s') ?? '' }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -201,9 +205,9 @@
 </div>
 
 {{-- ── Add User Modal ────────────────────────────────────── --}}
-<div class="modal-overlay {{ $errors->any() ? 'open' : '' }}" id="modal-add-user" onclick="if(event.target===this)this.classList.remove('open')">
+<div class="modal-overlay {{ $errors->any() ? 'open' : '' }}" id="modal-add-user" onclick="if(event.target===this)closeAddUserModal()">
     <div class="modal-box" style="width:500px">
-        <button class="modal-close" onclick="document.getElementById('modal-add-user').classList.remove('open')">&times;</button>
+        <button class="modal-close" onclick="closeAddUserModal()">&times;</button>
         <div class="modal-title">Add User</div>
         <div class="modal-sub">Invite a team member to access the {{ $appName ?? config('app.name') }}</div>
 
@@ -231,7 +235,7 @@
                 <div class="mf-field" style="margin:0">
                     <label class="mf-label">Role <span style="color:var(--red)">*</span></label>
                     <select name="role" id="au-role" class="mf-sel" style="height:40px">
-                        <option value="">e.g. Manager, Analyst, Viewer</option>
+                        <option value="">Select Role</option>
                         @foreach($roles as $role)
                         <option value="{{ $role->name }}" {{ old('role') === $role->name ? 'selected' : '' }}>
                             {{ $role->display_name }}
@@ -263,7 +267,7 @@
                 An invitation email will be sent to the user's email address with their login credentials.
             </div>
             <div class="mf-foot">
-                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-add-user').classList.remove('open')">Cancel</button>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="closeAddUserModal()">Cancel</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitAddUser()">Send Invite</button>
             </div>
         </form>
@@ -331,7 +335,11 @@ $(document).ready(function() {
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true,
         dom: '<"dt-tscroll"t><"dt-footer"ip>',
-        columnDefs: [{ orderable: false, targets: [3, 6] }],
+        order: [[7, 'desc']],
+        columnDefs: [
+            { orderable: false, targets: [3, 6] },
+            { visible: false, targets: [7] },
+        ],
         infoCallback: function(settings, start, end, max, total, pre) {
             return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'users' : 'user');
         },
@@ -371,6 +379,31 @@ $(document).ready(function() {
     });
     _drCbs['user-dr'] = function() { usersTable.draw(); };
 });
+
+function resetAddUserModal() {
+    var form = document.getElementById('add-user-form');
+    if (form) form.reset();
+    ['err-au-name','err-au-email','err-au-role','err-au-pwd'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) { el.textContent = ''; el.style.display = 'none'; }
+    });
+    ['au-name','au-email','au-role','add-pwd'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('au-invalid');
+    });
+    var pwdInp = document.getElementById('add-pwd');
+    if (pwdInp) pwdInp.type = 'password';
+}
+
+function openAddUserModal() {
+    resetAddUserModal();
+    document.getElementById('modal-add-user').classList.add('open');
+}
+
+function closeAddUserModal() {
+    document.getElementById('modal-add-user').classList.remove('open');
+    resetAddUserModal();
+}
 
 function togglePwd(inputId, eyeId) {
     var inp = document.getElementById(inputId);
@@ -467,9 +500,49 @@ function validateAndSubmitAddUser() {
         auErr('err-au-pwd', ''); auMark('add-pwd', false);
     }
 
-    if (ok) {
-        document.getElementById('add-user-form').submit();
-    }
+    if (!ok) return;
+
+    var form = document.getElementById('add-user-form');
+    var btn = form.querySelector('button.btn-primary');
+    var btnText = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+    var data = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: data,
+    })
+    .then(function(res) {
+        return res.json().then(function(json) { return { status: res.status, body: json }; });
+    })
+    .then(function(r) {
+        if (r.status === 200 || r.status === 201) {
+            closeAddUserModal();
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'success', title: 'Done!', text: r.body.message || 'User added successfully.', timer: 2000, showConfirmButton: false })
+                    .then(function() { window.location.reload(); });
+            } else {
+                window.location.reload();
+            }
+        } else if (r.status === 422) {
+            var errors = r.body.errors || {};
+            if (errors.email && errors.email[0]) { auErr('err-au-email', errors.email[0]); auMark('au-email', true); }
+            if (errors.name && errors.name[0]) { auErr('err-au-name', errors.name[0]); auMark('au-name', true); }
+            if (errors.role && errors.role[0]) { auErr('err-au-role', errors.role[0]); auMark('au-role', true); }
+            if (errors.password && errors.password[0]) { auErr('err-au-pwd', errors.password[0]); auMark('add-pwd', true); }
+            if (!errors.email && !errors.name && !errors.role && !errors.password && r.body.message) {
+                auErr('err-au-email', r.body.message);
+            }
+        }
+    })
+    .catch(function() {
+        auErr('err-au-email', 'Something went wrong. Please try again.');
+    })
+    .finally(function() {
+        if (btn) { btn.disabled = false; btn.textContent = btnText; }
+    });
 }
 
 // Real-time: restrict full name to letters + spaces

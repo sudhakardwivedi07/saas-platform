@@ -189,13 +189,13 @@
     </div>
     <div class="pi-stat-card avg">
         <div class="pi-stat-top">
-            <span class="pi-stat-label avg">Avg Used Per Client</span>
+            <span class="pi-stat-label avg">Average Used Per Client</span>
             <div class="pi-stat-icon avg">
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             </div>
         </div>
         <div class="pi-stat-value avg">{{ $avgPerClient }}</div>
-        <div class="pi-stat-sub">Insights used avg per client</div>
+        <div class="pi-stat-sub">Insights used average per client</div>
     </div>
 </div>
 
@@ -365,7 +365,7 @@
             <button class="pi-modal-btn-cancel" onclick="piCloseGenerateModal()">Cancel</button>
             <button class="pi-modal-btn-generate" id="piBtnGenerate" onclick="piDoGenerate()" disabled>
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-                Generate Insights
+                Generate Insight
             </button>
         </div>
     </div>
@@ -497,7 +497,7 @@
         const btn = document.getElementById('piBtnGenerate');
         const anyProcessing = !!document.querySelector('#pi-table tbody tr[data-status="processing"]');
         btn.disabled  = true;
-        btn.innerHTML = anyProcessing ? SPIN_ICON + ' Generating...' : GEN_ICON + ' Generate Insights';
+        btn.innerHTML = anyProcessing ? SPIN_ICON + ' Generating...' : GEN_ICON + ' Generate Insight';
         piLoadClients();
     };
 
@@ -507,7 +507,7 @@
         document.getElementById('piCompanySelect').innerHTML = '<option value="">Choose a company…</option>';
         document.getElementById('piCompanySelect').disabled  = true;
         const btn = document.getElementById('piBtnGenerate');
-        btn.disabled = true; btn.innerHTML = GEN_ICON + ' Generate Insights';
+        btn.disabled = true; btn.innerHTML = GEN_ICON + ' Generate Insight';
     };
 
     function piUpdateGenerateBtn() {
@@ -515,11 +515,11 @@
         const companyId = document.getElementById('piCompanySelect').value;
         const btn = document.getElementById('piBtnGenerate');
         if (!clientId || !companyId) {
-            btn.disabled = true; btn.innerHTML = GEN_ICON + ' Generate Insights'; return;
+            btn.disabled = true; btn.innerHTML = GEN_ICON + ' Generate Insight'; return;
         }
         const alreadyRunning = !!document.querySelector(`#pi-table tbody tr[data-company-id="${companyId}"][data-status="processing"]`);
         btn.disabled  = alreadyRunning;
-        btn.innerHTML = alreadyRunning ? SPIN_ICON + ' Generating...' : GEN_ICON + ' Generate Insights';
+        btn.innerHTML = alreadyRunning ? SPIN_ICON + ' Generating...' : GEN_ICON + ' Generate Insight';
     }
 
     document.getElementById('piCompanySelect').addEventListener('change', piUpdateGenerateBtn);

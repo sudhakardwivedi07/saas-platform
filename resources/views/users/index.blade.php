@@ -14,13 +14,8 @@
 .u-last-login            { font-size:12.5px;color:var(--text-2); }
 .u-last-login.stale      { color:var(--red); }
 .au-err {
-    font-size: 11.5px; color: var(--red); margin-top: 4px;
-    display: flex; align-items: center; gap: 4px;
-}
-.au-err::before {
-    content: '';
-    display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+    font-size: 11.5px; color: var(--red); margin-top: 2px;
+    display: none;
 }
 .mf-inp.au-invalid, .mf-sel.au-invalid { border-color: var(--red) !important; }
 </style>
@@ -32,11 +27,11 @@
 <div class="ph">
     <div class="ph-left">
         <h1>Users</h1>
-        <p>Manage team members in your organisation — assign roles and control access</p>
+        <p>Manage team members in your organization — assign roles and control access</p>
     </div>
     @if(auth()->user()->can('create_users'))
     <div class="ph-actions">
-        <button class="btn btn-primary" onclick="document.getElementById('modal-add-user').classList.add('open')">
+        <button class="btn btn-primary" onclick="openAddUserModal()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add User
         </button>
@@ -106,6 +101,7 @@
                 <th>Last Login</th>
                 <th>Status</th>
                 <th style="width:48px"></th>
+                <th>Created</th>
             </tr>
         </thead>
         <tbody>
@@ -176,6 +172,7 @@
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 Edit User
                             </a>
+                            @if($user->id !== auth()->id())
                             <div class="dm-divider"></div>
                             @if($isActive)
                             <a href="javascript:void(0)" class="dm-item dm-danger toggle-status-link" onclick="toggleUserStatus({{ $user->id }}, '{{ $status }}')">
@@ -189,6 +186,7 @@
                             </a>
                             @endif
                             @endif
+                            @endif
                             @if(auth()->user()->can('delete_users') && $user->id !== auth()->id())
                             <div class="dm-divider"></div>
                             <a href="javascript:void(0)" class="dm-item dm-danger" onclick="removeUser({{ $user->id }}, '{{ addslashes($user->name) }}')">
@@ -199,6 +197,7 @@
                         </div>
                     </div>
                 </td>
+                <td>{{ $user->created_at?->format('Y-m-d H:i:s') ?? '' }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -206,9 +205,9 @@
 </div>
 
 {{-- ── Add User Modal ────────────────────────────────────── --}}
-<div class="modal-overlay {{ $errors->any() ? 'open' : '' }}" id="modal-add-user" onclick="if(event.target===this)this.classList.remove('open')">
+<div class="modal-overlay {{ $errors->any() ? 'open' : '' }}" id="modal-add-user" onclick="if(event.target===this)closeAddUserModal()">
     <div class="modal-box" style="width:500px">
-        <button class="modal-close" onclick="document.getElementById('modal-add-user').classList.remove('open')">&times;</button>
+        <button class="modal-close" onclick="closeAddUserModal()">&times;</button>
         <div class="modal-title">Add User</div>
         <div class="modal-sub">Invite a team member to access the {{ $appName ?? config('app.name') }}</div>
 
@@ -220,34 +219,32 @@
         </div>
         @endif
 
-        <form method="POST" action="{{ route('users.store') }}" id="add-user-form" novalidate>
+        <form method="POST" action="{{ route('users.store') }}" id="add-user-form" novalidate autocomplete="off">
             @csrf
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                <div class="mf-field" style="margin:0 0 4px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:14px;row-gap:10px;align-items:start">
+                <div class="mf-field" style="margin:0">
                     <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="au-name" class="mf-inp" placeholder="e.g. Priya Sharma" value="{{ old('name') }}" maxlength="100">
-                    <div id="err-au-name" class="au-err" style="display:none"></div>
+                    <div id="err-au-name" class="au-err"></div>
                 </div>
-                <div class="mf-field" style="margin:0 0 4px">
+                <div class="mf-field" style="margin:0">
                     <label class="mf-label">Email Address <span style="color:var(--red)">*</span></label>
-                    <input type="text" name="email" id="au-email" class="mf-inp" placeholder="priya@rightfocuscfo.com" value="{{ old('email') }}" maxlength="100">
-                    <div id="err-au-email" class="au-err" style="display:none"></div>
+                    <input type="text" name="email" id="au-email" class="mf-inp" placeholder="priya@rightfocuscfo.com" value="{{ old('email') }}" maxlength="100" autocomplete="off">
+                    <div id="err-au-email" class="au-err"></div>
                 </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                <div class="mf-field" style="margin:0 0 4px">
+                <div class="mf-field" style="margin:0">
                     <label class="mf-label">Role <span style="color:var(--red)">*</span></label>
                     <select name="role" id="au-role" class="mf-sel" style="height:40px">
-                        <option value="">e.g. Manager, Analyst, Viewer</option>
+                        <option value="">Select Role</option>
                         @foreach($roles as $role)
                         <option value="{{ $role->name }}" {{ old('role') === $role->name ? 'selected' : '' }}>
                             {{ $role->display_name }}
                         </option>
                         @endforeach
                     </select>
-                    <div id="err-au-role" class="au-err" style="display:none"></div>
+                    <div id="err-au-role" class="au-err"></div>
                 </div>
-                <div class="mf-field" style="margin:0 0 4px">
+                <div class="mf-field" style="margin:0">
                     <label class="mf-label">Job Title</label>
                     <input type="text" name="job_title" class="mf-inp" placeholder="e.g. Financial Analyst" value="{{ old('job_title') }}">
                 </div>
@@ -255,7 +252,7 @@
             <div class="mf-field">
                 <label class="mf-label">Password <span style="color:var(--red)">*</span></label>
                 <div style="position:relative;display:flex;align-items:center">
-                    <input type="password" name="password" id="add-pwd" class="mf-inp" placeholder="Min. 8 characters" style="padding-right:88px" maxlength="20">
+                    <input type="password" name="password" id="add-pwd" class="mf-inp" placeholder="Min. 8 characters" style="padding-right:88px" maxlength="20" autocomplete="new-password">
                     <button type="button" title="Show/hide" onclick="togglePwd('add-pwd','add-eye')" style="position:absolute;right:44px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text-3);display:flex">
                         <svg id="add-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
@@ -263,14 +260,14 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
                     </button>
                 </div>
-                <div id="err-au-pwd" class="au-err" style="display:none"></div>
+                <div id="err-au-pwd" class="au-err"></div>
                 <div style="font-size:11px;color:var(--text-3);margin-top:4px">Click the refresh icon to auto-generate a secure password.</div>
             </div>
             <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:11px 14px;margin-bottom:16px;font-size:12.5px;color:#3b82f6;line-height:1.5">
                 An invitation email will be sent to the user's email address with their login credentials.
             </div>
             <div class="mf-foot">
-                <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-add-user').classList.remove('open')">Cancel</button>
+                <button type="button" class="btn btn-ghost btn-sm" onclick="closeAddUserModal()">Cancel</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitAddUser()">Send Invite</button>
             </div>
         </form>
@@ -286,7 +283,7 @@
 
         <form method="POST" id="form-edit-user">
             @csrf
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
                 <div class="mf-field" style="margin:0 0 14px">
                     <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="edit-name" class="mf-inp" required>
@@ -338,9 +335,15 @@ $(document).ready(function() {
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true,
         dom: '<"dt-tscroll"t><"dt-footer"ip>',
-        columnDefs: [{ orderable: false, targets: [3, 6] }],
+        order: [[7, 'desc']],
+        columnDefs: [
+            { orderable: false, targets: [3, 6] },
+            { visible: false, targets: [7] },
+        ],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'users' : 'user');
+        },
         language: {
-            info: 'Showing _START_–_END_ of _TOTAL_ users',
             infoEmpty: 'No users found',
             paginate: { previous: '‹', next: '›' },
             emptyTable: '<div style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No users yet</div>',
@@ -376,6 +379,31 @@ $(document).ready(function() {
     });
     _drCbs['user-dr'] = function() { usersTable.draw(); };
 });
+
+function resetAddUserModal() {
+    var form = document.getElementById('add-user-form');
+    if (form) form.reset();
+    ['err-au-name','err-au-email','err-au-role','err-au-pwd'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) { el.textContent = ''; el.style.display = 'none'; }
+    });
+    ['au-name','au-email','au-role','add-pwd'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.classList.remove('au-invalid');
+    });
+    var pwdInp = document.getElementById('add-pwd');
+    if (pwdInp) pwdInp.type = 'password';
+}
+
+function openAddUserModal() {
+    resetAddUserModal();
+    document.getElementById('modal-add-user').classList.add('open');
+}
+
+function closeAddUserModal() {
+    document.getElementById('modal-add-user').classList.remove('open');
+    resetAddUserModal();
+}
 
 function togglePwd(inputId, eyeId) {
     var inp = document.getElementById(inputId);
@@ -420,7 +448,7 @@ function validateAndSubmitAddUser() {
         var el = document.getElementById(id);
         if (!el) return;
         el.textContent = msg || '';
-        el.style.display = msg ? 'flex' : 'none';
+        el.style.display = msg ? 'block' : 'none';
     }
     function auMark(id, invalid) {
         var el = document.getElementById(id);
@@ -472,9 +500,49 @@ function validateAndSubmitAddUser() {
         auErr('err-au-pwd', ''); auMark('add-pwd', false);
     }
 
-    if (ok) {
-        document.getElementById('add-user-form').submit();
-    }
+    if (!ok) return;
+
+    var form = document.getElementById('add-user-form');
+    var btn = form.querySelector('button.btn-primary');
+    var btnText = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+    var data = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: data,
+    })
+    .then(function(res) {
+        return res.json().then(function(json) { return { status: res.status, body: json }; });
+    })
+    .then(function(r) {
+        if (r.status === 200 || r.status === 201) {
+            closeAddUserModal();
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'success', title: 'Done!', text: r.body.message || 'User added successfully.', timer: 2000, showConfirmButton: false })
+                    .then(function() { window.location.reload(); });
+            } else {
+                window.location.reload();
+            }
+        } else if (r.status === 422) {
+            var errors = r.body.errors || {};
+            if (errors.email && errors.email[0]) { auErr('err-au-email', errors.email[0]); auMark('au-email', true); }
+            if (errors.name && errors.name[0]) { auErr('err-au-name', errors.name[0]); auMark('au-name', true); }
+            if (errors.role && errors.role[0]) { auErr('err-au-role', errors.role[0]); auMark('au-role', true); }
+            if (errors.password && errors.password[0]) { auErr('err-au-pwd', errors.password[0]); auMark('add-pwd', true); }
+            if (!errors.email && !errors.name && !errors.role && !errors.password && r.body.message) {
+                auErr('err-au-email', r.body.message);
+            }
+        }
+    })
+    .catch(function() {
+        auErr('err-au-email', 'Something went wrong. Please try again.');
+    })
+    .finally(function() {
+        if (btn) { btn.disabled = false; btn.textContent = btnText; }
+    });
 }
 
 // Real-time: restrict full name to letters + spaces

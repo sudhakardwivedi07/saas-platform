@@ -50,6 +50,7 @@
 .pi-btn-generate:disabled { background:#9ca3af !important;cursor:not-allowed;pointer-events:none; }
 .pi-btn-export { height:38px;padding:0 16px;border:1.5px solid #e2e8f0;border-radius:8px;background:#fff;color:#374151;font-size:13.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:7px;transition:all .2s; }
 .pi-btn-export:hover { background:#f8fafc;color:#1a202c; }
+.pi-btn-export:disabled { opacity:.45;cursor:not-allowed;pointer-events:none; }
 
 /* ── Table ───────────────────────────────────────── */
 .pi-table-card { background:#fff;border-radius:12px;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden; }
@@ -133,7 +134,7 @@
         <p class="pi-page-subtitle">All CFO financial insights generated across your client portfolio</p>
     </div>
     <div class="pi-page-header-actions">
-        <button class="pi-btn-export" onclick="piExportCSV()">
+        <button id="piExportBtn" class="pi-btn-export" onclick="piExportCSV()">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             Export
         </button>
@@ -189,13 +190,13 @@
     </div>
     <div class="pi-stat-card avg">
         <div class="pi-stat-top">
-            <span class="pi-stat-label avg">Avg Used Per Client</span>
+            <span class="pi-stat-label avg">Average Used Per Client</span>
             <div class="pi-stat-icon avg">
                 <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
             </div>
         </div>
         <div class="pi-stat-value avg">{{ $avgPerClient }}</div>
-        <div class="pi-stat-sub">Insights used avg per client</div>
+        <div class="pi-stat-sub">Insights used average per client</div>
     </div>
 </div>
 
@@ -347,12 +348,12 @@
         <h3>Generate New Insight</h3>
         <p class="pi-modal-sub">Select a client and company to generate CFO financial insights</p>
 
-        <label for="piClientSelect">Select Client</label>
+        <label for="piClientSelect">Select Client <span style="color:#ef4444">*</span></label>
         <select id="piClientSelect" onchange="piOnClientChange()">
             <option value="">Choose a client…</option>
         </select>
 
-        <label for="piCompanySelect">Select Company</label>
+        <label for="piCompanySelect">Select Company <span style="color:#ef4444">*</span></label>
         <select id="piCompanySelect" disabled>
             <option value="">Choose a company…</option>
         </select>
@@ -365,7 +366,7 @@
             <button class="pi-modal-btn-cancel" onclick="piCloseGenerateModal()">Cancel</button>
             <button class="pi-modal-btn-generate" id="piBtnGenerate" onclick="piDoGenerate()" disabled>
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
-                Generate Insights
+                Generate Insight
             </button>
         </div>
     </div>
@@ -388,11 +389,20 @@
 
     // ── Header button sync ────────────────────────────────────────────────────
     function piSyncHeaderBtn() {
-        const btn = document.getElementById('piHeaderGenerateBtn');
-        if (!btn) return;
-        const anyProcessing = !!document.querySelector('#pi-table tbody tr[data-status="processing"]');
-        btn.disabled  = anyProcessing;
-        btn.innerHTML = anyProcessing ? HDR_SPIN + ' Generating...' : HDR_ICON + ' Generate New Insight';
+        const btn       = document.getElementById('piHeaderGenerateBtn');
+        const exportBtn = document.getElementById('piExportBtn');
+        // Use DataTables API when available so all pages are checked, not just the visible DOM
+        const anyProcessing = table
+            ? table.rows('[data-status="processing"]').count() > 0
+            : !!document.querySelector('#pi-table tbody tr[data-status="processing"]');
+        if (btn) {
+            btn.disabled  = anyProcessing;
+            btn.innerHTML = anyProcessing ? HDR_SPIN + ' Generating...' : HDR_ICON + ' Generate New Insight';
+        }
+        if (exportBtn) {
+            exportBtn.disabled = anyProcessing;
+            exportBtn.title    = anyProcessing ? 'Export unavailable while generation is in progress' : '';
+        }
     }
 
     // ── DataTable init ────────────────────────────────────────────────────────
@@ -497,7 +507,7 @@
         const btn = document.getElementById('piBtnGenerate');
         const anyProcessing = !!document.querySelector('#pi-table tbody tr[data-status="processing"]');
         btn.disabled  = true;
-        btn.innerHTML = anyProcessing ? SPIN_ICON + ' Generating...' : GEN_ICON + ' Generate Insights';
+        btn.innerHTML = anyProcessing ? SPIN_ICON + ' Generating...' : GEN_ICON + ' Generate Insight';
         piLoadClients();
     };
 
@@ -507,7 +517,7 @@
         document.getElementById('piCompanySelect').innerHTML = '<option value="">Choose a company…</option>';
         document.getElementById('piCompanySelect').disabled  = true;
         const btn = document.getElementById('piBtnGenerate');
-        btn.disabled = true; btn.innerHTML = GEN_ICON + ' Generate Insights';
+        btn.disabled = true; btn.innerHTML = GEN_ICON + ' Generate Insight';
     };
 
     function piUpdateGenerateBtn() {
@@ -515,11 +525,11 @@
         const companyId = document.getElementById('piCompanySelect').value;
         const btn = document.getElementById('piBtnGenerate');
         if (!clientId || !companyId) {
-            btn.disabled = true; btn.innerHTML = GEN_ICON + ' Generate Insights'; return;
+            btn.disabled = true; btn.innerHTML = GEN_ICON + ' Generate Insight'; return;
         }
         const alreadyRunning = !!document.querySelector(`#pi-table tbody tr[data-company-id="${companyId}"][data-status="processing"]`);
         btn.disabled  = alreadyRunning;
-        btn.innerHTML = alreadyRunning ? SPIN_ICON + ' Generating...' : GEN_ICON + ' Generate Insights';
+        btn.innerHTML = alreadyRunning ? SPIN_ICON + ' Generating...' : GEN_ICON + ' Generate Insight';
     }
 
     document.getElementById('piCompanySelect').addEventListener('change', piUpdateGenerateBtn);
@@ -604,8 +614,10 @@
         const companyName = document.getElementById('piCompanySelect').options[document.getElementById('piCompanySelect').selectedIndex]?.textContent?.trim() || '';
         const clientName  = document.getElementById('piClientSelect').options[document.getElementById('piClientSelect').selectedIndex]?.textContent?.split(' (')[0]?.trim() || '';
         if (!clientId || !companyId) return;
-        const hdrBtn = document.getElementById('piHeaderGenerateBtn');
-        if (hdrBtn) { hdrBtn.disabled = true; hdrBtn.innerHTML = HDR_SPIN + ' Generating...'; }
+        const hdrBtn   = document.getElementById('piHeaderGenerateBtn');
+        const exportBtn = document.getElementById('piExportBtn');
+        if (hdrBtn)    { hdrBtn.disabled = true; hdrBtn.innerHTML = HDR_SPIN + ' Generating...'; }
+        if (exportBtn) { exportBtn.disabled = true; exportBtn.title = 'Export unavailable while generation is in progress'; }
         piCloseGenerateModal();
         Swal.fire({
             title: 'Generating insights',
@@ -717,7 +729,7 @@
         Swal.fire({
             title: 'Insight Generated!',
             html:  `<p style="color:#6b7280;font-size:14px;line-height:1.6">Your CFO level Financial Insight is ready to view${compName ? ` for <strong>"${compName}"</strong>` : ''}.</p>`,
-            icon: 'success', confirmButtonText: 'View Insight', showCancelButton: false, confirmButtonColor: '#f06b25',
+            icon: 'success', confirmButtonText: 'View Insight', showCancelButton: false, confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
         }).then(result => { if (result.isConfirmed) window.location.href = viewUrl; });
     }
 

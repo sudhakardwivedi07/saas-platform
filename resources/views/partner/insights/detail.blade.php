@@ -7,7 +7,7 @@
 .rdc { background:#f5f7fa;min-height:100vh; }
 
 /* ── Back link ───────────────────────────────────────────────── */
-.rd-back { display:inline-flex;align-items:center;gap:8px;color:var(--blue);font-size:13.5px;font-weight:500;text-decoration:none;margin-bottom:18px;padding:9px 16px;border:1px solid var(--blue);border-radius:7px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.08);transition:all .2s; }
+.rd-back { display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 18px;color:var(--blue);font-size:13.5px;font-weight:500;text-decoration:none;margin-bottom:18px;border:1px solid var(--blue);border-radius:7px;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.08);transition:all .2s; }
 .rd-back:hover { background:var(--blue-pale);color:var(--blue);text-decoration:none; }
 
 /* ── Header card ─────────────────────────────────────────────── */
@@ -19,7 +19,7 @@
 .rd-header-actions { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
 
 /* ── Buttons ─────────────────────────────────────────────────── */
-.rd-btn { height:38px;padding:0 18px;border-radius:7px;font-size:13.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;border:none;transition:all .2s;white-space:nowrap; }
+.rd-btn { height:40px;padding:0 18px;border-radius:7px;font-size:13.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;border:none;transition:all .2s;white-space:nowrap; }
 .rd-btn-outline { background:#fff;color:#374151;border:1.5px solid #e2e8f0; }
 .rd-btn-outline:hover { background:#f8fafc;color:#1a202c;text-decoration:none; }
 .rd-btn-edit { background:#fff;color:var(--blue);border:1.5px solid var(--blue); }
@@ -637,13 +637,6 @@
                     confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
                     showCloseButton: false,
                     allowOutsideClick: !redirectUrl,
-                    didOpen: (popup) => {
-                        const actions = popup.querySelector('.swal2-actions');
-                        if (actions) { actions.style.cssText = 'width:100%;padding:0 24px;display:flex;'; }
-                        const b = popup.querySelector('.swal2-confirm');
-                        const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
-                        if (b) { b.style.cssText = `flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:${brandColor};border:none;color:#fff;cursor:pointer;`; }
-                    },
                 }).then(() => {
                     if (redirectUrl) {
                         window.location.href = redirectUrl;
@@ -717,12 +710,6 @@
                         confirmButtonText: 'Got it',
                         confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#1a6aa8',
                         allowOutsideClick: false,
-                        didOpen: (popup) => {
-                            const actions = popup.querySelector('.swal2-actions');
-                            if (actions) actions.style.cssText = 'width:100%;padding:0 24px;display:flex;';
-                            const b = popup.querySelector('.swal2-confirm');
-                            if (b) { const pc=getComputedStyle(document.documentElement).getPropertyValue('--blue').trim()||'#1a6aa8'; b.style.cssText=`flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:${pc};border:none;color:#fff;cursor:pointer;`; }
-                        },
                     }).then(() => {
                         if (data.redirect_url) window.location.href = data.redirect_url;
                     });

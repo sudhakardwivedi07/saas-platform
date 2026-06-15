@@ -640,7 +640,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                 <button class="btn btn-danger" onclick="resetRoleFilters()">Reset</button>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
-                <span class="badge b-gray" id="role-count-badge">{{ $roles->count() }} roles</span>
+                <span class="badge b-gray" id="role-count-badge">{{ $roles->count() }} role{{ $roles->count() !== 1 ? 's' : '' }}</span>
                 <button class="btn btn-primary btn-sm" onclick="openCreateRoleModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     New Role
@@ -739,7 +739,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
         <div class="modal-sub">Define a role name and assign permissions.</div>
         <form id="create-role-form" onsubmit="submitCreateRole(event)">
             @csrf
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
                 <div class="mf-field">
                     <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="cr-name" class="mf-inp" placeholder="e.g. accountant" required autocomplete="off">
@@ -794,7 +794,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
         <form id="edit-role-form" onsubmit="submitEditRole(event)">
             @csrf
             <input type="hidden" id="er-role-id">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
                 <div class="mf-field">
                     <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="er-name" class="mf-inp" required autocomplete="off">
@@ -891,8 +891,10 @@ $(document).ready(function() {
             searching: true, ordering: true, info: true, dom: 'tip',
             order: [[0, 'asc']],
             columnDefs: [{ orderable: false, targets: [6] }],
+            infoCallback: function(settings, start, end, max, total, pre) {
+                return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'plans' : 'plan');
+            },
             language: {
-                info: 'Showing _START_–_END_ of _TOTAL_ plans',
                 infoEmpty: 'No plans', paginate: { previous: '‹', next: '›' },
                 emptyTable: 'No plans yet',
             },
@@ -936,8 +938,10 @@ $(document).ready(function() {
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         order: [[0, 'asc']],
         columnDefs: [{ orderable: false, targets: [4] }],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'roles' : 'role');
+        },
         language: {
-            info: 'Showing _START_–_END_ of _TOTAL_ roles',
             infoEmpty: 'No roles found', paginate: { previous: '‹', next: '›' },
             emptyTable: '<div style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No roles found.</div>',
         },

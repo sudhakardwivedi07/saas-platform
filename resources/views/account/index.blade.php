@@ -7,7 +7,7 @@
 <div class="ph">
     <div class="ph-left">
         <h1>My Account</h1>
-        <p>Manage your profile, password, and branding settings</p>
+        <p>Manage your profile, branding, login page, forgot password, subscription, and activity log</p>
     </div>
 </div>
 
@@ -112,16 +112,18 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
 
         {{-- Password Form --}}
         <div>
-            <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:4px">Change Password</div>
-            <div style="font-size:12.5px;color:var(--text-3);margin-bottom:16px">Use a strong password that you don't use elsewhere.</div>
+            <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:16px">Change Password</div>
             <form method="POST" action="{{ route('account.password') }}" id="password-form" novalidate>
                 @csrf
-                <div class="f-group" style="max-width:400px">
-                    <label class="f-label">Current Password <span style="color:var(--red)">*</span></label>
-                    <input type="password" name="current_password" id="ac-cur-pwd" class="f-inp" placeholder="Enter your current password" autocomplete="current-password">
-                    <div id="err-cur-pwd" class="ac-err" style="display:none"></div>
+                <div class="form-2col">
+                    <div class="f-group">
+                        <label class="f-label">Current Password <span style="color:var(--red)">*</span></label>
+                        <input type="password" name="current_password" id="ac-cur-pwd" class="f-inp" placeholder="Enter your current password" autocomplete="current-password">
+                        <div id="err-cur-pwd" class="ac-err" style="display:none"></div>
+                    </div>
+                    <div></div>
                 </div>
-                <div class="form-2col" style="max-width:400px">
+                <div class="form-2col">
                     <div class="f-group">
                         <label class="f-label">New Password <span style="color:var(--red)">*</span></label>
                         <input type="password" name="password" id="ac-new-pwd" class="f-inp" placeholder="Min. 8 characters" autocomplete="new-password">
@@ -133,7 +135,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                         <div id="err-confirm-pwd" class="ac-err" style="display:none"></div>
                     </div>
                 </div>
-                <button type="button" class="btn btn-ghost btn-sm" onclick="validateAndSubmitPassword()">
+                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitPassword()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                     Save Password
                 </button>
@@ -157,17 +159,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
                     <div>
                         <div style="font-size:16px;font-weight:700;color:var(--text-1)">Branding Settings</div>
-                        <div style="font-size:13px;color:var(--text-3);margin-top:2px">Customise the look and feel of your client portal</div>
-                    </div>
-                    <div style="display:flex;gap:8px">
-                        <button type="button" class="btn btn-ghost btn-sm" id="reset-branding-btn" onclick="resetBranding()">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                            Reset
-                        </button>
-                        <button type="submit" class="btn btn-primary btn-sm">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                            Save Branding
-                        </button>
+                        <div style="font-size:13px;color:var(--text-3);margin-top:2px">Customize your client portal's look and feel</div>
                     </div>
                 </div>
 
@@ -301,19 +293,6 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                     </div>
                 </div>
 
-                {{-- Custom Domain --}}
-                <div class="brand-sec">
-                    <div class="brand-sec-title">
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
-                        Domain Settings
-                    </div>
-                    <div style="font-size:12px;color:var(--text-3);margin-bottom:10px">Your sub-companies will be hosted on a custom subdomain</div>
-                    <div style="display:flex;align-items:stretch;border:1.5px solid var(--border);border-radius:9px;overflow:hidden;background:#fff">
-                        <input type="text" name="custom_domain" class="f-inp" placeholder="yourcompany" value="{{ $branding->custom_domain ?? '' }}" style="border:none;border-radius:0;flex:1;background:#fff">
-                        <div style="display:flex;align-items:center;padding:0 13px;background:var(--bg);border-left:1px solid var(--border);font-size:13px;font-weight:500;color:var(--text-2);white-space:nowrap;flex-shrink:0">.saas.app</div>
-                    </div>
-                </div>
-
             </div>
 
             {{-- Right Column: Sticky Live Preview --}}
@@ -422,15 +401,9 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                 <span id="adf-preview" style="font-weight:600;color:var(--text-1);margin-left:4px">{{ $today->format($effectiveFmt) }}</span>
             </div>
             <div style="display:flex;gap:8px">
-                @if($companyDateFormat)
-                <button class="btn btn-ghost btn-sm" onclick="adfClear()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
-                    Reset to Default
-                </button>
-                @endif
-                <button class="btn btn-primary btn-sm" id="adf-save-btn" onclick="adfSave()">
+                <button type="button" class="btn btn-primary btn-sm" id="adf-save-btn" onclick="saveAll()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                    Save Date Format
+                    Save
                 </button>
             </div>
         </div>
@@ -553,12 +526,19 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                     </div>
                     <div style="margin-bottom:24px">
                         <label style="display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px">Logo (shown on login card)</label>
-                        <input type="file" name="logo" id="lp-logo" accept="image/*"
-                               onchange="lpPreviewLogoImage(this)"
-                               style="font-size:13px">
-                        @if($branding?->logo)
-                            <p style="font-size:12px;color:#6b7280;margin-top:4px">Current: <a href="{{ asset('storage/'.$branding->logo) }}" target="_blank" style="color:#1a6aa8">view logo</a></p>
-                        @endif
+                        <label id="lp-logo-drop-zone" for="lp-logo" style="display:block;border:2px dashed #bfdbfe;border-radius:10px;background:var(--blue-pale);padding:32px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s" ondragover="event.preventDefault();this.style.borderColor='var(--blue)'" ondragleave="this.style.borderColor='#bfdbfe'" ondrop="lpHandleLogoDrop(event)">
+                            <div id="lp-logo-drop-content">
+                                @if($branding?->logo)
+                                <img src="{{ asset('storage/' . $branding->logo) }}" alt="Logo" style="max-height:52px;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px">
+                                <p style="font-size:12.5px;color:var(--text-2)">Drag &amp; drop a new logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p>
+                                @else
+                                <svg viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="1.6" width="28" height="28" style="display:block;margin:0 auto 10px"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                <p style="font-size:13px;color:var(--text-2)">Drag &amp; drop your logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p>
+                                @endif
+                                <p style="font-size:12px;color:var(--text-3);margin-top:5px">PNG, SVG, JPG &middot; up to 2 MB &middot; Recommended: 200&times;60px</p>
+                            </div>
+                        </label>
+                        <input type="file" name="logo" id="lp-logo" accept="image/png,image/jpeg,image/jpg,image/svg+xml" style="display:none" onchange="lpPreviewLogoImage(this)">
                     </div>
                     <button type="submit" id="lp-submit" class="btn btn-primary">Save Login Page</button>
                 </form>
@@ -699,7 +679,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
     $planPrice   = $subPkg ? ($subscription?->billing_cycle === 'annual'
                     ? ($subPkg->annual_price ?? $subPkg->monthly_price * 12)
                     : $subPkg->monthly_price) : 0;
-    $priceLabel  = $subPkg ? ('$' . number_format($planPrice, 2) . '/' . ($subscription?->billing_cycle === 'annual' ? 'year' : 'month')) : '—';
+    $priceLabel  = $subPkg ? ('$' . number_format($planPrice, 0) . '/' . ($subscription?->billing_cycle === 'annual' ? 'year' : 'month')) : '—';
     $billingLabel= ucfirst($subscription?->billing_cycle ?? 'monthly');
     $nextBilling = $renewsAt ? $renewsAt->format(active_date_format()) : '—';
     $planDesc    = $subPkg?->description ?? 'Your current subscription plan';
@@ -735,7 +715,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
             <div style="font-size:15px;font-weight:700;color:var(--text-1)">{{ $billingLabel }}</div>
         </div>
         <div>
-            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:5px">Next Billing Date</div>
+            <div style="font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:5px">Renews</div>
             <div style="font-size:15px;font-weight:700;color:var(--text-1)">{{ $nextBilling }}</div>
         </div>
         <div>
@@ -761,7 +741,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
             <div style="font-size:15px;font-weight:600;color:var(--text-1);letter-spacing:.08em">
                 •••• •••• •••• {{ $subscription->pm_last4 }}
                 &nbsp;&nbsp;
-                <span style="font-size:13px;font-weight:400;color:var(--text-3)">Expire:
+                <span style="font-size:13px;font-weight:400;color:var(--text-3)">Expires:
                     {{ str_pad($subscription->pm_exp_month, 2, '0', STR_PAD_LEFT) }}/{{ substr($subscription->pm_exp_year, -2) }}
                 </span>
             </div>
@@ -1198,72 +1178,6 @@ function handleLogoDrop(event) {
     if (p && a) updatePreview(p.value, a.value);
 })();
 
-// Submit branding form via AJAX and show toast
-document.getElementById('branding-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const btn = this.querySelector('[type=submit]');
-    const origText = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = 'Saving…';
-
-    try {
-        const fd = new FormData(this);
-        const res  = await fetch(this.action, { method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
-        const json = await res.json();
-        if (json.status === 'success') {
-            // Update CSS variables immediately
-            const primary = document.getElementById('primary-color-inp').value;
-            const accent  = document.getElementById('accent-color-inp').value;
-            document.documentElement.style.setProperty('--blue',   primary);
-            document.documentElement.style.setProperty('--orange', accent);
-
-            // Update browser tab favicon live if a new one was saved
-            if (json.favicon_url) {
-                let link = document.querySelector("link[rel='icon']");
-                if (!link) {
-                    link = document.createElement('link');
-                    link.rel = 'icon';
-                    document.head.appendChild(link);
-                }
-                link.href = json.favicon_url;
-                // Update preview in the upload zone
-                const wrap = document.getElementById('favicon-preview-wrap');
-                if (wrap) {
-                    wrap.innerHTML = '<img id="favicon-preview-img" src="' + json.favicon_url + '" style="width:32px;height:32px;object-fit:contain;display:block">';
-                }
-            }
-
-            // Update sidebar logo and drop zone if a new logo was saved
-            if (json.logo_url) {
-                // Sidebar logo
-                const sidebarLogoZone = document.querySelector('.ca-logo-zone');
-                if (sidebarLogoZone) {
-                    sidebarLogoZone.innerHTML = '<img src="' + json.logo_url + '" alt="Logo" class="ca-logo-img">';
-                }
-                // Drop zone
-                const content = document.getElementById('logo-drop-content');
-                if (content) {
-                    content.innerHTML = '<img src="' + json.logo_url + '" style="max-height:52px;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px"><p style="font-size:12.5px;color:var(--text-2)">Drag &amp; drop a new logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p>';
-                }
-                // Preview panel
-                const wrap = document.getElementById('preview-logo-wrap');
-                if (wrap) {
-                    wrap.innerHTML = '<img src="' + json.logo_url + '" style="max-width:44px;max-height:28px;object-fit:contain;display:block">';
-                }
-            }
-
-            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
-            Swal.fire({ icon: 'success', text: json.message || 'Branding updated successfully.', confirmButtonText: 'Ok', confirmButtonColor: btnColor });
-        } else {
-            showToast(json.message || 'Failed to save branding.', 'error');
-        }
-    } catch (err) {
-        showToast('An error occurred. Please try again.', 'error');
-    }
-
-    btn.disabled  = false;
-    btn.innerHTML = origText;
-});
 
 // Auto-switch tab based on URL hash or ?tab= query param
 document.addEventListener('DOMContentLoaded', function () {
@@ -1305,8 +1219,10 @@ function initActivityTable() {
         searching: true, ordering: true, info: true,
         dom: '<"dt-tscroll"t><"dt-footer"ip>',
         order: [[2, 'desc']],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'events' : 'event');
+        },
         language: {
-            info: 'Showing _START_–_END_ of _TOTAL_ events',
             infoEmpty: 'No activity found',
             paginate: { previous: '&lsaquo;', next: '&rsaquo;' },
             emptyTable: '<div style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No activity yet</div>',
@@ -1373,7 +1289,7 @@ function _refreshAccountTab(tabId) {
     var panel = document.getElementById(tabId);
     if (!panel) return;
 
-    // Dim the panel while loading
+    // Dim the panel while loading (global pg-blur overlay shows the spinner)
     panel.style.opacity       = '0.45';
     panel.style.pointerEvents = 'none';
 
@@ -1417,7 +1333,10 @@ function _refreshAccountTab(tabId) {
                         dom: '<"dt-tscroll"t><"dt-footer"ip>',
                         order: [[4, 'desc']],
                         columnDefs: [{ orderable: false, targets: [3] }],
-                        language: { info: 'Showing _START_ to _END_ of _TOTAL_ payments', infoEmpty: 'No payment records found', paginate: { previous: 'Previous', next: 'Next' }, emptyTable: 'No payment records found.' },
+                        infoCallback: function(settings, start, end, max, total, pre) {
+                            return 'Showing ' + start + ' to ' + end + ' of ' + total + ' ' + (total !== 1 ? 'payments' : 'payment');
+                        },
+                        language: { infoEmpty: 'No payment records found', paginate: { previous: 'Previous', next: 'Next' }, emptyTable: 'No payment records found.' },
                     });
                     _drCbs['ph-dr'] = function () { if (phTable) phTable.draw(); };
                     var phS = document.getElementById('phSearch');
@@ -1525,11 +1444,29 @@ function lpPreviewLogoImage(input) {
     if (input.files && input.files[0]) {
         var reader = new FileReader();
         reader.onload = function (e) {
+            // Update live preview
             var wrap = document.getElementById('lp-preview-logo-wrap');
             if (wrap) wrap.innerHTML = '<img src="' + e.target.result + '" alt="Logo" style="max-height:36px;max-width:140px;object-fit:contain;display:block;margin:0 auto">';
+            // Update drop zone to show selected image
+            var content = document.getElementById('lp-logo-drop-content');
+            if (content) content.innerHTML = '<img src="' + e.target.result + '" style="max-height:52px;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px"><p style="font-size:12.5px;color:var(--text-2)">Drag &amp; drop a new logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p><p style="font-size:12px;color:var(--text-3);margin-top:5px">PNG, SVG, JPG &middot; up to 2 MB &middot; Recommended: 200&times;60px</p>';
         };
         reader.readAsDataURL(input.files[0]);
     }
+}
+
+function lpHandleLogoDrop(event) {
+    event.preventDefault();
+    var zone = document.getElementById('lp-logo-drop-zone');
+    if (zone) { zone.style.borderColor = '#bfdbfe'; }
+    var files = event.dataTransfer && event.dataTransfer.files;
+    if (!files || !files[0]) return;
+    var input = document.getElementById('lp-logo');
+    if (!input) return;
+    var dt = new DataTransfer();
+    dt.items.add(files[0]);
+    input.files = dt.files;
+    lpPreviewLogoImage(input);
 }
 
 function submitLoginPageForm(e) {
@@ -1651,9 +1588,13 @@ async function subStartCheckout(packageId, btn) {
 }
 
 function subCancel() {
+    var planName  = @json($planName ?? 'your current');
+    var periodEnd = @json($renewsAt ? $renewsAt->format(active_date_format()) : null);
+    var msg = 'You are about to cancel your ' + planName + ' plan. Your plan will remain active until the end of the current billing period'
+        + (periodEnd ? ' on ' + periodEnd : '') + '. After this date, you will lose access to all ' + planName + ' features.\n\nYou can re-subscribe at any time.';
     Swal.fire({
         title: 'Cancel Subscription?',
-        text: 'Your plan will remain active until the end of the current billing period. You can re-subscribe at any time.',
+        text: msg,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Yes, Cancel Subscription',
@@ -1729,8 +1670,10 @@ $(document).ready(function () {
         dom:          '<"dt-tscroll"t><"dt-footer"ip>',
         order:        [[4, 'desc']],
         columnDefs:   [{ orderable: false, targets: [3] }],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + ' to ' + end + ' of ' + total + ' ' + (total !== 1 ? 'payments' : 'payment');
+        },
         language: {
-            info:       'Showing _START_ to _END_ of _TOTAL_ payments',
             infoEmpty:  'No payment records found',
             paginate:   { previous: 'Previous', next: 'Next' },
             emptyTable: 'No payment records found.',
@@ -1798,26 +1741,58 @@ function adfPickFormat(fmt) {
     });
 }
 
-async function adfSave() {
+async function saveAll() {
     const btn = document.getElementById('adf-save-btn');
     if (!btn) return;
     const orig = btn.innerHTML;
     btn.disabled = true; btn.innerHTML = 'Saving…';
     try {
-        const fd = new FormData();
-        fd.append('date_format', adfCurrent);
-        const r = await fetch('{{ parse_url(route("account.date-format"), PHP_URL_PATH) }}', {
-            method: 'POST', body: fd,
+        // 1. Save date format
+        const fd1 = new FormData();
+        fd1.append('date_format', adfCurrent);
+        const r1 = await fetch('{{ parse_url(route("account.date-format"), PHP_URL_PATH) }}', {
+            method: 'POST', body: fd1,
             headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
         });
-        let j;
-        try { j = await r.json(); } catch(_) { j = { status: 'fail', message: 'Server error (HTTP ' + r.status + ').' }; }
-        if (j.status === 'success') {
+        let j1;
+        try { j1 = await r1.json(); } catch(_) { j1 = { status: 'fail', message: 'Server error saving date format.' }; }
+        if (j1.status !== 'success') {
+            showToast(j1.message || 'Error saving date format.', 'error');
+            btn.disabled = false; btn.innerHTML = orig;
+            return;
+        }
+
+        // 2. Save branding
+        const form = document.getElementById('branding-form');
+        const fd2  = new FormData(form);
+        const res  = await fetch(form.action, { method: 'POST', body: fd2, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const json = await res.json();
+        if (json.status === 'success') {
+            const primary = document.getElementById('primary-color-inp').value;
+            const accent  = document.getElementById('accent-color-inp').value;
+            document.documentElement.style.setProperty('--blue',   primary);
+            document.documentElement.style.setProperty('--orange', accent);
+            if (json.favicon_url) {
+                let link = document.querySelector("link[rel='icon']");
+                if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+                link.href = json.favicon_url;
+                const wrap = document.getElementById('favicon-preview-wrap');
+                if (wrap) wrap.innerHTML = '<img id="favicon-preview-img" src="' + json.favicon_url + '" style="width:32px;height:32px;object-fit:contain;display:block">';
+            }
+            if (json.logo_url) {
+                const sidebarLogoZone = document.querySelector('.ca-logo-zone');
+                if (sidebarLogoZone) sidebarLogoZone.innerHTML = '<img src="' + json.logo_url + '" alt="Logo" class="ca-logo-img">';
+                const content = document.getElementById('logo-drop-content');
+                if (content) content.innerHTML = '<img src="' + json.logo_url + '" style="max-height:52px;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px"><p style="font-size:12.5px;color:var(--text-2)">Drag &amp; drop a new logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p>';
+                const wrap = document.getElementById('preview-logo-wrap');
+                if (wrap) wrap.innerHTML = '<img src="' + json.logo_url + '" style="max-width:44px;max-height:28px;object-fit:contain;display:block">';
+            }
             var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
-            Swal.fire({ icon: 'success', text: j.message, confirmButtonText: 'OK', confirmButtonColor: btnColor })
-                .then(() => window.location.reload());
-        } else { showToast(j.message || 'Error saving.', 'error'); }
-    } catch(e) { showToast('Request failed. Please try again.', 'error'); }
+            Swal.fire({ icon: 'success', text: json.message || 'Branding updated successfully.', confirmButtonText: 'OK', confirmButtonColor: btnColor });
+        } else {
+            showToast(json.message || 'Failed to save branding.', 'error');
+        }
+    } catch(e) { showToast('An error occurred. Please try again.', 'error'); }
     btn.disabled = false; btn.innerHTML = orig;
 }
 

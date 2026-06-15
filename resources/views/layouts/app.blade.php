@@ -220,9 +220,9 @@ tbody tr:hover td{background:#fafcff}
 .mf-sel:focus{border-color:var(--blue)}
 .mf-textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;color:var(--text-1);background:#fff;outline:none;resize:vertical;min-height:90px;transition:border-color .14s}
 .mf-textarea:focus{border-color:var(--blue)}
-.mf-field{margin-bottom:15px}
+.mf-field{margin-bottom:8px}
 .mf-foot{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
-.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px;align-items:start}
 
 /* ── FORMS ────────────────────────────────────────────── */
 .f-label{display:block;font-size:13px;font-weight:500;margin-bottom:5px;color:var(--text-1)}

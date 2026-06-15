@@ -467,35 +467,31 @@
         <div id="panel-manual">
             <form method="POST" action="{{ route('clients.store') }}" id="add-client-form" novalidate>
                 @csrf
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                    <div class="mf-field" style="margin:0 0 4px">
+                <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:14px;row-gap:10px;align-items:start">
+                    <div class="mf-field" style="margin:0">
                         <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
                         <input type="text" name="name" id="ac-name" class="mf-inp"
                             placeholder="e.g. Sarah Chen" value="{{ old('name') }}" maxlength="100">
-                        <div id="err-name" class="ac-err" style="display:none"></div>
+                        <div id="err-name" class="ac-err"></div>
                     </div>
-                    <div class="mf-field" style="margin:0 0 4px">
+                    <div class="mf-field" style="margin:0">
                         <label class="mf-label">Email ID <span style="color:var(--red)">*</span></label>
                         <input type="text" name="email" id="ac-email" class="mf-inp"
                             placeholder="sarah@chen.com" value="{{ old('email') }}"
                             autocomplete="off" maxlength="100">
-                        <div id="err-email" class="ac-err" style="display:none"></div>
+                        <div id="err-email" class="ac-err"></div>
                     </div>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                    <div class="mf-field" style="margin:0 0 4px">
+                    <div class="mf-field" style="margin:0">
                         <label class="mf-label">Phone Number <span style="color:var(--red)">*</span></label>
                         <input type="tel" name="phone" id="ac-phone" class="mf-inp" placeholder="10-digit number" value="{{ old('phone') }}" maxlength="10">
-                        <div id="err-phone" class="ac-err" style="display:none"></div>
+                        <div id="err-phone" class="ac-err"></div>
                     </div>
-                    <div class="mf-field" style="margin:0 0 4px">
+                    <div class="mf-field" style="margin:0">
                         <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
                         <input type="text" name="company_name" id="ac-company" class="mf-inp" placeholder="e.g. TechCorp Inc." value="{{ old('company_name') }}" maxlength="100">
-                        <div id="err-company" class="ac-err" style="display:none"></div>
+                        <div id="err-company" class="ac-err"></div>
                     </div>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                    <div class="mf-field">
+                    <div class="mf-field" style="margin:0">
                         <label class="mf-label">Industry Type</label>
                         <select name="industry_type" id="ac-industry" class="mf-sel" style="height:40px">
                             <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select Industry Type</option>
@@ -503,9 +499,9 @@
                             <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
                             @endforeach
                         </select>
-                        <div id="err-industry" class="ac-err" style="display:none"></div>
+                        <div id="err-industry" class="ac-err"></div>
                     </div>
-                    <div class="mf-field">
+                    <div class="mf-field" style="margin:0">
                         <label class="mf-label">Entity Type</label>
                         <select name="entity_type" class="mf-sel" style="height:40px">
                             <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
@@ -641,19 +637,19 @@
                         <label class="mf-label">Client Full Name <span style="color:var(--red)">*</span></label>
                         <input type="text" name="admin_name" id="modal-co-admin-name" class="mf-inp"
                                placeholder="Jane Smith" value="{{ old('admin_name') }}" maxlength="100">
-                        <div id="modal-err-co-admin-name" class="co-err" style="display:none"></div>
+                        <div id="modal-err-co-admin-name" class="co-err"></div>
                     </div>
                     <div class="mf-field">
                         <label class="mf-label">Client Email <span style="color:var(--red)">*</span></label>
                         <input type="email" name="admin_email" id="modal-co-admin-email" class="mf-inp"
                                placeholder="jane@acme.com" value="{{ old('admin_email') }}" maxlength="100">
-                        <div id="modal-err-co-admin-email" class="co-err" style="display:none"></div>
+                        <div id="modal-err-co-admin-email" class="co-err"></div>
                     </div>
                     <div class="mf-field">
                         <label class="mf-label">Phone Number <span style="color:var(--red)">*</span></label>
                         <input type="text" name="admin_phone" id="modal-co-admin-phone" class="mf-inp"
                                placeholder="10-digit number" value="{{ old('admin_phone') }}" maxlength="10" inputmode="numeric">
-                        <div id="modal-err-co-admin-phone" class="co-err" style="display:none"></div>
+                        <div id="modal-err-co-admin-phone" class="co-err"></div>
                     </div>
                 </div>
 
@@ -678,7 +674,7 @@
                             </option>
                             @endforeach
                         </select>
-                        <div id="modal-err-existing-client" class="co-err" style="display:none"></div>
+                        <div id="modal-err-existing-client" class="co-err"></div>
                     </div>
                     @endif
                 </div>
@@ -696,7 +692,7 @@
                     <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="company_name" id="modal-company-name" class="mf-inp"
                            placeholder="Acme Inc." value="{{ old('company_name') }}" maxlength="100">
-                    <div id="modal-err-co-name" class="co-err" style="display:none"></div>
+                    <div id="modal-err-co-name" class="co-err"></div>
                 </div>
                 <div class="form-2col">
                     <div class="mf-field">
@@ -707,7 +703,7 @@
                             <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
                             @endforeach
                         </select>
-                        <div id="modal-err-co-industry" class="co-err" style="display:none"></div>
+                        <div id="modal-err-co-industry" class="co-err"></div>
                     </div>
                     <div class="mf-field">
                         <label class="mf-label">Entity Type</label>
@@ -717,7 +713,7 @@
                             <option value="{{ $ent }}" {{ old('entity_type') === $ent ? 'selected' : '' }}>{{ $ent }}</option>
                             @endforeach
                         </select>
-                        <div id="modal-err-co-entity" class="co-err" style="display:none"></div>
+                        <div id="modal-err-co-entity" class="co-err"></div>
                     </div>
                 </div>
                 <div class="mf-field">
@@ -729,7 +725,7 @@
                     <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
                     <input type="email" name="company_email" id="modal-co-email" class="mf-inp"
                            placeholder="info@acme.com" value="{{ old('company_email') }}" maxlength="100">
-                    <div id="modal-err-co-email" class="co-err" style="display:none"></div>
+                    <div id="modal-err-co-email" class="co-err"></div>
                 </div>
             </div>
 
@@ -785,28 +781,15 @@
 .ac-err {
     font-size: 11.5px;
     color: var(--red);
-    margin-top: 4px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-.ac-err::before {
-    content: '';
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
-    flex-shrink: 0;
+    margin-top: 2px;
+    min-height: 16px;
+    visibility: hidden;
 }
 .mf-inp.ac-invalid, .mf-sel.ac-invalid { border-color: var(--red) !important; }
 .co-err {
-    font-size: 11.5px; color: var(--red); margin-top: 4px;
-    display: flex; align-items: center; gap: 4px;
-}
-.co-err::before {
-    content: '';
-    display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+    font-size: 11.5px; color: var(--red); margin-top: 2px;
+    min-height: 16px;
+    visibility: hidden;
 }
 .mf-inp.co-invalid, .mf-sel.co-invalid { border-color: var(--red) !important; }
 </style>
@@ -951,14 +934,14 @@ function validateAndSubmitAddClient() {
         var inp = document.getElementById(inputId);
         var err = document.getElementById(errId);
         if (inp) inp.classList.add('ac-invalid');
-        if (err) { err.textContent = msg; err.style.display = 'flex'; }
+        if (err) { err.textContent = msg; err.style.visibility = 'visible'; }
         valid = false;
     }
     function clearErr(inputId, errId) {
         var inp = document.getElementById(inputId);
         var err = document.getElementById(errId);
         if (inp) inp.classList.remove('ac-invalid');
-        if (err) { err.textContent = ''; err.style.display = 'none'; }
+        if (err) { err.textContent = ''; err.style.visibility = 'hidden'; }
     }
 
     // Full Name
@@ -1024,7 +1007,7 @@ function openAddClientModal() {
         var inp = document.getElementById(pair[0]);
         var err = document.getElementById(pair[1]);
         if (inp) inp.classList.remove('ac-invalid');
-        if (err) { err.textContent = ''; err.style.display = 'none'; }
+        if (err) { err.textContent = ''; err.style.visibility = 'hidden'; }
     });
 }
 
@@ -1042,7 +1025,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             this.classList.remove('ac-invalid');
             var err = document.getElementById('err-name');
-            if (err) { err.textContent = ''; err.style.display = 'none'; }
+            if (err) { err.textContent = ''; err.style.visibility = 'hidden'; }
         });
     }
 
@@ -1054,7 +1037,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (cleaned !== this.value) this.value = cleaned;
             this.classList.remove('ac-invalid');
             var err = document.getElementById('err-phone');
-            if (err) { err.textContent = ''; err.style.display = 'none'; }
+            if (err) { err.textContent = ''; err.style.visibility = 'hidden'; }
         });
     }
 
@@ -1066,7 +1049,7 @@ document.addEventListener('DOMContentLoaded', function() {
         inp.addEventListener('input', function() {
             this.classList.remove('ac-invalid');
             var err = document.getElementById(pair[1]);
-            if (err) { err.textContent = ''; err.style.display = 'none'; }
+            if (err) { err.textContent = ''; err.style.visibility = 'hidden'; }
         });
     });
     var industryEl = document.getElementById('ac-industry');
@@ -1074,7 +1057,7 @@ document.addEventListener('DOMContentLoaded', function() {
         industryEl.addEventListener('change', function() {
             this.classList.remove('ac-invalid');
             var err = document.getElementById('err-industry');
-            if (err) { err.textContent = ''; err.style.display = 'none'; }
+            if (err) { err.textContent = ''; err.style.visibility = 'hidden'; }
         });
     }
 });
@@ -1377,7 +1360,7 @@ function modalCoErr(id, msg) {
     var el = document.getElementById(id);
     if (!el) return;
     el.textContent = msg || '';
-    el.style.display = msg ? 'flex' : 'none';
+    el.style.visibility = msg ? 'visible' : 'hidden';
 }
 function modalCoMark(inputId, invalid) {
     var el = document.getElementById(inputId);

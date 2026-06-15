@@ -14,13 +14,9 @@
 .u-last-login            { font-size:12.5px;color:var(--text-2); }
 .u-last-login.stale      { color:var(--red); }
 .au-err {
-    font-size: 11.5px; color: var(--red); margin-top: 4px;
-    display: flex; align-items: center; gap: 4px;
-}
-.au-err::before {
-    content: '';
-    display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+    font-size: 11.5px; color: var(--red); margin-top: 2px;
+    min-height: 16px;
+    visibility: hidden;
 }
 .mf-inp.au-invalid, .mf-sel.au-invalid { border-color: var(--red) !important; }
 </style>
@@ -220,22 +216,20 @@
         </div>
         @endif
 
-        <form method="POST" action="{{ route('users.store') }}" id="add-user-form" novalidate>
+        <form method="POST" action="{{ route('users.store') }}" id="add-user-form" novalidate autocomplete="off">
             @csrf
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                <div class="mf-field" style="margin:0 0 4px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:14px;row-gap:10px;align-items:start">
+                <div class="mf-field" style="margin:0">
                     <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="au-name" class="mf-inp" placeholder="e.g. Priya Sharma" value="{{ old('name') }}" maxlength="100">
-                    <div id="err-au-name" class="au-err" style="display:none"></div>
+                    <div id="err-au-name" class="au-err"></div>
                 </div>
-                <div class="mf-field" style="margin:0 0 4px">
+                <div class="mf-field" style="margin:0">
                     <label class="mf-label">Email Address <span style="color:var(--red)">*</span></label>
-                    <input type="text" name="email" id="au-email" class="mf-inp" placeholder="priya@rightfocuscfo.com" value="{{ old('email') }}" maxlength="100">
-                    <div id="err-au-email" class="au-err" style="display:none"></div>
+                    <input type="text" name="email" id="au-email" class="mf-inp" placeholder="priya@rightfocuscfo.com" value="{{ old('email') }}" maxlength="100" autocomplete="off">
+                    <div id="err-au-email" class="au-err"></div>
                 </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-                <div class="mf-field" style="margin:0 0 4px">
+                <div class="mf-field" style="margin:0">
                     <label class="mf-label">Role <span style="color:var(--red)">*</span></label>
                     <select name="role" id="au-role" class="mf-sel" style="height:40px">
                         <option value="">e.g. Manager, Analyst, Viewer</option>
@@ -245,9 +239,9 @@
                         </option>
                         @endforeach
                     </select>
-                    <div id="err-au-role" class="au-err" style="display:none"></div>
+                    <div id="err-au-role" class="au-err"></div>
                 </div>
-                <div class="mf-field" style="margin:0 0 4px">
+                <div class="mf-field" style="margin:0">
                     <label class="mf-label">Job Title</label>
                     <input type="text" name="job_title" class="mf-inp" placeholder="e.g. Financial Analyst" value="{{ old('job_title') }}">
                 </div>
@@ -255,7 +249,7 @@
             <div class="mf-field">
                 <label class="mf-label">Password <span style="color:var(--red)">*</span></label>
                 <div style="position:relative;display:flex;align-items:center">
-                    <input type="password" name="password" id="add-pwd" class="mf-inp" placeholder="Min. 8 characters" style="padding-right:88px" maxlength="20">
+                    <input type="password" name="password" id="add-pwd" class="mf-inp" placeholder="Min. 8 characters" style="padding-right:88px" maxlength="20" autocomplete="new-password">
                     <button type="button" title="Show/hide" onclick="togglePwd('add-pwd','add-eye')" style="position:absolute;right:44px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text-3);display:flex">
                         <svg id="add-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
                     </button>
@@ -263,7 +257,7 @@
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
                     </button>
                 </div>
-                <div id="err-au-pwd" class="au-err" style="display:none"></div>
+                <div id="err-au-pwd" class="au-err"></div>
                 <div style="font-size:11px;color:var(--text-3);margin-top:4px">Click the refresh icon to auto-generate a secure password.</div>
             </div>
             <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:11px 14px;margin-bottom:16px;font-size:12.5px;color:#3b82f6;line-height:1.5">
@@ -286,7 +280,7 @@
 
         <form method="POST" id="form-edit-user">
             @csrf
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
                 <div class="mf-field" style="margin:0 0 14px">
                     <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="edit-name" class="mf-inp" required>
@@ -420,7 +414,7 @@ function validateAndSubmitAddUser() {
         var el = document.getElementById(id);
         if (!el) return;
         el.textContent = msg || '';
-        el.style.display = msg ? 'flex' : 'none';
+        el.style.visibility = msg ? 'visible' : 'hidden';
     }
     function auMark(id, invalid) {
         var el = document.getElementById(id);

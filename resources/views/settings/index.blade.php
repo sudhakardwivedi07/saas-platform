@@ -739,7 +739,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
         <div class="modal-sub">Define a role name and assign permissions.</div>
         <form id="create-role-form" onsubmit="submitCreateRole(event)">
             @csrf
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
                 <div class="mf-field">
                     <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="cr-name" class="mf-inp" placeholder="e.g. accountant" required autocomplete="off">
@@ -794,7 +794,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
         <form id="edit-role-form" onsubmit="submitEditRole(event)">
             @csrf
             <input type="hidden" id="er-role-id">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
                 <div class="mf-field">
                     <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="er-name" class="mf-inp" required autocomplete="off">

@@ -156,7 +156,9 @@
                                         onmouseover="this.style.borderColor='#9ca3af'" onmouseout="this.style.borderColor='#e5e7eb'">
                                         Sync
                                     </button>
-                                    <button onclick="disconnectQB({{ $conn->id }})"
+                                    <button onclick="disconnectQB({{ $conn->id }}, this)"
+                                        data-company="{{ $company->company_name }}"
+                                        data-tool="QuickBooks Online"
                                         style="padding:5px 14px;font-size:12.5px;font-weight:500;cursor:pointer;border:1px solid var(--orange);background:#fff;color:var(--orange);border-radius:6px;font-family:inherit;transition:background .14s,color .14s"
                                         onmouseover="this.style.background='var(--orange)';this.style.color='#fff'"
                                         onmouseout="this.style.background='#fff';this.style.color='var(--orange)'">
@@ -286,6 +288,7 @@ function resetFilters() {
 
 async function syncQB(id, btn) {
     const origText = btn ? btn.textContent : '';
+    const companyName = btn?.closest('tr')?.cells[0]?.querySelector('div')?.textContent?.trim() || '';
     if (btn) { btn.disabled = true; btn.textContent = 'Syncing…'; }
 
     const json = await fetch('{{ route("quickbooks.sync", ":id") }}'.replace(':id', id), {
@@ -321,21 +324,16 @@ async function syncQB(id, btn) {
                             <svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" width="30" height="30"><polyline points="20 6 9 17 4 12"/></svg>
                         </div>
                         <div style="font-size:18px;font-weight:700;color:#111827;margin-bottom:10px">Data Synced Successfully</div>
+                        ${companyName ? `<div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">${companyName}</div>` : ''}
                         <div style="font-size:14px;color:#6b7280;line-height:1.6;text-align:center">
                             Financial data has been refreshed from the accounting tool. Dashboard and insights will reflect the latest data.
                         </div>
                     </div>`,
                 showConfirmButton: true,
                 confirmButtonText: 'Got it',
-                buttonsStyling: false,
+                confirmButtonColor: 'var(--orange, #f06b25)',
                 width: 380,
                 padding: '32px 28px 28px',
-                didOpen: (popup) => {
-                    const confirmBtn = popup.querySelector('.swal2-confirm');
-                    if (confirmBtn) confirmBtn.style.cssText = 'width:100%;padding:13px 0;background:#f06b25;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;';
-                    const actions = popup.querySelector('.swal2-actions');
-                    if (actions) actions.style.cssText = 'width:100%;padding:0;margin-top:24px;display:flex;';
-                },
             });
         } else {
             showToast(json.message, 'success');
@@ -372,26 +370,22 @@ async function syncAllConnected(btn) {
                 </div>`,
             showConfirmButton: true,
             confirmButtonText: 'Got it',
-            buttonsStyling: false,
+            confirmButtonColor: 'var(--orange, #f06b25)',
             width: 380,
             padding: '32px 28px 28px',
-            didOpen: (popup) => {
-                const confirmBtn = popup.querySelector('.swal2-confirm');
-                if (confirmBtn) confirmBtn.style.cssText = 'width:100%;padding:13px 0;background:#f06b25;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;';
-                const actions = popup.querySelector('.swal2-actions');
-                if (actions) actions.style.cssText = 'width:100%;padding:0;margin-top:24px;display:flex;';
-            },
         });
     } else {
         showToast(syncMsg, 'success');
     }
 }
 
-async function disconnectQB(id) {
+async function disconnectQB(id, btn) {
+    const companyName = btn?.dataset.company || '';
+
     if (!window.Swal) {
         if (!confirm('Disconnect? You will no longer be able to pull financial data until reconnected.')) return;
     } else {
-        const confirm = await Swal.fire({
+        const result = await Swal.fire({
             html: `
                 <div style="display:flex;flex-direction:column;align-items:center;padding:8px 0 4px">
                     <div style="width:64px;height:64px;border-radius:50%;background:#fff0f0;display:flex;align-items:center;justify-content:center;margin-bottom:18px">
@@ -400,6 +394,7 @@ async function disconnectQB(id) {
                         </div>
                     </div>
                     <div style="font-size:18px;font-weight:700;color:#111827;margin-bottom:10px">Disconnect Company</div>
+                    ${companyName ? `<div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:10px">${companyName}</div>` : ''}
                     <div style="font-size:14px;color:#6b7280;line-height:1.6;text-align:center">
                         Are you sure you want to disconnect this company?
                         You will no longer be able to pull financial data
@@ -407,20 +402,15 @@ async function disconnectQB(id) {
                     </div>
                 </div>`,
             showCancelButton: true,
-            confirmButtonText: 'Confirm',
+            confirmButtonText: 'Disconnect',
             cancelButtonText: 'Cancel',
-            confirmButtonColor: '#f06b25',
-            cancelButtonColor: '#fff',
-            customClass: {
-                confirmButton: 'swal-confirm-btn',
-                cancelButton: 'swal-cancel-btn',
-            },
-            buttonsStyling: true,
+            confirmButtonColor: 'var(--orange, #f06b25)',
+            cancelButtonColor: '#6b7280',
             width: 380,
             padding: '32px 28px 28px',
             reverseButtons: false,
         });
-        if (!confirm.isConfirmed) return;
+        if (!result.isConfirmed) return;
     }
 
     const json = await fetch('{{ route("quickbooks.disconnect", ":id") }}'.replace(':id', id), {
@@ -437,6 +427,7 @@ async function disconnectQB(id) {
                             <svg viewBox="0 0 24 24" fill="none" stroke="#f06b25" stroke-width="2.5" width="30" height="30"><polyline points="20 6 9 17 4 12"/></svg>
                         </div>
                         <div style="font-size:18px;font-weight:700;color:#111827;margin-bottom:10px">Disconnected</div>
+                        ${companyName ? `<div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px">${companyName}</div>` : ''}
                         <div style="font-size:14px;color:#6b7280;line-height:1.6;text-align:center">
                             The accounting tool connection has been removed.<br>
                             Reconnect to resume data sync and insight generation.
@@ -444,15 +435,9 @@ async function disconnectQB(id) {
                     </div>`,
                 showConfirmButton: true,
                 confirmButtonText: 'Got it',
-                buttonsStyling: false,
+                confirmButtonColor: 'var(--orange, #f06b25)',
                 width: 380,
                 padding: '32px 28px 28px',
-                didOpen: (popup) => {
-                    const btn = popup.querySelector('.swal2-confirm');
-                    if (btn) btn.style.cssText = 'width:100%;padding:13px 0;background:#f06b25;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;';
-                    const actions = popup.querySelector('.swal2-actions');
-                    if (actions) actions.style.cssText = 'width:100%;padding:0;margin-top:24px;display:flex;';
-                },
             });
         }
         location.reload();
@@ -463,7 +448,6 @@ async function disconnectQB(id) {
 </script>
 <style>
 @keyframes qb-spin { to { transform: rotate(360deg); } }
-.swal-got-it-btn  { width:100% !important; border-radius:10px !important; font-size:15px !important; font-weight:600 !important; padding:13px 0 !important; }
 .swal-confirm-btn { border-radius:10px !important; font-size:14px !important; font-weight:600 !important; padding:12px 32px !important; }
 .swal-cancel-btn  { border-radius:10px !important; font-size:14px !important; font-weight:500 !important; padding:12px 32px !important; border:1px solid #e5e7eb !important; color:#374151 !important; }
 .swal-cancel-btn:hover { background:#f9fafb !important; }

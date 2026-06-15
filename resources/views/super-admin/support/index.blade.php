@@ -334,8 +334,10 @@ var _drCal = {};
             { orderable: false, targets: [7] },
             { type: 'num', targets: [5] }
         ],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'tickets' : 'ticket');
+        },
         language: {
-            info:        'Showing _START_–_END_ of _TOTAL_ tickets',
             infoEmpty:   'No tickets found',
             paginate:    { previous: '‹', next: '›' },
             emptyTable:  'No support tickets',

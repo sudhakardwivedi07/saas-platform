@@ -558,8 +558,10 @@ $(document).ready(function() {
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         columnDefs: [{ orderable: false, targets: [3, 8] }],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'companies' : 'company');
+        },
         language: {
-            info: 'Showing _START_–_END_ of _TOTAL_ companies',
             infoEmpty: 'No companies',
             paginate: { previous: '‹', next: '›' },
             emptyTable: '<div style="text-align:center;padding:48px 20px"><svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" style="margin:0 auto 12px;display:block"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg><div style="font-size:14px;font-weight:500;color:#6b7280">No companies yet</div><div style="font-size:12.5px;color:#9ca3af;margin-top:4px">Add companies to track their usage here.</div></div>',

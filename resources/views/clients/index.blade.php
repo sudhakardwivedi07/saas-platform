@@ -864,7 +864,7 @@
 }
 .co-err::before {
     content: '';
-    display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
+    display: inline-block; height: 12px; flex-shrink: 0;
     background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 .mf-inp.co-invalid, .mf-sel.co-invalid { border-color: var(--red) !important; }
@@ -1046,7 +1046,7 @@ function validateAndSubmitAddClient() {
     var rawPhone = (document.getElementById('ac-phone').value || '').trim();
     clearErr('ac-phone', 'err-phone');
     if (!rawPhone) {
-        setErr('ac-phone', 'err-phone', 'Phone number is required.');
+        setErr('ac-phone', 'err-phone', 'Phone Number is required.');
     } else {
         var digitsOnly = rawPhone.replace(/\D/g, '');
         if (digitsOnly.length !== 10) {
@@ -1526,13 +1526,13 @@ function closeEditCompanyModal() {
 
 function validateAndSubmitEditCompanyModal() {
     var ok = true;
-    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
     var nameEl = document.getElementById('edit-co-company-name');
     var nameVal = nameEl ? nameEl.value.trim() : '';
     var nameErr = document.getElementById('edit-err-co-name');
     if (!nameVal) {
-        if (nameErr) { nameErr.textContent = 'Company name is required.'; nameErr.style.display = 'flex'; }
+        if (nameErr) { nameErr.textContent = 'Company Name is required.'; nameErr.style.display = 'flex'; }
         if (nameEl) nameEl.classList.add('co-invalid');
         ok = false;
     } else {
@@ -1544,7 +1544,7 @@ function validateAndSubmitEditCompanyModal() {
     var emailVal = emailEl ? emailEl.value.trim() : '';
     var emailErr = document.getElementById('edit-err-co-email');
     if (!emailVal) {
-        if (emailErr) { emailErr.textContent = 'Company email is required.'; emailErr.style.display = 'flex'; }
+        if (emailErr) { emailErr.textContent = 'Company Email is required.'; emailErr.style.display = 'flex'; }
         if (emailEl) emailEl.classList.add('co-invalid');
         ok = false;
     } else if (!emailRx.test(emailVal)) {
@@ -1616,15 +1616,15 @@ function modalCoMark(inputId, invalid) {
 
 function validateAndSubmitCompanyModal() {
     var ok = true;
-    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
     // Company Name
     var nameEl = document.getElementById('modal-company-name');
     var nameVal = nameEl ? nameEl.value.trim() : '';
     if (!nameVal) {
-        modalCoErr('modal-err-co-name', 'Company name is required.'); modalCoMark('modal-company-name', true); ok = false;
+        modalCoErr('modal-err-co-name', 'Company Name is required.'); modalCoMark('modal-company-name', true); ok = false;
     } else if (nameVal.length < 2) {
-        modalCoErr('modal-err-co-name', 'Minimum 2 characters required.'); modalCoMark('modal-company-name', true); ok = false;
+        modalCoErr('modal-err-co-name', 'Company Name must be at least 2 characters.'); modalCoMark('modal-company-name', true); ok = false;
     } else {
         modalCoErr('modal-err-co-name', ''); modalCoMark('modal-company-name', false);
     }
@@ -1633,7 +1633,7 @@ function validateAndSubmitCompanyModal() {
     var coEmailEl = document.getElementById('modal-co-email');
     var coEmailVal = coEmailEl ? coEmailEl.value.trim() : '';
     if (!coEmailVal) {
-        modalCoErr('modal-err-co-email', 'Company email is required.'); modalCoMark('modal-co-email', true); ok = false;
+        modalCoErr('modal-err-co-email', 'Company Email is required.'); modalCoMark('modal-co-email', true); ok = false;
     } else if (!emailRx.test(coEmailVal)) {
         modalCoErr('modal-err-co-email', 'Enter a valid email address.'); modalCoMark('modal-co-email', true); ok = false;
     } else {
@@ -1647,11 +1647,11 @@ function validateAndSubmitCompanyModal() {
             var adminNameEl = document.getElementById('modal-co-admin-name');
             var adminNameVal = adminNameEl ? adminNameEl.value.trim() : '';
             if (!adminNameVal) {
-                modalCoErr('modal-err-co-admin-name', 'Admin full name is required.'); modalCoMark('modal-co-admin-name', true); ok = false;
+                modalCoErr('modal-err-co-admin-name', 'Full Name is required.'); modalCoMark('modal-co-admin-name', true); ok = false;
             } else if (adminNameVal.length < 2) {
-                modalCoErr('modal-err-co-admin-name', 'Minimum 2 characters required.'); modalCoMark('modal-co-admin-name', true); ok = false;
+                modalCoErr('modal-err-co-admin-name', 'Full Name must be at least 2 characters.'); modalCoMark('modal-co-admin-name', true); ok = false;
             } else if (!/^[a-zA-Z\s]+$/.test(adminNameVal)) {
-                modalCoErr('modal-err-co-admin-name', 'Name must contain only letters and spaces.'); modalCoMark('modal-co-admin-name', true); ok = false;
+                modalCoErr('modal-err-co-admin-name', 'Full Name must contain only letters and spaces.'); modalCoMark('modal-co-admin-name', true); ok = false;
             } else {
                 modalCoErr('modal-err-co-admin-name', ''); modalCoMark('modal-co-admin-name', false);
             }
@@ -1659,7 +1659,7 @@ function validateAndSubmitCompanyModal() {
             var adminEmailEl = document.getElementById('modal-co-admin-email');
             var adminEmailVal = adminEmailEl ? adminEmailEl.value.trim() : '';
             if (!adminEmailVal) {
-                modalCoErr('modal-err-co-admin-email', 'Client email is required.'); modalCoMark('modal-co-admin-email', true); ok = false;
+                modalCoErr('modal-err-co-admin-email', 'Email is required.'); modalCoMark('modal-co-admin-email', true); ok = false;
             } else if (!emailRx.test(adminEmailVal)) {
                 modalCoErr('modal-err-co-admin-email', 'Enter a valid email address.'); modalCoMark('modal-co-admin-email', true); ok = false;
             } else {
@@ -1669,7 +1669,7 @@ function validateAndSubmitCompanyModal() {
             var phoneEl = document.getElementById('modal-co-admin-phone');
             var phoneVal = phoneEl ? phoneEl.value.replace(/\D/g, '') : '';
             if (!phoneVal) {
-                modalCoErr('modal-err-co-admin-phone', 'Phone number is required.'); modalCoMark('modal-co-admin-phone', true); ok = false;
+                modalCoErr('modal-err-co-admin-phone', 'Phone Number is required.'); modalCoMark('modal-co-admin-phone', true); ok = false;
             } else if (phoneVal.length !== 10) {
                 modalCoErr('modal-err-co-admin-phone', 'Phone number must be exactly 10 digits.'); modalCoMark('modal-co-admin-phone', true); ok = false;
             } else {
@@ -1678,7 +1678,7 @@ function validateAndSubmitCompanyModal() {
         } else {
             var existingEl = document.getElementById('modal-existing-client-id');
             if (existingEl && !existingEl.value) {
-                modalCoErr('modal-err-existing-client', 'Please select an existing client.'); existingEl.classList.add('co-invalid'); ok = false;
+                modalCoErr('modal-err-existing-client', 'Client is required.'); existingEl.classList.add('co-invalid'); ok = false;
             } else if (existingEl) {
                 modalCoErr('modal-err-existing-client', ''); existingEl.classList.remove('co-invalid');
             }
@@ -1706,6 +1706,79 @@ function validateAndSubmitCompanyModal() {
             if (cleaned !== this.value) {
                 this.value = cleaned;
                 this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+            }
+        });
+    }
+})();
+
+// Real-time validation clearing — Add Company modal (admin)
+(function() {
+    var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
+
+    function clearOnInput(fieldId, errId) {
+        var el = document.getElementById(fieldId);
+        if (!el) return;
+        el.addEventListener('input', function() {
+            if (this.value.trim()) { modalCoErr(errId, ''); modalCoMark(fieldId, false); }
+        });
+    }
+    function clearOnEmailInput(fieldId, errId) {
+        var el = document.getElementById(fieldId);
+        if (!el) return;
+        el.addEventListener('input', function() {
+            var v = this.value.trim();
+            if (!v || emailRx.test(v)) { modalCoErr(errId, ''); modalCoMark(fieldId, false); }
+        });
+    }
+    function clearOnChange(fieldId, errId) {
+        var el = document.getElementById(fieldId);
+        if (!el) return;
+        el.addEventListener('change', function() {
+            if (this.value) { modalCoErr(errId, ''); modalCoMark(fieldId, false); }
+        });
+    }
+
+    // Add Company modal fields
+    clearOnInput('modal-company-name', 'modal-err-co-name');
+    clearOnEmailInput('modal-co-email', 'modal-err-co-email');
+    clearOnInput('modal-co-admin-name', 'modal-err-co-admin-name');
+    clearOnEmailInput('modal-co-admin-email', 'modal-err-co-admin-email');
+
+    var phoneEl = document.getElementById('modal-co-admin-phone');
+    if (phoneEl) {
+        phoneEl.addEventListener('input', function() {
+            if (this.value.replace(/\D/g, '').length === 10 || !this.value.trim()) {
+                modalCoErr('modal-err-co-admin-phone', ''); modalCoMark('modal-co-admin-phone', false);
+            }
+        });
+    }
+
+    var existingEl = document.getElementById('modal-existing-client-id');
+    if (existingEl) {
+        existingEl.addEventListener('change', function() {
+            if (this.value) { modalCoErr('modal-err-existing-client', ''); this.classList.remove('co-invalid'); }
+        });
+    }
+
+    // Edit Company modal fields
+    var editNameEl = document.getElementById('edit-co-company-name');
+    if (editNameEl) {
+        editNameEl.addEventListener('input', function() {
+            if (this.value.trim()) {
+                var err = document.getElementById('edit-err-co-name');
+                if (err) { err.textContent = ''; err.style.display = 'none'; }
+                this.classList.remove('co-invalid');
+            }
+        });
+    }
+    var editEmailEl = document.getElementById('edit-co-email');
+    if (editEmailEl) {
+        editEmailEl.addEventListener('input', function() {
+            var v = this.value.trim();
+            if (!v || emailRx.test(v)) {
+                var err = document.getElementById('edit-err-co-email');
+                if (err) { err.textContent = ''; err.style.display = 'none'; }
+                this.classList.remove('co-invalid');
             }
         });
     }

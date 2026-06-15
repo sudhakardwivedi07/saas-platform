@@ -84,8 +84,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 /* ── Ticket Form Validation ────────────────────────── */
 .tk-err {
     font-size: 11.5px; color: var(--red); margin-top: 2px;
-    min-height: 16px;
-    visibility: hidden;
+    display: none;
 }
 .mf-inp.tk-invalid, .mf-textarea.tk-invalid { border-color: var(--red) !important; }
 </style>
@@ -809,7 +808,7 @@ function validateAndSubmitTicket() {
         var el = document.getElementById(id);
         if (!el) return;
         el.textContent = msg || '';
-        el.style.visibility = msg ? 'visible' : 'hidden';
+        el.style.display = msg ? 'block' : 'none';
     }
     function tkMark(el, invalid) {
         if (!el) return;

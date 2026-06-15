@@ -1287,7 +1287,7 @@ function _refreshAccountTab(tabId) {
     var panel = document.getElementById(tabId);
     if (!panel) return;
 
-    // Dim the panel while loading
+    // Dim the panel while loading (global pg-blur overlay shows the spinner)
     panel.style.opacity       = '0.45';
     panel.style.pointerEvents = 'none';
 

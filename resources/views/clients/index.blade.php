@@ -390,12 +390,13 @@
         <button class="modal-close" onclick="document.getElementById('modal-edit-client').classList.remove('open')">&times;</button>
         <div class="modal-title">Edit Client</div>
         <div class="modal-sub">Update the details for this client.</div>
-        <form id="edit-client-form" method="POST">
+        <form id="edit-client-form" method="POST" novalidate>
             @csrf
             <input type="hidden" id="edit-client-id">
             <div class="mf-field" style="margin-top:4px">
                 <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
-                <input type="text" name="name" id="edit-client-name" class="mf-inp" required>
+                <input type="text" name="name" id="edit-client-name" class="mf-inp">
+                <div id="err-edit-name" class="ac-err"></div>
             </div>
             <div class="mf-field">
                 <label class="mf-label">Email</label>
@@ -405,7 +406,7 @@
             <div class="mf-field">
                 <label class="mf-label">Phone Number</label>
                 <input type="tel" name="phone" id="edit-client-phone" class="mf-inp" placeholder="10-digit number" maxlength="10" inputmode="numeric">
-                <div id="err-edit-phone" class="ac-err" style="display:none"></div>
+                <div id="err-edit-phone" class="ac-err"></div>
             </div>
             <div class="mf-foot">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-edit-client').classList.remove('open')">Cancel</button>
@@ -841,14 +842,12 @@
     font-size: 11.5px;
     color: var(--red);
     margin-top: 2px;
-    min-height: 16px;
-    visibility: hidden;
+    display: none;
 }
 .mf-inp.ac-invalid, .mf-sel.ac-invalid { border-color: var(--red) !important; }
 .co-err {
     font-size: 11.5px; color: var(--red); margin-top: 2px;
-    min-height: 16px;
-    visibility: hidden;
+    display: none;
 }
 .mf-inp.co-invalid, .mf-sel.co-invalid { border-color: var(--red) !important; }
 </style>
@@ -997,14 +996,14 @@ function validateAndSubmitAddClient() {
         var inp = document.getElementById(inputId);
         var err = document.getElementById(errId);
         if (inp) inp.classList.add('ac-invalid');
-        if (err) { err.textContent = msg; err.style.visibility = 'visible'; }
+        if (err) { err.textContent = msg; err.style.display = 'block'; }
         valid = false;
     }
     function clearErr(inputId, errId) {
         var inp = document.getElementById(inputId);
         var err = document.getElementById(errId);
         if (inp) inp.classList.remove('ac-invalid');
-        if (err) { err.textContent = ''; err.style.visibility = 'hidden'; }
+        if (err) { err.textContent = ''; err.style.display = 'none'; }
     }
 
     // Full Name
@@ -1099,7 +1098,7 @@ function openAddClientModal() {
         var inp = document.getElementById(pair[0]);
         var err = document.getElementById(pair[1]);
         if (inp) inp.classList.remove('ac-invalid');
-        if (err) { err.textContent = ''; err.style.visibility = 'hidden'; }
+        if (err) { err.textContent = ''; err.style.display = 'none'; }
     });
 }
 
@@ -1117,7 +1116,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             this.classList.remove('ac-invalid');
             var err = document.getElementById('err-name');
-            if (err) { err.textContent = ''; err.style.visibility = 'hidden'; }
+            if (err) { err.textContent = ''; err.style.display = 'none'; }
         });
     }
 
@@ -1129,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (cleaned !== this.value) this.value = cleaned;
             this.classList.remove('ac-invalid');
             var err = document.getElementById('err-phone');
-            if (err) { err.textContent = ''; err.style.visibility = 'hidden'; }
+            if (err) { err.textContent = ''; err.style.display = 'none'; }
         });
     }
 
@@ -1141,7 +1140,7 @@ document.addEventListener('DOMContentLoaded', function() {
         inp.addEventListener('input', function() {
             this.classList.remove('ac-invalid');
             var err = document.getElementById(pair[1]);
-            if (err) { err.textContent = ''; err.style.visibility = 'hidden'; }
+            if (err) { err.textContent = ''; err.style.display = 'none'; }
         });
     });
     var industryEl = document.getElementById('ac-industry');
@@ -1149,7 +1148,7 @@ document.addEventListener('DOMContentLoaded', function() {
         industryEl.addEventListener('change', function() {
             this.classList.remove('ac-invalid');
             var err = document.getElementById('err-industry');
-            if (err) { err.textContent = ''; err.style.visibility = 'hidden'; }
+            if (err) { err.textContent = ''; err.style.display = 'none'; }
         });
     }
 });
@@ -1305,46 +1304,88 @@ function submitAssignClientPlan() {
 }
 
 function openEditClientModal(clientId, name, email, phone) {
+    var cleanPhone = (phone || '').replace(/\D/g, '').slice(0, 10);
     document.getElementById('edit-client-id').value = clientId;
     document.getElementById('edit-client-name').value = name;
     document.getElementById('edit-client-email').value = email;
-    document.getElementById('edit-client-phone').value = (phone || '').replace(/\D/g, '').slice(0, 10);
-    document.getElementById('edit-client-form').action = '{{ route("clients.update", ":id") }}'.replace(':id', clientId);
-    // Clear any prior phone error
-    var errEl = document.getElementById('err-edit-phone');
     var phoneEl = document.getElementById('edit-client-phone');
-    if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+    if (phoneEl) { phoneEl.value = cleanPhone; phoneEl.dataset.original = cleanPhone; }
+    document.getElementById('edit-client-form').action = '{{ route("clients.update", ":id") }}'.replace(':id', clientId);
+    // Clear prior errors
+    var nameEl = document.getElementById('edit-client-name');
+    var nameErr = document.getElementById('err-edit-name');
+    var phoneErr = document.getElementById('err-edit-phone');
+    if (nameEl)  nameEl.classList.remove('ac-invalid');
+    if (nameErr) { nameErr.textContent = ''; nameErr.style.display = 'none'; }
     if (phoneEl) phoneEl.classList.remove('ac-invalid');
+    if (phoneErr){ phoneErr.textContent = ''; phoneErr.style.display = 'none'; }
     document.getElementById('modal-edit-client').classList.add('open');
 }
 
 function validateAndSubmitEditClient() {
-    var phoneEl = document.getElementById('edit-client-phone');
-    var errEl   = document.getElementById('err-edit-phone');
-    var rawPhone = phoneEl ? phoneEl.value.replace(/\D/g, '') : '';
     var ok = true;
-    if (phoneEl) phoneEl.classList.remove('ac-invalid');
-    if (errEl)   { errEl.textContent = ''; errEl.style.display = 'none'; }
-    if (rawPhone && rawPhone.length !== 10) {
-        if (phoneEl) phoneEl.classList.add('ac-invalid');
-        if (errEl)   { errEl.textContent = 'Phone number must be exactly 10 digits.'; errEl.style.display = 'flex'; }
+
+    // Full Name
+    var nameEl  = document.getElementById('edit-client-name');
+    var nameErr = document.getElementById('err-edit-name');
+    var name = nameEl ? nameEl.value.trim() : '';
+    if (nameEl) nameEl.classList.remove('ac-invalid');
+    if (nameErr) { nameErr.textContent = ''; nameErr.style.display = 'none'; }
+    if (!name) {
+        if (nameEl) nameEl.classList.add('ac-invalid');
+        if (nameErr) { nameErr.textContent = 'Full Name is required.'; nameErr.style.display = 'block'; }
+        ok = false;
+    } else if (name.length < 2 || name.length > 100 || !/^[a-zA-Z\s]+$/.test(name)) {
+        if (nameEl) nameEl.classList.add('ac-invalid');
+        if (nameErr) { nameErr.textContent = 'Please enter a valid Full Name.'; nameErr.style.display = 'block'; }
         ok = false;
     }
+
+    // Phone Number
+    var phoneEl  = document.getElementById('edit-client-phone');
+    var phoneErr = document.getElementById('err-edit-phone');
+    var rawPhone = phoneEl ? phoneEl.value.replace(/\D/g, '') : '';
+    var origPhone = phoneEl ? (phoneEl.dataset.original || '') : '';
+    if (phoneEl) phoneEl.classList.remove('ac-invalid');
+    if (phoneErr) { phoneErr.textContent = ''; phoneErr.style.display = 'none'; }
+    if (!rawPhone) {
+        if (phoneEl) phoneEl.classList.add('ac-invalid');
+        if (phoneErr) { phoneErr.textContent = 'Phone number is required.'; phoneErr.style.display = 'block'; }
+        ok = false;
+    } else if (rawPhone.length !== 10) {
+        if (phoneEl) phoneEl.classList.add('ac-invalid');
+        if (phoneErr) { phoneErr.textContent = 'Phone number must be exactly 10 digits.'; phoneErr.style.display = 'block'; }
+        ok = false;
+    } else if (rawPhone === origPhone) {
+        if (phoneEl) phoneEl.classList.add('ac-invalid');
+        if (phoneErr) { phoneErr.textContent = 'New phone number must be different from the current one.'; phoneErr.style.display = 'block'; }
+        ok = false;
+    }
+
     if (ok) document.getElementById('edit-client-form').submit();
 }
 
-// Strip non-digits from edit-client phone as user types
+// Clear edit-client field errors on user input
 (function() {
     document.addEventListener('DOMContentLoaded', function() {
+        var nameEl = document.getElementById('edit-client-name');
+        if (nameEl) {
+            nameEl.addEventListener('input', function() {
+                this.classList.remove('ac-invalid');
+                var err = document.getElementById('err-edit-name');
+                if (err) { err.textContent = ''; err.style.display = 'none'; }
+            });
+        }
         var ph = document.getElementById('edit-client-phone');
-        if (!ph) return;
-        ph.addEventListener('input', function() {
-            var cleaned = this.value.replace(/\D/g, '');
-            if (cleaned !== this.value) this.value = cleaned;
-            this.classList.remove('ac-invalid');
-            var err = document.getElementById('err-edit-phone');
-            if (err) { err.textContent = ''; err.style.display = 'none'; }
-        });
+        if (ph) {
+            ph.addEventListener('input', function() {
+                var cleaned = this.value.replace(/\D/g, '');
+                if (cleaned !== this.value) this.value = cleaned;
+                this.classList.remove('ac-invalid');
+                var err = document.getElementById('err-edit-phone');
+                if (err) { err.textContent = ''; err.style.display = 'none'; }
+            });
+        }
     });
 })();
 
@@ -1598,7 +1639,7 @@ function modalCoErr(id, msg) {
     var el = document.getElementById(id);
     if (!el) return;
     el.textContent = msg || '';
-    el.style.visibility = msg ? 'visible' : 'hidden';
+    el.style.display = msg ? 'block' : 'none';
 }
 function modalCoMark(inputId, invalid) {
     var el = document.getElementById(inputId);

@@ -15,8 +15,7 @@
 .u-last-login.stale      { color:var(--red); }
 .au-err {
     font-size: 11.5px; color: var(--red); margin-top: 2px;
-    min-height: 16px;
-    visibility: hidden;
+    display: none;
 }
 .mf-inp.au-invalid, .mf-sel.au-invalid { border-color: var(--red) !important; }
 </style>
@@ -414,7 +413,7 @@ function validateAndSubmitAddUser() {
         var el = document.getElementById(id);
         if (!el) return;
         el.textContent = msg || '';
-        el.style.visibility = msg ? 'visible' : 'hidden';
+        el.style.display = msg ? 'block' : 'none';
     }
     function auMark(id, invalid) {
         var el = document.getElementById(id);

@@ -409,6 +409,11 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 #pg-loader{position:fixed;top:0;left:0;right:0;height:3px;z-index:99999;pointer-events:none;opacity:0;transition:opacity .2s}
 #pg-loader.on{opacity:1}
 #pg-loader-fill{height:100%;width:0;background:linear-gradient(90deg,var(--orange),#ffb36b);border-radius:0 2px 2px 0;box-shadow:0 0 8px rgba(240,107,33,.55)}
+/* ── PAGE LOADER BLUR OVERLAY ─────────────────────────── */
+#pg-blur{position:fixed;inset:0;z-index:99990;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .25s}
+#pg-blur.on{opacity:1;pointer-events:all}
+#pg-blur-ring{width:46px;height:46px;border:3.5px solid rgba(0,0,0,.08);border-top-color:var(--orange,#f06b21);border-radius:50%;animation:pg-spin .7s linear infinite}
+@keyframes pg-spin{to{transform:rotate(360deg)}}
 /* ── BUTTON LOADING STATE ─────────────────────────────── */
 .btn-loading{pointer-events:none!important;opacity:.75!important}
 .btn-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0;vertical-align:middle}
@@ -427,6 +432,8 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 
 {{-- Global page-load progress bar --}}
 <div id="pg-loader" aria-hidden="true"><div id="pg-loader-fill"></div></div>
+{{-- Global blur overlay with spinner --}}
+<div id="pg-blur" aria-hidden="true"><div id="pg-blur-ring"></div></div>
 
 {{-- Impersonation Banner --}}
 @if(session('impersonating_company'))
@@ -1435,6 +1442,7 @@ function __exitClientImpersonation() {
 (function () {
     var fill = document.getElementById('pg-loader-fill');
     var wrap = document.getElementById('pg-loader');
+    var blur = document.getElementById('pg-blur');
     if (!fill) return;
 
     var _active = false, _pct = 0, _timer = null;
@@ -1445,6 +1453,7 @@ function __exitClientImpersonation() {
         clearInterval(_timer);
         fill.style.transition = 'none'; fill.style.width = '0%';
         wrap.classList.add('on');
+        if (blur) blur.classList.add('on');
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
                 fill.style.transition = 'width .45s ease';
@@ -1464,6 +1473,7 @@ function __exitClientImpersonation() {
         clearInterval(_timer);
         fill.style.transition = 'width .18s ease';
         fill.style.width = '100%';
+        if (blur) blur.classList.remove('on');
         setTimeout(function () {
             wrap.classList.remove('on');
             setTimeout(function () {

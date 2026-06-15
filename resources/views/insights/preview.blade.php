@@ -12,17 +12,16 @@
     margin-bottom:24px; padding-top:4px;
 }
 .ipv-back {
-    display:inline-flex; align-items:center; gap:8px; color:var(--blue,#1a6aa8);
-    font-size:13.5px; font-weight:500; text-decoration:none;
-    padding:9px 16px; border:1px solid var(--blue,#1a6aa8); border-radius:7px;
+    display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 18px;
+    color:#1a6aa8; font-size:13.5px; font-weight:500; text-decoration:none;
+    border:1px solid #1a6aa8; border-radius:7px;
     background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.08); transition:all .2s;
 }
-.ipv-back:hover { background:#eff6ff; text-decoration:none; }
+.ipv-back:hover { background:#eff6ff; color:#1a6aa8; text-decoration:none; }
 .ipv-export-btn {
-    display:inline-flex; align-items:center; gap:8px; color:#fff;
-    font-size:13.5px; font-weight:500; text-decoration:none;
-    padding:9px 20px; border-radius:7px;
-    background:var(--orange,#f06b25); border:1.5px solid var(--orange,#f06b25);
+    display:inline-flex; align-items:center; gap:8px; height:40px; padding:0 20px;
+    color:#fff; font-size:13.5px; font-weight:500; text-decoration:none;
+    border-radius:7px; background:var(--orange,#f06b25); border:1.5px solid var(--orange,#f06b25);
     transition:all .2s;
 }
 .ipv-export-btn:hover { background:#d9571c; text-decoration:none; color:#fff; }

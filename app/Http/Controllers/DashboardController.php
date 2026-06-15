@@ -42,12 +42,15 @@ class DashboardController extends AccountBaseController
 
             // If an admin is impersonating this client, inject the admin bar data
             // so Edit Mode / Save Draft / Publish remain available.
-            if (session('impersonating_client_original_id')) {
+            // impersonating_admin_id() handles token-based (_imp=TOKEN) and legacy session.
+            $adminImpId = impersonating_admin_id();
+
+            if ($adminImpId) {
                 $clientUser = auth()->user();
 
                 // Filter kpiCompanies to only show companies owned by this admin,
                 // so the entity dropdown doesn't include companies from other admins.
-                $adminUser        = User::withoutGlobalScopes()->find(session('impersonating_client_original_id'));
+                $adminUser        = User::withoutGlobalScopes()->find($adminImpId);
                 $adminCompanyId   = $adminUser?->company_id;
                 if ($adminCompanyId) {
                     $adminSubIds = Company::withoutGlobalScopes()
@@ -73,7 +76,11 @@ class DashboardController extends AccountBaseController
                 $this->viewingAsUser          = $clientUser;
                 $this->dashboardPublishStatus = $dashSetting->publish_status ?? 'published';
                 $this->draftHiddenKpis        = $dashSetting->draft_hidden_kpis ?? [];
-                $this->backUrl                = route('clients.stop-impersonating');
+                // Token-based: Exit is handled by JS __exitClientImpersonation().
+                // Session-based (legacy): server route restores the admin session.
+                $this->backUrl = $request->query('_imp')
+                    ? 'javascript:__exitClientImpersonation()'
+                    : route('clients.stop-impersonating');
             }
 
             return view('dashboard.user', $this->data);
@@ -145,12 +152,8 @@ class DashboardController extends AccountBaseController
                 ->whereBetween('updated_at', [$startDate, $endDate])
                 ->count();
 
-            $totalInsightsUsed = Company::withoutGlobalScopes()
-                ->whereIn('id', $reportCompanyIds)
-                ->sum('insights_used');
-
             $this->insightsAvailable = $monthlyInsightLimit > 0
-                ? max(0, $monthlyInsightLimit - (int) $totalInsightsUsed)
+                ? max(0, $monthlyInsightLimit - $this->insightsGenerated)
                 : 0;
         }
 
@@ -485,8 +488,21 @@ class DashboardController extends AccountBaseController
         $this->kpiCompanies = $allPortfolioCompanies->isNotEmpty() ? $allPortfolioCompanies->unique('id')->values() : collect([$company]);
         $this->selectedKpiCompanyId = (int) ($latestAnalyzedReport?->company_id ?: $tenantId);
         $this->hasAnalyzedInsights = (bool) $latestAnalyzedReport;
-        // Executive KPI layout only after at least one analyzed insight (QB alone → classic dashboard).
-        $this->showKpiDashboard = $this->hasAnalyzedInsights;
+        // Show the KPI executive layout (with company dropdown) when insights exist OR when the user
+        // manages multiple companies — so the company selector is always visible for multi-company users.
+        $this->showKpiDashboard = $this->hasAnalyzedInsights || ($this->kpiCompanies->count() > 1);
+        // Timestamp of the most recent analyzed insight — shown as "Last updated" on the dashboard.
+        // Null when no insights exist (falls back to hiding the timestamp gracefully).
+        $this->kpiLastUpdatedAt = $latestAnalyzedReport?->updated_at ?? $latestAnalyzedReport?->created_at;
+
+        // Per-company insights flag used by the client-side company switch to toggle embed/placeholder.
+        $kpiCompanyInsightsMap = [];
+        foreach ($this->kpiCompanies as $__co) {
+            $kpiCompanyInsightsMap[(int) $__co->id] = Report::where('company_id', $__co->id)
+                ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
+                ->exists();
+        }
+        $this->kpiCompanyInsightsMap = $kpiCompanyInsightsMap;
 
         if ($this->showKpiDashboard) {
             $this->plans = collect();

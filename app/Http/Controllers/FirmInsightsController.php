@@ -374,8 +374,7 @@ class FirmInsightsController extends AccountBaseController
             'reportDate' => $report->created_at->format('M d, Y'),
         ]);
 
-        $timestamp = $report->created_at->format('mdyHis');
-        $base      = preg_replace('/[^A-Za-z0-9\-_ ]/', '', $fullTitle) . '_' . $timestamp;
+        $base = Str::slug($fullTitle ?: 'Insight');
 
         return $pdf->download($base . '.pdf');
     }

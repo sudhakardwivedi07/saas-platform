@@ -43,6 +43,8 @@
     const KPI_DATA_URL       = @json($kpiDataUrl);
     const KPI_DETAIL_BASE    = @json(rtrim($kpiDetailBaseUrl, '/'));
     const CLIENT_HIDDEN_KPIS = @json(array_values($clientHiddenKpis ?? []));
+    // Forward _imp token so impersonation AJAX requests authenticate as the client, not the admin.
+    const _IMP_TOKEN = new URLSearchParams(window.location.search).get('_imp');
     // Build detail routes from the context-aware base URL so admin view uses /clients/{id}/kpi-detail/...
     const KPI_DETAIL_ROUTES = (function (base) {
         return {
@@ -134,6 +136,7 @@
         const u = new URL(KPI_DATA_URL, window.location.origin);
         u.searchParams.set('company_id', String(selectedCompanyId ?? ''));
         u.searchParams.set('kpi', kpiType);
+        if (_IMP_TOKEN) u.searchParams.set('_imp', _IMP_TOKEN);
         fetch(u.toString(), { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) { return r.json(); })
             .then(function (response) {
@@ -183,6 +186,15 @@
         const id = parseInt(String(companyId), 10);
         selectedCompanyId = Number.isFinite(id) && id > 0 ? id : null;
         closeKpiDetailDrawer();
+        // Toggle embed vs. placeholder based on whether the selected company has insights.
+        if (window._kpiCoInsights) {
+            const hasInsights = window._kpiCoInsights[id] !== false;
+            const embedWrap  = document.getElementById('kpiEmbedWrap');
+            const noInsights = document.getElementById('kpiNoInsightsPlaceholder');
+            if (embedWrap)  embedWrap.style.display  = hasInsights ? '' : 'none';
+            if (noInsights) noInsights.style.display = hasInsights ? 'none' : '';
+            if (!hasInsights) return;
+        }
         loadKpiDashboard();
     };
 
@@ -246,7 +258,7 @@
                     <div class="kpi-card-inner">
                         <div class="kpi-header">
                             <div class="kpi-left">
-                                <div class="metric-label">Operating cash flow (L12M)</div>
+                                <div class="metric-label">Operating Cash Flow (L12M)</div>
                                 <div class="kpi-hero-value" data-hero>$—</div>
                                 <div class="kpi-left-meta"><span class="kpi-mom-pill">L12M trend</span></div>
                             </div>
@@ -373,7 +385,6 @@
                                 <span class="kpi-rc-title kpi-rc-title--blue">Revenue Concentration</span>
                                 <span class="kpi-counter-sub" data-rc-sub>Top 5 Clients % of Total ARR</span>
                             </div>
-                            <span class="kpi-rc-info" title="Share of revenue (or ARR, when modeled) attributed to each of your top customers. Higher concentration increases customer risk."><i class="fa fa-info-circle"></i></span>
                         </div>
                     </div>
                     <div class="kpi-card-footer kpi-counter-footer">
@@ -387,7 +398,7 @@
                 </div>
             </div>
         </div>
-        <p class="kpi-dash-footer-copy" style="text-align:right;font-size:11px;color:#94a3b8;margin:24px 0 0">© {{ date('Y') }} {{ config('app.name', 'CFO Insights') }}. All rights reserved.</p>
+        <p class="kpi-dash-footer-copy" style="text-align:right;font-size:11px;color:#94a3b8;margin:24px 0 0">© {{ date('Y') }} {{ str_replace('_', ' ', $appName ?? config('app.name', 'White Label SaaS')) }}. All rights reserved.</p>
         </div>`;
 
         bindKpiCardNav();
@@ -694,6 +705,7 @@
             const u = new URL(KPI_DATA_URL, window.location.origin);
             u.searchParams.set('company_id', String(selectedCompanyId ?? ''));
             u.searchParams.set('kpi', kpiType);
+            if (_IMP_TOKEN) u.searchParams.set('_imp', _IMP_TOKEN);
             const r = await fetch(u.toString(), { headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
             if (!r.ok) return;
             const response = await r.json();

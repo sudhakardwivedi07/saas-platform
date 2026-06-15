@@ -109,6 +109,31 @@ if (!function_exists('tenant_url')) {
     }
 }
 
+if (!function_exists('impersonating_admin_id')) {
+    /**
+     * Return the admin's user ID when an admin is currently impersonating a client.
+     *
+     * Supports both mechanisms:
+     *  - Token-based (ImpersonateClientViaToken): ?_imp=TOKEN in the request URL,
+     *    payload stored in cache under 'imp_view_{token}'.
+     *  - Session-based (legacy): 'impersonating_client_original_id' in the session.
+     *
+     * Returns null when no impersonation is active.
+     */
+    function impersonating_admin_id(): ?int
+    {
+        $token = request()->query('_imp');
+        if ($token) {
+            $data = \Illuminate\Support\Facades\Cache::get('imp_view_' . $token);
+            if ($data && isset($data['admin_id'])) {
+                return (int) $data['admin_id'];
+            }
+        }
+        $id = session('impersonating_client_original_id');
+        return $id ? (int) $id : null;
+    }
+}
+
 if (!function_exists('active_date_format')) {
     /**
      * Resolve the effective date format for the current request.

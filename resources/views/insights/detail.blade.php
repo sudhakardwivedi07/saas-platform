@@ -967,13 +967,6 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
                     confirmButtonText: 'Got it',
                     confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
                     allowOutsideClick: !redirectUrl,
-                    didOpen: (popup) => {
-                        const actions = popup.querySelector('.swal2-actions');
-                        if (actions) { actions.style.cssText = 'width:100%;padding:0 24px;display:flex;'; }
-                        const b = popup.querySelector('.swal2-confirm');
-                        const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
-                        if (b) { b.style.cssText = `flex:1;width:100%;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;background:${brandColor};border:none;color:#fff;cursor:pointer;`; }
-                    },
                 }).then(() => {
                     if (redirectUrl) {
                         window.location.href = redirectUrl + IMP_PARAM;

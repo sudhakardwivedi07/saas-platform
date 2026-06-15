@@ -195,8 +195,8 @@ class AccountController extends AccountBaseController
         $user = auth()->user();
 
         $request->validate([
-            'name'   => 'required|string|max:255',
-            'mobile' => 'nullable|string|max:30',
+            'name'   => 'required|string|max:100',
+            'mobile' => ['nullable', 'digits:10'],
         ]);
 
         $user->update([
@@ -204,7 +204,9 @@ class AccountController extends AccountBaseController
             'mobile' => $request->mobile,
         ]);
 
-        return back()->with('success', 'Profile updated successfully.');
+        $impToken    = $request->query('_imp');
+        $redirectUrl = route('account.index') . ($impToken ? '?_imp=' . $impToken : '');
+        return redirect()->to($redirectUrl)->with('success', 'Profile updated successfully.');
     }
 
     public function updatePassword(Request $request)
@@ -222,6 +224,8 @@ class AccountController extends AccountBaseController
 
         $user->update(['password' => Hash::make($request->password)]);
 
-        return back()->with('success', 'Password changed successfully.');
+        $impToken    = $request->query('_imp');
+        $redirectUrl = route('account.index') . ($impToken ? '?_imp=' . $impToken : '');
+        return redirect()->to($redirectUrl)->with('success', 'Password changed successfully.');
     }
 }

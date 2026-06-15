@@ -23,9 +23,15 @@ class ClientCompanyController extends AccountBaseController
     private function companyOwnerKeyForCurrentUser(): int
     {
         $user = auth()->user();
-        return $user->hasAnyRole(['admin', 'manager'])
-            ? (int) $user->company_id
-            : (int) $user->id;
+        if ($user->hasAnyRole(['admin', 'manager'])) {
+            return (int) $user->company_id;
+        }
+        // Client users: attribute new companies to the admin's company so they appear
+        // in the admin's Companies tab (which queries by created_by = admin_company_id).
+        $adminCompanyId = Company::withoutGlobalScopes()
+            ->where('id', $user->company_id)
+            ->value('created_by');
+        return $adminCompanyId ? (int) $adminCompanyId : (int) $user->id;
     }
 
     private function resolveFallbackPackageId(): ?int
@@ -173,11 +179,22 @@ class ClientCompanyController extends AccountBaseController
         $company->update($safeData);
 
         $isClientUserFlow = auth()->user()->hasRole('client');
-        $successRedirect  = $isClientUserFlow
-            ? redirect()->route('my-companies.index')
-            : redirect()->to(route('clients.index') . '?tab=companies');
 
-        return $successRedirect->with('success', "Company '{$company->company_name}' updated successfully!");
+        if ($isClientUserFlow) {
+            $indexUrl = route('my-companies.index');
+            if ($request->query('_imp')) {
+                $indexUrl .= '?_imp=' . $request->query('_imp');
+            }
+            $successRedirect = redirect()->to($indexUrl);
+        } elseif ($request->filled('_from_client_id')) {
+            $successRedirect = redirect()->to(
+                route('clients.show', $request->integer('_from_client_id')) . '?tab=companies'
+            );
+        } else {
+            $successRedirect = redirect()->to(route('clients.index') . '?tab=companies');
+        }
+
+        return $successRedirect->with('success', 'Company <strong>' . e($company->company_name) . '</strong> updated successfully!');
     }
 
     public function destroy(int $id)
@@ -250,6 +267,18 @@ class ClientCompanyController extends AccountBaseController
         $setting      = global_setting();
         $createdByKey = $this->companyOwnerKeyForCurrentUser();
 
+        // Pre-validate existing client ownership BEFORE creating the company so that
+        // a 403 abort cannot leave an orphaned company record in the database.
+        $existingUser = null;
+        if (!$isClientUserFlow && $adminType === 'existing') {
+            $existingUser = User::findOrFail($request->existing_client_id);
+            abort_unless(
+                (int) ($existingUser->company?->created_by) === (int) $companyId,
+                403,
+                'You cannot assign this user.'
+            );
+        }
+
         Log::info('ClientAdmin company creation', ['created_by' => $createdByKey]);
 
         // Auto-generate a unique subdomain from the company name
@@ -279,12 +308,7 @@ class ClientCompanyController extends AccountBaseController
         $newUser = null;
         if (!$isClientUserFlow) {
             if ($adminType === 'existing') {
-                $existingUser = User::findOrFail($request->existing_client_id);
-                abort_unless(
-                    (int) ($existingUser->company?->created_by) === (int) $companyId,
-                    403,
-                    'You cannot assign this user.'
-                );
+                // $existingUser already validated and fetched above
                 // Link the existing user to the new company via pivot WITHOUT changing their
                 // primary company_id — preserving their association with existing companies.
                 $existingUser->managedCompanies()->syncWithoutDetaching([
@@ -331,11 +355,17 @@ class ClientCompanyController extends AccountBaseController
 
         $this->activateCompany($company, $newUser, null, $setting);
 
-        $storeRedirect = $isClientUserFlow
-            ? redirect()->route('my-companies.index')
-            : redirect()->to(route('clients.index') . '?tab=companies');
+        if ($isClientUserFlow) {
+            $indexUrl = route('my-companies.index');
+            if ($request->query('_imp')) {
+                $indexUrl .= '?_imp=' . $request->query('_imp');
+            }
+            $storeRedirect = redirect()->to($indexUrl);
+        } else {
+            $storeRedirect = redirect()->to(route('clients.index') . '?tab=companies');
+        }
 
-        return $storeRedirect->with('success', "Company '{$company->company_name}' created successfully!");
+        return $storeRedirect->with('success', 'Company <strong>' . e($company->company_name) . '</strong> created successfully!');
     }
 
     // ── Called by Stripe after successful payment ────────────────────────────

@@ -13,6 +13,15 @@
     margin-top: 4px;
 }
 .mf-inp.ac-invalid { border-color: var(--red, #ef4444) !important; }
+.co-err {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--red, #ef4444);
+    margin-top: 4px;
+}
+.co-invalid { border-color: var(--red, #ef4444) !important; }
 </style>
 @endpush
 
@@ -218,7 +227,14 @@ $totalCompanies = $allClientCompanies->count();
                             </td>
                             <td>
                                 <div style="display:flex;align-items:center;gap:8px;">
-                                    <a href="{{ route('my-companies.edit', $company->id) }}" class="btn btn-ghost btn-xs">Edit</a>
+                                    <button type="button" class="btn btn-ghost btn-xs"
+                                        onclick="openShowEditCoModal(
+                                            {{ $company->id }},
+                                            '{{ addslashes($company->company_name) }}',
+                                            '{{ addslashes($company->company_email ?? '') }}',
+                                            '{{ addslashes($company->industry_type ?? '') }}',
+                                            '{{ addslashes($company->entity_type ?? '') }}'
+                                        )">Edit</button>
                                     <form method="POST" action="{{ route('my-companies.destroy', $company->id) }}" onsubmit="return confirmCompanyDelete(this);">
                                         @csrf
                                         @method('DELETE')
@@ -286,6 +302,60 @@ $totalCompanies = $allClientCompanies->count();
     </div>
 </div>
 
+{{-- Edit Company Modal (admin client detail view) --}}
+<div class="modal-overlay" id="modal-show-edit-co" onclick="if(event.target===this)closeShowEditCoModal()">
+    <div class="modal-box" style="width:560px;max-height:90vh;overflow-y:auto;padding-bottom:0">
+        <button class="modal-close" onclick="closeShowEditCoModal()">&times;</button>
+        <div class="modal-title">Edit Company</div>
+        <div class="modal-sub">Update the details for this company.</div>
+        <form method="POST" id="modal-show-edit-co-form" novalidate>
+            @csrf
+            <input type="hidden" name="_from_client_id" value="{{ $client->id }}">
+
+            <div class="mf-field">
+                <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
+                <input type="text" name="company_name" id="show-edit-co-name" class="mf-inp" placeholder="Acme Inc." maxlength="100">
+                <div id="show-edit-err-co-name" class="co-err" style="display:none"></div>
+            </div>
+
+            <div class="form-2col">
+                <div class="mf-field">
+                    <label class="mf-label">Industry Type</label>
+                    <select name="industry_type" id="show-edit-co-industry" class="mf-sel" style="height:38px">
+                        <option value="">Select Industry Type</option>
+                        @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
+                        <option value="{{ $ind }}">{{ $ind }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="mf-field">
+                    <label class="mf-label">Entity Type</label>
+                    <select name="entity_type" id="show-edit-co-entity" class="mf-sel" style="height:38px">
+                        <option value="">Select Entity Type</option>
+                        @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
+                        <option value="{{ $ent }}">{{ $ent }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="mf-field" style="margin-bottom:0">
+                <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
+                <input type="email" name="company_email" id="show-edit-co-email" class="mf-inp" placeholder="info@acme.com" maxlength="100">
+                <div id="show-edit-err-co-email" class="co-err" style="display:none"></div>
+            </div>
+
+            <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;border-top:1px solid var(--border);margin-top:20px">
+                <button type="button" class="btn btn-ghost btn-sm" onclick="closeShowEditCoModal()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitShowEditCo()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 {{-- Edit Client Modal --}}
 <div class="modal-overlay" id="modal-edit-client" onclick="if(event.target===this)this.classList.remove('open')">
     <div class="modal-box" style="width:480px">
@@ -347,6 +417,16 @@ function validateAndSubmitEditClient() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    var tabParam = new URLSearchParams(window.location.search).get('tab');
+    if (tabParam && document.getElementById('tab-' + tabParam)) {
+        document.querySelectorAll('#clientTabBar .tab-btn').forEach(function(b) {
+            var match = b.getAttribute('onclick') || '';
+            if (match.indexOf("'" + tabParam + "'") !== -1) b.click();
+        });
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
     var ph = document.getElementById('edit-client-phone');
     if (!ph) return;
     ph.addEventListener('input', function() {
@@ -380,6 +460,94 @@ function saveNotes() {
         }
     });
 }
+
+function _showCoErr(id, msg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg;
+    el.style.display = msg ? 'flex' : 'none';
+}
+function _showCoMark(id, hasErr) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('co-invalid', hasErr);
+}
+
+function openShowEditCoModal(id, name, email, industry, entity) {
+    var updateUrl = '{{ route("my-companies.update", ":id") }}'.replace(':id', id);
+    document.getElementById('modal-show-edit-co-form').action = updateUrl;
+    document.getElementById('show-edit-co-name').value  = name;
+    document.getElementById('show-edit-co-email').value = email;
+
+    var indSel = document.getElementById('show-edit-co-industry');
+    for (var i = 0; i < indSel.options.length; i++) {
+        indSel.options[i].selected = indSel.options[i].value === industry;
+    }
+    var entSel = document.getElementById('show-edit-co-entity');
+    for (var i = 0; i < entSel.options.length; i++) {
+        entSel.options[i].selected = entSel.options[i].value === entity;
+    }
+
+    ['show-edit-err-co-name','show-edit-err-co-email'].forEach(function(eid) { _showCoErr(eid, ''); });
+    ['show-edit-co-name','show-edit-co-email'].forEach(function(fid) { _showCoMark(fid, false); });
+
+    document.getElementById('modal-show-edit-co').classList.add('open');
+    setTimeout(function() { document.getElementById('show-edit-co-name').focus(); }, 80);
+}
+
+function closeShowEditCoModal() {
+    document.getElementById('modal-show-edit-co').classList.remove('open');
+}
+
+function validateAndSubmitShowEditCo() {
+    var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
+    var ok = true;
+
+    var nameVal = (document.getElementById('show-edit-co-name').value || '').trim();
+    if (!nameVal) {
+        _showCoErr('show-edit-err-co-name', 'Company Name is required.');
+        _showCoMark('show-edit-co-name', true);
+        ok = false;
+    } else {
+        _showCoErr('show-edit-err-co-name', '');
+        _showCoMark('show-edit-co-name', false);
+    }
+
+    var emailVal = (document.getElementById('show-edit-co-email').value || '').trim();
+    if (!emailVal) {
+        _showCoErr('show-edit-err-co-email', 'Company Email is required.');
+        _showCoMark('show-edit-co-email', true);
+        ok = false;
+    } else if (!emailRx.test(emailVal)) {
+        _showCoErr('show-edit-err-co-email', 'Enter a valid email address.');
+        _showCoMark('show-edit-co-email', true);
+        ok = false;
+    } else {
+        _showCoErr('show-edit-err-co-email', '');
+        _showCoMark('show-edit-co-email', false);
+    }
+
+    if (ok) { document.getElementById('modal-show-edit-co-form').submit(); }
+}
+
+// Real-time validation clearing
+(function() {
+    var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
+    document.addEventListener('DOMContentLoaded', function() {
+        var nameEl = document.getElementById('show-edit-co-name');
+        if (nameEl) {
+            nameEl.addEventListener('input', function() {
+                if (this.value.trim()) { _showCoErr('show-edit-err-co-name', ''); _showCoMark('show-edit-co-name', false); }
+            });
+        }
+        var emailEl = document.getElementById('show-edit-co-email');
+        if (emailEl) {
+            emailEl.addEventListener('input', function() {
+                var v = this.value.trim();
+                if (!v || emailRx.test(v)) { _showCoErr('show-edit-err-co-email', ''); _showCoMark('show-edit-co-email', false); }
+            });
+        }
+    });
+})();
 
 function confirmCompanyDelete(formEl) {
     Swal.fire({

@@ -663,7 +663,7 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
     <div id="kpiNoInsightsPlaceholder" style="{{ $_initHasInsights ? 'display:none;' : '' }}padding:40px 24px;text-align:center;background:#fff;border:1px solid #e5e7eb;border-radius:10px;margin-top:10px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5" width="40" height="40" style="margin-bottom:12px"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
         <h3 style="margin:0 0 6px;font-size:17px;font-weight:700;color:#111827">No Insights Yet</h3>
-        <p style="margin:0;font-size:13px;color:#6b7280">No financial insights have been generated for this company. Upload reports or connect QuickBooks to get started.</p>
+        <p style="margin:0;font-size:13px;color:#6b7280">No financial insights have been generated for this company. Connect QuickBooks to get started.</p>
     </div>
     <div id="kpiEmbedWrap" style="{{ $_initHasInsights ? '' : 'display:none;' }}">
     @include('dashboard.partials.kpi-dashboard-embed', [

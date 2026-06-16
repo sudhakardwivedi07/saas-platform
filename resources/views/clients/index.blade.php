@@ -650,7 +650,7 @@
                         <div id="modal-err-co-admin-name" class="co-err"></div>
                     </div>
                     <div class="mf-field">
-                        <label class="mf-label">Email <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Email ID <span style="color:var(--red)">*</span></label>
                         <input type="email" name="admin_email" id="modal-co-admin-email" class="mf-inp"
                                placeholder="jane@acme.com" value="{{ old('admin_email') }}" maxlength="100">
                         <div id="modal-err-co-admin-email" class="co-err"></div>
@@ -737,8 +737,7 @@
             <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;margin:0 0 0;border-top:1px solid var(--border);margin-top:20px">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="closeAddCompanyModal()">Cancel</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitCompanyModal()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-                    Create Company
+                    Add Company
                 </button>
             </div>
         </form>
@@ -1572,11 +1571,16 @@ function validateAndSubmitEditCompanyModal() {
     var ok = true;
     var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
+    var editCoNameRx = /^[a-zA-Z0-9\s.,&'\-]+$/;
     var nameEl = document.getElementById('edit-co-company-name');
     var nameVal = nameEl ? nameEl.value.trim() : '';
     var nameErr = document.getElementById('edit-err-co-name');
     if (!nameVal) {
         if (nameErr) { nameErr.textContent = 'Company Name is required.'; nameErr.style.display = 'flex'; }
+        if (nameEl) nameEl.classList.add('co-invalid');
+        ok = false;
+    } else if (!editCoNameRx.test(nameVal)) {
+        if (nameErr) { nameErr.textContent = "Only letters, numbers, spaces and . , & - ' are allowed."; nameErr.style.display = 'flex'; }
         if (nameEl) nameEl.classList.add('co-invalid');
         ok = false;
     } else {
@@ -1663,12 +1667,15 @@ function validateAndSubmitCompanyModal() {
     var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
     // Company Name
+    var coNameRx = /^[a-zA-Z0-9\s.,&'\-]+$/;
     var nameEl = document.getElementById('modal-company-name');
     var nameVal = nameEl ? nameEl.value.trim() : '';
     if (!nameVal) {
         modalCoErr('modal-err-co-name', 'Company Name is required.'); modalCoMark('modal-company-name', true); ok = false;
     } else if (nameVal.length < 2) {
         modalCoErr('modal-err-co-name', 'Company Name must be at least 2 characters.'); modalCoMark('modal-company-name', true); ok = false;
+    } else if (!coNameRx.test(nameVal)) {
+        modalCoErr('modal-err-co-name', "Only letters, numbers, spaces and . , & - ' are allowed."); modalCoMark('modal-company-name', true); ok = false;
     } else {
         modalCoErr('modal-err-co-name', ''); modalCoMark('modal-company-name', false);
     }
@@ -1787,6 +1794,32 @@ function validateAndSubmitCompanyModal() {
     // Add Company modal fields
     clearOnInput('modal-company-name', 'modal-err-co-name');
     clearOnEmailInput('modal-co-email', 'modal-err-co-email');
+
+    // Real-time company name character filtering (Add modal)
+    var addCoNameEl = document.getElementById('modal-company-name');
+    if (addCoNameEl) {
+        addCoNameEl.addEventListener('input', function() {
+            var pos = this.selectionStart;
+            var cleaned = this.value.replace(/[^a-zA-Z0-9\s.,&'\-]/g, '');
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+                this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+            }
+        });
+    }
+
+    // Real-time company name character filtering (Edit modal)
+    var editCoNameEl = document.getElementById('edit-co-company-name');
+    if (editCoNameEl) {
+        editCoNameEl.addEventListener('input', function() {
+            var pos = this.selectionStart;
+            var cleaned = this.value.replace(/[^a-zA-Z0-9\s.,&'\-]/g, '');
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+                this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+            }
+        });
+    }
     clearOnInput('modal-co-admin-name', 'modal-err-co-admin-name');
     clearOnEmailInput('modal-co-admin-email', 'modal-err-co-admin-email');
 

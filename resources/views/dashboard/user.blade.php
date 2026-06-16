@@ -94,6 +94,12 @@
 .cdb-company-name {
     font-size: 13px;
     color: rgba(255,255,255,.6);
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: bottom;
 }
 .cdb-sep { color: rgba(255,255,255,.3); font-size: 12px; }
 .cdb-status-badge {
@@ -191,7 +197,7 @@
         <div class="cdb-client-info">
             <span class="cdb-client-name">{{ $adminViewUser->name }}</span>
             <span class="cdb-sep">·</span>
-            <span class="cdb-company-name">{{ $adminCompany?->company_name ?? '' }}</span>
+            <span class="cdb-company-name" title="{{ $adminCompany?->company_name ?? '' }}">{{ $adminCompany?->company_name ?? '' }}</span>
             <span id="cdbStatusBadge" class="cdb-status-badge cdb-status-{{ $adminPubStatus }}">{{ ucfirst($adminPubStatus) }}</span>
         </div>
     </div>

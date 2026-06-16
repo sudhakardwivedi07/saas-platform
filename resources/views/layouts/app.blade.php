@@ -333,6 +333,9 @@ tbody tr:hover td{background:#fafcff}
 /* ── DATATABLES ───────────────────────────────────────── */
 table.dataTable{border-collapse:collapse!important;width:100%!important}
 table.dataTable thead th{cursor:pointer;padding:9px 14px!important;font-size:10.5px!important;font-weight:500!important;text-transform:uppercase!important;letter-spacing:.06em!important;color:var(--text-3)!important;background:#fafbfc!important;border-bottom:1px solid var(--border)!important;border-top:none!important;white-space:nowrap}
+table.dataTable thead th.sorting,table.dataTable thead th.sorting_asc,table.dataTable thead th.sorting_desc,table.dataTable thead th.sorting_asc_disabled,table.dataTable thead th.sorting_desc_disabled{padding-right:26px!important}
+.cell-trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;display:block}
+.cell-trunc-sm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;display:block}
 table.dataTable tbody td{padding:11px 14px!important;font-size:13px!important;border-bottom:1px solid var(--border)!important;border-top:none!important;vertical-align:middle!important}
 table.dataTable tbody tr:last-child td{border-bottom:none!important}
 table.dataTable tbody tr:hover td{background:#fafcff!important}
@@ -906,7 +909,19 @@ function drOpen(id) {
     });
     var isOpen = menu.classList.toggle('open');
     if (field) { isOpen ? field.classList.add('open') : field.classList.remove('open'); }
-    if (!isOpen) drHideCalendar(id);
+    if (!isOpen) { drHideCalendar(id); return; }
+
+    // Use position:fixed to avoid being clipped by overflow:hidden ancestors
+    if (field) {
+        var rect   = field.getBoundingClientRect();
+        var menuW  = 220;
+        var left   = rect.left;
+        if (left + menuW > window.innerWidth - 8) left = Math.max(8, window.innerWidth - menuW - 8);
+        menu.style.position = 'fixed';
+        menu.style.top      = (rect.bottom + 4) + 'px';
+        menu.style.left     = left + 'px';
+        menu.style.right    = 'auto';
+    }
 }
 
 // Handle preset or "Custom Range" selection
@@ -984,7 +999,7 @@ function drSetLabel(id, from, to) {
         if (textEl) { textEl.textContent = drFmt(from) + ' to ' + drFmt(to); textEl.classList.add('has-val'); }
         if (field)  field.classList.add('has-val');
     } else {
-        if (textEl) { textEl.textContent = 'Start Date To End Date'; textEl.classList.remove('has-val'); }
+        if (textEl) { textEl.textContent = 'Start Date – End Date'; textEl.classList.remove('has-val'); }
         if (field)  field.classList.remove('has-val');
     }
 }

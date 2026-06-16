@@ -56,7 +56,7 @@
             <div class="dr-wrap" id="coi-dr">
                 <div class="dr-field" onclick="drOpen('coi-dr')">
                     <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <span class="dr-text" id="coi-dr-text">Start Date To End Date</span>
+                    <span class="dr-text" id="coi-dr-text">Start Date – End Date</span>
                     <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('coi-dr')" title="Clear date filter">&#x2715;</button>
                 </div>
                 <div class="dr-menu" id="coi-dr-menu">
@@ -130,13 +130,13 @@
                     <td>
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:36px;height:36px;border-radius:9px;background:{{ $color }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">{{ $initials }}</div>
-                            <div>
-                                <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $co->company_name }}</div>
+                            <div style="min-width:0">
+                                <div class="cell-trunc" style="font-weight:500;font-size:13px;color:var(--text-1)" title="{{ $co->company_name }}">{{ $co->company_name }}</div>
                                 @if($co->subdomain)
-                                <div style="font-size:11.5px;color:var(--text-3)">{{ $co->subdomain }}.{{ config('tenancy.root_domain', 'yourdomain.com') }}</div>
+                                <div class="cell-trunc-sm" style="font-size:11.5px;color:var(--text-3)">{{ $co->subdomain }}.{{ config('tenancy.root_domain', 'yourdomain.com') }}</div>
                                 @endif
                                 @if($co->company_email)
-                                <div style="font-size:11px;color:var(--text-3)">{{ $co->company_email }}</div>
+                                <div class="cell-trunc-sm" style="font-size:11px;color:var(--text-3)" title="{{ $co->company_email }}">{{ $co->company_email }}</div>
                                 @endif
                             </div>
                         </div>

@@ -49,19 +49,23 @@ class SupportController extends AccountBaseController
 
         $companyId = company()?->id ?? auth()->user()->company_id;
 
-        $attachmentPath = null;
+        $attachmentPath         = null;
+        $attachmentOriginalName = null;
         if ($request->hasFile('attachment')) {
-            $attachmentPath = $request->file('attachment')->store('support-attachments', 'public');
+            $file                   = $request->file('attachment');
+            $attachmentOriginalName = $file->getClientOriginalName();
+            $attachmentPath         = $file->store('support-attachments', 'public');
         }
 
         SupportTicket::create([
-            'company_id' => $companyId,
-            'user_id'    => auth()->id(),
-            'subject'    => $request->subject,
-            'priority'   => $request->priority,
-            'message'    => $request->message,
-            'attachment' => $attachmentPath,
-            'status'     => 'open',
+            'company_id'              => $companyId,
+            'user_id'                 => auth()->id(),
+            'subject'                 => $request->subject,
+            'priority'                => $request->priority,
+            'message'                 => $request->message,
+            'attachment'              => $attachmentPath,
+            'attachment_original_name'=> $attachmentOriginalName,
+            'status'                  => 'open',
         ]);
 
         return back()->with('ticket_success', true);
@@ -74,7 +78,7 @@ class SupportController extends AccountBaseController
         $attachmentName = null;
         $attachmentUrl  = null;
         if ($ticket->attachment) {
-            $attachmentName = basename($ticket->attachment);
+            $attachmentName = $ticket->attachment_original_name ?? basename($ticket->attachment);
             $attachmentUrl  = asset('storage/' . $ticket->attachment);
         }
 

@@ -72,7 +72,7 @@
             <div class="dr-wrap" id="qb-dr">
                 <div class="dr-field" onclick="drOpen('qb-dr')">
                     <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <span class="dr-text" id="qb-dr-text">Start Date To End Date</span>
+                    <span class="dr-text" id="qb-dr-text">Start Date – End Date</span>
                     <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('qb-dr')" title="Clear date filter">&#x2715;</button>
                 </div>
                 <div class="dr-menu" id="qb-dr-menu">
@@ -126,15 +126,15 @@
                     @endphp
                     <tr>
                         <td data-order="{{ $conn->created_at?->timestamp ?? $company->created_at?->timestamp ?? 0 }}">
-                            <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $company->company_name }}</div>
+                            <div class="cell-trunc" style="font-weight:500;font-size:13px;color:var(--text-1)" title="{{ $company->company_name }}">{{ $company->company_name }}</div>
                         </td>
                         @if($showPartnerColumn)
                         <td>
-                            <div style="font-size:13px;color:var(--text-2)">{{ $company->creatorCompany?->company_name ?? '—' }}</div>
+                            <div class="cell-trunc" style="font-size:13px;color:var(--text-2)" title="{{ $company->creatorCompany?->company_name ?? '' }}">{{ $company->creatorCompany?->company_name ?? '—' }}</div>
                         </td>
                         @endif
                         <td>
-                            <div style="font-size:13px;color:var(--text-1)">{{ $clientUser?->name ?? '—' }}</div>
+                            <div class="cell-trunc" style="font-size:13px;color:var(--text-1)" title="{{ $clientUser?->name ?? '' }}">{{ $clientUser?->name ?? '—' }}</div>
                         </td>
                         <td>
                             <div style="font-size:13px;color:var(--text-2)">QuickBooks Online</div>
@@ -179,11 +179,11 @@
                     {{-- No connection yet --}}
                     <tr>
                         <td data-order="{{ $company->created_at?->timestamp ?? 0 }}">
-                            <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $company->company_name }}</div>
+                            <div class="cell-trunc" style="font-weight:500;font-size:13px;color:var(--text-1)" title="{{ $company->company_name }}">{{ $company->company_name }}</div>
                         </td>
                         @if($showPartnerColumn)
                         <td>
-                            <div style="font-size:13px;color:var(--text-2)">{{ $company->creatorCompany?->company_name ?? '—' }}</div>
+                            <div class="cell-trunc" style="font-size:13px;color:var(--text-2)" title="{{ $company->creatorCompany?->company_name ?? '' }}">{{ $company->creatorCompany?->company_name ?? '—' }}</div>
                         </td>
                         @endif
                         <td>

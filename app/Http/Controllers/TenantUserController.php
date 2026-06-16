@@ -41,7 +41,7 @@ class TenantUserController extends AccountBaseController
         abort_403(!auth()->user()->can('create_users'));
 
         $request->validate([
-            'name'      => 'required|string|max:255',
+            'name'      => 'required|string|min:2|max:100|regex:/^[a-zA-Z\s\'\-\.]+$/',
             'email'     => 'required|email|max:255|unique:users,email',
             'role'      => 'required|string|exists:roles,name',
             'job_title' => 'nullable|string|max:100',
@@ -113,7 +113,7 @@ class TenantUserController extends AccountBaseController
         $user = User::where('company_id', auth()->user()->company_id)->findOrFail($id);
 
         $request->validate([
-            'name'     => 'required|string|max:255',
+            'name'     => 'required|string|min:2|max:100|regex:/^[a-zA-Z\s\'\-\.]+$/',
             'email'    => 'required|email|max:255|unique:users,email,' . $id,
             'role'     => 'required|string|exists:roles,name',
             'password' => 'nullable|string|min:8',

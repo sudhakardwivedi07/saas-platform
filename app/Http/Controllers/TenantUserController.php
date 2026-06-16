@@ -70,6 +70,8 @@ class TenantUserController extends AccountBaseController
         }
 
         $companyName = auth()->user()->company?->company_name ?? config('app.name');
+        $company     = auth()->user()->company;
+        $portalUrl   = $company?->domainUrlFor('login') ?? (env('APP_URL') . '/login');
         $plainPassword = $request->password;
 
         $user = User::create([
@@ -91,7 +93,7 @@ class TenantUserController extends AccountBaseController
                 '{{password}}'     => $plainPassword,
                 '{{company_name}}' => $companyName,
                 '{{role}}'         => ucfirst($request->role),
-                '{{portal_url}}'   => env('APP_URL').'/login',
+                '{{portal_url}}'   => $portalUrl,
             ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('User invitation email failed: ' . $e->getMessage());

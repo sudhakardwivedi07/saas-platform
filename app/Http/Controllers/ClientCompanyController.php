@@ -365,7 +365,7 @@ class ClientCompanyController extends AccountBaseController
             $storeRedirect = redirect()->to(route('clients.index') . '?tab=companies');
         }
 
-        return $storeRedirect->with('success', 'Company <strong>' . e($company->company_name) . '</strong> created successfully!');
+        return $storeRedirect->with('success', 'Company <strong>' . e($company->company_name) . '</strong> added successfully!');
     }
 
     // ── Called by Stripe after successful payment ────────────────────────────

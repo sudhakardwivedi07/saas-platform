@@ -7,7 +7,7 @@
 <div class="ph">
     <div class="ph-left">
         <h1>Settings</h1>
-        <p>Configure Email, SMS, QuickBooks, Insight Limits, and Roles &amp; Permissions settings</p>
+        <p>Configure Email, SMS, QuickBooks, and Roles &amp; Permissions settings</p>
     </div>
 </div>
 

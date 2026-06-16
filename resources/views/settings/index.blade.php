@@ -152,36 +152,36 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             <input type="hidden" name="driver" value="smtp">
             <div class="form-2col">
                 <div class="f-group">
-                    <label class="f-label">From Name</label>
+                    <label class="f-label">From Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="from_name" class="f-inp" placeholder="My Platform" value="{{ $smtpSetting->from_name ?? '' }}">
                 </div>
                 <div class="f-group">
-                    <label class="f-label">From Email</label>
+                    <label class="f-label">From Email <span style="color:var(--red)">*</span></label>
                     <input type="email" name="from_email" class="f-inp" placeholder="no-reply@example.com" value="{{ $smtpSetting->from_email ?? '' }}">
                 </div>
             </div>
             <div class="form-2col">
                 <div class="f-group">
-                    <label class="f-label">SMTP Host</label>
+                    <label class="f-label">SMTP Host <span style="color:var(--red)">*</span></label>
                     <input type="text" name="host" class="f-inp" placeholder="smtp.mailgun.org" value="{{ $smtpSetting->host ?? '' }}">
                 </div>
                 <div class="f-group">
-                    <label class="f-label">SMTP Port</label>
+                    <label class="f-label">SMTP Port <span style="color:var(--red)">*</span></label>
                     <input type="number" name="port" class="f-inp" placeholder="587" value="{{ $smtpSetting->port ?? '587' }}">
                 </div>
             </div>
             <div class="form-2col">
                 <div class="f-group">
-                    <label class="f-label">Username</label>
+                    <label class="f-label">Username <span style="color:var(--red)">*</span></label>
                     <input type="text" name="username" class="f-inp" placeholder="smtp_user" value="{{ $smtpSetting->username ?? '' }}">
                 </div>
                 <div class="f-group">
-                    <label class="f-label">Password</label>
+                    <label class="f-label">Password <span style="color:var(--red)">*</span></label>
                     <input type="password" name="password" class="f-inp" placeholder="••••••••" autocomplete="new-password">
                 </div>
             </div>
             <div class="f-group" style="max-width:220px">
-                <label class="f-label">Encryption</label>
+                <label class="f-label">Encryption <span style="color:var(--red)">*</span></label>
                 <select name="encryption" class="f-sel">
                     <option value="tls" {{ ($smtpSetting->encryption ?? 'tls') === 'tls' ? 'selected' : '' }}>TLS</option>
                     <option value="ssl" {{ ($smtpSetting->encryption ?? '') === 'ssl' ? 'selected' : '' }}>SSL</option>
@@ -218,15 +218,15 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             @csrf
             <input type="hidden" name="provider" value="twilio">
             <div class="f-group">
-                <label class="f-label">Account SID</label>
+                <label class="f-label">Account SID <span style="color:var(--red)">*</span></label>
                 <input type="text" name="account_sid" class="f-inp" placeholder="ACxxxxxxxxxxxxxxxx" value="{{ $smsSetting->account_sid ?? '' }}">
             </div>
             <div class="f-group">
-                <label class="f-label">Auth Token</label>
+                <label class="f-label">Auth Token <span style="color:var(--red)">*</span></label>
                 <input type="password" name="auth_token" class="f-inp" placeholder="••••••••••••••••••••" autocomplete="new-password" value="{{ $smsSetting->auth_token ?? '' }}">
             </div>
             <div class="f-group">
-                <label class="f-label">From Number</label>
+                <label class="f-label">From Number <span style="color:var(--red)">*</span></label>
                 <input type="text" name="from_number" class="f-inp" placeholder="+15551234567" value="{{ $smsSetting->from_number ?? '' }}">
                 <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Must be a verified Twilio number in E.164 format.</div>
             </div>

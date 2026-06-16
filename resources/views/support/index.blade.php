@@ -96,7 +96,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 <div class="ph">
     <div class="ph-left">
         <h1>Support</h1>
-        <p>Manage client support tickets and contact the  Insights team</p>
+        <p>Manage and track your support tickets</p>
     </div>
     <div class="ph-actions">
         <button class="btn btn-primary" id="btnNewTicket">
@@ -505,7 +505,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <input type="file" id="ticket-attachment" name="attachment"
                        accept=".jpg,.jpeg,.png,.pdf,.zip"
                        style="display:block;width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text-2);background:#fafafa;cursor:pointer">
-                <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block">Max 10MB. Accepted: jpg, jpeg, png, pdf, zip.</span>
+                <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block">Max 10MB per file. Accepted: jpg, jpeg, png, pdf, zip.</span>
                 <div id="err-tk-attachment" class="tk-err"></div>
             </div>
             <div class="mf-foot">
@@ -608,9 +608,9 @@ $(document).ready(function () {
                 +'</div>'
                 +'<div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:12px">You have not raised any tickets yet</div>'
                 +'<div style="font-size:13.5px;color:#6b7280;line-height:1.75;max-width:480px;margin:0 auto 24px">'
-                +'Need help from the CFO Insights team? Raise a ticket here for any platform issue, billing query, branding assistance, or configuration support.'
+                +'Need help? Raise a support ticket for any platform issue, billing query, branding assistance, or configuration support.'
                 +'</div>'
-                +'<button class="open-new-ticket-btn" style="background:#e8521a;color:#fff;border:none;padding:11px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">+ Raise a Ticket to Insights</button>'
+                +'<button class="open-new-ticket-btn" style="background:#e8521a;color:#fff;border:none;padding:11px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">+ Raise a Ticket</button>'
                 +'</div>',
         },
         drawCallback:function(){document.querySelectorAll('.dm-popup').forEach(function(p){p.classList.remove('open');})}

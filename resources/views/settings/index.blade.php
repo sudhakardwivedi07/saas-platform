@@ -260,7 +260,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                         value="{{ $qbSetting->client_id ?? '' }}" required autocomplete="off">
                 </div>
                 <div class="f-group">
-                    <label class="f-label">QuickBooks Base URL <span style="color:var(--red)">*</span></label>
+                    <label class="f-label">QuickBooks Environment <span style="color:var(--red)">*</span></label>
                     <select name="base_url" class="f-sel" required>
                         <option value="development" {{ ($qbSetting->base_url ?? 'development') === 'development' ? 'selected' : '' }}>Development</option>
                         <option value="production"  {{ ($qbSetting->base_url ?? '') === 'production'  ? 'selected' : '' }}>Production</option>

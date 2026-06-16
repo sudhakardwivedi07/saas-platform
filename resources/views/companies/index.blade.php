@@ -237,12 +237,6 @@
                 </div>
             </div>
 
-            <div class="mf-field" style="margin-bottom:0">
-                <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
-                <input type="email" name="company_email" id="co-modal-email" class="mf-inp" placeholder="info@acme.com" maxlength="100" autocomplete="off">
-                <div id="co-modal-err-email" class="co-err" style="display:none"></div>
-            </div>
-
             <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;border-top:1px solid var(--border);margin-top:20px">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="closeAddCoModal()">Cancel</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitAddCoModal()">
@@ -287,12 +281,6 @@
                         @endforeach
                     </select>
                 </div>
-            </div>
-
-            <div class="mf-field" style="margin-bottom:0">
-                <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
-                <input type="email" name="company_email" id="client-edit-co-email" class="mf-inp" placeholder="info@acme.com" maxlength="100">
-                <div id="client-edit-err-co-email" class="co-err" style="display:none"></div>
             </div>
 
             <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;border-top:1px solid var(--border);margin-top:20px">
@@ -433,20 +421,6 @@ function validateAndSubmitAddCoModal() {
         _cliCoMark('co-modal-name', false);
     }
 
-    var emailVal = (document.getElementById('co-modal-email')?.value || '').trim();
-    if (!emailVal) {
-        _cliCoErr('co-modal-err-email', 'Company Email is required.');
-        _cliCoMark('co-modal-email', true);
-        ok = false;
-    } else if (!emailRx.test(emailVal)) {
-        _cliCoErr('co-modal-err-email', 'Enter a valid email address.');
-        _cliCoMark('co-modal-email', true);
-        ok = false;
-    } else {
-        _cliCoErr('co-modal-err-email', '');
-        _cliCoMark('co-modal-email', false);
-    }
-
     if (ok) { document.getElementById('modal-add-co-form').submit(); }
 }
 
@@ -472,11 +446,9 @@ function validateAndSubmitAddCoModal() {
 
     // Add Company modal
     clearOnInput('co-modal-name', 'co-modal-err-name');
-    clearOnEmailInput('co-modal-email', 'co-modal-err-email');
 
     // Edit Company modal
     clearOnInput('client-edit-co-name', 'client-edit-err-co-name');
-    clearOnEmailInput('client-edit-co-email', 'client-edit-err-co-email');
 
     // Real-time company name character filtering
     ['co-modal-name', 'client-edit-co-name'].forEach(function(id) {
@@ -537,20 +509,6 @@ function validateAndSubmitClientEditCoModal() {
     } else {
         _cliCoErr('client-edit-err-co-name', '');
         _cliCoMark('client-edit-co-name', false);
-    }
-
-    var emailVal = (document.getElementById('client-edit-co-email')?.value || '').trim();
-    if (!emailVal) {
-        _cliCoErr('client-edit-err-co-email', 'Company Email is required.');
-        _cliCoMark('client-edit-co-email', true);
-        ok = false;
-    } else if (!emailRx.test(emailVal)) {
-        _cliCoErr('client-edit-err-co-email', 'Enter a valid email address.');
-        _cliCoMark('client-edit-co-email', true);
-        ok = false;
-    } else {
-        _cliCoErr('client-edit-err-co-email', '');
-        _cliCoMark('client-edit-co-email', false);
     }
 
     if (ok) { document.getElementById('modal-client-edit-co-form').submit(); }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\UserInvitationMail;
 use App\Models\User;
+use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -82,14 +83,16 @@ class TenantUserController extends AccountBaseController
 
         $user->assignRole($request->role);
 
-        // Send invitation email with credentials
+        // Send invitation email via DB template with all dynamic variables resolved
         try {
-            Mail::to($user->email)->send(new UserInvitationMail(
-                user: $user,
-                plainPassword: $plainPassword,
-                companyName: $companyName,
-                loginUrl: route('login'),
-            ));
+            app(EmailService::class)->sendToUser($user, 'partner_user_welcome_email', [
+                '{{first_name}}'   => explode(' ', trim($user->name))[0],
+                '{{email}}'        => $user->email,
+                '{{password}}'     => $plainPassword,
+                '{{company_name}}' => $companyName,
+                '{{role}}'         => ucfirst($request->role),
+                '{{portal_url}}'   => env('APP_URL').'/login',
+            ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('User invitation email failed: ' . $e->getMessage());
         }

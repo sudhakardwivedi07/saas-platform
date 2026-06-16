@@ -66,7 +66,7 @@
                 <div class="dr-wrap" id="client-dr">
                     <div class="dr-field" onclick="drOpen('client-dr')">
                         <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        <span class="dr-text" id="client-dr-text">Start Date To End Date</span>
+                        <span class="dr-text" id="client-dr-text">Start Date – End Date</span>
                         <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('client-dr')" title="Clear date filter">&#x2715;</button>
                     </div>
                     <div class="dr-menu" id="client-dr-menu">
@@ -133,9 +133,9 @@
                     <td data-date="{{ $client->created_at?->format('Y-m-d') ?? '' }}" data-order="{{ $client->created_at?->timestamp ?? 0 }}">
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:34px;height:34px;border-radius:9px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:-.2px">{{ $initials }}</div>
-                            <div>
-                                <div style="font-weight:500;font-size:13px;color:var(--text-1);text-transform:capitalize">{{ $client->name }}</div>
-                                <div style="font-size:11.5px;color:var(--text-3)">{{ $client->email }}</div>
+                            <div style="min-width:0">
+                                <div class="cell-trunc" style="font-weight:500;font-size:13px;color:var(--text-1);text-transform:capitalize" title="{{ $client->name }}">{{ $client->name }}</div>
+                                <div class="cell-trunc-sm" style="font-size:11.5px;color:var(--text-3)" title="{{ $client->email }}">{{ $client->email }}</div>
                             </div>
                         </div>
                     </td>
@@ -226,7 +226,7 @@
                 <div class="dr-wrap" id="co-dr">
                     <div class="dr-field" onclick="drOpen('co-dr')">
                         <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        <span class="dr-text" id="co-dr-text">Start Date To End Date</span>
+                        <span class="dr-text" id="co-dr-text">Start Date – End Date</span>
                         <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('co-dr')" title="Clear date filter">&#x2715;</button>
                     </div>
                     <div class="dr-menu" id="co-dr-menu">
@@ -294,17 +294,17 @@
                     <td data-order="{{ $company->created_at->timestamp }}">
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:34px;height:34px;border-radius:9px;background:{{ $avatarColor }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">{{ $initials }}</div>
-                            <div>
-                                <div style="font-weight:600;font-size:13px;color:var(--text-1);text-transform:capitalize">{{ $company->company_name }}</div>
+                            <div style="min-width:0">
+                                <div class="cell-trunc" style="font-weight:600;font-size:13px;color:var(--text-1);text-transform:capitalize" title="{{ $company->company_name }}">{{ $company->company_name }}</div>
                                 @if($company->company_email)
-                                <div style="font-size:11px;color:var(--text-3)">{{ $company->company_email }}</div>
+                                <div class="cell-trunc-sm" style="font-size:11px;color:var(--text-3)" title="{{ $company->company_email }}">{{ $company->company_email }}</div>
                                 @endif
                             </div>
                         </div>
                     </td>
-                    <td style="font-size:13px;color:var(--text-2)">
+                    <td style="font-size:13px;color:var(--text-2);max-width:180px">
                         @if($owner)
-                        <a href="{{ route('clients.show', $owner->id) }}" style="color:var(--blue);text-decoration:none;font-size:13px;text-transform:capitalize">{{ $owner->name }}</a>
+                        <a href="{{ route('clients.show', $owner->id) }}" class="cell-trunc" style="color:var(--blue);text-decoration:none;font-size:13px;text-transform:capitalize" title="{{ $owner->name }}">{{ $owner->name }}</a>
                         @else
                         <span style="color:var(--text-3)">—</span>
                         @endif

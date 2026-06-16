@@ -147,7 +147,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
             <div class="dr-wrap" id="ct-dr">
                 <div class="dr-field" onclick="drOpen('ct-dr')">
                     <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <span class="dr-text" id="ct-dr-text">Start Date To End Date</span>
+                    <span class="dr-text" id="ct-dr-text">Start Date – End Date</span>
                     <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('ct-dr')" title="Clear date filter">&#x2715;</button>
                 </div>
                 <div class="dr-menu" id="ct-dr-menu">
@@ -265,7 +265,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
             <div class="dr-wrap" id="mt-dr">
                 <div class="dr-field" onclick="drOpen('mt-dr')">
                     <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <span class="dr-text" id="mt-dr-text">Start Date To End Date</span>
+                    <span class="dr-text" id="mt-dr-text">Start Date – End Date</span>
                     <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('mt-dr')" title="Clear date filter">&#x2715;</button>
                 </div>
                 <div class="dr-menu" id="mt-dr-menu">
@@ -475,7 +475,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
             <div class="mf-field">
                 <label class="mf-label" for="ticket-subject">Subject <span style="color:var(--red)">*</span></label>
                 <input type="text" id="ticket-subject" name="subject" class="mf-inp"
-                       placeholder="Brief description of your issue" value="{{ old('subject') }}" maxlength="100">
+                       placeholder="e.g. Insight generation failed, QuickBooks sync issue, KPI values incorrect" value="{{ old('subject') }}" maxlength="100">
                 <div id="err-tk-subject" class="tk-err"></div>
             </div>
             <div class="mf-field">
@@ -490,7 +490,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <div id="err-tk-priority" class="tk-err"></div>
             </div>
             <div class="mf-field">
-                <label class="mf-label" for="ticket-message">Message <span style="color:var(--red)">*</span></label>
+                <label class="mf-label" for="ticket-message">Description <span style="color:var(--red)">*</span></label>
                 <textarea id="ticket-message" name="message" class="mf-textarea" rows="5"
                           placeholder="Provide as much detail as possible..." maxlength="500">{{ old('message') }}</textarea>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px;min-height:16px">

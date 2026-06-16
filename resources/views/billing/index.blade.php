@@ -410,7 +410,7 @@
             <div class="dr-wrap" id="usage-dr">
                 <div class="dr-field" onclick="drOpen('usage-dr')">
                     <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <span class="dr-text" id="usage-dr-text">Start Date To End Date</span>
+                    <span class="dr-text" id="usage-dr-text">Start Date – End Date</span>
                     <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('usage-dr')" title="Clear date filter">&#x2715;</button>
                 </div>
                 <div class="dr-menu" id="usage-dr-menu">
@@ -489,12 +489,12 @@
                 @endphp
                 <tr>
                     <td>
-                        <div style="font-weight:600;font-size:13px;color:var(--text-1)">{{ $co->company_name }}</div>
+                        <div class="cell-trunc" style="font-weight:600;font-size:13px;color:var(--text-1)" title="{{ $co->company_name }}">{{ $co->company_name }}</div>
                         @if($co->subdomain)
-                        <div style="font-size:11px;color:var(--text-3)">{{ $co->subdomain }}</div>
+                        <div class="cell-trunc-sm" style="font-size:11px;color:var(--text-3)">{{ $co->subdomain }}</div>
                         @endif
                     </td>
-                    <td style="font-size:13px;color:var(--text-2)">{{ $owner?->name ?? '—' }}</td>
+                    <td style="font-size:13px;color:var(--text-2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ $owner?->name ?? '' }}">{{ $owner?->name ?? '—' }}</td>
                     <td>
                         @if($planName !== '—')
                             <span class="badge b-blue" style="font-size:11px">{{ $planName }}</span>

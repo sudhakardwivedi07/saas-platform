@@ -537,7 +537,7 @@
     <div class="dr-wrap" id="db-dr">
         <div class="dr-field" onclick="drOpen('db-dr')">
             <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            <span class="dr-text" id="db-dr-text">Start Date To End Date</span>
+            <span class="dr-text" id="db-dr-text">Start Date – End Date</span>
             <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('db-dr')" title="Clear date filter">&#x2715;</button>
         </div>
         <div class="dr-menu" id="db-dr-menu">
@@ -737,7 +737,7 @@
                     @endphp
                     <tr style="border-bottom:1px solid var(--bg)">
                         <td style="padding:10px 0;font-size:13px;color:var(--text-1);font-weight:500">{{ $mc->name }}</td>
-                        <td style="padding:10px 8px;font-size:13px;color:var(--text-2)">{{ $mc->display_company_name ?? $mc->company?->company_name ?? '—' }}</td>
+                        <td style="padding:10px 8px;font-size:13px;color:var(--text-2);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ $mc->display_company_name ?? $mc->company?->company_name ?? '' }}">{{ $mc->display_company_name ?? $mc->company?->company_name ?? '—' }}</td>
                         <td style="padding:10px 8px">
                             @if($status === 'Published')
                                 <span style="display:inline-block;padding:2px 10px;border-radius:20px;font-size:11.5px;font-weight:600;background:rgba(16,185,129,.12);color:#059669">Published</span>

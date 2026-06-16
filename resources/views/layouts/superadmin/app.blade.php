@@ -157,12 +157,12 @@ tbody tr:hover td{background:#fafcff}
 .modal-title{font-size:17px;font-weight:700;margin-bottom:4px}
 .modal-sub{font-size:13px;color:var(--text-3);margin-bottom:18px}
 .modal-close{position:absolute;top:16px;right:16px;background:var(--bg);border:none;border-radius:8px;width:30px;height:30px;font-size:18px;display:flex;align-items:center;justify-content:center;color:var(--text-2);cursor:pointer;line-height:1}
-.mf-field{margin-bottom:13px}
+.mf-field{margin-bottom:8px}
 .mf-label{font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:5px;display:block}
 .mf-inp{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 12px;font-size:13px;outline:none;transition:border .14s;background:#fff}
 .mf-inp:focus{border-color:var(--blue)}
 .mf-foot{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
-.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;align-items:start}
 
 /* ── FORMS ────────────────────────────────────────────── */
 .f-group{margin-bottom:14px}

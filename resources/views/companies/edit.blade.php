@@ -83,7 +83,7 @@
                 <div class="mf-field">
                     <label class="mf-label">Industry Type</label>
                     <select name="industry_type" class="mf-sel" style="height:38px">
-                        <option value="">Select industry</option>
+                        <option value="">Select Industry Type</option>
                         @if($selectedIndustry !== '' && !$hasIndustryInOptions)
                         <option value="{{ $selectedIndustry }}" selected>{{ $selectedIndustry }}</option>
                         @endif
@@ -95,7 +95,7 @@
                 <div class="mf-field">
                     <label class="mf-label">Entity Type</label>
                     <select name="entity_type" class="mf-sel" style="height:38px">
-                        <option value="">Select entity type</option>
+                        <option value="">Select Entity Type</option>
                         @if($selectedEntity !== '' && !$hasEntityInOptions)
                         <option value="{{ $selectedEntity }}" selected>{{ $selectedEntity }}</option>
                         @endif

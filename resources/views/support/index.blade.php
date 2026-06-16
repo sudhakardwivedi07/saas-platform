@@ -83,13 +83,8 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 
 /* ── Ticket Form Validation ────────────────────────── */
 .tk-err {
-    font-size: 11.5px; color: var(--red); margin-top: 4px;
-    display: flex; align-items: center; gap: 4px;
-}
-.tk-err::before {
-    content: '';
-    display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
+    font-size: 11.5px; color: var(--red); margin-top: 2px;
+    display: none;
 }
 .mf-inp.tk-invalid, .mf-textarea.tk-invalid { border-color: var(--red) !important; }
 </style>
@@ -481,7 +476,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <label class="mf-label" for="ticket-subject">Subject <span style="color:var(--red)">*</span></label>
                 <input type="text" id="ticket-subject" name="subject" class="mf-inp"
                        placeholder="Brief description of your issue" value="{{ old('subject') }}" maxlength="100">
-                <div id="err-tk-subject" class="tk-err" style="display:none"></div>
+                <div id="err-tk-subject" class="tk-err"></div>
             </div>
             <div class="mf-field">
                 <label class="mf-label">Priority <span style="color:var(--red)">*</span></label>
@@ -492,16 +487,16 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                     @endforeach
                 </div>
                 <input type="hidden" name="priority" id="priorityInput" value="{{ old('priority','low') }}">
-                <div id="err-tk-priority" class="tk-err" style="display:none"></div>
+                <div id="err-tk-priority" class="tk-err"></div>
             </div>
             <div class="mf-field">
                 <label class="mf-label" for="ticket-message">Message <span style="color:var(--red)">*</span></label>
                 <textarea id="ticket-message" name="message" class="mf-textarea" rows="5"
                           placeholder="Provide as much detail as possible..." maxlength="500">{{ old('message') }}</textarea>
-                <div style="font-size:11px;color:var(--text-3);margin-top:3px;text-align:right">
-                    <span id="tk-msg-count">0</span>/500 characters
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px;min-height:16px">
+                    <div id="err-tk-message" class="tk-err" style="margin-top:0;min-height:0"></div>
+                    <span style="font-size:11px;color:var(--text-3);flex-shrink:0"><span id="tk-msg-count">0</span>/500 characters</span>
                 </div>
-                <div id="err-tk-message" class="tk-err" style="display:none"></div>
             </div>
             <div class="mf-field">
                 <label class="mf-label" for="ticket-attachment">
@@ -511,7 +506,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                        accept=".jpg,.jpeg,.png,.pdf,.zip"
                        style="display:block;width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text-2);background:#fafafa;cursor:pointer">
                 <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block">Max 10MB. Accepted: jpg, jpeg, png, pdf, zip.</span>
-                <div id="err-tk-attachment" class="tk-err" style="display:none"></div>
+                <div id="err-tk-attachment" class="tk-err"></div>
             </div>
             <div class="mf-foot">
                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('newTicketModal').style.display='none'">Cancel</button>
@@ -549,8 +544,10 @@ $(document).ready(function () {
         order:[[0,'desc']],
         dom:'t<"dt-footer"ip>',
         columnDefs:[{orderable:false,targets:[1,6]}],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'tickets' : 'ticket');
+        },
         language:{
-            info:'Showing _START_–_END_ of _TOTAL_ tickets',
             infoEmpty:'No tickets found',
             paginate:{previous:'‹',next:'›'},
             emptyTable:
@@ -598,8 +595,10 @@ $(document).ready(function () {
         order:[[0,'desc']],
         dom:'t<"dt-footer"ip>',
         columnDefs:[{orderable:false,targets:[5]}],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'tickets' : 'ticket');
+        },
         language:{
-            info:'Showing _START_–_END_ of _TOTAL_ tickets',
             infoEmpty:'No tickets found',
             paginate:{previous:'‹',next:'›'},
             emptyTable:
@@ -813,7 +812,7 @@ function validateAndSubmitTicket() {
         var el = document.getElementById(id);
         if (!el) return;
         el.textContent = msg || '';
-        el.style.display = msg ? 'flex' : 'none';
+        el.style.display = msg ? 'block' : 'none';
     }
     function tkMark(el, invalid) {
         if (!el) return;

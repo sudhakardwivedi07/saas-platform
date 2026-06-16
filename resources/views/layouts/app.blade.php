@@ -180,9 +180,9 @@ tbody tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:#fafcff}
 .srch-wrap{position:relative;flex:1;max-width:260px}
 .srch-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--text-3);pointer-events:none;stroke:var(--text-3)}
-.srch-inp{width:100%;height:34px;border:1px solid var(--border);border-radius:7px;padding:0 9px 0 30px;font-size:13px;font-family:inherit;color:var(--text-1);background:var(--bg);outline:none;transition:border-color .14s}
-.srch-inp:focus{border-color:var(--blue);background:#fff}
-.sel{height:34px;border:1px solid var(--border);border-radius:7px;padding:0 10px;font-size:12.5px;font-family:inherit;color:var(--text-2);background:var(--bg);outline:none;cursor:pointer}
+.srch-inp{width:100%;height:34px;border:1px solid var(--border);border-radius:7px;padding:0 9px 0 30px;font-size:13px;font-family:inherit;color:var(--text-1);background:#fff;outline:none;transition:border-color .14s}
+.srch-inp:focus{border-color:var(--blue)}
+.sel{height:34px;border:1px solid var(--border);border-radius:7px;padding:0 10px;font-size:12.5px;font-family:inherit;color:var(--text-2);background:#fff;outline:none;cursor:pointer}
 .sel:focus{border-color:var(--blue)}
 
 /* ── BADGES ───────────────────────────────────────────── */
@@ -220,9 +220,9 @@ tbody tr:hover td{background:#fafcff}
 .mf-sel:focus{border-color:var(--blue)}
 .mf-textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;color:var(--text-1);background:#fff;outline:none;resize:vertical;min-height:90px;transition:border-color .14s}
 .mf-textarea:focus{border-color:var(--blue)}
-.mf-field{margin-bottom:15px}
+.mf-field{margin-bottom:8px}
 .mf-foot{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
-.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px}
+.form-2col{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px;align-items:start}
 
 /* ── FORMS ────────────────────────────────────────────── */
 .f-label{display:block;font-size:13px;font-weight:500;margin-bottom:5px;color:var(--text-1)}
@@ -385,7 +385,8 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 .dr-month-wrap{flex:1;min-width:0}
 .dr-month-hd{display:flex;align-items:center;gap:3px;margin-bottom:8px}
 .dr-nav-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer;font-size:15px;color:var(--text-2);flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;line-height:1;transition:background .1s}
-.dr-nav-btn:hover{background:var(--bg)}
+.dr-nav-btn:hover:not(:disabled){background:var(--bg)}
+.dr-nav-btn:disabled{opacity:.3;cursor:not-allowed;pointer-events:none}
 .dr-mon-sel{height:28px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;color:var(--text-1);background:#fff;padding:0 4px;cursor:pointer;outline:none;flex:1;min-width:0}
 .dr-yr-sel{height:28px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;color:var(--text-1);background:#fff;padding:0 4px;cursor:pointer;outline:none;width:60px;flex-shrink:0}
 .dr-mon-sel:focus,.dr-yr-sel:focus{border-color:var(--orange)}
@@ -409,6 +410,11 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 #pg-loader{position:fixed;top:0;left:0;right:0;height:3px;z-index:99999;pointer-events:none;opacity:0;transition:opacity .2s}
 #pg-loader.on{opacity:1}
 #pg-loader-fill{height:100%;width:0;background:linear-gradient(90deg,var(--orange),#ffb36b);border-radius:0 2px 2px 0;box-shadow:0 0 8px rgba(240,107,33,.55)}
+/* ── PAGE LOADER BLUR OVERLAY ─────────────────────────── */
+#pg-blur{position:fixed;inset:0;z-index:99990;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .25s}
+#pg-blur.on{opacity:1;pointer-events:all}
+#pg-blur-ring{width:46px;height:46px;border:3.5px solid rgba(0,0,0,.08);border-top-color:var(--orange,#f06b21);border-radius:50%;animation:pg-spin .7s linear infinite}
+@keyframes pg-spin{to{transform:rotate(360deg)}}
 /* ── BUTTON LOADING STATE ─────────────────────────────── */
 .btn-loading{pointer-events:none!important;opacity:.75!important}
 .btn-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0;vertical-align:middle}
@@ -427,6 +433,8 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 
 {{-- Global page-load progress bar --}}
 <div id="pg-loader" aria-hidden="true"><div id="pg-loader-fill"></div></div>
+{{-- Global blur overlay with spinner --}}
+<div id="pg-blur" aria-hidden="true"><div id="pg-blur-ring"></div></div>
 
 {{-- Impersonation Banner --}}
 @if(session('impersonating_company'))
@@ -526,7 +534,7 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
         </div>
         <div class="ca-tb-right">
 <div class="ca-tb-user">
-                <div class="ca-tb-av">{{ strtoupper(substr($authUser->name ?? 'U', 0, 2)) }}</div>
+                <div class="ca-tb-av">{{ strtoupper(substr($authUser->name ?? 'U', 0, 1)) }}{{ strtoupper(substr(strstr($authUser->name ?? '', ' ') ?: '  ', 1, 1)) }}</div>
                 <div>
                     <div class="ca-tb-uname">{{ $authUser->name }}</div>
                     <div class="ca-tb-urole">{{ $authUser->roleDisplayName('Admin') }}</div>
@@ -815,9 +823,9 @@ SwalToast && SwalToast.fire({ icon: 'error', title: @json(session('toast_error')
     const btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
     const swalCfg = { confirmButtonText: 'Ok', confirmButtonColor: btnColor, allowOutsideClick: false };
     @if(session('success'))
-    Swal.fire(Object.assign({}, swalCfg, { icon: 'success', text: @json(session('success')) }));
+    Swal.fire(Object.assign({}, swalCfg, { icon: 'success', html: @json(session('success')) }));
     @elseif(session('error'))
-    Swal.fire(Object.assign({}, swalCfg, { icon: 'error', text: @json(session('error')) }));
+    Swal.fire(Object.assign({}, swalCfg, { icon: 'error', html: @json(session('error')) }));
     @elseif(session('info'))
     Swal.fire(Object.assign({}, swalCfg, { icon: 'info', text: @json(session('info')) }));
     @elseif(session('warning'))
@@ -834,9 +842,11 @@ function toggleNavGroup(hdr) {
 </script>
 <script>
 // ── Global Date Range Picker ──────────────────────────────
-var DR_FMT   = '{{ active_date_format() }}';
-var _drCbs   = {};   // callback registry: id → function(from, to)
-var _drCal   = {};   // calendar state registry: id → { y1,m1,y2,m2,start,end,hover }
+var DR_FMT     = '{{ active_date_format() }}';
+var _drCbs     = {};   // callback registry: id → function(from, to)
+var _drCal     = {};   // calendar state registry: id → { y1,m1,y2,m2,start,end,hover }
+var DR_MIN_YEAR = 2021, DR_MIN_MON = 0;   // January 2021
+var DR_MAX_YEAR = 2029, DR_MAX_MON = 11;  // December 2029
 
 // Format a Y-m-d string using the active date format
 function drFmt(ymd) {
@@ -1134,25 +1144,28 @@ function drBuildMonth(id, year, month, side) {
     var todayStr = drYmd(new Date());
 
     // Header
+    var atMin = (year === DR_MIN_YEAR && month === DR_MIN_MON);
+    var atMax = (year === DR_MAX_YEAR && month === DR_MAX_MON);
     var h = '<div class="dr-month-wrap">';
     h += '<div class="dr-month-hd">';
-    h += '<button class="dr-nav-btn" data-nav="' + id + '" data-side="' + side + '" data-dir="-1">&#8249;</button>';
+    h += '<button class="dr-nav-btn" data-nav="' + id + '" data-side="' + side + '" data-dir="-1"' + (atMin ? ' disabled' : '') + '>&#8249;</button>';
 
-    // Month select
+    // Month select — only show months valid within the year bounds
     h += '<select class="dr-mon-sel" data-sel="' + id + '" data-side="' + side + '" data-type="m">';
     for (var mi = 0; mi < 12; mi++) {
-        h += '<option value="' + mi + '"' + (mi === month ? ' selected' : '') + '>' + _DR_MON[mi] + '</option>';
+        var mDisabled = (year === DR_MIN_YEAR && mi < DR_MIN_MON) || (year === DR_MAX_YEAR && mi > DR_MAX_MON);
+        h += '<option value="' + mi + '"' + (mi === month ? ' selected' : '') + (mDisabled ? ' disabled' : '') + '>' + _DR_MON[mi] + '</option>';
     }
     h += '</select>';
 
-    // Year select
+    // Year select — fixed to allowed range
     h += '<select class="dr-yr-sel" data-sel="' + id + '" data-side="' + side + '" data-type="y">';
-    for (var yi = curY - 5; yi <= curY + 3; yi++) {
+    for (var yi = DR_MIN_YEAR; yi <= DR_MAX_YEAR; yi++) {
         h += '<option value="' + yi + '"' + (yi === year ? ' selected' : '') + '>' + yi + '</option>';
     }
     h += '</select>';
 
-    h += '<button class="dr-nav-btn" data-nav="' + id + '" data-side="' + side + '" data-dir="1">&#8250;</button>';
+    h += '<button class="dr-nav-btn" data-nav="' + id + '" data-side="' + side + '" data-dir="1"' + (atMax ? ' disabled' : '') + '>&#8250;</button>';
     h += '</div>';
 
     // Day header row
@@ -1222,10 +1235,16 @@ function drCalClick(e, id) {
             s.m1 += dir;
             if (s.m1 > 11) { s.m1 = 0;  s.y1++; }
             if (s.m1 < 0)  { s.m1 = 11; s.y1--; }
+            // Clamp to allowed range
+            if (s.y1 < DR_MIN_YEAR || (s.y1 === DR_MIN_YEAR && s.m1 < DR_MIN_MON)) { s.y1 = DR_MIN_YEAR; s.m1 = DR_MIN_MON; }
+            if (s.y1 > DR_MAX_YEAR || (s.y1 === DR_MAX_YEAR && s.m1 > DR_MAX_MON)) { s.y1 = DR_MAX_YEAR; s.m1 = DR_MAX_MON; }
         } else {
             s.m2 += dir;
             if (s.m2 > 11) { s.m2 = 0;  s.y2++; }
             if (s.m2 < 0)  { s.m2 = 11; s.y2--; }
+            // Clamp to allowed range
+            if (s.y2 < DR_MIN_YEAR || (s.y2 === DR_MIN_YEAR && s.m2 < DR_MIN_MON)) { s.y2 = DR_MIN_YEAR; s.m2 = DR_MIN_MON; }
+            if (s.y2 > DR_MAX_YEAR || (s.y2 === DR_MAX_YEAR && s.m2 > DR_MAX_MON)) { s.y2 = DR_MAX_YEAR; s.m2 = DR_MAX_MON; }
         }
         drRefreshCalMonths(id);
         return;
@@ -1285,6 +1304,11 @@ function drCalChange(e, id) {
     var val  = +sel.value;
     if (sel.dataset.type === 'm') { if (side === 1) s.m1 = val; else s.m2 = val; }
     else                          { if (side === 1) s.y1 = val; else s.y2 = val; }
+    // Clamp both sides to allowed range
+    if (s.y1 < DR_MIN_YEAR || (s.y1 === DR_MIN_YEAR && s.m1 < DR_MIN_MON)) { s.y1 = DR_MIN_YEAR; s.m1 = DR_MIN_MON; }
+    if (s.y1 > DR_MAX_YEAR || (s.y1 === DR_MAX_YEAR && s.m1 > DR_MAX_MON)) { s.y1 = DR_MAX_YEAR; s.m1 = DR_MAX_MON; }
+    if (s.y2 < DR_MIN_YEAR || (s.y2 === DR_MIN_YEAR && s.m2 < DR_MIN_MON)) { s.y2 = DR_MIN_YEAR; s.m2 = DR_MIN_MON; }
+    if (s.y2 > DR_MAX_YEAR || (s.y2 === DR_MAX_YEAR && s.m2 > DR_MAX_MON)) { s.y2 = DR_MAX_YEAR; s.m2 = DR_MAX_MON; }
     drRefreshCalMonths(id);
 }
 
@@ -1435,6 +1459,7 @@ function __exitClientImpersonation() {
 (function () {
     var fill = document.getElementById('pg-loader-fill');
     var wrap = document.getElementById('pg-loader');
+    var blur = document.getElementById('pg-blur');
     if (!fill) return;
 
     var _active = false, _pct = 0, _timer = null;
@@ -1445,6 +1470,7 @@ function __exitClientImpersonation() {
         clearInterval(_timer);
         fill.style.transition = 'none'; fill.style.width = '0%';
         wrap.classList.add('on');
+        if (blur) blur.classList.add('on');
         requestAnimationFrame(function () {
             requestAnimationFrame(function () {
                 fill.style.transition = 'width .45s ease';
@@ -1464,6 +1490,7 @@ function __exitClientImpersonation() {
         clearInterval(_timer);
         fill.style.transition = 'width .18s ease';
         fill.style.width = '100%';
+        if (blur) blur.classList.remove('on');
         setTimeout(function () {
             wrap.classList.remove('on');
             setTimeout(function () {

@@ -10,7 +10,7 @@
 }
 .co-err::before {
     content: '';
-    display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
+    display: inline-block; height: 12px; flex-shrink: 0;
     background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 .mf-inp.co-invalid, .mf-sel.co-invalid { border-color: var(--red) !important; }
@@ -187,7 +187,7 @@
                 <div class="mf-field">
                     <label class="mf-label">Industry Type</label>
                     <select name="industry_type" id="co-industry" class="mf-sel" style="height:38px">
-                        <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select industry</option>
+                        <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select Industry Type</option>
                         @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
                         <option value="{{ $ind }}" {{ old('industry_type') === $ind ? 'selected' : '' }}>{{ $ind }}</option>
                         @endforeach
@@ -197,7 +197,7 @@
                 <div class="mf-field">
                     <label class="mf-label">Entity Type</label>
                     <select name="entity_type" id="co-entity" class="mf-sel" style="height:38px">
-                        <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select entity type</option>
+                        <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select Entity Type</option>
                         @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
                         <option value="{{ $ent }}" {{ old('entity_type') === $ent ? 'selected' : '' }}>{{ $ent }}</option>
                         @endforeach
@@ -334,15 +334,15 @@ function coMark(inputId, invalid) {
 function validateCompanyForm(e) {
     e.preventDefault();
     var ok = true;
-    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
     // Company Name
     var nameEl = document.getElementById('company_name');
     var nameVal = nameEl ? nameEl.value.trim() : '';
     if (!nameVal) {
-        coErr('err-co-name', 'Company name is required.'); coMark('company_name', true); ok = false;
+        coErr('err-co-name', 'Company Name is required.'); coMark('company_name', true); ok = false;
     } else if (nameVal.length < 2) {
-        coErr('err-co-name', 'Minimum 2 characters required.'); coMark('company_name', true); ok = false;
+        coErr('err-co-name', 'Full Name must be at least 2 characters.'); coMark('company_name', true); ok = false;
     } else {
         coErr('err-co-name', ''); coMark('company_name', false);
     }
@@ -351,7 +351,7 @@ function validateCompanyForm(e) {
     var coEmailEl = document.getElementById('co-email');
     var coEmailVal = coEmailEl ? coEmailEl.value.trim() : '';
     if (!coEmailVal) {
-        coErr('err-co-email', 'Company email is required.'); coMark('co-email', true); ok = false;
+        coErr('err-co-email', 'Company Email is required.'); coMark('co-email', true); ok = false;
     } else if (!emailRx.test(coEmailVal)) {
         coErr('err-co-email', 'Enter a valid email address.'); coMark('co-email', true); ok = false;
     } else {
@@ -366,11 +366,11 @@ function validateCompanyForm(e) {
             var adminNameEl = document.getElementById('co-admin-name');
             var adminNameVal = adminNameEl ? adminNameEl.value.trim() : '';
             if (!adminNameVal) {
-                coErr('err-co-admin-name', 'Admin full name is required.'); coMark('co-admin-name', true); ok = false;
+                coErr('err-co-admin-name', 'Full Name is required.'); coMark('co-admin-name', true); ok = false;
             } else if (adminNameVal.length < 2) {
-                coErr('err-co-admin-name', 'Minimum 2 characters required.'); coMark('co-admin-name', true); ok = false;
+                coErr('err-co-admin-name', 'Full Name must be at least 2 characters.'); coMark('co-admin-name', true); ok = false;
             } else if (!/^[a-zA-Z\s]+$/.test(adminNameVal)) {
-                coErr('err-co-admin-name', 'Name must contain only letters and spaces.'); coMark('co-admin-name', true); ok = false;
+                coErr('err-co-admin-name', 'Full Name must contain only letters and spaces.'); coMark('co-admin-name', true); ok = false;
             } else {
                 coErr('err-co-admin-name', ''); coMark('co-admin-name', false);
             }
@@ -379,7 +379,7 @@ function validateCompanyForm(e) {
             var adminEmailEl = document.getElementById('co-admin-email');
             var adminEmailVal = adminEmailEl ? adminEmailEl.value.trim() : '';
             if (!adminEmailVal) {
-                coErr('err-co-admin-email', 'Client email is required.'); coMark('co-admin-email', true); ok = false;
+                coErr('err-co-admin-email', 'Email is required.'); coMark('co-admin-email', true); ok = false;
             } else if (!emailRx.test(adminEmailVal)) {
                 coErr('err-co-admin-email', 'Enter a valid email address.'); coMark('co-admin-email', true); ok = false;
             } else {
@@ -390,7 +390,7 @@ function validateCompanyForm(e) {
             var phoneEl = document.getElementById('co-admin-phone');
             var phoneVal = phoneEl ? phoneEl.value.replace(/\D/g, '') : '';
             if (!phoneVal) {
-                coErr('err-co-admin-phone', 'Phone number is required.'); coMark('co-admin-phone', true); ok = false;
+                coErr('err-co-admin-phone', 'Phone Number is required.'); coMark('co-admin-phone', true); ok = false;
             } else if (phoneVal.length !== 10) {
                 coErr('err-co-admin-phone', 'Phone number must be exactly 10 digits.'); coMark('co-admin-phone', true); ok = false;
             } else {
@@ -426,6 +426,53 @@ function validateCompanyForm(e) {
             this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
         }
     });
+})();
+
+// Real-time validation clearing
+(function() {
+    var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
+
+    function clearOnInput(fieldId, errId) {
+        var el = document.getElementById(fieldId);
+        if (!el) return;
+        el.addEventListener('input', function() {
+            if (this.value.trim()) { coErr(errId, ''); coMark(fieldId, false); }
+        });
+    }
+    function clearOnEmailInput(fieldId, errId) {
+        var el = document.getElementById(fieldId);
+        if (!el) return;
+        el.addEventListener('input', function() {
+            var v = this.value.trim();
+            if (v && emailRx.test(v)) { coErr(errId, ''); coMark(fieldId, false); }
+            else if (!v) { coErr(errId, ''); coMark(fieldId, false); }
+        });
+    }
+    function clearOnChange(fieldId, errId) {
+        var el = document.getElementById(fieldId);
+        if (!el) return;
+        el.addEventListener('change', function() {
+            if (this.value) { coErr(errId, ''); coMark(fieldId, false); }
+        });
+    }
+
+    clearOnInput('company_name', 'err-co-name');
+    clearOnEmailInput('co-email', 'err-co-email');
+    clearOnChange('co-industry', 'err-co-industry');
+    clearOnChange('co-entity', 'err-co-entity');
+    clearOnInput('co-admin-name', 'err-co-admin-name');
+    clearOnEmailInput('co-admin-email', 'err-co-admin-email');
+
+    var phoneEl = document.getElementById('co-admin-phone');
+    if (phoneEl) {
+        phoneEl.addEventListener('input', function() {
+            if (this.value.replace(/\D/g, '').length === 10) {
+                coErr('err-co-admin-phone', ''); coMark('co-admin-phone', false);
+            } else if (!this.value.trim()) {
+                coErr('err-co-admin-phone', ''); coMark('co-admin-phone', false);
+            }
+        });
+    }
 })();
 
 // Attach validation to form submit

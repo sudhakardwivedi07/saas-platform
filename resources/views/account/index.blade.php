@@ -1219,8 +1219,10 @@ function initActivityTable() {
         searching: true, ordering: true, info: true,
         dom: '<"dt-tscroll"t><"dt-footer"ip>',
         order: [[2, 'desc']],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'events' : 'event');
+        },
         language: {
-            info: 'Showing _START_–_END_ of _TOTAL_ events',
             infoEmpty: 'No activity found',
             paginate: { previous: '&lsaquo;', next: '&rsaquo;' },
             emptyTable: '<div style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No activity yet</div>',
@@ -1287,7 +1289,7 @@ function _refreshAccountTab(tabId) {
     var panel = document.getElementById(tabId);
     if (!panel) return;
 
-    // Dim the panel while loading
+    // Dim the panel while loading (global pg-blur overlay shows the spinner)
     panel.style.opacity       = '0.45';
     panel.style.pointerEvents = 'none';
 
@@ -1331,7 +1333,10 @@ function _refreshAccountTab(tabId) {
                         dom: '<"dt-tscroll"t><"dt-footer"ip>',
                         order: [[4, 'desc']],
                         columnDefs: [{ orderable: false, targets: [3] }],
-                        language: { info: 'Showing _START_ to _END_ of _TOTAL_ payments', infoEmpty: 'No payment records found', paginate: { previous: 'Previous', next: 'Next' }, emptyTable: 'No payment records found.' },
+                        infoCallback: function(settings, start, end, max, total, pre) {
+                            return 'Showing ' + start + ' to ' + end + ' of ' + total + ' ' + (total !== 1 ? 'payments' : 'payment');
+                        },
+                        language: { infoEmpty: 'No payment records found', paginate: { previous: 'Previous', next: 'Next' }, emptyTable: 'No payment records found.' },
                     });
                     _drCbs['ph-dr'] = function () { if (phTable) phTable.draw(); };
                     var phS = document.getElementById('phSearch');
@@ -1665,8 +1670,10 @@ $(document).ready(function () {
         dom:          '<"dt-tscroll"t><"dt-footer"ip>',
         order:        [[4, 'desc']],
         columnDefs:   [{ orderable: false, targets: [3] }],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + start + ' to ' + end + ' of ' + total + ' ' + (total !== 1 ? 'payments' : 'payment');
+        },
         language: {
-            info:       'Showing _START_ to _END_ of _TOTAL_ payments',
             infoEmpty:  'No payment records found',
             paginate:   { previous: 'Previous', next: 'Next' },
             emptyTable: 'No payment records found.',

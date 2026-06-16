@@ -62,7 +62,7 @@ class SettingsController extends AccountBaseController
                     str_contains($p->name, 'upload_documents') ||
                     str_contains($p->name, 'download_documents') => 'Documents',
                 str_contains($p->name, '_quickbooks') ||
-                    str_contains($p->name, 'connect_quickbooks')  => 'QuickBooks',
+                    str_contains($p->name, 'connect_quickbooks')  => 'Connections',
                 str_contains($p->name, '_email_templates') ||
                     str_contains($p->name, 'add_email_templates') => 'Email Templates',
                 str_contains($p->name, '_settings') ||

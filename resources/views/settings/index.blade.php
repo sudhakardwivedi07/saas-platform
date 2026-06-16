@@ -7,7 +7,7 @@
 <div class="ph">
     <div class="ph-left">
         <h1>Settings</h1>
-        <p>Configure Email, SMS, QuickBooks, Insight Limits, and Roles &amp; Permissions settings</p>
+        <p>Configure Email, SMS, QuickBooks, and Roles &amp; Permissions settings</p>
     </div>
 </div>
 
@@ -147,41 +147,47 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             Email SMTP Settings 
         </div>
 
-        <form method="POST" action="{{ route('settings.email.update') }}" id="email-form" onsubmit="submitSettingsForm(event,this,'Email settings updated.')">
+        <form method="POST" action="{{ route('settings.email.update') }}" id="email-form" onsubmit="if(!validateSmtpForm()){return false;} submitSettingsForm(event,this,'Email settings updated.')">
             @csrf
             <input type="hidden" name="driver" value="smtp">
             <div class="form-2col">
                 <div class="f-group">
-                    <label class="f-label">From Name</label>
-                    <input type="text" name="from_name" class="f-inp" placeholder="My Platform" value="{{ $smtpSetting->from_name ?? '' }}">
+                    <label class="f-label">From Name <span style="color:var(--red)">*</span></label>
+                    <input type="text" id="smtp-from-name" name="from_name" class="f-inp" placeholder="My Platform" value="{{ $smtpSetting->from_name ?? '' }}">
+                    <div class="st-err" id="smtp-from-name-err"></div>
                 </div>
                 <div class="f-group">
-                    <label class="f-label">From Email</label>
-                    <input type="email" name="from_email" class="f-inp" placeholder="no-reply@example.com" value="{{ $smtpSetting->from_email ?? '' }}">
-                </div>
-            </div>
-            <div class="form-2col">
-                <div class="f-group">
-                    <label class="f-label">SMTP Host</label>
-                    <input type="text" name="host" class="f-inp" placeholder="smtp.mailgun.org" value="{{ $smtpSetting->host ?? '' }}">
-                </div>
-                <div class="f-group">
-                    <label class="f-label">SMTP Port</label>
-                    <input type="number" name="port" class="f-inp" placeholder="587" value="{{ $smtpSetting->port ?? '587' }}">
+                    <label class="f-label">From Email <span style="color:var(--red)">*</span></label>
+                    <input type="email" id="smtp-from-email" name="from_email" class="f-inp" placeholder="no-reply@example.com" value="{{ $smtpSetting->from_email ?? '' }}">
+                    <div class="st-err" id="smtp-from-email-err"></div>
                 </div>
             </div>
             <div class="form-2col">
                 <div class="f-group">
-                    <label class="f-label">Username</label>
-                    <input type="text" name="username" class="f-inp" placeholder="smtp_user" value="{{ $smtpSetting->username ?? '' }}">
+                    <label class="f-label">SMTP Host <span style="color:var(--red)">*</span></label>
+                    <input type="text" id="smtp-host" name="host" class="f-inp" placeholder="smtp.mailgun.org" value="{{ $smtpSetting->host ?? '' }}">
+                    <div class="st-err" id="smtp-host-err"></div>
                 </div>
                 <div class="f-group">
-                    <label class="f-label">Password</label>
-                    <input type="password" name="password" class="f-inp" placeholder="••••••••" autocomplete="new-password">
+                    <label class="f-label">SMTP Port <span style="color:var(--red)">*</span></label>
+                    <input type="number" id="smtp-port" name="port" class="f-inp" placeholder="587" value="{{ $smtpSetting->port ?? '587' }}">
+                    <div class="st-err" id="smtp-port-err"></div>
+                </div>
+            </div>
+            <div class="form-2col">
+                <div class="f-group">
+                    <label class="f-label">Username <span style="color:var(--red)">*</span></label>
+                    <input type="text" id="smtp-username" name="username" class="f-inp" placeholder="smtp_user" value="{{ $smtpSetting->username ?? '' }}">
+                    <div class="st-err" id="smtp-username-err"></div>
+                </div>
+                <div class="f-group">
+                    <label class="f-label">Password <span style="color:var(--red)">*</span></label>
+                    <input type="password" id="smtp-password" name="password" class="f-inp" placeholder="••••••••" autocomplete="new-password">
+                    <div class="st-err" id="smtp-password-err"></div>
                 </div>
             </div>
             <div class="f-group" style="max-width:220px">
-                <label class="f-label">Encryption</label>
+                <label class="f-label">Encryption <span style="color:var(--red)">*</span></label>
                 <select name="encryption" class="f-sel">
                     <option value="tls" {{ ($smtpSetting->encryption ?? 'tls') === 'tls' ? 'selected' : '' }}>TLS</option>
                     <option value="ssl" {{ ($smtpSetting->encryption ?? '') === 'ssl' ? 'selected' : '' }}>SSL</option>
@@ -214,20 +220,23 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             <span class="info-banner-txt">SMS notifications are powered by Twilio. Enter your credentials from the Twilio Console.</span>
         </div>
 
-        <form method="POST" action="{{ route('settings.sms.update') }}" id="sms-form" onsubmit="submitSettingsForm(event,this,'SMS settings updated.')">
+        <form method="POST" action="{{ route('settings.sms.update') }}" id="sms-form" onsubmit="if(!validateSmsForm()){return false;} submitSettingsForm(event,this,'SMS settings updated.')">
             @csrf
             <input type="hidden" name="provider" value="twilio">
             <div class="f-group">
-                <label class="f-label">Account SID</label>
-                <input type="text" name="account_sid" class="f-inp" placeholder="ACxxxxxxxxxxxxxxxx" value="{{ $smsSetting->account_sid ?? '' }}">
+                <label class="f-label">Account SID <span style="color:var(--red)">*</span></label>
+                <input type="text" id="sms-sid" name="account_sid" class="f-inp" placeholder="ACxxxxxxxxxxxxxxxx" value="{{ $smsSetting->account_sid ?? '' }}">
+                <div class="st-err" id="sms-sid-err"></div>
             </div>
             <div class="f-group">
-                <label class="f-label">Auth Token</label>
-                <input type="password" name="auth_token" class="f-inp" placeholder="••••••••••••••••••••" autocomplete="new-password" value="{{ $smsSetting->auth_token ?? '' }}">
+                <label class="f-label">Auth Token <span style="color:var(--red)">*</span></label>
+                <input type="password" id="sms-token" name="auth_token" class="f-inp" placeholder="••••••••••••••••••••" autocomplete="new-password" value="{{ $smsSetting->auth_token ?? '' }}">
+                <div class="st-err" id="sms-token-err"></div>
             </div>
             <div class="f-group">
-                <label class="f-label">From Number</label>
-                <input type="text" name="from_number" class="f-inp" placeholder="+15551234567" value="{{ $smsSetting->from_number ?? '' }}">
+                <label class="f-label">From Number <span style="color:var(--red)">*</span></label>
+                <input type="text" id="sms-from" name="from_number" class="f-inp" placeholder="+15551234567" value="{{ $smsSetting->from_number ?? '' }}">
+                <div class="st-err" id="sms-from-err"></div>
                 <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Must be a verified Twilio number in E.164 format.</div>
             </div>
             <div style="margin-top:20px">
@@ -251,11 +260,6 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             QuickBooks Integration Settings
         </div>
 
-        <div class="info-banner">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span class="info-banner-txt">Configure your QuickBooks app credentials to enable OAuth integration for your sub-companies.</span>
-        </div>
-
         <form id="qb-settings-form" onsubmit="submitQbSettings(event)">
             @csrf
             <div class="form-2col">
@@ -265,7 +269,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                         value="{{ $qbSetting->client_id ?? '' }}" required autocomplete="off">
                 </div>
                 <div class="f-group">
-                    <label class="f-label">QuickBooks Base URL <span style="color:var(--red)">*</span></label>
+                    <label class="f-label">QuickBooks Environment <span style="color:var(--red)">*</span></label>
                     <select name="base_url" class="f-sel" required>
                         <option value="development" {{ ($qbSetting->base_url ?? 'development') === 'development' ? 'selected' : '' }}>Development</option>
                         <option value="production"  {{ ($qbSetting->base_url ?? '') === 'production'  ? 'selected' : '' }}>Production</option>
@@ -612,31 +616,6 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                     <option value="system">System</option>
                     <option value="custom">Custom</option>
                 </select>
-                <div class="dr-wrap" id="role-dr">
-                    <div class="dr-field" onclick="drOpen('role-dr')">
-                        <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        <span class="dr-text" id="role-dr-text">Start Date – End Date</span>
-                        <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('role-dr')" title="Clear date filter">&#x2715;</button>
-                    </div>
-                    <div class="dr-menu" id="role-dr-menu">
-                        <ul class="dr-list">
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','today',this)">Today</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','last30',this)">Last 30 Days</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','thisMonth',this)">This Month</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','lastMonth',this)">Last Month</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','last90',this)">Last 90 Days</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','last6m',this)">Last 6 Months</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','last1y',this)">Last 1 Year</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','custom',this)">Custom Range</li>
-                        </ul>
-                        <div class="dr-custom-row" id="role-dr-custom">
-                            <input type="date" class="dr-date-inp" id="role-dr-from">
-                            <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
-                            <input type="date" class="dr-date-inp" id="role-dr-to">
-                            <button class="dr-apply-btn" onclick="drApplyCustom('role-dr')">Apply</button>
-                        </div>
-                    </div>
-                </div>
                 <button class="btn btn-danger" onclick="resetRoleFilters()">Reset</button>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
@@ -716,8 +695,10 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
             All Permissions by Module
         </div>
+        @php $hiddenPermModules = ['Documents','Email Templates','Billing','Reports','Companies & Plans']; @endphp
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:14px">
             @foreach($allPermissions as $module => $perms)
+            @if(in_array($module, $hiddenPermModules)) @continue @endif
             <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:12px 14px">
                 <div style="font-size:11.5px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">{{ $module }}</div>
                 @foreach($perms as $perm)
@@ -758,7 +739,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             <div class="mf-field">
                 <label class="mf-label">Permissions <span style="color:var(--red)">*</span></label>
                 <div id="err-cr-perms" style="font-size:11.5px;color:var(--red);margin-top:2px;display:none">Please select at least one permission.</div>
-                @php $crHiddenModules = ['Documents','Email Templates','Settings','Billing','Reports','Companies & Plans','Settings Tabs','My Account Tabs','Other']; @endphp
+                @php $crHiddenModules = ['Documents','Email Templates','Billing','Reports','Companies & Plans','Other']; @endphp
                 <div style="display:grid;gap:10px;margin-top:6px;max-height:340px;overflow-y:auto;padding-right:4px">
                     @foreach($allPermissions as $module => $perms)
                     @if(in_array($module, $crHiddenModules)) @continue @endif
@@ -813,8 +794,10 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             </div>
             <div class="mf-field">
                 <label class="mf-label">Permissions</label>
+                @php $erHiddenModules = ['Documents','Email Templates','Billing','Reports','Companies & Plans','Other']; @endphp
                 <div style="display:grid;gap:10px;margin-top:6px;max-height:340px;overflow-y:auto;padding-right:4px">
                     @foreach($allPermissions as $module => $perms)
+                    @if(in_array($module, $erHiddenModules)) @continue @endif
                     <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:11px 13px">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
                             <input type="checkbox" class="mod-toggle" data-module="er-mod-{{ Str::slug($module) }}"
@@ -846,6 +829,13 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
 </div>
 
 @endsection
+
+@push('styles')
+<style>
+.st-err{display:none;color:var(--red);font-size:11.5px;margin-top:4px}
+.f-inp.st-invalid,.f-sel.st-invalid{border-color:var(--red)!important;outline:none}
+</style>
+@endpush
 
 @push('scripts')
 <script src="{{ asset(config('assets.jquery')) }}"></script>
@@ -882,18 +872,15 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
         document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
         btn.classList.add('active');
         panel.classList.add('active');
-        localStorage.setItem(SK, tabId);
         history.replaceState(null, '', location.pathname + '#' + tabId);
+        window.scrollTo(0, 0);
         return true;
     }
 
-    // On load: honour URL hash first, then localStorage
+    // On load: honour URL hash only (no localStorage restore — default is server-rendered first tab)
     var hash = window.location.hash.replace('#', '');
     if (hash) {
         activateTab(hash) || activateTab('tab-' + hash);
-    } else {
-        var stored = localStorage.getItem(SK);
-        if (stored) activateTab(stored);
     }
 
     // On tab click: reset the target tab's content, then activate it
@@ -1232,6 +1219,89 @@ function submitQbSettings(e) {
     })
     .catch(function() { btn.disabled = false; showToast('Request failed.', 'error'); });
 }
+
+// ── Settings Form Inline Validation ───────────────────────────────────────────
+function _stErr(id, msg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg || '';
+    el.style.display = msg ? 'block' : 'none';
+}
+function _stMark(id, invalid) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (invalid) el.classList.add('st-invalid');
+    else el.classList.remove('st-invalid');
+}
+function validateSmtpForm() {
+    var ok = true;
+    var fields = [
+        { id: 'smtp-from-name',  errId: 'smtp-from-name-err',  label: 'From Name' },
+        { id: 'smtp-from-email', errId: 'smtp-from-email-err', label: 'From Email', email: true },
+        { id: 'smtp-host',       errId: 'smtp-host-err',       label: 'SMTP Host' },
+        { id: 'smtp-port',       errId: 'smtp-port-err',       label: 'SMTP Port', numeric: true },
+        { id: 'smtp-username',   errId: 'smtp-username-err',   label: 'Username' },
+        { id: 'smtp-password',   errId: 'smtp-password-err',   label: 'Password' },
+    ];
+    fields.forEach(function(f) {
+        var el  = document.getElementById(f.id);
+        var val = el ? el.value.trim() : '';
+        if (!val) {
+            _stErr(f.errId, f.label + ' is required.');
+            _stMark(f.id, true);
+            ok = false;
+        } else if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+            _stErr(f.errId, 'Enter a valid email address.');
+            _stMark(f.id, true);
+            ok = false;
+        } else if (f.numeric && (isNaN(Number(val)) || parseInt(val) <= 0)) {
+            _stErr(f.errId, 'Enter a valid port number.');
+            _stMark(f.id, true);
+            ok = false;
+        } else {
+            _stErr(f.errId, '');
+            _stMark(f.id, false);
+        }
+    });
+    return ok;
+}
+function validateSmsForm() {
+    var ok = true;
+    var fields = [
+        { id: 'sms-sid',   errId: 'sms-sid-err',   label: 'Account SID' },
+        { id: 'sms-token', errId: 'sms-token-err',  label: 'Auth Token' },
+        { id: 'sms-from',  errId: 'sms-from-err',   label: 'From Number', e164: true },
+    ];
+    fields.forEach(function(f) {
+        var el  = document.getElementById(f.id);
+        var val = el ? el.value.trim() : '';
+        if (!val) {
+            _stErr(f.errId, f.label + ' is required.');
+            _stMark(f.id, true);
+            ok = false;
+        } else if (f.e164 && !/^\+[1-9]\d{7,14}$/.test(val)) {
+            _stErr(f.errId, 'Enter a valid E.164 number (e.g. +15551234567).');
+            _stMark(f.id, true);
+            ok = false;
+        } else {
+            _stErr(f.errId, '');
+            _stMark(f.id, false);
+        }
+    });
+    return ok;
+}
+(function() {
+    var emailForm = document.getElementById('email-form');
+    var smsForm   = document.getElementById('sms-form');
+    if (emailForm) emailForm.addEventListener('input', function(e) {
+        _stErr(e.target.id + '-err', '');
+        _stMark(e.target.id, false);
+    });
+    if (smsForm) smsForm.addEventListener('input', function(e) {
+        _stErr(e.target.id + '-err', '');
+        _stMark(e.target.id, false);
+    });
+})();
 
 // ── Generic Settings Form AJAX Submit ─────────────────────────────────────────
 function submitSettingsForm(e, form, defaultMsg) {

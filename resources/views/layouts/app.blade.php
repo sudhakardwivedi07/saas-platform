@@ -173,6 +173,7 @@ button{cursor:pointer}
 .tc{background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);overflow:visible;box-shadow:var(--sh-sm);margin-bottom:14px}
 .tc-head{display:flex;align-items:center;justify-content:space-between;padding:13px 17px;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap}
 .tc-filters{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap}
+.tc-filters .btn{height:34px;padding-top:0;padding-bottom:0}
 table{width:100%;border-collapse:collapse}
 thead th{padding:9px 14px;font-size:10.5px;font-weight:500;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);background:#fafbfc;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
 tbody td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle}

@@ -510,7 +510,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
             </div>
             <div class="mf-foot">
                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('newTicketModal').style.display='none'">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="validateAndSubmitTicket()">Submit Ticket</button>
+                <button type="button" id="tk-submit-btn" class="btn btn-primary" onclick="validateAndSubmitTicket()">Submit Ticket</button>
             </div>
         </form>
     </div>
@@ -882,6 +882,8 @@ function validateAndSubmitTicket() {
     }
 
     if (ok) {
+        var submitBtn = document.getElementById('tk-submit-btn');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting...'; }
         document.getElementById('new-ticket-form').submit();
     }
 }

@@ -97,17 +97,17 @@ class GlobalSettingController extends AccountBaseController
 
         $dbData = [
             'driver'     => 'smtp',
-            'host'       => $request->smtp_host,
+            'host'       => trim($request->smtp_host),
             'port'       => (int) $request->smtp_port,
             'encryption' => $request->smtp_encryption ?: null,
-            'username'   => $request->smtp_username,
-            'from_name'  => $request->from_name,
-            'from_email' => $request->from_address,
+            'username'   => trim($request->smtp_username),
+            'from_name'  => trim($request->from_name),
+            'from_email' => trim($request->from_address),
             'is_active'  => true,
         ];
 
         if ($request->filled('smtp_password')) {
-            $dbData['password'] = $request->smtp_password;
+            $dbData['password'] = trim($request->smtp_password);
         }
 
         EmailSmtpSetting::updateOrCreate(['company_id' => null], $dbData);

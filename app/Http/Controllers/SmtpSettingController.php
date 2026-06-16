@@ -35,13 +35,21 @@ class SmtpSettingController extends AccountBaseController
             'port'       => 'nullable|integer|min:1|max:65535',
         ]);
 
+        $data = $request->only(
+            'driver', 'host', 'port', 'encryption',
+            'username', 'password', 'api_key',
+            'from_name', 'from_email', 'is_active'
+        );
+
+        foreach (['password', 'username', 'host', 'api_key', 'from_name', 'from_email'] as $field) {
+            if (isset($data[$field])) {
+                $data[$field] = trim($data[$field]);
+            }
+        }
+
         EmailSmtpSetting::updateOrCreate(
             ['company_id' => company()->id],
-            $request->only(
-                'driver', 'host', 'port', 'encryption',
-                'username', 'password', 'api_key',
-                'from_name', 'from_email', 'is_active'
-            )
+            $data
         );
 
         return Reply::success('Email settings updated.');

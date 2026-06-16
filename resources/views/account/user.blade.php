@@ -243,6 +243,9 @@
 .att-name{font-size:13px;font-weight:500;color:var(--text-1)}
 .att-dl{padding:5px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:500;color:var(--text-2);background:#fff;cursor:pointer;text-decoration:none}
 .att-dl:hover{background:var(--bg)}
+.ac-err { font-size:11.5px; color:var(--red); margin-top:4px; display:flex; align-items:center; gap:4px; }
+.ac-err::before { content:''; display:inline-block; width:12px; height:12px; flex-shrink:0; background:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat; }
+.f-inp.ac-invalid { border-color:var(--red) !important; }
 </style>
 @endpush
 
@@ -306,25 +309,30 @@
 
         {{-- 2. Change Password --}}
         <div>
-            <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:4px">Change Password</div>
-            <div style="font-size:12.5px;color:var(--text-3);margin-bottom:16px">Use a strong password that you don't use elsewhere.</div>
-            <form method="POST" action="{{ route('account.password') }}">
+            <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:16px">Change Password</div>
+            <form method="POST" action="{{ route('account.password') }}" id="u-password-form" novalidate>
                 @csrf
-                <div class="f-group">
-                    <label class="f-label">Current Password</label>
-                    <input type="password" name="current_password" class="f-inp" placeholder="Enter your current password" autocomplete="current-password" required style="max-width:400px">
-                </div>
-                <div class="form-2col" style="max-width:400px">
+                <div class="form-2col">
                     <div class="f-group">
-                        <label class="f-label">New Password</label>
-                        <input type="password" name="password" class="f-inp" placeholder="Min. 8 characters" autocomplete="new-password" required>
+                        <label class="f-label">Current Password <span style="color:var(--red)">*</span></label>
+                        <input type="password" name="current_password" id="u-cur-pwd" class="f-inp" placeholder="Enter your current password" autocomplete="current-password">
+                        <div id="u-err-cur-pwd" class="ac-err" style="display:none"></div>
+                    </div>
+                    <div></div>
+                </div>
+                <div class="form-2col">
+                    <div class="f-group">
+                        <label class="f-label">New Password <span style="color:var(--red)">*</span></label>
+                        <input type="password" name="password" id="u-new-pwd" class="f-inp" placeholder="Min. 8 characters" autocomplete="new-password">
+                        <div id="u-err-new-pwd" class="ac-err" style="display:none"></div>
                     </div>
                     <div class="f-group">
-                        <label class="f-label">Confirm Password</label>
-                        <input type="password" name="password_confirmation" class="f-inp" placeholder="Repeat new password" autocomplete="new-password" required>
+                        <label class="f-label">Confirm Password <span style="color:var(--red)">*</span></label>
+                        <input type="password" name="password_confirmation" id="u-confirm-pwd" class="f-inp" placeholder="Repeat new password" autocomplete="new-password">
+                        <div id="u-err-confirm-pwd" class="ac-err" style="display:none"></div>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-ghost btn-sm">
+                <button type="button" class="btn btn-primary btn-sm" onclick="uValidateAndSubmitPassword()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                     Save Password
                 </button>
@@ -848,5 +856,53 @@ function openViewTicket(showUrl, notesUrl) {
         errs.forEach(function(msg) { showToast(msg, 'error'); });
     }
 })();
+
+// ── Password Validation ────────────────────────────────────────────
+function uAcErr(id, msg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg || '';
+    el.style.display = msg ? 'flex' : 'none';
+}
+function uAcMark(id, invalid) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (invalid) el.classList.add('ac-invalid');
+    else el.classList.remove('ac-invalid');
+}
+function uValidateAndSubmitPassword() {
+    var ok = true;
+    var curEl  = document.getElementById('u-cur-pwd');
+    var newEl  = document.getElementById('u-new-pwd');
+    var confEl = document.getElementById('u-confirm-pwd');
+
+    var curVal  = curEl  ? curEl.value  : '';
+    var newVal  = newEl  ? newEl.value  : '';
+    var confVal = confEl ? confEl.value : '';
+
+    if (!curVal) {
+        uAcErr('u-err-cur-pwd', 'Current password is required.'); uAcMark('u-cur-pwd', true); ok = false;
+    } else {
+        uAcErr('u-err-cur-pwd', ''); uAcMark('u-cur-pwd', false);
+    }
+
+    if (!newVal) {
+        uAcErr('u-err-new-pwd', 'New password is required.'); uAcMark('u-new-pwd', true); ok = false;
+    } else if (newVal.length < 8) {
+        uAcErr('u-err-new-pwd', 'Password must be at least 8 characters.'); uAcMark('u-new-pwd', true); ok = false;
+    } else {
+        uAcErr('u-err-new-pwd', ''); uAcMark('u-new-pwd', false);
+    }
+
+    if (!confVal) {
+        uAcErr('u-err-confirm-pwd', 'Please confirm your new password.'); uAcMark('u-confirm-pwd', true); ok = false;
+    } else if (confVal !== newVal) {
+        uAcErr('u-err-confirm-pwd', 'Passwords do not match.'); uAcMark('u-confirm-pwd', true); ok = false;
+    } else {
+        uAcErr('u-err-confirm-pwd', ''); uAcMark('u-confirm-pwd', false);
+    }
+
+    if (ok) document.getElementById('u-password-form').submit();
+}
 </script>
 @endpush

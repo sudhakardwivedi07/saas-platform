@@ -632,6 +632,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                         <th>Users</th>
                         <th>Permissions</th>
                         <th style="width:100px">Actions</th>
+                        <th>Created</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -678,6 +679,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                                 @endif
                             </div>
                         </td>
+                        <td>{{ $role->created_at?->format('Y-m-d H:i:s') ?? '' }}</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -713,7 +715,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
         <button class="modal-close" onclick="document.getElementById('create-role-modal').classList.remove('open')">&times;</button>
         <div class="modal-title">Create New Role</div>
         <div class="modal-sub">Define a role name and assign permissions.</div>
-        <form id="create-role-form" onsubmit="submitCreateRole(event)" novalidate>
+        <form id="create-role-form" onsubmit="submitCreateRole(event)" novalidate data-no-loader>
             @csrf
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
                 <div class="mf-field">
@@ -732,8 +734,10 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             <div class="mf-field">
                 <label class="mf-label">Permissions <span style="color:var(--red)">*</span></label>
                 <div id="err-cr-perms" style="font-size:11.5px;color:var(--red);margin-top:2px;display:none">Please select at least one permission.</div>
+                @php $crHiddenModules = ['Documents','Email Templates','Settings','Billing','Reports','Companies & Plans','Settings Tabs','My Account Tabs','Other']; @endphp
                 <div style="display:grid;gap:10px;margin-top:6px;max-height:340px;overflow-y:auto;padding-right:4px">
                     @foreach($allPermissions as $module => $perms)
+                    @if(in_array($module, $crHiddenModules)) @continue @endif
                     <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:11px 13px">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
                             <input type="checkbox" class="mod-toggle" data-module="cr-mod-{{ Str::slug($module) }}"
@@ -823,20 +827,61 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
 <script src="{{ asset(config('assets.jquery')) }}"></script>
 <script src="{{ asset(config('assets.datatables_js')) }}"></script>
 <script>
-// ── Activate tab from URL hash (e.g. #tab-plans from "Back to Plans") ─────────
+// ── Settings tab persistence + reset on switch ────────────────────────────────
 (function () {
+    var SK = 'settings_active_tab';
+
+    function resetTabContent(tabId) {
+        var panel = document.getElementById(tabId);
+        if (!panel) return;
+        // Reset all plain forms inside the panel
+        panel.querySelectorAll('form').forEach(function(f) { f.reset(); });
+        // Clear all text/search inputs that are not inside modals
+        panel.querySelectorAll('input[type="text"], input[type="search"], input[type="email"]').forEach(function(el) {
+            el.value = '';
+        });
+        // Reset all <select> elements to first option
+        panel.querySelectorAll('select').forEach(function(el) { el.selectedIndex = 0; });
+        // Reset DataTable search/filters for tables inside this panel
+        panel.querySelectorAll('table[id]').forEach(function(tbl) {
+            if (window.$ && $.fn.DataTable && $.fn.DataTable.isDataTable('#' + tbl.id)) {
+                $('#' + tbl.id).DataTable().search('').columns().search('').draw();
+            }
+        });
+    }
+
+    function activateTab(tabId) {
+        var btn   = document.querySelector('.tab-btn[data-tab="' + tabId + '"]');
+        var panel = document.getElementById(tabId);
+        if (!btn || !panel) return false;
+        document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+        document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+        btn.classList.add('active');
+        panel.classList.add('active');
+        localStorage.setItem(SK, tabId);
+        history.replaceState(null, '', location.pathname + '#' + tabId);
+        return true;
+    }
+
+    // On load: honour URL hash first, then localStorage
     var hash = window.location.hash.replace('#', '');
     if (hash) {
-        var targetBtn   = document.querySelector('.tab-btn[data-tab="' + hash + '"]');
-        var targetPanel = document.getElementById(hash);
-        if (targetBtn && targetPanel) {
-            document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-            document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
-            targetBtn.classList.add('active');
-            targetPanel.classList.add('active');
-        }
+        activateTab(hash) || activateTab('tab-' + hash);
+    } else {
+        var stored = localStorage.getItem(SK);
+        if (stored) activateTab(stored);
     }
-})();
+
+    // On tab click: reset the target tab's content, then activate it
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        btn.addEventListener('click', function () {
+            var tabId = btn.dataset.tab;
+            if (!tabId) return;
+            resetTabContent(tabId);
+            activateTab(tabId);
+        });
+    });
+}());
 
 $(document).ready(function() {
     // Plan delete: delegated so it works with DataTables; Swal must run (not native confirm)
@@ -915,8 +960,11 @@ $(document).ready(function() {
     var roleTable = $('#roles-table').DataTable({
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
-        order: [[0, 'asc']],
-        columnDefs: [{ orderable: false, targets: [4] }],
+        order: [[5, 'desc']],
+        columnDefs: [
+            { orderable: false, targets: [4] },
+            { visible: false, targets: [5] },
+        ],
         infoCallback: function(settings, start, end, max, total, pre) {
             return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'roles' : 'role');
         },
@@ -982,11 +1030,13 @@ function crValidateAlias(show) {
 function crUpdateBtn() {
     var nameOk  = crValidateName(false);
     var aliasOk = crValidateAlias(false);
+    var permsOk = document.querySelectorAll('#create-role-form input[name="permissions[]"]:checked').length > 0;
+    var enabled = nameOk && aliasOk && permsOk;
     var btn = document.getElementById('cr-submit');
     if (!btn) return;
-    btn.disabled = !(nameOk && aliasOk);
-    btn.style.opacity = (nameOk && aliasOk) ? '' : '.5';
-    btn.style.cursor  = (nameOk && aliasOk) ? '' : 'not-allowed';
+    btn.disabled = !enabled;
+    btn.style.opacity = enabled ? '' : '.5';
+    btn.style.cursor  = enabled ? '' : 'not-allowed';
 }
 
 function openCreateRoleModal() {
@@ -1005,6 +1055,7 @@ function openCreateRoleModal() {
 (function() {
     var nameEl  = document.getElementById('cr-name');
     var aliasEl = document.getElementById('cr-alias');
+    var formEl  = document.getElementById('create-role-form');
     if (nameEl) {
         nameEl.addEventListener('input', crUpdateBtn);
         nameEl.addEventListener('blur',  function() { crValidateName(true); crUpdateBtn(); });
@@ -1013,10 +1064,14 @@ function openCreateRoleModal() {
         aliasEl.addEventListener('input', crUpdateBtn);
         aliasEl.addEventListener('blur',  function() { crValidateAlias(true); crUpdateBtn(); });
     }
+    if (formEl) {
+        formEl.addEventListener('change', crUpdateBtn);
+    }
 }());
 
 function submitCreateRole(e) {
     e.preventDefault();
+    e.stopImmediatePropagation();
     var nameOk  = crValidateName(true);
     var aliasOk = crValidateAlias(true);
     var permsChecked = document.querySelectorAll('#create-role-form input[name="permissions[]"]:checked').length > 0;
@@ -1192,13 +1247,6 @@ function submitSettingsForm(e, form, defaultMsg) {
     });
 }
 
-// Auto-switch tab based on URL hash (#payment, #plans, #email, #sms, #roles, #quickbooks)
-document.addEventListener('DOMContentLoaded', function () {
-    var hash = window.location.hash.replace('#', '');
-    if (!hash) return;
-    var btn = document.querySelector('[data-tab="tab-' + hash + '"]');
-    if (btn) btn.click();
-});
 
 // ── Insight Limits sub-tab switching ──────────────────────────────────────────
 document.querySelectorAll('.il-subtab').forEach(function(btn) {

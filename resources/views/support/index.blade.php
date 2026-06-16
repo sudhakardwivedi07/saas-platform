@@ -70,7 +70,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 .vt-meta-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)}
 .vt-meta-val{font-size:13px;font-weight:500;color:var(--text-1)}
 .vt-section-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin-bottom:6px}
-.vt-desc-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13.5px;color:var(--text-1);line-height:1.65;white-space:pre-wrap;max-height:200px;overflow-y:auto}
+.vt-desc-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13.5px;color:var(--text-1);line-height:1.65;white-space:pre-wrap;max-height:200px;overflow-y:auto;word-break:break-word;overflow-wrap:anywhere}
 .att-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
 .att-info{display:flex;align-items:center;gap:10px}
 .att-icon{width:32px;height:32px;border-radius:6px;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -207,7 +207,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                         <div class="firm-name">{{ $ticket->company?->company_name ?? '—' }}</div>
                         <div class="firm-user">{{ $ticket->user?->name ?? '—' }}</div>
                     </td>
-                    <td style="color:var(--text-1);font-weight:500;max-width:280px">{{ $ticket->subject }}</td>
+                    <td style="color:var(--text-1);font-weight:500;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ $ticket->subject }}">{{ $ticket->subject }}</td>
                     <td><span class="pri-{{ $pri }}">{{ ucfirst($pri) }}</span></td>
                     <td><span class="st-badge st-{{ $st }}">{{ $stLabel }}</span></td>
                     <td data-date="{{ $ticket->created_at->format('Y-m-d') }}">
@@ -320,7 +320,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                             {{ $tkId }}
                         </span>
                     </td>
-                    <td style="color:var(--text-1);font-weight:500;max-width:340px">{{ $ticket->subject }}</td>
+                    <td style="color:var(--text-1);font-weight:500;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ $ticket->subject }}">{{ $ticket->subject }}</td>
                     <td><span class="pri-{{ $pri }}">{{ ucfirst($pri) }}</span></td>
                     <td><span class="st-badge st-{{ $st }}">{{ $stLabel }}</span></td>
                     <td data-date="{{ $ticket->created_at->format('Y-m-d') }}">
@@ -376,7 +376,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <span class="vt-meta-val" id="vt-raised"></span>
             </div>
             <div class="vt-meta-col">
-                <span class="vt-meta-lbl">Submitted By</span>
+                <span class="vt-meta-lbl">Raised By</span>
                 <span class="vt-meta-val" id="vt-by"></span>
             </div>
             <div class="vt-meta-col" id="vt-company-col">
@@ -391,7 +391,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 
         <div class="mf-field">
             <div class="vt-section-lbl">Subject</div>
-            <div style="font-size:14px;font-weight:600;color:var(--text-1)" id="vt-subject"></div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-1);word-break:break-word;overflow-wrap:anywhere" id="vt-subject"></div>
         </div>
 
         <div class="mf-field">
@@ -727,7 +727,7 @@ function openViewTicket(showUrl, updateUrl, notesUrl, canUpdate) {
             _currentTicketId = t.ticket_id;
 
             document.getElementById('vt-id').textContent      = t.ticket_id;
-            document.getElementById('vt-created').textContent = 'Submitted on ' + t.created_at;
+            document.getElementById('vt-created').textContent = 'Raised on ' + t.created_at;
             document.getElementById('vt-raised').textContent  = t.created_at;
             document.getElementById('vt-by').textContent      = t.submitted_by;
             document.getElementById('vt-status-text').textContent = ST_LABEL[t.status] || t.status;

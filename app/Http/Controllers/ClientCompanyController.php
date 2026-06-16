@@ -164,16 +164,12 @@ class ClientCompanyController extends AccountBaseController
 
         $data = $request->validate([
             'company_name'  => 'required|string|max:255',
-            'company_email' => 'required|email|max:255',
             'industry_type' => 'nullable|string|max:100',
             'entity_type'   => 'nullable|string|max:100',
             'state'         => 'nullable|string|max:100',
         ]);
 
-        // Defense-in-depth: only these keys are ever writable from edit form.
-        // Disabled/read-only fields (plan/admin/subdomain/package) are ignored
-        // even if someone tampers with the request payload.
-        $updatableKeys = ['company_name', 'company_email', 'industry_type', 'entity_type', 'state'];
+        $updatableKeys = ['company_name', 'industry_type', 'entity_type', 'state'];
         $safeData = collect($data)->only($updatableKeys)->toArray();
 
         $company->update($safeData);
@@ -244,7 +240,6 @@ class ClientCompanyController extends AccountBaseController
 
         $rules = [
             'company_name'  => 'required|string|max:255',
-            'company_email' => 'required|email|max:255',
             'industry_type' => 'nullable|string|max:100',
             'entity_type'   => 'nullable|string|max:100',
             'state'         => 'nullable|string|max:100',
@@ -290,11 +285,19 @@ class ClientCompanyController extends AccountBaseController
         }
 
         // Create company — always active, no plan required
+        // Derive company_email from the client account (not user-entered)
+        $derivedEmail = auth()->user()->email;
+        if ($adminType === 'existing' && isset($existingUser)) {
+            $derivedEmail = $existingUser->email;
+        } elseif ($adminType === 'new' && $request->filled('admin_email')) {
+            $derivedEmail = $request->admin_email;
+        }
+
         $company = Company::create([
             'created_by'    => $createdByKey,
             'company_name'  => $request->company_name,
             'app_name'      => $request->company_name,
-            'company_email' => $request->company_email,
+            'company_email' => $derivedEmail,
             'subdomain'     => $subdomain,
             'status'        => 'active',
             'package_id'    => null,

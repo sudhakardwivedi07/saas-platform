@@ -339,12 +339,6 @@ $totalCompanies = $allClientCompanies->count();
                 </div>
             </div>
 
-            <div class="mf-field" style="margin-bottom:0">
-                <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
-                <input type="email" name="company_email" id="show-edit-co-email" class="mf-inp" placeholder="info@acme.com" maxlength="100">
-                <div id="show-edit-err-co-email" class="co-err" style="display:none"></div>
-            </div>
-
             <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;border-top:1px solid var(--border);margin-top:20px">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="closeShowEditCoModal()">Cancel</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitShowEditCo()">
@@ -476,7 +470,6 @@ function openShowEditCoModal(id, name, email, industry, entity) {
     var updateUrl = '{{ route("my-companies.update", ":id") }}'.replace(':id', id);
     document.getElementById('modal-show-edit-co-form').action = updateUrl;
     document.getElementById('show-edit-co-name').value  = name;
-    document.getElementById('show-edit-co-email').value = email;
 
     var indSel = document.getElementById('show-edit-co-industry');
     for (var i = 0; i < indSel.options.length; i++) {
@@ -487,8 +480,8 @@ function openShowEditCoModal(id, name, email, industry, entity) {
         entSel.options[i].selected = entSel.options[i].value === entity;
     }
 
-    ['show-edit-err-co-name','show-edit-err-co-email'].forEach(function(eid) { _showCoErr(eid, ''); });
-    ['show-edit-co-name','show-edit-co-email'].forEach(function(fid) { _showCoMark(fid, false); });
+    ['show-edit-err-co-name'].forEach(function(eid) { _showCoErr(eid, ''); });
+    ['show-edit-co-name'].forEach(function(fid) { _showCoMark(fid, false); });
 
     document.getElementById('modal-show-edit-co').classList.add('open');
     setTimeout(function() { document.getElementById('show-edit-co-name').focus(); }, 80);
@@ -512,20 +505,6 @@ function validateAndSubmitShowEditCo() {
         _showCoMark('show-edit-co-name', false);
     }
 
-    var emailVal = (document.getElementById('show-edit-co-email').value || '').trim();
-    if (!emailVal) {
-        _showCoErr('show-edit-err-co-email', 'Company Email is required.');
-        _showCoMark('show-edit-co-email', true);
-        ok = false;
-    } else if (!emailRx.test(emailVal)) {
-        _showCoErr('show-edit-err-co-email', 'Enter a valid email address.');
-        _showCoMark('show-edit-co-email', true);
-        ok = false;
-    } else {
-        _showCoErr('show-edit-err-co-email', '');
-        _showCoMark('show-edit-co-email', false);
-    }
-
     if (ok) { document.getElementById('modal-show-edit-co-form').submit(); }
 }
 
@@ -537,13 +516,6 @@ function validateAndSubmitShowEditCo() {
         if (nameEl) {
             nameEl.addEventListener('input', function() {
                 if (this.value.trim()) { _showCoErr('show-edit-err-co-name', ''); _showCoMark('show-edit-co-name', false); }
-            });
-        }
-        var emailEl = document.getElementById('show-edit-co-email');
-        if (emailEl) {
-            emailEl.addEventListener('input', function() {
-                var v = this.value.trim();
-                if (!v || emailRx.test(v)) { _showCoErr('show-edit-err-co-email', ''); _showCoMark('show-edit-co-email', false); }
             });
         }
     });

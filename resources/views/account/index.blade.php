@@ -1072,6 +1072,8 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
 </div>
 @endif {{-- /tab-activity --}}
 
+<div id="ac-tab-loader" aria-hidden="true"><div id="ac-tab-loader-ring"></div></div>
+
 @endsection
 
 @push('scripts')
@@ -1289,8 +1291,8 @@ function _refreshAccountTab(tabId) {
     var panel = document.getElementById(tabId);
     if (!panel) return;
 
-    // Dim the panel while loading (global pg-blur overlay shows the spinner)
-    panel.style.opacity       = '0.45';
+    var overlay = document.getElementById('ac-tab-loader');
+    if (overlay) overlay.classList.add('on');
     panel.style.pointerEvents = 'none';
 
     fetch(window.location.pathname, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -1345,11 +1347,11 @@ function _refreshAccountTab(tabId) {
                     if (phSt) phSt.addEventListener('change', function () { if (phTable) phTable.column(3).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw(); });
                 }
             }
-            panel.style.opacity       = '';
+            if (overlay) overlay.classList.remove('on');
             panel.style.pointerEvents = '';
         })
         .catch(function () {
-            panel.style.opacity       = '';
+            if (overlay) overlay.classList.remove('on');
             panel.style.pointerEvents = '';
         });
 }
@@ -1974,5 +1976,9 @@ function validateAndSubmitPassword() {
     background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 .f-inp.ac-invalid { border-color: var(--red) !important; }
+#ac-tab-loader{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .2s}
+#ac-tab-loader.on{opacity:1;pointer-events:all}
+#ac-tab-loader-ring{width:46px;height:46px;border:3.5px solid rgba(0,0,0,.08);border-top-color:var(--orange,#f06b21);border-radius:50%;animation:ac-spin .7s linear infinite}
+@keyframes ac-spin{to{transform:rotate(360deg)}}
 </style>
 @endpush

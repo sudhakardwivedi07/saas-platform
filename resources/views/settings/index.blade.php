@@ -7,7 +7,7 @@
 <div class="ph">
     <div class="ph-left">
         <h1>Settings</h1>
-        <p>Configure payment, email, SMS, QuickBooks, and plan settings</p>
+        <p>Configure Email, SMS, QuickBooks, Insight Limits, and Roles &amp; Permissions settings</p>
     </div>
 </div>
 
@@ -737,22 +737,25 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
         <button class="modal-close" onclick="document.getElementById('create-role-modal').classList.remove('open')">&times;</button>
         <div class="modal-title">Create New Role</div>
         <div class="modal-sub">Define a role name and assign permissions.</div>
-        <form id="create-role-form" onsubmit="submitCreateRole(event)">
+        <form id="create-role-form" onsubmit="submitCreateRole(event)" novalidate>
             @csrf
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
                 <div class="mf-field">
                     <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
-                    <input type="text" name="name" id="cr-name" class="mf-inp" placeholder="e.g. accountant" required autocomplete="off">
-                    <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase with underscores (e.g. senior_manager)</div>
+                    <input type="text" name="name" id="cr-name" class="mf-inp" placeholder="e.g. accountant" autocomplete="off">
+                    <div id="err-cr-name" style="font-size:11.5px;color:var(--red);margin-top:2px;display:none"></div>
+                    <div id="hint-cr-name" style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase with underscores (e.g. senior_manager)</div>
                 </div>
                 <div class="mf-field">
-                    <label class="mf-label">Alias <span style="font-size:11px;color:var(--text-3)">(display name)</span></label>
+                    <label class="mf-label">Alias <span style="color:var(--red)">*</span> <span style="font-size:11px;color:var(--text-3)">(display name)</span></label>
                     <input type="text" name="alias" id="cr-alias" class="mf-inp" placeholder="e.g. Account Manager" autocomplete="off">
+                    <div id="err-cr-alias" style="font-size:11.5px;color:var(--red);margin-top:2px;display:none"></div>
                     <div style="font-size:11.5px;color:var(--text-3);margin-top:4px">Shown to users instead of the role name</div>
                 </div>
             </div>
             <div class="mf-field">
-                <label class="mf-label">Permissions</label>
+                <label class="mf-label">Permissions <span style="color:var(--red)">*</span></label>
+                <div id="err-cr-perms" style="font-size:11.5px;color:var(--red);margin-top:2px;display:none">Please select at least one permission.</div>
                 <div style="display:grid;gap:10px;margin-top:6px;max-height:340px;overflow-y:auto;padding-right:4px">
                     @foreach($allPermissions as $module => $perms)
                     <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:11px 13px">
@@ -779,7 +782,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             </div>
             <div class="mf-foot">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('create-role-modal').classList.remove('open')">Cancel</button>
-                <button type="submit" class="btn btn-primary btn-sm" id="cr-submit">Create Role</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="cr-submit" disabled style="opacity:.5;cursor:not-allowed">Create Role</button>
             </div>
         </form>
     </div>
@@ -956,20 +959,6 @@ $(document).ready(function() {
         roleTable.column(1).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
     });
 
-    $.fn.dataTable.ext.search.push(function(settings, data, dataIndex) {
-        if (!settings.nTable || settings.nTable.id !== 'roles-table') return true;
-        var from = document.getElementById('role-dr-from') ? document.getElementById('role-dr-from').value : '';
-        var to   = document.getElementById('role-dr-to')   ? document.getElementById('role-dr-to').value   : '';
-        if (!from && !to) return true;
-        var row = roleTable.row(dataIndex).node();
-        if (!row) return true;
-        var dateVal = row.querySelector('td[data-date]')?.getAttribute('data-date') || '';
-        if (!dateVal) return true;
-        if (from && dateVal < from) return false;
-        if (to   && dateVal > to)   return false;
-        return true;
-    });
-    _drCbs['role-dr'] = function() { roleTable.draw(); };
 });
 
 // ── Permission toggles ─────────────────────────────────────────────────────────
@@ -986,14 +975,79 @@ function syncModuleToggle(modClass, toggleId) {
 }
 
 // ── Create Role ────────────────────────────────────────────────────────────────
+function crSetErr(id, msg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg || '';
+    el.style.display = msg ? 'block' : 'none';
+}
+
+function crValidateName(show) {
+    var val = (document.getElementById('cr-name') || {}).value || '';
+    var err = '';
+    if (!val.trim()) {
+        err = show ? 'Role name is required.' : '';
+    } else if (!/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(val.trim())) {
+        err = 'Must be lowercase with underscores, e.g. senior_manager.';
+    }
+    crSetErr('err-cr-name', err);
+    var hint = document.getElementById('hint-cr-name');
+    if (hint) hint.style.display = err ? 'none' : '';
+    return err === '' && val.trim() !== '';
+}
+
+function crValidateAlias(show) {
+    var val = (document.getElementById('cr-alias') || {}).value || '';
+    var err = (!val.trim() && show) ? 'Alias (display name) is required.' : '';
+    crSetErr('err-cr-alias', err);
+    return val.trim() !== '';
+}
+
+function crUpdateBtn() {
+    var nameOk  = crValidateName(false);
+    var aliasOk = crValidateAlias(false);
+    var btn = document.getElementById('cr-submit');
+    if (!btn) return;
+    btn.disabled = !(nameOk && aliasOk);
+    btn.style.opacity = (nameOk && aliasOk) ? '' : '.5';
+    btn.style.cursor  = (nameOk && aliasOk) ? '' : 'not-allowed';
+}
+
 function openCreateRoleModal() {
-    document.getElementById('create-role-form').reset();
+    var form = document.getElementById('create-role-form');
+    if (form) form.reset();
     document.querySelectorAll('#create-role-modal .mod-toggle').forEach(function(cb) { cb.checked = false; });
+    crSetErr('err-cr-name', '');
+    crSetErr('err-cr-alias', '');
+    crSetErr('err-cr-perms', '');
+    var hintName = document.getElementById('hint-cr-name');
+    if (hintName) hintName.style.display = '';
+    crUpdateBtn();
     document.getElementById('create-role-modal').classList.add('open');
 }
 
+(function() {
+    var nameEl  = document.getElementById('cr-name');
+    var aliasEl = document.getElementById('cr-alias');
+    if (nameEl) {
+        nameEl.addEventListener('input', crUpdateBtn);
+        nameEl.addEventListener('blur',  function() { crValidateName(true); crUpdateBtn(); });
+    }
+    if (aliasEl) {
+        aliasEl.addEventListener('input', crUpdateBtn);
+        aliasEl.addEventListener('blur',  function() { crValidateAlias(true); crUpdateBtn(); });
+    }
+}());
+
 function submitCreateRole(e) {
     e.preventDefault();
+    var nameOk  = crValidateName(true);
+    var aliasOk = crValidateAlias(true);
+    var permsChecked = document.querySelectorAll('#create-role-form input[name="permissions[]"]:checked').length > 0;
+    var permsErr = document.getElementById('err-cr-perms');
+    if (permsErr) permsErr.style.display = permsChecked ? 'none' : 'block';
+    if (!nameOk || !aliasOk || !permsChecked) return;
+
     var form = document.getElementById('create-role-form');
     var btn  = document.getElementById('cr-submit');
     var data = new FormData(form);
@@ -1002,17 +1056,17 @@ function submitCreateRole(e) {
     fetch('{{ route("settings.roles.store") }}', { method: 'POST', headers: {'X-Requested-With':'XMLHttpRequest'}, body: data })
         .then(function(r) { return r.json(); })
         .then(function(res) {
-            btn.disabled = false;
+            btn.disabled = false; btn.style.opacity = ''; btn.style.cursor = '';
             if (res.status === 'success') {
                 document.getElementById('create-role-modal').classList.remove('open');
                 var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
                 Swal.fire({ icon: 'success', text: res.message || 'Role created.', confirmButtonText: 'Ok', confirmButtonColor: btnColor })
-                    .then(function() { location.reload(); });
+                    .then(function() { location.href = location.pathname + '#tab-roles'; location.reload(); });
             } else {
                 showToast(res.message || 'Something went wrong.', 'error');
             }
         })
-        .catch(function() { btn.disabled = false; showToast('Request failed.', 'error'); });
+        .catch(function() { btn.disabled = false; btn.style.opacity = ''; btn.style.cursor = ''; showToast('Request failed.', 'error'); });
 }
 
 // ── Edit Role ──────────────────────────────────────────────────────────────────
@@ -1294,7 +1348,6 @@ function resetPlanFilters() {
 function resetRoleFilters() {
     document.getElementById('role-search').value        = '';
     document.getElementById('role-type-filter').value   = '';
-    drClear('role-dr');
     if (window.$ && $('#roles-table').length) {
         $('#roles-table').DataTable().search('').columns().search('').draw();
     }

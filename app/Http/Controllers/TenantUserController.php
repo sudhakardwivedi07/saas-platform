@@ -88,7 +88,7 @@ class TenantUserController extends AccountBaseController
         // Send invitation email via DB template with all dynamic variables resolved
         try {
             app(EmailService::class)->sendToUser($user, 'partner_user_welcome_email', [
-                '{{first_name}}'   => explode(' ', trim($user->name))[0],
+                '{{first_name}}'   => trim($user->name),
                 '{{email}}'        => $user->email,
                 '{{password}}'     => $plainPassword,
                 '{{company_name}}' => $companyName,

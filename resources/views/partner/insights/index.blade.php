@@ -410,19 +410,18 @@
         table = $('#pi-table').DataTable({
             paging:       true,
             pageLength:   10,
-            lengthChange: true,
+            lengthChange: false,
             searching:    true,
             ordering:     true,
             info:         true,
-            dom:          '<"dt-tscroll"t><"dt-footer"lip>',
+            dom:          '<"dt-tscroll"t><"dt-footer"ip>',
             order:        [[1, 'desc']],
             columnDefs:   [{ orderable: false, targets: [-1] }],
             language: {
-                info:        'Showing _START_ to _END_ of _TOTAL_ entries',
+                info:        'Showing _START_–_END_ of _TOTAL_ insights',
                 infoEmpty:   'No insights found',
-                paginate:    { previous: 'Previous', next: 'Next' },
+                paginate:    { previous: '‹', next: '›' },
                 emptyTable:  'No insights generated yet. Click <strong>Generate New Insight</strong> to get started.',
-                lengthMenu:  'Show _MENU_',
             },
         });
 

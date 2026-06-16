@@ -785,8 +785,10 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             </div>
             <div class="mf-field">
                 <label class="mf-label">Permissions</label>
+                @php $erHiddenModules = ['Documents','Email Templates','Billing','Reports','Companies & Plans','Other']; @endphp
                 <div style="display:grid;gap:10px;margin-top:6px;max-height:340px;overflow-y:auto;padding-right:4px">
                     @foreach($allPermissions as $module => $perms)
+                    @if(in_array($module, $erHiddenModules)) @continue @endif
                     <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:11px 13px">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
                             <input type="checkbox" class="mod-toggle" data-module="er-mod-{{ Str::slug($module) }}"

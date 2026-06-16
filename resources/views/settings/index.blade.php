@@ -251,11 +251,6 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             QuickBooks Integration Settings
         </div>
 
-        <div class="info-banner">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span class="info-banner-txt">Configure your QuickBooks app credentials to enable OAuth integration for your sub-companies.</span>
-        </div>
-
         <form id="qb-settings-form" onsubmit="submitQbSettings(event)">
             @csrf
             <div class="form-2col">

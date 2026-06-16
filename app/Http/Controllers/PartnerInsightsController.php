@@ -180,7 +180,8 @@ class PartnerInsightsController extends AccountBaseController
             'company_id' => 'required|integer|exists:companies,id',
         ]);
 
-        $companyId = (int) $request->company_id;
+        $companyId        = (int) $request->company_id;
+        $partnerCompanyId = $this->partnerCompanyId();
 
         if (!$this->allClientCompanyIds()->contains($companyId)) {
             return response()->json(['status' => 'error', 'message' => 'Access denied.'], 403);

@@ -200,6 +200,10 @@
 .st-resolved2  { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
 .st-closed2    { background: #f9fafb; color: #6b7280; border: 1px solid #e5e7eb; }
 
+/* Validation */
+.ua-err { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--red,#ef4444); margin-top:4px; }
+.ua-invalid { border-color:var(--red,#ef4444)!important; }
+
 /* View button */
 .view-btn {
     display: inline-flex;
@@ -280,25 +284,29 @@
         {{-- Profile Form --}}
         <div style="margin-bottom:26px">
             <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:16px">Personal Information</div>
-            <form method="POST" action="{{ route('account.profile') }}">
+            <form method="POST" action="{{ route('account.profile') . (request()->query('_imp') ? '?_imp=' . request()->query('_imp') : '') }}" id="ua-profile-form" novalidate>
                 @csrf
-                <div class="form-2col">
+                <div class="form-2col" style="margin-bottom:16px">
                     <div class="f-group">
-                        <label class="f-label">Full Name</label>
-                        <input type="text" name="name" class="f-inp" value="{{ old('name', $authUser->name) }}" required>
+                        <label class="f-label">Full Name <span style="color:var(--red)">*</span></label>
+                        <input type="text" name="name" id="ua-name" class="f-inp" value="{{ old('name', $authUser->name) }}" maxlength="100" placeholder="Enter your full name">
+                        <div id="ua-err-name" class="ua-err" style="display:none"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Email Address</label>
-                        <input type="email" name="email" class="f-inp" value="{{ old('email', $authUser->email) }}" required>
+                        <input type="email" class="f-inp" value="{{ $authUser->email }}" readonly
+                               style="background:var(--bg);cursor:not-allowed;color:var(--text-2)">
+                        <div style="font-size:11px;color:var(--text-3);margin-top:4px">Email address cannot be changed.</div>
                     </div>
                 </div>
-                <div class="form-2col">
+                <div class="form-2col" style="margin-bottom:20px">
                     <div class="f-group">
                         <label class="f-label">Phone Number</label>
-                        <input type="tel" name="mobile" class="f-inp" value="{{ old('mobile', $authUser->mobile) }}" placeholder="e.g. +1 555 000 0000">
+                        <input type="tel" name="mobile" id="ua-phone" class="f-inp" value="{{ old('mobile', $authUser->mobile) }}" placeholder="10-digit number" maxlength="10" inputmode="numeric">
+                        <div id="ua-err-phone" class="ua-err" style="display:none"></div>
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary btn-sm">
+                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitUaProfile()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                     Save Profile
                 </button>
@@ -310,7 +318,7 @@
         {{-- 2. Change Password --}}
         <div>
             <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:16px">Change Password</div>
-            <form method="POST" action="{{ route('account.password') }}" id="u-password-form" novalidate>
+            <form method="POST" action="{{ route('account.password') . (request()->query('_imp') ? '?_imp=' . request()->query('_imp') : '') }}" id="u-password-form" novalidate>
                 @csrf
                 <div class="form-2col">
                     <div class="f-group">
@@ -492,7 +500,7 @@
             <div class="dr-wrap" id="ua-dr">
                 <div class="dr-field" onclick="drOpen('ua-dr')">
                     <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <span class="dr-text" id="ua-dr-text">Start Date To End Date</span>
+                    <span class="dr-text" id="ua-dr-text">Start Date – End Date</span>
                     <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('ua-dr')" title="Clear date filter">&#x2715;</button>
                 </div>
                 <div class="dr-menu" id="ua-dr-menu">
@@ -838,6 +846,89 @@ function openViewTicket(showUrl, notesUrl) {
         })
         .catch(function() { showToast('Failed to load ticket.', 'error'); });
 }
+
+// ── Profile & Password validation ─────────────────────────────────
+var _uaEmailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
+
+function _uaErr(fldId, errId, msg) {
+    var fld = document.getElementById(fldId);
+    var err = document.getElementById(errId);
+    if (fld) fld.classList.add('ua-invalid');
+    if (err) { err.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ' + msg; err.style.display = 'flex'; }
+}
+
+function _uaOk(fldId, errId) {
+    var fld = document.getElementById(fldId);
+    var err = document.getElementById(errId);
+    if (fld) fld.classList.remove('ua-invalid');
+    if (err) err.style.display = 'none';
+}
+
+function validateAndSubmitUaProfile() {
+    var ok = true;
+    var name  = (document.getElementById('ua-name')  || {value:''}).value;
+    var phone = (document.getElementById('ua-phone') || {value:''}).value;
+
+    if (!name.trim()) {
+        _uaErr('ua-name', 'ua-err-name', 'Full name is required.'); ok = false;
+    } else { _uaOk('ua-name', 'ua-err-name'); }
+
+    if (phone.trim()) {
+        var phoneDigits = phone.replace(/[^\d]/g, '');
+        if (phoneDigits.length !== 10) {
+            _uaErr('ua-phone', 'ua-err-phone', 'Phone number must be exactly 10 digits.'); ok = false;
+        } else { _uaOk('ua-phone', 'ua-err-phone'); }
+    } else { _uaOk('ua-phone', 'ua-err-phone'); }
+
+    if (ok) document.getElementById('ua-profile-form').submit();
+}
+
+function validateAndSubmitUaPassword() {
+    var ok   = true;
+    var cur  = (document.getElementById('ua-cur-pwd')     || {value:''}).value;
+    var np   = (document.getElementById('ua-new-pwd')     || {value:''}).value;
+    var conf = (document.getElementById('ua-confirm-pwd') || {value:''}).value;
+
+    if (!cur) {
+        _uaErr('ua-cur-pwd', 'ua-err-cur-pwd', 'Current password is required.'); ok = false;
+    } else { _uaOk('ua-cur-pwd', 'ua-err-cur-pwd'); }
+
+    if (!np) {
+        _uaErr('ua-new-pwd', 'ua-err-new-pwd', 'New password is required.'); ok = false;
+    } else if (np.length < 8) {
+        _uaErr('ua-new-pwd', 'ua-err-new-pwd', 'Password must be at least 8 characters.'); ok = false;
+    } else { _uaOk('ua-new-pwd', 'ua-err-new-pwd'); }
+
+    if (!conf) {
+        _uaErr('ua-confirm-pwd', 'ua-err-confirm-pwd', 'Please confirm your new password.'); ok = false;
+    } else if (conf !== np) {
+        _uaErr('ua-confirm-pwd', 'ua-err-confirm-pwd', 'Passwords do not match.'); ok = false;
+    } else { _uaOk('ua-confirm-pwd', 'ua-err-confirm-pwd'); }
+
+    if (ok) document.getElementById('ua-password-form').submit();
+}
+
+// Real-time error clearing
+(function() {
+    function clearOn(id, errId) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('input', function() { _uaOk(id, errId); });
+    }
+    function phoneOnly(id, errId) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', function() {
+                this.value = this.value.replace(/[^\d]/g, '').slice(0, 10);
+                _uaOk(id, errId);
+            });
+        }
+    }
+    clearOn('ua-name', 'ua-err-name');
+    phoneOnly('ua-phone', 'ua-err-phone');
+    clearOn('ua-cur-pwd', 'ua-err-cur-pwd');
+    clearOn('ua-new-pwd', 'ua-err-new-pwd');
+    clearOn('ua-confirm-pwd', 'ua-err-confirm-pwd');
+})();
 
 // ── Init: reopen modal on validation error ────────────────────────
 (function() {

@@ -28,7 +28,7 @@ class ImpersonateClientViaToken
 {
     public function handle(Request $request, Closure $next)
     {
-        $token = $request->query('_imp');
+        $token = $request->query('_imp') ?? $request->input('_imp');
 
         if ($token && $data = Cache::get('imp_view_' . $token)) {
             // Confirm the currently-authenticated user is the admin who created the token.
@@ -42,8 +42,8 @@ class ImpersonateClientViaToken
                     // Share impersonation context with all views rendered in this request.
                     View::share('__imp', [
                         'token'        => $token,
-                        'client_name'  => $data['client_name'],
-                        'client_email' => $data['client_email'],
+                        'client_name'  => $client->name,
+                        'client_email' => $client->email,
                         'admin_id'     => $data['admin_id'],
                     ]);
                 }

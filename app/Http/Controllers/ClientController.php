@@ -388,8 +388,8 @@ class ClientController extends AccountBaseController
         $client = User::findOrFail($id);
 
         $request->validate([
-            'name'  => 'required|string|max:255',
-            'phone' => 'nullable|string|max:30',
+            'name'  => 'required|string|min:2|max:100',
+            'phone' => 'nullable|digits:10',
         ]);
 
         $client->name   = $request->name;

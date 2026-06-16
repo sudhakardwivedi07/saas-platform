@@ -2,6 +2,7 @@
 @section('title', 'My Companies')
 @section('page-title', 'My Companies')
 
+
 @section('content')
 
 <div class="ph">
@@ -55,7 +56,7 @@
             <div class="dr-wrap" id="coi-dr">
                 <div class="dr-field" onclick="drOpen('coi-dr')">
                     <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <span class="dr-text" id="coi-dr-text">Start Date To End Date</span>
+                    <span class="dr-text" id="coi-dr-text">Start Date – End Date</span>
                     <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('coi-dr')" title="Clear date filter">&#x2715;</button>
                 </div>
                 <div class="dr-menu" id="coi-dr-menu">
@@ -129,13 +130,13 @@
                     <td>
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:36px;height:36px;border-radius:9px;background:{{ $color }};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0">{{ $initials }}</div>
-                            <div>
-                                <div style="font-weight:500;font-size:13px;color:var(--text-1)">{{ $co->company_name }}</div>
+                            <div style="min-width:0">
+                                <div class="cell-trunc" style="font-weight:500;font-size:13px;color:var(--text-1)" title="{{ $co->company_name }}">{{ $co->company_name }}</div>
                                 @if($co->subdomain)
-                                <div style="font-size:11.5px;color:var(--text-3)">{{ $co->subdomain }}.{{ config('tenancy.root_domain', 'yourdomain.com') }}</div>
+                                <div class="cell-trunc-sm" style="font-size:11.5px;color:var(--text-3)">{{ $co->subdomain }}.{{ config('tenancy.root_domain', 'yourdomain.com') }}</div>
                                 @endif
                                 @if($co->company_email)
-                                <div style="font-size:11px;color:var(--text-3)">{{ $co->company_email }}</div>
+                                <div class="cell-trunc-sm" style="font-size:11px;color:var(--text-3)" title="{{ $co->company_email }}">{{ $co->company_email }}</div>
                                 @endif
                             </div>
                         </div>
@@ -172,7 +173,7 @@
                                     Edit
                                 </a>
                                 <div class="dm-divider"></div>
-                                <form method="POST" action="{{ route('my-companies.destroy', $co->id) }}" onsubmit="return confirmCompanyDelete(this);">
+                                <form method="POST" action="{{ route('my-companies.destroy', $co->id) . (isset($__imp) ? '?_imp=' . $__imp['token'] : '') }}" onsubmit="return confirmCompanyDelete(this);">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="dm-item" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer">
@@ -189,13 +190,19 @@
         </table>
 </div>
 
+<style>
+.co-err{font-size:11.5px;color:#ef4444;margin-top:5px;display:flex;align-items:center;gap:5px;line-height:1.3}
+.co-err::before{content:'';height:12px;flex-shrink:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat}
+.mf-inp.co-invalid,.mf-sel.co-invalid{border-color:#ef4444!important;box-shadow:0 0 0 3px rgba(239,68,68,.08)}
+</style>
+
 {{-- ── Add Company Modal ── --}}
 <div class="modal-overlay" id="modal-add-co" onclick="if(event.target===this)closeAddCoModal()">
     <div class="modal-box" style="width:560px;max-height:90vh;overflow-y:auto;padding-bottom:0">
         <button class="modal-close" onclick="closeAddCoModal()">&times;</button>
         <div class="modal-title">Add New Company</div>
         <div class="modal-sub">Enter the details for the new company you want to add.</div>
-        <form method="POST" action="{{ route('my-companies.store') }}" id="modal-add-co-form" novalidate>
+        <form method="POST" action="{{ route('my-companies.store') . (isset($__imp) ? '?_imp=' . $__imp['token'] : '') }}" id="modal-add-co-form" novalidate>
             @csrf
 
             <div style="font-size:14px;font-weight:600;color:var(--text-1);margin-bottom:14px;display:flex;align-items:center;gap:8px">
@@ -213,7 +220,7 @@
                 <div class="mf-field">
                     <label class="mf-label">Industry Type</label>
                     <select name="industry_type" id="co-modal-industry" class="mf-sel" style="height:38px">
-                        <option value="">Select industry</option>
+                        <option value="">Select Industry Type</option>
                         @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
                         <option value="{{ $ind }}">{{ $ind }}</option>
                         @endforeach
@@ -222,7 +229,7 @@
                 <div class="mf-field">
                     <label class="mf-label">Entity Type</label>
                     <select name="entity_type" id="co-modal-entity" class="mf-sel" style="height:38px">
-                        <option value="">Select entity type</option>
+                        <option value="">Select Entity Type</option>
                         @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
                         <option value="{{ $ent }}">{{ $ent }}</option>
                         @endforeach
@@ -255,7 +262,6 @@
         <div class="modal-sub">Update the details for this company.</div>
         <form method="POST" id="modal-client-edit-co-form" novalidate>
             @csrf
-            @method('PUT')
 
             <div class="mf-field">
                 <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
@@ -267,7 +273,7 @@
                 <div class="mf-field">
                     <label class="mf-label">Industry Type</label>
                     <select name="industry_type" id="client-edit-co-industry" class="mf-sel" style="height:38px">
-                        <option value="">Select industry</option>
+                        <option value="">Select Industry Type</option>
                         @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
                         <option value="{{ $ind }}">{{ $ind }}</option>
                         @endforeach
@@ -276,7 +282,7 @@
                 <div class="mf-field">
                     <label class="mf-label">Entity Type</label>
                     <select name="entity_type" id="client-edit-co-entity" class="mf-sel" style="height:38px">
-                        <option value="">Select entity type</option>
+                        <option value="">Select Entity Type</option>
                         @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
                         <option value="{{ $ent }}">{{ $ent }}</option>
                         @endforeach
@@ -411,11 +417,11 @@ function closeAddCoModal() {
 
 function validateAndSubmitAddCoModal() {
     var ok = true;
-    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
     var nameVal = (document.getElementById('co-modal-name')?.value || '').trim();
     if (!nameVal) {
-        _cliCoErr('co-modal-err-name', 'Company name is required.');
+        _cliCoErr('co-modal-err-name', 'Company Name is required.');
         _cliCoMark('co-modal-name', true);
         ok = false;
     } else {
@@ -425,7 +431,7 @@ function validateAndSubmitAddCoModal() {
 
     var emailVal = (document.getElementById('co-modal-email')?.value || '').trim();
     if (!emailVal) {
-        _cliCoErr('co-modal-err-email', 'Company email is required.');
+        _cliCoErr('co-modal-err-email', 'Company Email is required.');
         _cliCoMark('co-modal-email', true);
         ok = false;
     } else if (!emailRx.test(emailVal)) {
@@ -440,9 +446,38 @@ function validateAndSubmitAddCoModal() {
     if (ok) { document.getElementById('modal-add-co-form').submit(); }
 }
 
+// Real-time validation clearing — Add & Edit Company modals (client portal)
+(function() {
+    var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
+
+    function clearOnInput(fieldId, errId) {
+        var el = document.getElementById(fieldId);
+        if (!el) return;
+        el.addEventListener('input', function() {
+            if (this.value.trim()) { _cliCoErr(errId, ''); _cliCoMark(fieldId, false); }
+        });
+    }
+    function clearOnEmailInput(fieldId, errId) {
+        var el = document.getElementById(fieldId);
+        if (!el) return;
+        el.addEventListener('input', function() {
+            var v = this.value.trim();
+            if (!v || emailRx.test(v)) { _cliCoErr(errId, ''); _cliCoMark(fieldId, false); }
+        });
+    }
+
+    // Add Company modal
+    clearOnInput('co-modal-name', 'co-modal-err-name');
+    clearOnEmailInput('co-modal-email', 'co-modal-err-email');
+
+    // Edit Company modal
+    clearOnInput('client-edit-co-name', 'client-edit-err-co-name');
+    clearOnEmailInput('client-edit-co-email', 'client-edit-err-co-email');
+})();
+
 /* ── Edit Company Modal ── */
 function openClientEditCoModal(id, name, email, industry, entity) {
-    var updateUrl = '{{ route("my-companies.update", ":id") }}'.replace(':id', id);
+    var updateUrl = '{{ route("my-companies.update", ":id") . (isset($__imp) ? "?_imp=" . $__imp["token"] : "") }}'.replace(':id', id);
     document.getElementById('modal-client-edit-co-form').action = updateUrl;
     document.getElementById('client-edit-co-name').value  = name;
     document.getElementById('client-edit-co-email').value = email;
@@ -469,11 +504,11 @@ function closeClientEditCoModal() {
 
 function validateAndSubmitClientEditCoModal() {
     var ok = true;
-    var emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
     var nameVal = (document.getElementById('client-edit-co-name')?.value || '').trim();
     if (!nameVal) {
-        _cliCoErr('client-edit-err-co-name', 'Company name is required.');
+        _cliCoErr('client-edit-err-co-name', 'Company Name is required.');
         _cliCoMark('client-edit-co-name', true);
         ok = false;
     } else {
@@ -483,7 +518,7 @@ function validateAndSubmitClientEditCoModal() {
 
     var emailVal = (document.getElementById('client-edit-co-email')?.value || '').trim();
     if (!emailVal) {
-        _cliCoErr('client-edit-err-co-email', 'Company email is required.');
+        _cliCoErr('client-edit-err-co-email', 'Company Email is required.');
         _cliCoMark('client-edit-co-email', true);
         ok = false;
     } else if (!emailRx.test(emailVal)) {

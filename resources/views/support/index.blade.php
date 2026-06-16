@@ -70,7 +70,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 .vt-meta-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)}
 .vt-meta-val{font-size:13px;font-weight:500;color:var(--text-1)}
 .vt-section-lbl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin-bottom:6px}
-.vt-desc-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13.5px;color:var(--text-1);line-height:1.65;white-space:pre-wrap;max-height:200px;overflow-y:auto}
+.vt-desc-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:13.5px;color:var(--text-1);line-height:1.65;white-space:pre-wrap;max-height:200px;overflow-y:auto;word-break:break-word;overflow-wrap:anywhere}
 .att-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
 .att-info{display:flex;align-items:center;gap:10px}
 .att-icon{width:32px;height:32px;border-radius:6px;background:#dbeafe;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -96,7 +96,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 <div class="ph">
     <div class="ph-left">
         <h1>Support</h1>
-        <p>Manage client support tickets and contact the  Insights team</p>
+        <p>Manage and track your support tickets</p>
     </div>
     <div class="ph-actions">
         <button class="btn btn-primary" id="btnNewTicket">
@@ -147,7 +147,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
             <div class="dr-wrap" id="ct-dr">
                 <div class="dr-field" onclick="drOpen('ct-dr')">
                     <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <span class="dr-text" id="ct-dr-text">Start Date To End Date</span>
+                    <span class="dr-text" id="ct-dr-text">Start Date – End Date</span>
                     <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('ct-dr')" title="Clear date filter">&#x2715;</button>
                 </div>
                 <div class="dr-menu" id="ct-dr-menu">
@@ -207,7 +207,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                         <div class="firm-name">{{ $ticket->company?->company_name ?? '—' }}</div>
                         <div class="firm-user">{{ $ticket->user?->name ?? '—' }}</div>
                     </td>
-                    <td style="color:var(--text-1);font-weight:500;max-width:280px">{{ $ticket->subject }}</td>
+                    <td style="color:var(--text-1);font-weight:500;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ $ticket->subject }}">{{ $ticket->subject }}</td>
                     <td><span class="pri-{{ $pri }}">{{ ucfirst($pri) }}</span></td>
                     <td><span class="st-badge st-{{ $st }}">{{ $stLabel }}</span></td>
                     <td data-date="{{ $ticket->created_at->format('Y-m-d') }}">
@@ -265,7 +265,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
             <div class="dr-wrap" id="mt-dr">
                 <div class="dr-field" onclick="drOpen('mt-dr')">
                     <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <span class="dr-text" id="mt-dr-text">Start Date To End Date</span>
+                    <span class="dr-text" id="mt-dr-text">Start Date – End Date</span>
                     <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('mt-dr')" title="Clear date filter">&#x2715;</button>
                 </div>
                 <div class="dr-menu" id="mt-dr-menu">
@@ -320,7 +320,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                             {{ $tkId }}
                         </span>
                     </td>
-                    <td style="color:var(--text-1);font-weight:500;max-width:340px">{{ $ticket->subject }}</td>
+                    <td style="color:var(--text-1);font-weight:500;max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ $ticket->subject }}">{{ $ticket->subject }}</td>
                     <td><span class="pri-{{ $pri }}">{{ ucfirst($pri) }}</span></td>
                     <td><span class="st-badge st-{{ $st }}">{{ $stLabel }}</span></td>
                     <td data-date="{{ $ticket->created_at->format('Y-m-d') }}">
@@ -376,7 +376,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <span class="vt-meta-val" id="vt-raised"></span>
             </div>
             <div class="vt-meta-col">
-                <span class="vt-meta-lbl">Submitted By</span>
+                <span class="vt-meta-lbl">Raised By</span>
                 <span class="vt-meta-val" id="vt-by"></span>
             </div>
             <div class="vt-meta-col" id="vt-company-col">
@@ -391,7 +391,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 
         <div class="mf-field">
             <div class="vt-section-lbl">Subject</div>
-            <div style="font-size:14px;font-weight:600;color:var(--text-1)" id="vt-subject"></div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-1);word-break:break-word;overflow-wrap:anywhere" id="vt-subject"></div>
         </div>
 
         <div class="mf-field">
@@ -475,7 +475,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
             <div class="mf-field">
                 <label class="mf-label" for="ticket-subject">Subject <span style="color:var(--red)">*</span></label>
                 <input type="text" id="ticket-subject" name="subject" class="mf-inp"
-                       placeholder="Brief description of your issue" value="{{ old('subject') }}" maxlength="100">
+                       placeholder="e.g. Insight generation failed, QuickBooks sync issue, KPI values incorrect" value="{{ old('subject') }}" maxlength="100">
                 <div id="err-tk-subject" class="tk-err"></div>
             </div>
             <div class="mf-field">
@@ -490,7 +490,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <div id="err-tk-priority" class="tk-err"></div>
             </div>
             <div class="mf-field">
-                <label class="mf-label" for="ticket-message">Message <span style="color:var(--red)">*</span></label>
+                <label class="mf-label" for="ticket-message">Description <span style="color:var(--red)">*</span></label>
                 <textarea id="ticket-message" name="message" class="mf-textarea" rows="5"
                           placeholder="Provide as much detail as possible..." maxlength="500">{{ old('message') }}</textarea>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px;min-height:16px">
@@ -505,12 +505,12 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <input type="file" id="ticket-attachment" name="attachment"
                        accept=".jpg,.jpeg,.png,.pdf,.zip"
                        style="display:block;width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text-2);background:#fafafa;cursor:pointer">
-                <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block">Max 10MB. Accepted: jpg, jpeg, png, pdf, zip.</span>
+                <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block">Max 10MB per file. Accepted: jpg, jpeg, png, pdf, zip.</span>
                 <div id="err-tk-attachment" class="tk-err"></div>
             </div>
             <div class="mf-foot">
                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('newTicketModal').style.display='none'">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="validateAndSubmitTicket()">Submit Ticket</button>
+                <button type="button" id="tk-submit-btn" class="btn btn-primary" onclick="validateAndSubmitTicket()">Submit Ticket</button>
             </div>
         </form>
     </div>
@@ -608,9 +608,9 @@ $(document).ready(function () {
                 +'</div>'
                 +'<div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:12px">You have not raised any tickets yet</div>'
                 +'<div style="font-size:13.5px;color:#6b7280;line-height:1.75;max-width:480px;margin:0 auto 24px">'
-                +'Need help from the CFO Insights team? Raise a ticket here for any platform issue, billing query, branding assistance, or configuration support.'
+                +'Need help? Raise a support ticket for any platform issue, billing query, branding assistance, or configuration support.'
                 +'</div>'
-                +'<button class="open-new-ticket-btn" style="background:#e8521a;color:#fff;border:none;padding:11px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">+ Raise a Ticket to Insights</button>'
+                +'<button class="open-new-ticket-btn" style="background:#e8521a;color:#fff;border:none;padding:11px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">+ Raise a Ticket</button>'
                 +'</div>',
         },
         drawCallback:function(){document.querySelectorAll('.dm-popup').forEach(function(p){p.classList.remove('open');})}
@@ -727,7 +727,7 @@ function openViewTicket(showUrl, updateUrl, notesUrl, canUpdate) {
             _currentTicketId = t.ticket_id;
 
             document.getElementById('vt-id').textContent      = t.ticket_id;
-            document.getElementById('vt-created').textContent = 'Submitted on ' + t.created_at;
+            document.getElementById('vt-created').textContent = 'Raised on ' + t.created_at;
             document.getElementById('vt-raised').textContent  = t.created_at;
             document.getElementById('vt-by').textContent      = t.submitted_by;
             document.getElementById('vt-status-text').textContent = ST_LABEL[t.status] || t.status;
@@ -882,6 +882,8 @@ function validateAndSubmitTicket() {
     }
 
     if (ok) {
+        var submitBtn = document.getElementById('tk-submit-btn');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Submitting...'; }
         document.getElementById('new-ticket-form').submit();
     }
 }

@@ -674,14 +674,16 @@
             confirmButtonText: 'Yes, Publish',
             showCancelButton: true,
             cancelButtonText: 'Cancel',
-            confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#1a6aa8',
+            confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
             cancelButtonColor: '#6b7280',
             reverseButtons: true,
             didOpen: (popup) => {
+                const orange = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
                 const actions = popup.querySelector('.swal2-actions');
                 if (actions) actions.style.cssText = 'width:100%;padding:0 24px;display:flex;gap:10px;';
                 popup.querySelectorAll('.swal2-confirm,.swal2-cancel').forEach(b => {
-                    b.style.cssText = 'flex:1;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;border:none;cursor:pointer;';
+                    const bg = b.classList.contains('swal2-confirm') ? orange : '#6b7280';
+                    b.style.cssText = `flex:1;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;border:none;cursor:pointer;background:${bg};color:#fff;`;
                 });
             },
         }).then(result => {
@@ -709,7 +711,7 @@
                             </div>`,
                         showConfirmButton: true,
                         confirmButtonText: 'Got it',
-                        confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#1a6aa8',
+                        confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
                         allowOutsideClick: false,
                     }).then(() => {
                         if (data.redirect_url) window.location.href = data.redirect_url;

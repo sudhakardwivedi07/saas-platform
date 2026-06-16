@@ -99,6 +99,7 @@
                     <th style="text-align:center">Companies</th>
                     <th style="text-align:center">QB Coverage</th>
                     <th style="text-align:center;">Insights Used</th>
+                    <th>Create Date</th>
                     <th style="text-align:center;display:none">Remaining</th>
                     <th style="width:48px"></th>
                 </tr>
@@ -153,6 +154,7 @@
                         @endif
                     </td>
                     <td style="text-align:center;font-size:13px;font-weight:500;color:var(--text-1);">{{ $insightsUsed }}</td>
+                    <td data-order="{{ $client->created_at?->timestamp ?? 0 }}" style="font-size:13px;color:var(--text-2);white-space:nowrap">{{ $client->created_at?->format(active_date_format()) ?? '—' }}</td>
                     <td style="text-align:center;font-size:13px;font-weight:500;color:{{ $remaining === 0 ? 'var(--red)' : 'var(--text-1)' }};display:none">
                         @if($remaining === null)
                             <span style="color:var(--text-3)">—</span>
@@ -263,6 +265,7 @@
                     <th>Client</th>
                     <th style="text-align:center">QB</th>
                     <th style="text-align:center;">Insights Used</th>
+                    <th>Create Date</th>
                     <th style="text-align:center;display:none">Remaining</th>
                     <th style="width:48px"></th>
                 </tr>
@@ -319,6 +322,7 @@
                     <td style="text-align:center;font-size:13px;color:var(--text-1);font-weight:500;">
                         {{ $insightsUsed }}
                     </td>
+                    <td data-order="{{ $company->created_at->timestamp }}" style="font-size:13px;color:var(--text-2);white-space:nowrap">{{ $company->created_at->format(active_date_format()) }}</td>
                     <td style="text-align:center;font-size:13px;font-weight:600;color:{{ ($remaining !== null && $remaining === 0) ? 'var(--red)' : 'var(--text-1)' }};display:none">
                         @if($remaining === null)
                             <span style="color:var(--text-3);font-weight:500">—</span>
@@ -888,7 +892,7 @@ $(document).ready(function() {
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         order: [[0, 'desc']],
-        columnDefs: [{ orderable: false, targets: [2, 5] }],
+        columnDefs: [{ orderable: false, targets: [2, 6] }],
         infoCallback: function(settings, start, end, max, total, pre) {
             return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'clients' : 'client');
         },
@@ -917,7 +921,7 @@ $(document).ready(function() {
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         order: [[0, 'desc']],
-        columnDefs: [{ orderable: false, targets: [5] }],
+        columnDefs: [{ orderable: false, targets: [6] }],
         infoCallback: function(settings, start, end, max, total, pre) {
             return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'companies' : 'company');
         },

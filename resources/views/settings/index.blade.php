@@ -147,37 +147,43 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             Email SMTP Settings 
         </div>
 
-        <form method="POST" action="{{ route('settings.email.update') }}" id="email-form" onsubmit="submitSettingsForm(event,this,'Email settings updated.')">
+        <form method="POST" action="{{ route('settings.email.update') }}" id="email-form" onsubmit="if(!validateSmtpForm()){return false;} submitSettingsForm(event,this,'Email settings updated.')">
             @csrf
             <input type="hidden" name="driver" value="smtp">
             <div class="form-2col">
                 <div class="f-group">
                     <label class="f-label">From Name <span style="color:var(--red)">*</span></label>
-                    <input type="text" name="from_name" class="f-inp" placeholder="My Platform" value="{{ $smtpSetting->from_name ?? '' }}">
+                    <input type="text" id="smtp-from-name" name="from_name" class="f-inp" placeholder="My Platform" value="{{ $smtpSetting->from_name ?? '' }}">
+                    <div class="st-err" id="smtp-from-name-err"></div>
                 </div>
                 <div class="f-group">
                     <label class="f-label">From Email <span style="color:var(--red)">*</span></label>
-                    <input type="email" name="from_email" class="f-inp" placeholder="no-reply@example.com" value="{{ $smtpSetting->from_email ?? '' }}">
+                    <input type="email" id="smtp-from-email" name="from_email" class="f-inp" placeholder="no-reply@example.com" value="{{ $smtpSetting->from_email ?? '' }}">
+                    <div class="st-err" id="smtp-from-email-err"></div>
                 </div>
             </div>
             <div class="form-2col">
                 <div class="f-group">
                     <label class="f-label">SMTP Host <span style="color:var(--red)">*</span></label>
-                    <input type="text" name="host" class="f-inp" placeholder="smtp.mailgun.org" value="{{ $smtpSetting->host ?? '' }}">
+                    <input type="text" id="smtp-host" name="host" class="f-inp" placeholder="smtp.mailgun.org" value="{{ $smtpSetting->host ?? '' }}">
+                    <div class="st-err" id="smtp-host-err"></div>
                 </div>
                 <div class="f-group">
                     <label class="f-label">SMTP Port <span style="color:var(--red)">*</span></label>
-                    <input type="number" name="port" class="f-inp" placeholder="587" value="{{ $smtpSetting->port ?? '587' }}">
+                    <input type="number" id="smtp-port" name="port" class="f-inp" placeholder="587" value="{{ $smtpSetting->port ?? '587' }}">
+                    <div class="st-err" id="smtp-port-err"></div>
                 </div>
             </div>
             <div class="form-2col">
                 <div class="f-group">
                     <label class="f-label">Username <span style="color:var(--red)">*</span></label>
-                    <input type="text" name="username" class="f-inp" placeholder="smtp_user" value="{{ $smtpSetting->username ?? '' }}">
+                    <input type="text" id="smtp-username" name="username" class="f-inp" placeholder="smtp_user" value="{{ $smtpSetting->username ?? '' }}">
+                    <div class="st-err" id="smtp-username-err"></div>
                 </div>
                 <div class="f-group">
                     <label class="f-label">Password <span style="color:var(--red)">*</span></label>
-                    <input type="password" name="password" class="f-inp" placeholder="••••••••" autocomplete="new-password">
+                    <input type="password" id="smtp-password" name="password" class="f-inp" placeholder="••••••••" autocomplete="new-password">
+                    <div class="st-err" id="smtp-password-err"></div>
                 </div>
             </div>
             <div class="f-group" style="max-width:220px">
@@ -214,20 +220,23 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             <span class="info-banner-txt">SMS notifications are powered by Twilio. Enter your credentials from the Twilio Console.</span>
         </div>
 
-        <form method="POST" action="{{ route('settings.sms.update') }}" id="sms-form" onsubmit="submitSettingsForm(event,this,'SMS settings updated.')">
+        <form method="POST" action="{{ route('settings.sms.update') }}" id="sms-form" onsubmit="if(!validateSmsForm()){return false;} submitSettingsForm(event,this,'SMS settings updated.')">
             @csrf
             <input type="hidden" name="provider" value="twilio">
             <div class="f-group">
                 <label class="f-label">Account SID <span style="color:var(--red)">*</span></label>
-                <input type="text" name="account_sid" class="f-inp" placeholder="ACxxxxxxxxxxxxxxxx" value="{{ $smsSetting->account_sid ?? '' }}">
+                <input type="text" id="sms-sid" name="account_sid" class="f-inp" placeholder="ACxxxxxxxxxxxxxxxx" value="{{ $smsSetting->account_sid ?? '' }}">
+                <div class="st-err" id="sms-sid-err"></div>
             </div>
             <div class="f-group">
                 <label class="f-label">Auth Token <span style="color:var(--red)">*</span></label>
-                <input type="password" name="auth_token" class="f-inp" placeholder="••••••••••••••••••••" autocomplete="new-password" value="{{ $smsSetting->auth_token ?? '' }}">
+                <input type="password" id="sms-token" name="auth_token" class="f-inp" placeholder="••••••••••••••••••••" autocomplete="new-password" value="{{ $smsSetting->auth_token ?? '' }}">
+                <div class="st-err" id="sms-token-err"></div>
             </div>
             <div class="f-group">
                 <label class="f-label">From Number <span style="color:var(--red)">*</span></label>
-                <input type="text" name="from_number" class="f-inp" placeholder="+15551234567" value="{{ $smsSetting->from_number ?? '' }}">
+                <input type="text" id="sms-from" name="from_number" class="f-inp" placeholder="+15551234567" value="{{ $smsSetting->from_number ?? '' }}">
+                <div class="st-err" id="sms-from-err"></div>
                 <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Must be a verified Twilio number in E.164 format.</div>
             </div>
             <div style="margin-top:20px">
@@ -821,6 +830,13 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
 
 @endsection
 
+@push('styles')
+<style>
+.st-err{display:none;color:var(--red);font-size:11.5px;margin-top:4px}
+.f-inp.st-invalid,.f-sel.st-invalid{border-color:var(--red)!important;outline:none}
+</style>
+@endpush
+
 @push('scripts')
 <script src="{{ asset(config('assets.jquery')) }}"></script>
 <script src="{{ asset(config('assets.datatables_js')) }}"></script>
@@ -1203,6 +1219,89 @@ function submitQbSettings(e) {
     })
     .catch(function() { btn.disabled = false; showToast('Request failed.', 'error'); });
 }
+
+// ── Settings Form Inline Validation ───────────────────────────────────────────
+function _stErr(id, msg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg || '';
+    el.style.display = msg ? 'block' : 'none';
+}
+function _stMark(id, invalid) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (invalid) el.classList.add('st-invalid');
+    else el.classList.remove('st-invalid');
+}
+function validateSmtpForm() {
+    var ok = true;
+    var fields = [
+        { id: 'smtp-from-name',  errId: 'smtp-from-name-err',  label: 'From Name' },
+        { id: 'smtp-from-email', errId: 'smtp-from-email-err', label: 'From Email', email: true },
+        { id: 'smtp-host',       errId: 'smtp-host-err',       label: 'SMTP Host' },
+        { id: 'smtp-port',       errId: 'smtp-port-err',       label: 'SMTP Port', numeric: true },
+        { id: 'smtp-username',   errId: 'smtp-username-err',   label: 'Username' },
+        { id: 'smtp-password',   errId: 'smtp-password-err',   label: 'Password' },
+    ];
+    fields.forEach(function(f) {
+        var el  = document.getElementById(f.id);
+        var val = el ? el.value.trim() : '';
+        if (!val) {
+            _stErr(f.errId, f.label + ' is required.');
+            _stMark(f.id, true);
+            ok = false;
+        } else if (f.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+            _stErr(f.errId, 'Enter a valid email address.');
+            _stMark(f.id, true);
+            ok = false;
+        } else if (f.numeric && (isNaN(Number(val)) || parseInt(val) <= 0)) {
+            _stErr(f.errId, 'Enter a valid port number.');
+            _stMark(f.id, true);
+            ok = false;
+        } else {
+            _stErr(f.errId, '');
+            _stMark(f.id, false);
+        }
+    });
+    return ok;
+}
+function validateSmsForm() {
+    var ok = true;
+    var fields = [
+        { id: 'sms-sid',   errId: 'sms-sid-err',   label: 'Account SID' },
+        { id: 'sms-token', errId: 'sms-token-err',  label: 'Auth Token' },
+        { id: 'sms-from',  errId: 'sms-from-err',   label: 'From Number', e164: true },
+    ];
+    fields.forEach(function(f) {
+        var el  = document.getElementById(f.id);
+        var val = el ? el.value.trim() : '';
+        if (!val) {
+            _stErr(f.errId, f.label + ' is required.');
+            _stMark(f.id, true);
+            ok = false;
+        } else if (f.e164 && !/^\+[1-9]\d{7,14}$/.test(val)) {
+            _stErr(f.errId, 'Enter a valid E.164 number (e.g. +15551234567).');
+            _stMark(f.id, true);
+            ok = false;
+        } else {
+            _stErr(f.errId, '');
+            _stMark(f.id, false);
+        }
+    });
+    return ok;
+}
+(function() {
+    var emailForm = document.getElementById('email-form');
+    var smsForm   = document.getElementById('sms-form');
+    if (emailForm) emailForm.addEventListener('input', function(e) {
+        _stErr(e.target.id + '-err', '');
+        _stMark(e.target.id, false);
+    });
+    if (smsForm) smsForm.addEventListener('input', function(e) {
+        _stErr(e.target.id + '-err', '');
+        _stMark(e.target.id, false);
+    });
+})();
 
 // ── Generic Settings Form AJAX Submit ─────────────────────────────────────────
 function submitSettingsForm(e, form, defaultMsg) {

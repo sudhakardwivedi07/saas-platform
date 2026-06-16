@@ -100,8 +100,8 @@
                 <th>Permissions</th>
                 <th>Last Login</th>
                 <th>Status</th>
+                <th>Create Date</th>
                 <th style="width:48px"></th>
-                <th>Created</th>
             </tr>
         </thead>
         <tbody>
@@ -163,6 +163,7 @@
                         {{ $isActive ? 'Active' : 'Inactive' }}
                     </span>
                 </td>
+                <td data-order="{{ $user->created_at?->timestamp ?? 0 }}" style="font-size:13px;color:var(--text-2);white-space:nowrap">{{ $user->created_at?->format(active_date_format()) ?? '—' }}</td>
                 <td>
                     <div class="dm-wrap">
                         <button class="dot-menu" data-menu="dm-u-{{ $user->id }}" title="Actions">•••</button>
@@ -197,7 +198,6 @@
                         </div>
                     </div>
                 </td>
-                <td>{{ $user->created_at?->format('Y-m-d H:i:s') ?? '' }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -209,7 +209,7 @@
     <div class="modal-box" style="width:500px">
         <button class="modal-close" onclick="closeAddUserModal()">&times;</button>
         <div class="modal-title">Add User</div>
-        <div class="modal-sub">Invite a team member to access the {{ $appName ?? config('app.name') }}</div>
+        <div class="modal-sub">Invite a team member to access your platform</div>
 
         @if($errors->any())
         <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 13px;margin-bottom:14px">
@@ -339,10 +339,9 @@ $(document).ready(function() {
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true,
         dom: '<"dt-tscroll"t><"dt-footer"ip>',
-        order: [[7, 'desc']],
+        order: [[6, 'desc']],
         columnDefs: [
-            { orderable: false, targets: [3, 6] },
-            { visible: false, targets: [7] },
+            { orderable: false, targets: [3, 7] },
         ],
         infoCallback: function(settings, start, end, max, total, pre) {
             return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'users' : 'user');

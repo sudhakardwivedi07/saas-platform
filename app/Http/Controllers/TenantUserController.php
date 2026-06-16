@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\UserInvitationMail;
 use App\Models\User;
+use App\Services\EmailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -40,7 +41,7 @@ class TenantUserController extends AccountBaseController
         abort_403(!auth()->user()->can('create_users'));
 
         $request->validate([
-            'name'      => 'required|string|max:255',
+            'name'      => 'required|string|min:2|max:100|regex:/^[a-zA-Z\s\'\-\.]+$/',
             'email'     => 'required|email|max:255|unique:users,email',
             'role'      => 'required|string|exists:roles,name',
             'job_title' => 'nullable|string|max:100',
@@ -69,6 +70,8 @@ class TenantUserController extends AccountBaseController
         }
 
         $companyName = auth()->user()->company?->company_name ?? config('app.name');
+        $company     = auth()->user()->company;
+        $portalUrl   = $company?->domainUrlFor('login') ?? (env('APP_URL') . '/login');
         $plainPassword = $request->password;
 
         $user = User::create([
@@ -82,14 +85,16 @@ class TenantUserController extends AccountBaseController
 
         $user->assignRole($request->role);
 
-        // Send invitation email with credentials
+        // Send invitation email via DB template with all dynamic variables resolved
         try {
-            Mail::to($user->email)->send(new UserInvitationMail(
-                user: $user,
-                plainPassword: $plainPassword,
-                companyName: $companyName,
-                loginUrl: route('login'),
-            ));
+            app(EmailService::class)->sendToUser($user, 'partner_user_welcome_email', [
+                '{{first_name}}'   => trim($user->name),
+                '{{email}}'        => $user->email,
+                '{{password}}'     => $plainPassword,
+                '{{company_name}}' => $companyName,
+                '{{role}}'         => ucfirst($request->role),
+                '{{portal_url}}'   => $portalUrl,
+            ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('User invitation email failed: ' . $e->getMessage());
         }
@@ -108,7 +113,7 @@ class TenantUserController extends AccountBaseController
         $user = User::where('company_id', auth()->user()->company_id)->findOrFail($id);
 
         $request->validate([
-            'name'     => 'required|string|max:255',
+            'name'     => 'required|string|min:2|max:100|regex:/^[a-zA-Z\s\'\-\.]+$/',
             'email'    => 'required|email|max:255|unique:users,email,' . $id,
             'role'     => 'required|string|exists:roles,name',
             'password' => 'nullable|string|min:8',

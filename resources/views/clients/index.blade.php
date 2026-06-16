@@ -654,7 +654,7 @@
                         <div id="modal-err-co-admin-name" class="co-err"></div>
                     </div>
                     <div class="mf-field">
-                        <label class="mf-label">Email <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Email ID <span style="color:var(--red)">*</span></label>
                         <input type="email" name="admin_email" id="modal-co-admin-email" class="mf-inp"
                                placeholder="jane@acme.com" value="{{ old('admin_email') }}" maxlength="100">
                         <div id="modal-err-co-admin-email" class="co-err"></div>
@@ -730,19 +730,12 @@
                         <div id="modal-err-co-entity" class="co-err"></div>
                     </div>
                 </div>
-                <div class="mf-field" style="margin-bottom:0">
-                    <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
-                    <input type="email" name="company_email" id="modal-co-email" class="mf-inp"
-                           placeholder="info@acme.com" value="{{ old('company_email') }}" maxlength="100">
-                    <div id="modal-err-co-email" class="co-err"></div>
-                </div>
             </div>
 
             <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;margin:0 0 0;border-top:1px solid var(--border);margin-top:20px">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="closeAddCompanyModal()">Cancel</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitCompanyModal()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-                    Create Company
+                    Add Company
                 </button>
             </div>
         </form>
@@ -784,12 +777,6 @@
                             @endforeach
                         </select>
                     </div>
-                </div>
-                <div class="mf-field" style="margin-bottom:0">
-                    <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
-                    <input type="email" name="company_email" id="edit-co-email" class="mf-inp"
-                           placeholder="info@acme.com" maxlength="100">
-                    <div id="edit-err-co-email" class="co-err" style="display:none"></div>
                 </div>
             </div>
 
@@ -1506,7 +1493,7 @@ if (new URLSearchParams(window.location.search).get('add') === '1') {
 function resetAddCompanyForm() {
     // Text / email inputs
     ['modal-co-admin-name','modal-co-admin-email','modal-co-admin-phone',
-     'modal-company-name','modal-co-email'].forEach(function(id) {
+     'modal-company-name'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) { el.value = ''; el.classList.remove('co-invalid'); }
     });
@@ -1517,7 +1504,7 @@ function resetAddCompanyForm() {
     });
     // Error messages
     ['modal-err-co-admin-name','modal-err-co-admin-email','modal-err-co-admin-phone',
-     'modal-err-co-name','modal-err-co-email','modal-err-co-industry',
+     'modal-err-co-name','modal-err-co-industry',
      'modal-err-co-entity','modal-err-existing-client'].forEach(function(id) {
         modalCoErr(id, '');
     });
@@ -1543,7 +1530,6 @@ function openEditCompanyModal(id, name, email, industry, entity) {
     var updateUrl = '{{ route("my-companies.update", ":id") }}'.replace(':id', id);
     document.getElementById('modal-edit-company-form').action = updateUrl;
     document.getElementById('edit-co-company-name').value = name;
-    document.getElementById('edit-co-email').value = email;
 
     var indSel = document.getElementById('edit-co-industry');
     for (var i = 0; i < indSel.options.length; i++) {
@@ -1555,14 +1541,10 @@ function openEditCompanyModal(id, name, email, industry, entity) {
     }
 
     // Clear previous errors
-    ['edit-err-co-name', 'edit-err-co-email'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) { el.textContent = ''; el.style.display = 'none'; }
-    });
-    ['edit-co-company-name', 'edit-co-email'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.classList.remove('co-invalid');
-    });
+    var errEl = document.getElementById('edit-err-co-name');
+    if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+    var nameEl = document.getElementById('edit-co-company-name');
+    if (nameEl) nameEl.classList.remove('co-invalid');
 
     document.getElementById('modal-edit-company').classList.add('open');
     setTimeout(function() { document.getElementById('edit-co-company-name').focus(); }, 80);
@@ -1574,8 +1556,8 @@ function closeEditCompanyModal() {
 
 function validateAndSubmitEditCompanyModal() {
     var ok = true;
-    var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
+    var editCoNameRx = /^[a-zA-Z0-9\s.,&'\-]+$/;
     var nameEl = document.getElementById('edit-co-company-name');
     var nameVal = nameEl ? nameEl.value.trim() : '';
     var nameErr = document.getElementById('edit-err-co-name');
@@ -1583,25 +1565,13 @@ function validateAndSubmitEditCompanyModal() {
         if (nameErr) { nameErr.textContent = 'Company Name is required.'; nameErr.style.display = 'flex'; }
         if (nameEl) nameEl.classList.add('co-invalid');
         ok = false;
+    } else if (!editCoNameRx.test(nameVal)) {
+        if (nameErr) { nameErr.textContent = "Only letters, numbers, spaces and . , & - ' are allowed."; nameErr.style.display = 'flex'; }
+        if (nameEl) nameEl.classList.add('co-invalid');
+        ok = false;
     } else {
         if (nameErr) { nameErr.textContent = ''; nameErr.style.display = 'none'; }
         if (nameEl) nameEl.classList.remove('co-invalid');
-    }
-
-    var emailEl = document.getElementById('edit-co-email');
-    var emailVal = emailEl ? emailEl.value.trim() : '';
-    var emailErr = document.getElementById('edit-err-co-email');
-    if (!emailVal) {
-        if (emailErr) { emailErr.textContent = 'Company Email is required.'; emailErr.style.display = 'flex'; }
-        if (emailEl) emailEl.classList.add('co-invalid');
-        ok = false;
-    } else if (!emailRx.test(emailVal)) {
-        if (emailErr) { emailErr.textContent = 'Enter a valid email address.'; emailErr.style.display = 'flex'; }
-        if (emailEl) emailEl.classList.add('co-invalid');
-        ok = false;
-    } else {
-        if (emailErr) { emailErr.textContent = ''; emailErr.style.display = 'none'; }
-        if (emailEl) emailEl.classList.remove('co-invalid');
     }
 
     if (ok) {
@@ -1643,10 +1613,7 @@ function modalSetAdminType(type) {
 }
 
 function modalOnExistingClientChange(sel) {
-    var opt = sel.options[sel.selectedIndex];
-    var email = opt.getAttribute('data-email') || '';
-    var coEmailEl = document.getElementById('modal-co-email');
-    if (coEmailEl && email) coEmailEl.value = email;
+    // email is captured server-side; no UI field to populate
 }
 
 function modalCoErr(id, msg) {
@@ -1667,25 +1634,17 @@ function validateAndSubmitCompanyModal() {
     var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
     // Company Name
+    var coNameRx = /^[a-zA-Z0-9\s.,&'\-]+$/;
     var nameEl = document.getElementById('modal-company-name');
     var nameVal = nameEl ? nameEl.value.trim() : '';
     if (!nameVal) {
         modalCoErr('modal-err-co-name', 'Company Name is required.'); modalCoMark('modal-company-name', true); ok = false;
     } else if (nameVal.length < 2) {
         modalCoErr('modal-err-co-name', 'Company Name must be at least 2 characters.'); modalCoMark('modal-company-name', true); ok = false;
+    } else if (!coNameRx.test(nameVal)) {
+        modalCoErr('modal-err-co-name', "Only letters, numbers, spaces and . , & - ' are allowed."); modalCoMark('modal-company-name', true); ok = false;
     } else {
         modalCoErr('modal-err-co-name', ''); modalCoMark('modal-company-name', false);
-    }
-
-    // Company Email
-    var coEmailEl = document.getElementById('modal-co-email');
-    var coEmailVal = coEmailEl ? coEmailEl.value.trim() : '';
-    if (!coEmailVal) {
-        modalCoErr('modal-err-co-email', 'Company Email is required.'); modalCoMark('modal-co-email', true); ok = false;
-    } else if (!emailRx.test(coEmailVal)) {
-        modalCoErr('modal-err-co-email', 'Enter a valid email address.'); modalCoMark('modal-co-email', true); ok = false;
-    } else {
-        modalCoErr('modal-err-co-email', ''); modalCoMark('modal-co-email', false);
     }
 
     // Admin section
@@ -1790,7 +1749,32 @@ function validateAndSubmitCompanyModal() {
 
     // Add Company modal fields
     clearOnInput('modal-company-name', 'modal-err-co-name');
-    clearOnEmailInput('modal-co-email', 'modal-err-co-email');
+
+    // Real-time company name character filtering (Add modal)
+    var addCoNameEl = document.getElementById('modal-company-name');
+    if (addCoNameEl) {
+        addCoNameEl.addEventListener('input', function() {
+            var pos = this.selectionStart;
+            var cleaned = this.value.replace(/[^a-zA-Z0-9\s.,&'\-]/g, '');
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+                this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+            }
+        });
+    }
+
+    // Real-time company name character filtering (Edit modal)
+    var editCoNameEl = document.getElementById('edit-co-company-name');
+    if (editCoNameEl) {
+        editCoNameEl.addEventListener('input', function() {
+            var pos = this.selectionStart;
+            var cleaned = this.value.replace(/[^a-zA-Z0-9\s.,&'\-]/g, '');
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+                this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+            }
+        });
+    }
     clearOnInput('modal-co-admin-name', 'modal-err-co-admin-name');
     clearOnEmailInput('modal-co-admin-email', 'modal-err-co-admin-email');
 
@@ -1816,17 +1800,6 @@ function validateAndSubmitCompanyModal() {
         editNameEl.addEventListener('input', function() {
             if (this.value.trim()) {
                 var err = document.getElementById('edit-err-co-name');
-                if (err) { err.textContent = ''; err.style.display = 'none'; }
-                this.classList.remove('co-invalid');
-            }
-        });
-    }
-    var editEmailEl = document.getElementById('edit-co-email');
-    if (editEmailEl) {
-        editEmailEl.addEventListener('input', function() {
-            var v = this.value.trim();
-            if (!v || emailRx.test(v)) {
-                var err = document.getElementById('edit-err-co-email');
                 if (err) { err.textContent = ''; err.style.display = 'none'; }
                 this.classList.remove('co-invalid');
             }

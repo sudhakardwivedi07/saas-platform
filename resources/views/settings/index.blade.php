@@ -607,31 +607,6 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                     <option value="system">System</option>
                     <option value="custom">Custom</option>
                 </select>
-                <div class="dr-wrap" id="role-dr">
-                    <div class="dr-field" onclick="drOpen('role-dr')">
-                        <svg class="dr-cal-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                        <span class="dr-text" id="role-dr-text">Start Date – End Date</span>
-                        <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('role-dr')" title="Clear date filter">&#x2715;</button>
-                    </div>
-                    <div class="dr-menu" id="role-dr-menu">
-                        <ul class="dr-list">
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','today',this)">Today</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','last30',this)">Last 30 Days</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','thisMonth',this)">This Month</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','lastMonth',this)">Last Month</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','last90',this)">Last 90 Days</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','last6m',this)">Last 6 Months</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','last1y',this)">Last 1 Year</li>
-                            <li class="dr-opt" onclick="drPickPreset('role-dr','custom',this)">Custom Range</li>
-                        </ul>
-                        <div class="dr-custom-row" id="role-dr-custom">
-                            <input type="date" class="dr-date-inp" id="role-dr-from">
-                            <span style="color:var(--text-3);font-size:12px;flex-shrink:0">→</span>
-                            <input type="date" class="dr-date-inp" id="role-dr-to">
-                            <button class="dr-apply-btn" onclick="drApplyCustom('role-dr')">Apply</button>
-                        </div>
-                    </div>
-                </div>
                 <button class="btn btn-danger" onclick="resetRoleFilters()">Reset</button>
             </div>
             <div style="display:flex;align-items:center;gap:10px">
@@ -711,8 +686,10 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
             All Permissions by Module
         </div>
+        @php $hiddenPermModules = ['Documents','Email Templates','Billing','Reports','Companies & Plans']; @endphp
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-top:14px">
             @foreach($allPermissions as $module => $perms)
+            @if(in_array($module, $hiddenPermModules)) @continue @endif
             <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:12px 14px">
                 <div style="font-size:11.5px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">{{ $module }}</div>
                 @foreach($perms as $perm)
@@ -753,7 +730,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             <div class="mf-field">
                 <label class="mf-label">Permissions <span style="color:var(--red)">*</span></label>
                 <div id="err-cr-perms" style="font-size:11.5px;color:var(--red);margin-top:2px;display:none">Please select at least one permission.</div>
-                @php $crHiddenModules = ['Documents','Email Templates','Settings','Billing','Reports','Companies & Plans','Settings Tabs','My Account Tabs','Other']; @endphp
+                @php $crHiddenModules = ['Documents','Email Templates','Billing','Reports','Companies & Plans','Other']; @endphp
                 <div style="display:grid;gap:10px;margin-top:6px;max-height:340px;overflow-y:auto;padding-right:4px">
                     @foreach($allPermissions as $module => $perms)
                     @if(in_array($module, $crHiddenModules)) @continue @endif
@@ -877,18 +854,15 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
         document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
         btn.classList.add('active');
         panel.classList.add('active');
-        localStorage.setItem(SK, tabId);
         history.replaceState(null, '', location.pathname + '#' + tabId);
+        window.scrollTo(0, 0);
         return true;
     }
 
-    // On load: honour URL hash first, then localStorage
+    // On load: honour URL hash only (no localStorage restore — default is server-rendered first tab)
     var hash = window.location.hash.replace('#', '');
     if (hash) {
         activateTab(hash) || activateTab('tab-' + hash);
-    } else {
-        var stored = localStorage.getItem(SK);
-        if (stored) activateTab(stored);
     }
 
     // On tab click: reset the target tab's content, then activate it

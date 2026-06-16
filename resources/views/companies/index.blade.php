@@ -246,8 +246,7 @@
             <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;border-top:1px solid var(--border);margin-top:20px">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="closeAddCoModal()">Cancel</button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitAddCoModal()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-                    Create Company
+                    Add Company
                 </button>
             </div>
         </form>
@@ -419,9 +418,14 @@ function validateAndSubmitAddCoModal() {
     var ok = true;
     var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
+    var coNameRx = /^[a-zA-Z0-9\s.,&'\-]+$/;
     var nameVal = (document.getElementById('co-modal-name')?.value || '').trim();
     if (!nameVal) {
         _cliCoErr('co-modal-err-name', 'Company Name is required.');
+        _cliCoMark('co-modal-name', true);
+        ok = false;
+    } else if (!coNameRx.test(nameVal)) {
+        _cliCoErr('co-modal-err-name', "Only letters, numbers, spaces and . , & - ' are allowed.");
         _cliCoMark('co-modal-name', true);
         ok = false;
     } else {
@@ -473,6 +477,20 @@ function validateAndSubmitAddCoModal() {
     // Edit Company modal
     clearOnInput('client-edit-co-name', 'client-edit-err-co-name');
     clearOnEmailInput('client-edit-co-email', 'client-edit-err-co-email');
+
+    // Real-time company name character filtering
+    ['co-modal-name', 'client-edit-co-name'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', function() {
+            var pos = this.selectionStart;
+            var cleaned = this.value.replace(/[^a-zA-Z0-9\s.,&'\-]/g, '');
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+                this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+            }
+        });
+    });
 })();
 
 /* ── Edit Company Modal ── */
@@ -506,9 +524,14 @@ function validateAndSubmitClientEditCoModal() {
     var ok = true;
     var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
+    var editCoNameRx = /^[a-zA-Z0-9\s.,&'\-]+$/;
     var nameVal = (document.getElementById('client-edit-co-name')?.value || '').trim();
     if (!nameVal) {
         _cliCoErr('client-edit-err-co-name', 'Company Name is required.');
+        _cliCoMark('client-edit-co-name', true);
+        ok = false;
+    } else if (!editCoNameRx.test(nameVal)) {
+        _cliCoErr('client-edit-err-co-name', "Only letters, numbers, spaces and . , & - ' are allowed.");
         _cliCoMark('client-edit-co-name', true);
         ok = false;
     } else {

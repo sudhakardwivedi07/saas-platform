@@ -59,7 +59,9 @@
 .pi-table td { padding:14px 16px;font-size:13.5px;color:#1a202c;border-bottom:1px solid #f8fafc;vertical-align:middle; }
 .pi-table tr:last-child td { border-bottom:none; }
 .pi-table tr:hover td { background:#fafbfc; }
-.pi-name-cell { display:flex;align-items:center;gap:10px; }
+.pi-name-cell { display:flex;align-items:center;gap:10px;min-width:0;overflow:hidden; }
+.pi-name-link, .pi-name-deleted { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0; }
+.pi-name-cell > span:not(.pi-name-icon) { overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0; }
 .pi-name-icon { color:#94a3b8;flex-shrink:0; }
 .pi-name-link { color:var(--blue);text-decoration:none;font-weight:500; }
 .pi-name-link:hover { text-decoration:underline; }
@@ -293,8 +295,8 @@
                         </div>
                     </td>
                     <td style="color:#64748b;" data-date="{{ $report->created_at->format('Y-m-d') }}" data-order="{{ $report->created_at->format('Y-m-d') }}">{{ $report->created_at->format(active_date_format()) }}</td>
-                    <td style="color:#64748b;">{{ $clientName }}</td>
-                    <td style="color:#64748b;">{{ $companyName }}</td>
+                    <td style="color:#64748b;"><div class="cell-trunc-sm" title="{{ $clientName }}">{{ $clientName }}</div></td>
+                    <td style="color:#64748b;"><div class="cell-trunc" title="{{ $companyName }}">{{ $companyName }}</div></td>
                     <td data-search="{{ $rowStatus }}">
                         @if($isDeleted)
                             <span class="badge badge-deleted">Deleted</span>
@@ -583,7 +585,9 @@
             if (data.companies && data.companies.length > 0) {
                 data.companies.forEach(c => {
                     const opt = document.createElement('option');
-                    opt.value = c.id; opt.textContent = c.name;
+                    opt.value = c.id;
+                    opt.textContent = c.name.length > 50 ? c.name.substring(0, 47) + '…' : c.name;
+                    opt.setAttribute('data-full-name', c.name);
                     compSel.appendChild(opt);
                 });
                 if (data.companies.length === 1) compSel.value = data.companies[0].id;

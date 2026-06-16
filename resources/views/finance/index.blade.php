@@ -327,8 +327,8 @@
             $rowDate = $sub?->current_period_start ?? $sub?->updated_at ?? $co->updated_at;
         @endphp
         <tr>
-            <td>{{ $clientName }}</td>
-            <td style="font-weight:500;color:var(--text-1)">{{ $co->company_name }}</td>
+            <td><div class="cell-trunc" title="{{ $clientName }}">{{ $clientName }}</div></td>
+            <td><div class="cell-trunc" style="font-weight:500;color:var(--text-1)" title="{{ $co->company_name }}">{{ $co->company_name }}</div></td>
             <td>{{ $planName }}</td>
             <td style="font-weight:600;color:var(--text-1)">{{ $priceLabel }}</td>
             <td><span class="badge {{ $badgeClass }}">{{ str_replace('_', ' ', ucfirst($subStatus)) }}</span></td>

@@ -182,7 +182,8 @@
 .reports-table th:nth-child(5), .reports-table td:nth-child(5) { width: 22%; white-space: nowrap; }
 .reports-table tr:last-child td { border-bottom: none; }
 .reports-table tr:hover td { background: #f8fafc; }
-.insight-name-cell { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+.insight-name-cell { display: flex; align-items: center; gap: 10px; overflow: hidden; min-width: 0; }
+.insight-name-cell a, .insight-name-cell > span:not(.insight-name-icon) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1; }
 .insight-name-icon { color: #94a3b8; flex-shrink: 0; }
 .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
 .badge.success { background: #d4f4dd; color: #10b981; }

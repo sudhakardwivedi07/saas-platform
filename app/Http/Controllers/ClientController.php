@@ -236,7 +236,7 @@ class ClientController extends AccountBaseController
         $user->assignRole('client');
 
         return redirect()->route('clients.index')
-            ->with('success', 'Client "' . $user->name . '" added successfully.');
+            ->with('success', 'Client <strong>' . e($user->name) . '</strong> added successfully.');
     }
 
     public function bulkUpload(\Illuminate\Http\Request $request)
@@ -397,7 +397,7 @@ class ClientController extends AccountBaseController
         $client->save();
 
         return redirect()->route('clients.index')
-            ->with('success', 'Client "' . $client->name . '" updated successfully.');
+            ->with('success', 'Client <strong>' . e($client->name) . '</strong> updated successfully.');
     }
 
     public function assignPlan(Request $request, $id)

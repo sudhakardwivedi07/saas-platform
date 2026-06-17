@@ -24,8 +24,7 @@
     flex-shrink: 0;
     margin-right: 8px;
 }
-
-
+.mf-inp.co-invalid { border-color: var(--red) !important; }
 </style>
 @endpush
 
@@ -53,7 +52,7 @@
 </div>
 @endif
 
-<form method="POST" action="{{ route('my-companies.update', $company->id) }}">
+<form method="POST" action="{{ route('my-companies.update', $company->id) }}" id="edit-company-form">
 @csrf
 @php $isClientUserFlow = $isClientUserFlow ?? auth()->user()->hasRole('client'); @endphp
 @php $adminUser = $companyAdminUser ?? $company->adminUser; @endphp
@@ -108,12 +107,13 @@
 
             <div class="mf-field">
                 <label class="mf-label">Company Email <span style="color:var(--red)">*</span></label>
-                <input type="email" name="company_email" id="company_email" class="mf-inp" required value="{{ old('company_email', $company->company_email) }}">
+                <input type="email" name="company_email" id="company_email" class="mf-inp" required maxlength="100" value="{{ old('company_email', $company->company_email) }}">
+                <div id="err-company-email" style="display:none;font-size:12px;color:var(--red);margin-top:4px"></div>
             </div>
 
             @if($isClientUserFlow)
             <div style="display:flex;align-items:center;gap:10px;margin-top:18px">
-                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="button" class="btn btn-primary" onclick="validateAndSubmitEditCompany()">Save Changes</button>
                 <a href="{{ $backUrl }}" class="btn btn-ghost">Cancel</a>
             </div>
             @endif
@@ -146,7 +146,7 @@
         </div>
 
         <div style="display:flex;align-items:center;gap:10px;margin-top:16px">
-            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <button type="button" class="btn btn-primary" onclick="validateAndSubmitEditCompany()">Save Changes</button>
             <a href="{{ $backUrl }}" class="btn btn-ghost">Cancel</a>
         </div>
         @endif
@@ -196,7 +196,41 @@ function updatePreview() {
 }
 
 document.getElementById('company_name')?.addEventListener('input', updatePreview);
-document.getElementById('company_email')?.addEventListener('input', updatePreview);
+document.getElementById('company_email')?.addEventListener('input', function() {
+    updatePreview();
+    // Clear error on edit
+    var errEl = document.getElementById('err-company-email');
+    var inp   = document.getElementById('company_email');
+    if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+    if (inp)   inp.classList.remove('co-invalid');
+});
 updatePreview();
+
+function validateAndSubmitEditCompany() {
+    var emailEl  = document.getElementById('company_email');
+    var errEl    = document.getElementById('err-company-email');
+    var emailVal = emailEl ? emailEl.value.trim() : '';
+    var emailRx  = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
+    var ok = true;
+
+    if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+    if (emailEl) emailEl.classList.remove('co-invalid');
+
+    if (!emailVal) {
+        if (errEl) { errEl.textContent = 'Company email is required.'; errEl.style.display = 'block'; }
+        if (emailEl) emailEl.classList.add('co-invalid');
+        ok = false;
+    } else if (emailVal.length > 100) {
+        if (errEl) { errEl.textContent = 'Email address cannot exceed 100 characters.'; errEl.style.display = 'block'; }
+        if (emailEl) emailEl.classList.add('co-invalid');
+        ok = false;
+    } else if (!emailRx.test(emailVal)) {
+        if (errEl) { errEl.textContent = 'Enter a valid email address.'; errEl.style.display = 'block'; }
+        if (emailEl) emailEl.classList.add('co-invalid');
+        ok = false;
+    }
+
+    if (ok) document.getElementById('edit-company-form').submit();
+}
 </script>
 @endpush

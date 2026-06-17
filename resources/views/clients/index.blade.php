@@ -448,7 +448,7 @@
 
 {{-- ── Add Client Modal ─────────────────────────────────── --}}
 {{-- ── Add New Client Modal ──────────────────────────────── --}}
-<div class="modal-overlay {{ $errors->any() ? 'open' : '' }}" id="modal-add-client" onclick="if(event.target===this){resetAddClientForm();this.classList.remove('open');}">
+<div class="modal-overlay" id="modal-add-client" onclick="if(event.target===this){resetAddClientForm();this.classList.remove('open');}">
     <div class="modal-box" style="width:900px;max-width: 92vw;">
         <button class="modal-close" onclick="resetAddClientForm();document.getElementById('modal-add-client').classList.remove('open')">&times;</button>
         <div class="modal-title">Add New Client</div>
@@ -679,7 +679,7 @@
                         <label class="mf-label">Select Client <span style="color:var(--red)">*</span></label>
                         <select name="existing_client_id" id="modal-existing-client-id" class="mf-sel" style="height:38px"
                                 onchange="modalOnExistingClientChange(this)">
-                            <option value="">— Select a client —</option>
+                            <option value="">Select client</option>
                             @foreach($existingClients ?? [] as $client)
                             <option value="{{ $client->id }}"
                                 data-email="{{ $client->email }}"

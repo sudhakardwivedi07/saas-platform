@@ -146,7 +146,7 @@
                     <label class="mf-label">Select Client <span style="color:var(--red)">*</span></label>
                     <select name="existing_client_id" id="existing_client_id" class="mf-sel" style="height:38px"
                             onchange="onExistingClientChange(this)">
-                        <option value="">— Select a client —</option>
+                        <option value="">Select client</option>
                         @foreach($existingClients ?? [] as $client)
                         <option value="{{ $client->id }}"
                             data-name="{{ $client->name }}"

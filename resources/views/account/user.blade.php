@@ -673,9 +673,9 @@
 </div>
 
 {{-- ── New Ticket Modal ───────────────────────────────────────────── --}}
-<div id="newTicketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div id="newTicketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this){resetUaTicketForm();this.style.display='none'}">
     <div class="modal-box" style="max-width:540px;width:100%">
-        <button class="modal-close" onclick="document.getElementById('newTicketModal').style.display='none'">
+        <button class="modal-close" onclick="resetUaTicketForm();document.getElementById('newTicketModal').style.display='none'">
             <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
         <div class="modal-title">New Support Ticket</div>
@@ -707,7 +707,7 @@
                 <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block">Max 10MB. Accepted: jpg, png, pdf, zip.</span>
             </div>
             <div class="mf-foot">
-                <button type="button" class="btn btn-secondary" onclick="document.getElementById('newTicketModal').style.display='none'">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="resetUaTicketForm();document.getElementById('newTicketModal').style.display='none'">Cancel</button>
                 <button type="submit" class="btn btn-primary">Submit Ticket</button>
             </div>
         </form>
@@ -795,6 +795,7 @@ function uaSelectPriority(btn) {
 
 // ── Raise Ticket button ───────────────────────────────────────────
 document.getElementById('btnRaiseTicket').addEventListener('click', function() {
+    resetUaTicketForm();
     document.getElementById('newTicketModal').style.display = 'flex';
 });
 
@@ -847,6 +848,23 @@ function openViewTicket(showUrl, notesUrl) {
         .catch(function() { showToast('Failed to load ticket.', 'error'); });
 }
 
+// ── New Ticket Form Reset ─────────────────────────────────────────
+function resetUaTicketForm() {
+    var subEl  = document.getElementById('nt-subject');
+    var msgEl  = document.getElementById('nt-message');
+    var attEl  = document.getElementById('nt-attachment');
+    if (subEl) subEl.value = '';
+    if (msgEl) msgEl.value = '';
+    if (attEl) attEl.value = '';
+    // Reset priority to default 'low'
+    document.querySelectorAll('.ua-priority-toggle').forEach(function(b) {
+        b.style.borderColor = 'var(--border)'; b.style.background = '#fff';
+        b.style.color = 'var(--text-2)'; b.style.fontWeight = '400';
+    });
+    var defaultPriBtn = document.querySelector('.ua-priority-toggle[data-value="low"]');
+    if (defaultPriBtn) uaSelectPriority(defaultPriBtn);
+}
+
 // ── Profile & Password validation ─────────────────────────────────
 var _uaEmailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
@@ -866,17 +884,21 @@ function _uaOk(fldId, errId) {
 
 function validateAndSubmitUaProfile() {
     var ok = true;
-    var name  = (document.getElementById('ua-name')  || {value:''}).value;
-    var phone = (document.getElementById('ua-phone') || {value:''}).value;
+    var nameVal  = (document.getElementById('ua-name')  || {value:''}).value.trim();
+    var phone    = (document.getElementById('ua-phone') || {value:''}).value;
 
-    if (!name.trim()) {
+    if (!nameVal) {
         _uaErr('ua-name', 'ua-err-name', 'Full name is required.'); ok = false;
+    } else if (nameVal.length > 100 || !/^[a-zA-Z\s'\-]+$/.test(nameVal)) {
+        _uaErr('ua-name', 'ua-err-name', 'Only letters, spaces, hyphens and apostrophes are allowed.'); ok = false;
     } else { _uaOk('ua-name', 'ua-err-name'); }
 
     if (phone.trim()) {
         var phoneDigits = phone.replace(/[^\d]/g, '');
         if (phoneDigits.length !== 10) {
             _uaErr('ua-phone', 'ua-err-phone', 'Phone number must be exactly 10 digits.'); ok = false;
+        } else if (/^(\d)\1{9}$/.test(phoneDigits)) {
+            _uaErr('ua-phone', 'ua-err-phone', 'Please enter a valid phone number.'); ok = false;
         } else { _uaOk('ua-phone', 'ua-err-phone'); }
     } else { _uaOk('ua-phone', 'ua-err-phone'); }
 
@@ -922,6 +944,19 @@ function validateAndSubmitUaPassword() {
                 _uaOk(id, errId);
             });
         }
+    }
+    // Full Name: strip disallowed chars (numbers, specials, emojis) in real-time
+    var nameInp = document.getElementById('ua-name');
+    if (nameInp) {
+        nameInp.addEventListener('input', function() {
+            var pos = this.selectionStart;
+            var cleaned = this.value.replace(/[^a-zA-Z\s'\-]/g, '');
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+                this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+            }
+            _uaOk('ua-name', 'ua-err-name');
+        });
     }
     clearOn('ua-name', 'ua-err-name');
     phoneOnly('ua-phone', 'ua-err-phone');

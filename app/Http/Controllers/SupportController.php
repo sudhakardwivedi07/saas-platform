@@ -92,7 +92,7 @@ class SupportController extends AccountBaseController
             'notes'           => $ticket->notes ?? '',
             'attachment_name' => $attachmentName,
             'attachment_url'  => $attachmentUrl,
-            'created_at'      => $ticket->created_at->format('M j, Y g:i A'),
+            'created_at'      => $ticket->created_at->format(active_date_format() . ' g:i A'),
             'submitted_by'    => $ticket->user?->name ?? 'Unknown',
             'company_name'    => $ticket->company?->company_name ?? '',
             'update_url'      => route('support.update', $ticket->id),
@@ -114,7 +114,7 @@ class SupportController extends AccountBaseController
         $ticket->status = $request->status;
 
         if ($request->filled('note')) {
-            $entry = '[' . now()->format('M j, Y g:i A') . '] Status → ' . $request->status . ': ' . $request->note;
+            $entry = '[' . now()->format(active_date_format() . ' g:i A') . '] Status → ' . $request->status . ': ' . $request->note;
             $ticket->notes = $ticket->notes ? $ticket->notes . "\n\n" . $entry : $entry;
         }
 

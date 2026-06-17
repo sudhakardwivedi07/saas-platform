@@ -361,7 +361,8 @@ $totalCompanies = $allClientCompanies->count();
             <input type="hidden" id="edit-client-id">
             <div class="mf-field" style="margin-top:4px">
                 <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
-                <input type="text" name="name" id="edit-client-name" class="mf-inp" required>
+                <input type="text" name="name" id="edit-client-name" class="mf-inp" required maxlength="100">
+                <div id="err-edit-name" class="ac-err" style="display:none"></div>
             </div>
             <div class="mf-field">
                 <label class="mf-label">Email</label>
@@ -388,25 +389,53 @@ function openEditClientModal(clientId, name, email, phone) {
     document.getElementById('edit-client-email').value = email;
     document.getElementById('edit-client-phone').value = (phone || '').replace(/\D/g, '').slice(0, 10);
     document.getElementById('edit-client-form').action = '{{ route("clients.update", ":id") }}'.replace(':id', clientId);
-    var errEl = document.getElementById('err-edit-phone');
+    // Clear prior errors
+    var nameEl  = document.getElementById('edit-client-name');
+    var nameErr = document.getElementById('err-edit-name');
     var phoneEl = document.getElementById('edit-client-phone');
-    if (errEl) { errEl.textContent = ''; errEl.style.display = 'none'; }
+    var errEl   = document.getElementById('err-edit-phone');
+    if (nameEl)  nameEl.classList.remove('ac-invalid');
+    if (nameErr) { nameErr.textContent = ''; nameErr.style.display = 'none'; }
     if (phoneEl) phoneEl.classList.remove('ac-invalid');
+    if (errEl)   { errEl.textContent = ''; errEl.style.display = 'none'; }
     document.getElementById('modal-edit-client').classList.add('open');
 }
 
 function validateAndSubmitEditClient() {
-    var phoneEl = document.getElementById('edit-client-phone');
-    var errEl   = document.getElementById('err-edit-phone');
-    var rawPhone = phoneEl ? phoneEl.value.replace(/\D/g, '') : '';
     var ok = true;
+
+    // Full Name
+    var nameEl  = document.getElementById('edit-client-name');
+    var nameErr = document.getElementById('err-edit-name');
+    var nameVal = nameEl ? nameEl.value.trim() : '';
+    if (nameEl)  nameEl.classList.remove('ac-invalid');
+    if (nameErr) { nameErr.textContent = ''; nameErr.style.display = 'none'; }
+    if (!nameVal) {
+        if (nameEl)  nameEl.classList.add('ac-invalid');
+        if (nameErr) { nameErr.textContent = 'Full Name is required.'; nameErr.style.display = 'flex'; }
+        ok = false;
+    } else if (nameVal.length < 2 || nameVal.length > 100 || !/^[a-zA-Z\s'\-]+$/.test(nameVal)) {
+        if (nameEl)  nameEl.classList.add('ac-invalid');
+        if (nameErr) { nameErr.textContent = 'Only letters, spaces, hyphens and apostrophes are allowed.'; nameErr.style.display = 'flex'; }
+        ok = false;
+    }
+
+    // Phone Number
+    var phoneEl  = document.getElementById('edit-client-phone');
+    var errEl    = document.getElementById('err-edit-phone');
+    var rawPhone = phoneEl ? phoneEl.value.replace(/\D/g, '') : '';
     if (phoneEl) phoneEl.classList.remove('ac-invalid');
     if (errEl)   { errEl.textContent = ''; errEl.style.display = 'none'; }
     if (rawPhone && rawPhone.length !== 10) {
         if (phoneEl) phoneEl.classList.add('ac-invalid');
         if (errEl)   { errEl.textContent = 'Phone number must be exactly 10 digits.'; errEl.style.display = 'flex'; }
         ok = false;
+    } else if (rawPhone && /^(\d)\1{9}$/.test(rawPhone)) {
+        if (phoneEl) phoneEl.classList.add('ac-invalid');
+        if (errEl)   { errEl.textContent = 'Please enter a valid phone number.'; errEl.style.display = 'flex'; }
+        ok = false;
     }
+
     if (ok) document.getElementById('edit-client-form').submit();
 }
 
@@ -421,15 +450,32 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Full Name: strip disallowed chars in real-time
+    var nameInp = document.getElementById('edit-client-name');
+    if (nameInp) {
+        nameInp.addEventListener('input', function() {
+            var pos = this.selectionStart;
+            var cleaned = this.value.replace(/[^a-zA-Z\s'\-]/g, '');
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+                this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+            }
+            this.classList.remove('ac-invalid');
+            var err = document.getElementById('err-edit-name');
+            if (err) { err.textContent = ''; err.style.display = 'none'; }
+        });
+    }
+    // Phone: digits only
     var ph = document.getElementById('edit-client-phone');
-    if (!ph) return;
-    ph.addEventListener('input', function() {
-        var cleaned = this.value.replace(/\D/g, '');
-        if (cleaned !== this.value) this.value = cleaned;
-        this.classList.remove('ac-invalid');
-        var err = document.getElementById('err-edit-phone');
-        if (err) { err.textContent = ''; err.style.display = 'none'; }
-    });
+    if (ph) {
+        ph.addEventListener('input', function() {
+            var cleaned = this.value.replace(/\D/g, '');
+            if (cleaned !== this.value) this.value = cleaned;
+            this.classList.remove('ac-invalid');
+            var err = document.getElementById('err-edit-phone');
+            if (err) { err.textContent = ''; err.style.display = 'none'; }
+        });
+    }
 });
 
 function switchTab(tabName, btn) {

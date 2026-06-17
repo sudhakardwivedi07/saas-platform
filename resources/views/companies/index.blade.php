@@ -470,7 +470,6 @@ function openClientEditCoModal(id, name, email, industry, entity) {
     var updateUrl = '{{ route("my-companies.update", ":id") . (isset($__imp) ? "?_imp=" . $__imp["token"] : "") }}'.replace(':id', id);
     document.getElementById('modal-client-edit-co-form').action = updateUrl;
     document.getElementById('client-edit-co-name').value  = name;
-    document.getElementById('client-edit-co-email').value = email;
 
     var indSel = document.getElementById('client-edit-co-industry');
     for (var i = 0; i < indSel.options.length; i++) {
@@ -481,8 +480,8 @@ function openClientEditCoModal(id, name, email, industry, entity) {
         entSel.options[i].selected = entSel.options[i].value === entity;
     }
 
-    ['client-edit-err-co-name','client-edit-err-co-email'].forEach(function(id) { _cliCoErr(id, ''); });
-    ['client-edit-co-name','client-edit-co-email'].forEach(function(id) { _cliCoMark(id, false); });
+    ['client-edit-err-co-name'].forEach(function(id) { _cliCoErr(id, ''); });
+    ['client-edit-co-name'].forEach(function(id) { _cliCoMark(id, false); });
 
     document.getElementById('modal-client-edit-co').classList.add('open');
     setTimeout(function() { document.getElementById('client-edit-co-name').focus(); }, 80);
@@ -494,7 +493,6 @@ function closeClientEditCoModal() {
 
 function validateAndSubmitClientEditCoModal() {
     var ok = true;
-    var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
     var editCoNameRx = /^[a-zA-Z0-9\s.,&'\-]+$/;
     var nameVal = (document.getElementById('client-edit-co-name')?.value || '').trim();

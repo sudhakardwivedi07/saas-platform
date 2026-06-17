@@ -462,9 +462,9 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 </div>
 
 {{-- ── New Ticket Modal ────────────────────────────────────────────────────────── --}}
-<div id="newTicketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div id="newTicketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this){resetNewTicketForm();this.style.display='none'}">
     <div class="modal-box" style="max-width:540px;width:100%">
-        <button class="modal-close" onclick="document.getElementById('newTicketModal').style.display='none'">
+        <button class="modal-close" onclick="resetNewTicketForm();document.getElementById('newTicketModal').style.display='none'">
             <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
         <div class="modal-title">New Support Ticket</div>
@@ -509,7 +509,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <div id="err-tk-attachment" class="tk-err"></div>
             </div>
             <div class="mf-foot">
-                <button type="button" class="btn btn-secondary" onclick="document.getElementById('newTicketModal').style.display='none'">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="resetNewTicketForm();document.getElementById('newTicketModal').style.display='none'">Cancel</button>
                 <button type="button" id="tk-submit-btn" class="btn btn-primary" onclick="validateAndSubmitTicket()">Submit Ticket</button>
             </div>
         </form>
@@ -699,6 +699,7 @@ document.addEventListener('click', function(e) {
     }
     // Empty-state "Raise a Ticket" button
     if (e.target.closest('.open-new-ticket-btn')) {
+        resetNewTicketForm();
         document.getElementById('newTicketModal').style.display = 'flex';
         return;
     }
@@ -713,6 +714,7 @@ document.getElementById('btnNewTicket').addEventListener('click', function() {
     document.querySelectorAll('.tab-pane').forEach(function(p){p.style.display='none';});
     document.querySelector('[data-tab="my"]').classList.add('active');
     document.getElementById('pane-my').style.display = 'block';
+    resetNewTicketForm();
     document.getElementById('newTicketModal').style.display = 'flex';
 });
 
@@ -802,6 +804,34 @@ function openUpdateStatus(updateUrl, tkId, currentStatus) {
     document.getElementById('us-note').value           = '';
     document.getElementById('viewTicketModal').style.display   = 'none';
     document.getElementById('updateStatusModal').style.display = 'flex';
+}
+
+// ── New Ticket Form Reset ────────────────────────────────────────────────────
+function resetNewTicketForm() {
+    var subEl  = document.getElementById('ticket-subject');
+    var msgEl  = document.getElementById('ticket-message');
+    var attEl  = document.getElementById('ticket-attachment');
+    if (subEl) { subEl.value = ''; subEl.classList.remove('tk-invalid'); }
+    if (msgEl) { msgEl.value = ''; msgEl.classList.remove('tk-invalid'); }
+    if (attEl) { attEl.value = ''; }
+    // Reset priority to default 'low'
+    document.querySelectorAll('.priority-toggle').forEach(function(b) {
+        b.style.borderColor = 'var(--border)'; b.style.background = '#fff';
+        b.style.color = 'var(--text-2)'; b.style.fontWeight = '400';
+    });
+    var defaultPriBtn = document.querySelector('.priority-toggle[data-value="low"]');
+    if (defaultPriBtn) selectPriority(defaultPriBtn);
+    // Reset character counter
+    var counter = document.getElementById('tk-msg-count');
+    if (counter) counter.textContent = '0';
+    // Clear all error messages
+    ['err-tk-subject','err-tk-priority','err-tk-message','err-tk-attachment'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) { el.textContent = ''; el.style.display = 'none'; }
+    });
+    // Re-enable submit button if it was disabled
+    var submitBtn = document.getElementById('tk-submit-btn');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Submit Ticket'; }
 }
 
 // ── New Ticket Validation ────────────────────────────────────────────────────

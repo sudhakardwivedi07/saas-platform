@@ -12,7 +12,7 @@
 
 /* ── Header card ─────────────────────────────────────────────── */
 .rd-header { display:flex;justify-content:space-between;align-items:flex-start;background:#fff;border-radius:12px;padding:22px 26px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.07);flex-wrap:wrap;gap:14px; }
-.rd-header-left { min-width:0;overflow:hidden; }
+.rd-header-left { min-width:0; }
 .rd-header-left h1 { font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
 .rd-meta { display:flex;flex-wrap:wrap;gap:18px;margin-top:4px; }
 .rd-meta-item { display:flex;align-items:center;gap:7px;color:#64748b;font-size:13px; }

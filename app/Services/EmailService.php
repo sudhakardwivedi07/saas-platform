@@ -158,6 +158,8 @@ HTML;
                 'username'   => $setting->username,
                 'password'   => $setting->password,
             ]);
+            // Purge the cached mailer so the next Mail::html() call uses the new credentials.
+            app('mail.manager')->purge('smtp');
         }
 
         if ($setting->from_email) {

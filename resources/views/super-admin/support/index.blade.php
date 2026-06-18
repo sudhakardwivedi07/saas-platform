@@ -335,7 +335,7 @@ var _drCal = {};
             { type: 'num', targets: [5] }
         ],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'tickets' : 'ticket');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'tickets' : 'ticket');
         },
         language: {
             infoEmpty:   'No tickets found',

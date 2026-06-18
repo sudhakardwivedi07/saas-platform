@@ -150,7 +150,7 @@ $(document).ready(function () {
         order:        [[0, 'asc']],
         columnDefs:   [{ orderable: false, targets: [3] }],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'roles' : 'role');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'roles' : 'role');
         },
         language: {
             infoEmpty:  'No roles found',

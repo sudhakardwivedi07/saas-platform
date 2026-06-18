@@ -634,7 +634,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                         <th>Type</th>
                         <th>Users</th>
                         <th>Permissions</th>
-                        <th style="width:100px">Actions</th>
+                        <th style="width:48px">Action</th>
                         <th>Created</th>
                     </tr>
                 </thead>
@@ -661,26 +661,32 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                         <td style="font-size:13px;color:var(--text-2)">{{ $role->users_count ?? 0 }}</td>
                         <td>
                             @if($permCount > 0)
-                                <span class="badge b-green" style="font-size:11.5px">{{ $permCount }} permissions</span>
+                                <span class="badge b-green" style="font-size:11.5px">{{ $permCount }} {{ $permCount === 1 ? 'permission' : 'permissions' }}</span>
                             @else
                                 <span style="color:var(--text-3);font-size:13px">None</span>
                             @endif
                         </td>
                         <td>
-                            <div style="display:flex;gap:5px">
-                                @if(!$isSystem)
-                                <button class="btn btn-ghost btn-xs"
-                                    onclick="openEditRoleModal({{ $role->id }}, '{{ addslashes($role->name) }}', '{{ addslashes($role->alias ?? '') }}', {{ json_encode($role->permissions->pluck('name')) }})">
-                                    Edit
-                                </button>
-                                <button class="btn btn-xs" style="background:rgba(239,68,68,.07);color:var(--red);border:1px solid rgba(239,68,68,.2)"
-                                    onclick="deleteRole({{ $role->id }}, '{{ addslashes($role->display_name) }}')">
-                                    Delete
-                                </button>
-                                @else
-                                <span style="font-size:11.5px;color:var(--text-3)">Protected</span>
-                                @endif
+                            @if(!$isSystem)
+                            <div class="dm-wrap">
+                                <button class="dot-menu" data-menu="dm-role-{{ $role->id }}" title="Actions">•••</button>
+                                <div class="dm-popup" id="dm-role-{{ $role->id }}">
+                                    <a href="javascript:void(0)" class="dm-item"
+                                       onclick="openEditRoleModal({{ $role->id }}, '{{ addslashes($role->name) }}', '{{ addslashes($role->alias ?? '') }}', {{ json_encode($role->permissions->pluck('name')) }})">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                                        Edit
+                                    </a>
+                                    <div class="dm-divider"></div>
+                                    <button class="dm-item" style="color:var(--red);width:100%;text-align:left;border:0;background:transparent;cursor:pointer"
+                                        onclick="deleteRole({{ $role->id }}, '{{ addslashes($role->display_name) }}')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M19 6l-1 14a1 1 0 01-1 1H7a1 1 0 01-1-1L5 6"/></svg>
+                                        Delete
+                                    </button>
+                                </div>
                             </div>
+                            @else
+                            <span style="font-size:11.5px;color:var(--text-3)">Protected</span>
+                            @endif
                         </td>
                         <td>{{ $role->created_at?->format('Y-m-d H:i:s') ?? '' }}</td>
                     </tr>
@@ -779,21 +785,25 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
         <button class="modal-close" onclick="document.getElementById('edit-role-modal').classList.remove('open')">&times;</button>
         <div class="modal-title">Edit Role</div>
         <div class="modal-sub">Update role name and permissions.</div>
-        <form id="edit-role-form" onsubmit="submitEditRole(event)">
+        <form id="edit-role-form" onsubmit="submitEditRole(event)" novalidate data-no-loader>
             @csrf
             <input type="hidden" id="er-role-id">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
                 <div class="mf-field">
                     <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
-                    <input type="text" name="name" id="er-name" class="mf-inp" required autocomplete="off">
+                    <input type="text" name="name" id="er-name" class="mf-inp" autocomplete="off">
+                    <div id="err-er-name" style="font-size:11.5px;color:var(--red);margin-top:2px;display:none"></div>
+                    <div id="hint-er-name" style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase with underscores (e.g. senior_manager)</div>
                 </div>
                 <div class="mf-field">
-                    <label class="mf-label">Alias <span style="font-size:11px;color:var(--text-3)">(display name)</span></label>
+                    <label class="mf-label">Alias <span style="color:var(--red)">*</span> <span style="font-size:11px;color:var(--text-3)">(display name)</span></label>
                     <input type="text" name="alias" id="er-alias" class="mf-inp" placeholder="e.g. Account Manager" autocomplete="off">
+                    <div id="err-er-alias" style="font-size:11.5px;color:var(--red);margin-top:2px;display:none"></div>
                 </div>
             </div>
             <div class="mf-field">
-                <label class="mf-label">Permissions</label>
+                <label class="mf-label">Permissions <span style="color:var(--red)">*</span></label>
+                <div id="err-er-perms" style="font-size:11.5px;color:var(--red);margin-top:2px;display:none">Please select at least one permission.</div>
                 @php $erHiddenModules = ['Documents','Email Templates','Billing','Reports','Companies & Plans','Other']; @endphp
                 <div style="display:grid;gap:10px;margin-top:6px;max-height:340px;overflow-y:auto;padding-right:4px">
                     @foreach($allPermissions as $module => $perms)
@@ -822,7 +832,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
             </div>
             <div class="mf-foot">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('edit-role-modal').classList.remove('open')">Cancel</button>
-                <button type="submit" class="btn btn-primary btn-sm" id="er-submit">Save Changes</button>
+                <button type="submit" class="btn btn-primary btn-sm" id="er-submit" disabled style="opacity:.5;cursor:not-allowed">Save Changes</button>
             </div>
         </form>
     </div>
@@ -927,7 +937,7 @@ $(document).ready(function() {
             order: [[0, 'asc']],
             columnDefs: [{ orderable: false, targets: [6] }],
             infoCallback: function(settings, start, end, max, total, pre) {
-                return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'plans' : 'plan');
+                return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'plans' : 'plan');
             },
             language: {
                 infoEmpty: 'No plans', paginate: { previous: '‹', next: '›' },
@@ -977,7 +987,7 @@ $(document).ready(function() {
             { visible: false, targets: [5] },
         ],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'roles' : 'role');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'roles' : 'role');
         },
         language: {
             infoEmpty: 'No roles found', paginate: { previous: '‹', next: '›' },
@@ -1112,10 +1122,68 @@ function submitCreateRole(e) {
 }
 
 // ── Edit Role ──────────────────────────────────────────────────────────────────
+function erSetErr(id, msg) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg || '';
+    el.style.display = msg ? 'block' : 'none';
+}
+function erValidateName(show) {
+    var val = (document.getElementById('er-name') || {}).value || '';
+    var err = '';
+    if (!val.trim()) {
+        err = show ? 'Role name is required.' : '';
+    } else if (!/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(val.trim())) {
+        err = 'Must be lowercase with underscores, e.g. senior_manager.';
+    }
+    erSetErr('err-er-name', err);
+    var hint = document.getElementById('hint-er-name');
+    if (hint) hint.style.display = err ? 'none' : '';
+    return err === '' && val.trim() !== '';
+}
+function erValidateAlias(show) {
+    var val = (document.getElementById('er-alias') || {}).value || '';
+    var err = (!val.trim() && show) ? 'Alias (display name) is required.' : '';
+    erSetErr('err-er-alias', err);
+    return val.trim() !== '';
+}
+function erUpdateBtn() {
+    var nameOk  = erValidateName(false);
+    var aliasOk = erValidateAlias(false);
+    var permsOk = document.querySelectorAll('#edit-role-form input[name="permissions[]"]:checked').length > 0;
+    var enabled = nameOk && aliasOk && permsOk;
+    var btn = document.getElementById('er-submit');
+    if (!btn) return;
+    btn.disabled = !enabled;
+    btn.style.opacity = enabled ? '' : '.5';
+    btn.style.cursor  = enabled ? '' : 'not-allowed';
+}
+(function() {
+    var nameEl  = document.getElementById('er-name');
+    var aliasEl = document.getElementById('er-alias');
+    var formEl  = document.getElementById('edit-role-form');
+    if (nameEl) {
+        nameEl.addEventListener('input', erUpdateBtn);
+        nameEl.addEventListener('blur',  function() { erValidateName(true); erUpdateBtn(); });
+    }
+    if (aliasEl) {
+        aliasEl.addEventListener('input', erUpdateBtn);
+        aliasEl.addEventListener('blur',  function() { erValidateAlias(true); erUpdateBtn(); });
+    }
+    if (formEl) formEl.addEventListener('change', erUpdateBtn);
+}());
+
 function openEditRoleModal(id, name, alias, permissions) {
     document.getElementById('er-role-id').value = id;
     document.getElementById('er-name').value     = name;
     document.getElementById('er-alias').value    = alias || '';
+
+    // Reset errors
+    erSetErr('err-er-name', '');
+    erSetErr('err-er-alias', '');
+    erSetErr('err-er-perms', '');
+    var hintName = document.getElementById('hint-er-name');
+    if (hintName) hintName.style.display = '';
 
     // Reset all checkboxes
     document.querySelectorAll('#edit-role-modal input[type=checkbox]').forEach(function(cb) { cb.checked = false; });
@@ -1133,11 +1201,20 @@ function openEditRoleModal(id, name, alias, permissions) {
         toggle.checked = cbs.length > 0 && Array.from(cbs).every(function(c) { return c.checked; });
     });
 
+    erUpdateBtn();
     document.getElementById('edit-role-modal').classList.add('open');
 }
 
 function submitEditRole(e) {
     e.preventDefault();
+    e.stopImmediatePropagation();
+    var nameOk  = erValidateName(true);
+    var aliasOk = erValidateAlias(true);
+    var permsChecked = document.querySelectorAll('#edit-role-form input[name="permissions[]"]:checked').length > 0;
+    var permsErr = document.getElementById('err-er-perms');
+    if (permsErr) permsErr.style.display = permsChecked ? 'none' : 'block';
+    if (!nameOk || !aliasOk || !permsChecked) return;
+
     var roleId = document.getElementById('er-role-id').value;
     var form   = document.getElementById('edit-role-form');
     var btn    = document.getElementById('er-submit');

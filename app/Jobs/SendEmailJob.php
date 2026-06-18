@@ -38,6 +38,13 @@ class SendEmailJob implements ShouldQueue
             companyId:      $this->companyId,
             attachmentPath: $this->attachmentPath,
         );
+
+        if ($this->attachmentPath
+            && str_contains($this->attachmentPath, 'temp_pdfs')
+            && file_exists($this->attachmentPath)
+        ) {
+            @unlink($this->attachmentPath);
+        }
     }
 
     public function tags(): array

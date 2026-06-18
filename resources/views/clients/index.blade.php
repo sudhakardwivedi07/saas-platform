@@ -101,7 +101,7 @@
                     <th style="text-align:center;">Insights Used</th>
                     <th>Create Date</th>
                     <th style="text-align:center;display:none">Remaining</th>
-                    <th style="width:48px"></th>
+                    <th style="width:48px">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -267,7 +267,7 @@
                     <th style="text-align:center;">Insights Used</th>
                     <th>Create Date</th>
                     <th style="text-align:center;display:none">Remaining</th>
-                    <th style="width:48px"></th>
+                    <th style="width:48px">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -527,7 +527,7 @@
                 </div>
                 <div class="mf-foot">
                     <button type="button" class="btn btn-ghost btn-sm" onclick="resetAddClientForm();document.getElementById('modal-add-client').classList.remove('open')">Cancel</button>
-                    <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitAddClient()">Add Client</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-add-client" onclick="validateAndSubmitAddClient(this)">Add Client</button>
                 </div>
             </form>
         </div>
@@ -881,7 +881,7 @@ $(document).ready(function() {
         order: [[0, 'desc']],
         columnDefs: [{ orderable: false, targets: [2, 6] }],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'clients' : 'client');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'clients' : 'client');
         },
         language: {
             infoEmpty: 'No clients found',
@@ -910,7 +910,7 @@ $(document).ready(function() {
         order: [[0, 'desc']],
         columnDefs: [{ orderable: false, targets: [2, 6] }],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'companies' : 'company');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'companies' : 'company');
         },
         language: {
             infoEmpty: 'No companies found',
@@ -989,7 +989,7 @@ $(document).ready(function() {
 });
 
 // ── Add Client validation ────────────────────────────────────
-function validateAndSubmitAddClient() {
+function validateAndSubmitAddClient(btn) {
     var valid = true;
 
     function setErr(inputId, errId, msg) {
@@ -1050,12 +1050,16 @@ function validateAndSubmitAddClient() {
     // Industry Type — optional, no validation required
 
     if (valid) {
+        if (btn) { btn.disabled = true; btn.innerHTML = 'Adding…'; }
         document.getElementById('add-client-form').submit();
     }
 }
 
 // ── Reset Add Client form (fields + errors + CSV state) ──────
 function resetAddClientForm() {
+    // Re-enable submit button
+    var submitBtn = document.getElementById('btn-add-client');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = 'Add Client'; }
     // Clear text inputs
     ['ac-name','ac-email','ac-phone','ac-company'].forEach(function(id) {
         var el = document.getElementById(id);

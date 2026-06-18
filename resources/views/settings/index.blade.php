@@ -634,7 +634,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                         <th>Type</th>
                         <th>Users</th>
                         <th>Permissions</th>
-                        <th style="width:100px">Actions</th>
+                        <th style="width:48px">Action</th>
                         <th>Created</th>
                     </tr>
                 </thead>
@@ -667,20 +667,26 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                             @endif
                         </td>
                         <td>
-                            <div style="display:flex;gap:5px">
-                                @if(!$isSystem)
-                                <button class="btn btn-ghost btn-xs"
-                                    onclick="openEditRoleModal({{ $role->id }}, '{{ addslashes($role->name) }}', '{{ addslashes($role->alias ?? '') }}', {{ json_encode($role->permissions->pluck('name')) }})">
-                                    Edit
-                                </button>
-                                <button class="btn btn-xs" style="background:rgba(239,68,68,.07);color:var(--red);border:1px solid rgba(239,68,68,.2)"
-                                    onclick="deleteRole({{ $role->id }}, '{{ addslashes($role->display_name) }}')">
-                                    Delete
-                                </button>
-                                @else
-                                <span style="font-size:11.5px;color:var(--text-3)">Protected</span>
-                                @endif
+                            @if(!$isSystem)
+                            <div class="dm-wrap">
+                                <button class="dot-menu" data-menu="dm-role-{{ $role->id }}" title="Actions">•••</button>
+                                <div class="dm-popup" id="dm-role-{{ $role->id }}">
+                                    <a href="javascript:void(0)" class="dm-item"
+                                       onclick="openEditRoleModal({{ $role->id }}, '{{ addslashes($role->name) }}', '{{ addslashes($role->alias ?? '') }}', {{ json_encode($role->permissions->pluck('name')) }})">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                                        Edit
+                                    </a>
+                                    <div class="dm-divider"></div>
+                                    <button class="dm-item" style="color:var(--red);width:100%;text-align:left;border:0;background:transparent;cursor:pointer"
+                                        onclick="deleteRole({{ $role->id }}, '{{ addslashes($role->display_name) }}')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M19 6l-1 14a1 1 0 01-1 1H7a1 1 0 01-1-1L5 6"/></svg>
+                                        Delete
+                                    </button>
+                                </div>
                             </div>
+                            @else
+                            <span style="font-size:11.5px;color:var(--text-3)">Protected</span>
+                            @endif
                         </td>
                         <td>{{ $role->created_at?->format('Y-m-d H:i:s') ?? '' }}</td>
                     </tr>

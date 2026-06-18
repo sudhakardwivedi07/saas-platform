@@ -90,7 +90,7 @@
                     <th>QB</th>
                     <th>Status</th>
                     <th>Created</th>
-                    <th style="width:80px">Actions</th>
+                    <th style="width:48px">Action</th>
                 </tr>
             </thead>
             <tbody>

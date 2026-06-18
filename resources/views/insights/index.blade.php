@@ -179,7 +179,7 @@
 .reports-table th:nth-child(2), .reports-table td:nth-child(2) { width: 16%; }
 .reports-table th:nth-child(3), .reports-table td:nth-child(3) { width: 12%; }
 .reports-table th:nth-child(4), .reports-table td:nth-child(4) { width: 14%; }
-.reports-table th:nth-child(5), .reports-table td:nth-child(5) { width: 22%; white-space: nowrap; }
+.reports-table th:nth-child(5), .reports-table td:nth-child(5) { width: 60px; white-space: nowrap; }
 .reports-table tr:last-child td { border-bottom: none; }
 .reports-table tr:hover td { background: #f8fafc; }
 .insight-name-cell { display: flex; align-items: center; gap: 10px; overflow: hidden; min-width: 0; }
@@ -494,7 +494,7 @@
                         <th>Generated</th>
                         <th>Size</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th style="width:60px">Action</th>
                     </tr>
                 </thead>
                 <tbody id="reportsTableBody">
@@ -549,31 +549,32 @@
                         </td>
                         <td>
                             @if($isDeleted)
-                                <span style="font-size:13px;color:#9ca3af;font-style:italic;">No actions available</span>
+                                <span style="font-size:13px;color:#9ca3af;">—</span>
                             @else
-                                <div class="action-buttons">
-                                    @if(!$isFailed)
-                                        @if($report->isProcessing())
-                                            <button class="btn-view-insight" disabled style="background:#9ca3af;cursor:not-allowed;">Processing…</button>
-                                        @else
-                                            <a href="{{ route('insights.view', $report->encrypted_id) }}" class="btn-view-insight">
-                                                View Insight
-                                            </a>
+                                <div class="dm-wrap">
+                                    <button class="dot-menu" data-menu="dm-ins-{{ $report->id }}" title="Actions">•••</button>
+                                    <div class="dm-popup action-buttons" id="dm-ins-{{ $report->id }}">
+                                        @if(!$isFailed)
+                                            @if($report->isProcessing())
+                                                <span class="dm-item" style="opacity:.5;cursor:not-allowed;display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px">Processing…</span>
+                                            @else
+                                                <a href="{{ route('insights.view', $report->encrypted_id) }}" class="dm-item">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                    View Insight
+                                                </a>
+                                            @endif
+                                            <button class="dm-item" onclick="downloadInsight({{ $report->id }})" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                                                Download
+                                            </button>
+                                            <div class="dm-divider"></div>
                                         @endif
-                                        <button class="btn-icon download" title="Download Files"
-                                                onclick="downloadInsight({{ $report->id }})">
-                                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                            </svg>
+                                        <button class="dm-item" style="color:var(--red);width:100%;text-align:left;border:0;background:transparent;cursor:pointer"
+                                                onclick="deleteInsight({{ $report->id }}, '{{ addslashes($report->report_name) }}')">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                            Delete
                                         </button>
-                                    @endif
-                                    <button class="btn-icon delete" title="Delete"
-                                            onclick="deleteInsight({{ $report->id }}, '{{ addslashes($report->report_name) }}')">
-                                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round"
-                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                        </svg>
-                                    </button>
+                                    </div>
                                 </div>
                             @endif
                         </td>
@@ -917,12 +918,11 @@
     }
 
     function prependPlaceholderRow(id, reportName) {
-        const tbody = document.getElementById('reportsTableBody');
-        if (!tbody) { return; }
         const displayName = reportName || 'Generating…';
         const tr = document.createElement('tr');
         tr.id = 'insight-row-' + id;
         tr.dataset.search = displayName.toLowerCase();
+        tr.dataset.status = 'processing';
         tr.innerHTML = `
             <td>
                 <div class="insight-name-cell">
@@ -938,21 +938,24 @@
             <td style="color:#64748b;">—</td>
             <td><span class="badge info" id="status-badge-${id}">Analyzing</span></td>
             <td>
-                <div class="action-buttons">
-                    <button class="btn-view-insight" disabled style="background:#9ca3af;">Processing…</button>
-                    <button class="btn-icon download" disabled style="opacity:.4;cursor:not-allowed;" title="Download">
-                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                        </svg>
-                    </button>
-                    <button class="btn-icon delete" onclick="deleteInsight(${id},'This insight')" title="Delete">
-                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                        </svg>
-                    </button>
+                <div class="dm-wrap">
+                    <button class="dot-menu" data-menu="dm-ins-${id}" title="Actions">•••</button>
+                    <div class="dm-popup action-buttons" id="dm-ins-${id}">
+                        <span class="dm-item" style="opacity:.5;cursor:not-allowed;display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px">Processing…</span>
+                        <div class="dm-divider"></div>
+                        <button class="dm-item" style="color:var(--red);width:100%;text-align:left;border:0;background:transparent;cursor:pointer" onclick="deleteInsight(${id},'This insight')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            Delete
+                        </button>
+                    </div>
                 </div>
             </td>`;
-        tbody.prepend(tr);
+        if (window.insightsDT) {
+            window.insightsDT.row.add(tr).draw(false);
+        } else {
+            const tbody = document.getElementById('reportsTableBody');
+            if (tbody) tbody.prepend(tr);
+        }
     }
 
     function markRowReady(id, encryptedId) {
@@ -960,21 +963,23 @@
         const badge = document.getElementById('status-badge-' + id);
         if (!row) { return; }
         if (badge) { badge.className = 'badge warning'; badge.textContent = 'Draft'; }
-        if (row) row.dataset.status = 'draft';
+        row.dataset.status = 'draft';
         const viewUrl = encryptedId ? `/insights/${encryptedId}/view` : `/insights/${id}/view`;
-        const actions = row.querySelector('.action-buttons');
-        if (actions) {
-            actions.innerHTML = `
-                <a href="${viewUrl}" class="btn-view-insight">View Insight</a>
-                <button class="btn-icon download" onclick="downloadInsight(${id})" title="Download">
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                    </svg>
+        const popup = row.querySelector('.action-buttons');
+        if (popup) {
+            popup.innerHTML = `
+                <a href="${viewUrl}" class="dm-item">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    View Insight
+                </a>
+                <button class="dm-item" onclick="downloadInsight(${id})" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download
                 </button>
-                <button class="btn-icon delete" onclick="deleteInsight(${id},'This insight')" title="Delete">
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                    </svg>
+                <div class="dm-divider"></div>
+                <button class="dm-item" style="color:var(--red);width:100%;text-align:left;border:0;background:transparent;cursor:pointer" onclick="deleteInsight(${id},'This insight')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Delete
                 </button>`;
         }
         const nameLink = row.querySelector('.insight-name-cell a, .insight-name-cell span[style*="color:#1a202c"]');
@@ -985,6 +990,7 @@
             a.textContent = nameLink.textContent;
             nameLink.replaceWith(a);
         }
+        if (window.insightsDT) window.insightsDT.row(row).invalidate().draw(false);
     }
 
     function markRowFailed(id) {
@@ -993,13 +999,15 @@
         const row = document.getElementById('insight-row-' + id);
         if (row) {
             row.dataset.status = 'failed';
-            const actionDiv = row.querySelector('.action-buttons');
-            if (actionDiv) {
-                const viewBtn = actionDiv.querySelector('.btn-view-insight');
-                if (viewBtn) viewBtn.remove();
-                const dlBtn = actionDiv.querySelector('.btn-icon.download');
-                if (dlBtn) dlBtn.remove();
+            const popup = row.querySelector('.action-buttons');
+            if (popup) {
+                popup.innerHTML = `
+                    <button class="dm-item" style="color:var(--red);width:100%;text-align:left;border:0;background:transparent;cursor:pointer" onclick="deleteInsight(${id},'This insight')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Delete
+                    </button>`;
             }
+            if (window.insightsDT) window.insightsDT.row(row).invalidate().draw(false);
         }
     }
 
@@ -1029,8 +1037,13 @@
         if (btn2) { btn2.disabled = false; btn2.style.opacity = ''; btn2.innerHTML = '<i class="fa fa-sync-alt"></i> Generate New Insight'; }
     }
 
-    // ── Search + Status filter ────────────────────────────────────────────────
+    // ── Search + Status filter (delegates to DataTable after init) ──────────
     window.applyFilters = function () {
+        if (window.insightsDT) {
+            window.insightsDT.draw();
+            return;
+        }
+        // Pre-init fallback
         const q      = (document.getElementById('searchInput')?.value ?? '').toLowerCase();
         const status = (document.getElementById('statusFilter')?.value ?? '').toLowerCase();
         let visible  = 0;
@@ -1234,5 +1247,46 @@
         });
     };
 }());
+
+// ── DataTable init ────────────────────────────────────────────────────────
+$(document).ready(function () {
+    var container = document.getElementById('reportsTableContainer');
+    if (!container || container.style.display === 'none') return;
+
+    window.insightsDT = $('#reportsTable').DataTable({
+        paging:       true,
+        pageLength:   15,
+        lengthChange: false,
+        searching:    true,
+        ordering:     true,
+        info:         false,
+        autoWidth:    false,
+        dom:          't<"dt-footer"ip>',
+        order:        [[1, 'desc']],
+        columnDefs:   [{ orderable: false, targets: [4] }],
+        language: {
+            paginate:   { previous: '‹', next: '›' },
+            emptyTable: '<div style="text-align:center;padding:32px 16px;color:#9ca3af;font-size:13px">No insights found</div>',
+        },
+    });
+
+    // Text search
+    document.getElementById('searchInput')?.addEventListener('input', function () {
+        window.insightsDT.search(this.value).draw();
+    });
+
+    // Status filter via data-status attribute
+    $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+        if (!settings.nTable || settings.nTable.id !== 'reportsTable') return true;
+        var status = (document.getElementById('statusFilter')?.value ?? '').toLowerCase();
+        if (!status) return true;
+        var row = window.insightsDT.row(dataIndex).node();
+        return row ? (row.getAttribute('data-status') || '') === status : true;
+    });
+
+    document.getElementById('statusFilter')?.addEventListener('change', function () {
+        window.insightsDT.draw();
+    });
+});
 </script>
 @endpush

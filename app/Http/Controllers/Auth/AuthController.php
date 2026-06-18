@@ -444,8 +444,13 @@ class AuthController extends Controller
         );
 
         if (!$sent) {
-            // EmailService already logs the failure; show a generic error.
-            return back()->withErrors(['email' => 'Unable to send reset email. Please contact support.']);
+            // EmailService failed (no SMTP configured or delivery error).
+            // Fall back to Laravel's built-in password-reset notification.
+            $status = Password::broker()->sendResetLink(['email' => $user->email]);
+
+            if ($status !== Password::RESET_LINK_SENT) {
+                return back()->withErrors(['email' => 'Unable to send reset email. Please configure SMTP settings under Settings → Email.']);
+            }
         }
 
         return back()->with('success', $successMsg);

@@ -5,7 +5,6 @@
 @push('styles')
 <style>
 .report-detail-container { background-color: #f5f7fa; min-height: 100vh; }
-
 /* ── Header ── */
 .report-detail-header {
     display: flex;

@@ -553,7 +553,7 @@
                             @else
                                 <div class="dm-wrap">
                                     <button class="dot-menu" data-menu="dm-ins-{{ $report->id }}" title="Actions">•••</button>
-                                    <div class="dm-popup action-buttons" id="dm-ins-{{ $report->id }}">
+                                    <div class="dm-popup" id="dm-ins-{{ $report->id }}">
                                         @if(!$isFailed)
                                             @if($report->isProcessing())
                                                 <span class="dm-item" style="opacity:.5;cursor:not-allowed;display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px">Processing…</span>
@@ -580,9 +580,6 @@
                         </td>
                     </tr>
                     @endforeach
-                    <tr id="insightNoMatch" style="display:none;">
-                        <td colspan="5" style="text-align:center;padding:28px 16px;color:#64748b;font-size:13.5px;">No matching records found</td>
-                    </tr>
                 </tbody>
             </table>
         </div>
@@ -940,7 +937,7 @@
             <td>
                 <div class="dm-wrap">
                     <button class="dot-menu" data-menu="dm-ins-${id}" title="Actions">•••</button>
-                    <div class="dm-popup action-buttons" id="dm-ins-${id}">
+                    <div class="dm-popup ins-actions" id="dm-ins-${id}">
                         <span class="dm-item" style="opacity:.5;cursor:not-allowed;display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px">Processing…</span>
                         <div class="dm-divider"></div>
                         <button class="dm-item" style="color:var(--red);width:100%;text-align:left;border:0;background:transparent;cursor:pointer" onclick="deleteInsight(${id},'This insight')">
@@ -965,7 +962,7 @@
         if (badge) { badge.className = 'badge warning'; badge.textContent = 'Draft'; }
         row.dataset.status = 'draft';
         const viewUrl = encryptedId ? `/insights/${encryptedId}/view` : `/insights/${id}/view`;
-        const popup = row.querySelector('.action-buttons');
+        const popup = row.querySelector('.dm-popup');
         if (popup) {
             popup.innerHTML = `
                 <a href="${viewUrl}" class="dm-item">
@@ -999,7 +996,7 @@
         const row = document.getElementById('insight-row-' + id);
         if (row) {
             row.dataset.status = 'failed';
-            const popup = row.querySelector('.action-buttons');
+            const popup = row.querySelector('.dm-popup');
             if (popup) {
                 popup.innerHTML = `
                     <button class="dm-item" style="color:var(--red);width:100%;text-align:left;border:0;background:transparent;cursor:pointer" onclick="deleteInsight(${id},'This insight')">
@@ -1054,8 +1051,6 @@
             row.style.display = show ? '' : 'none';
             if (show) visible++;
         });
-        const noMatch = document.getElementById('insightNoMatch');
-        if (noMatch) noMatch.style.display = visible === 0 ? '' : 'none';
     };
     window.searchReports = window.applyFilters;
 

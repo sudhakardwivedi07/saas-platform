@@ -101,7 +101,7 @@
                 <th>Last Login</th>
                 <th>Status</th>
                 <th>Create Date</th>
-                <th style="width:48px"></th>
+                <th style="width:48px">Action</th>
             </tr>
         </thead>
         <tbody>

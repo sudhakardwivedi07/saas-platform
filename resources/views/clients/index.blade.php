@@ -101,7 +101,7 @@
                     <th style="text-align:center;">Insights Used</th>
                     <th>Create Date</th>
                     <th style="text-align:center;display:none">Remaining</th>
-                    <th style="width:48px"></th>
+                    <th style="width:48px">Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -267,7 +267,7 @@
                     <th style="text-align:center;">Insights Used</th>
                     <th>Create Date</th>
                     <th style="text-align:center;display:none">Remaining</th>
-                    <th style="width:48px"></th>
+                    <th style="width:48px">Action</th>
                 </tr>
             </thead>
             <tbody>

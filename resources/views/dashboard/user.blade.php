@@ -14,7 +14,7 @@
         $kpiCoSettingsMap[$__co->id] = [
             'name'           => $__co->company_name,
             'hidden_kpis'    => array_values($__s->draft_hidden_kpis ?? []),
-            'publish_status' => $__s->publish_status ?? 'published',
+            'publish_status' => $__s->publish_status ?? 'draft',
             'has_insights'   => \App\Models\Report::where('company_id', $__co->id)
                 ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
                 ->exists(),
@@ -28,7 +28,10 @@
         : $adminViewUser->company;
     $adminPubStatus = ($_selCoId && isset($kpiCoSettingsMap[$_selCoId]))
         ? $kpiCoSettingsMap[$_selCoId]['publish_status']
-        : ($dashboardPublishStatus ?? 'published');
+        : ($dashboardPublishStatus ?? 'draft');
+    $_selHasInsights = $_selCoId && isset($kpiCoSettingsMap[$_selCoId])
+        ? $kpiCoSettingsMap[$_selCoId]['has_insights']
+        : ($hasAnalyzedInsights ?? false);
 @endphp
 <style>
 /* ── Admin action toast ───────────────────────────────────────────── */
@@ -202,7 +205,7 @@
         </div>
     </div>
     @if(!empty($showKpiDashboard))
-    <div class="cdb-bar-right">
+    <div class="cdb-bar-right" id="cdb-action-btns" style="{{ empty($_selHasInsights) ? 'display:none' : '' }}">
         <button class="cdb-btn cdb-btn-edit" id="cdbEditModeBtn" onclick="cdbToggleEditMode()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Edit Mode
@@ -904,6 +907,8 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
             var noInsights  = document.getElementById('kpiNoInsightsPlaceholder');
             if (embedWrap)  embedWrap.style.display  = hasInsights ? '' : 'none';
             if (noInsights) noInsights.style.display = hasInsights ? 'none' : '';
+            var actionBtns  = document.getElementById('cdb-action-btns');
+            if (actionBtns) actionBtns.style.display = hasInsights ? '' : 'none';
 
             if (hasInsights && _orig) _orig(id);
         };

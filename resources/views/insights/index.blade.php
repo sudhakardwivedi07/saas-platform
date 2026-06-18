@@ -116,7 +116,7 @@
     font-size: 13px;
     font-family: inherit;
     color: #1a202c;
-    background: #f8fafc;
+    background: #fff;
     outline: none;
     width: 200px;
 }
@@ -881,7 +881,8 @@
 
     // ── Poll status ───────────────────────────────────────────────────────────
     function pollStatus(reportId) {
-        fetch(`/insights/status/${reportId}`, { headers: { 'Accept': 'application/json' } })
+        var pollSuffix = _impToken ? '?_imp=' + encodeURIComponent(_impToken) : '';
+        fetch(`/insights/status/${reportId}` + pollSuffix, { headers: { 'Accept': 'application/json' } })
         .then(r => r.json())
         .then(data => {
             if (data.status !== 'success') { setTimeout(() => pollStatus(reportId), 10000); return; }
@@ -891,6 +892,13 @@
                 hideProcessingBar();
                 resetGenerateBtns();
                 markRowReady(r.id, r.encrypted_id);
+                // Increment the "This month" usage count to reflect the new insight
+                const countEl = document.querySelector('.usage-count');
+                if (countEl) {
+                    const cur = parseInt(countEl.textContent) || 0;
+                    countEl.textContent = cur + 1;
+                }
+                applyFilters();
                 return;
             }
             if (r.is_failed) {
@@ -1125,7 +1133,7 @@
         // Update count text
         const countEl = document.querySelector('.usage-count');
         if (countEl) {
-            countEl.textContent = used + ' / ' + limit;
+            countEl.textContent = used;
             countEl.style.color = limitReached ? '#ef4444' : '#1a202c';
         }
 

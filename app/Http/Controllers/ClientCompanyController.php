@@ -211,19 +211,50 @@ class ClientCompanyController extends AccountBaseController
             ->firstOrFail();
 
         if ((int) auth()->user()->company_id === (int) $company->id) {
-            return redirect()->route('my-companies.index')
+            return redirect()->back()
                 ->with('error', 'Your primary company cannot be deleted.');
         }
 
-        DB::transaction(function () use ($company) {
-            User::withoutGlobalScopes()->where('company_id', $company->id)->delete();
+        // Block deletion if this is the primary (and only) company for any client.
+        // Deleting it would make that client invisible in the clients list.
+        $primaryOnlyUsers = User::withoutGlobalScopes()
+            ->where('company_id', $company->id)
+            ->get(['id', 'name']);
+
+        foreach ($primaryOnlyUsers as $affectedUser) {
+            $hasOtherCompany = DB::table('user_companies')
+                ->where('user_id', $affectedUser->id)
+                ->where('company_id', '!=', $company->id)
+                ->exists();
+
+            if (!$hasOtherCompany) {
+                return redirect()->back()->with(
+                    'error',
+                    'Deletion not allowed. This company is the only company assigned to the client.'
+                );
+            }
+        }
+
+        DB::transaction(function () use ($company, $primaryOnlyUsers) {
+            // Move any primary-company users to their next available company.
+            foreach ($primaryOnlyUsers as $affectedUser) {
+                $nextCompanyId = DB::table('user_companies')
+                    ->where('user_id', $affectedUser->id)
+                    ->where('company_id', '!=', $company->id)
+                    ->value('company_id');
+
+                User::withoutGlobalScopes()
+                    ->where('id', $affectedUser->id)
+                    ->update(['company_id' => $nextCompanyId]);
+            }
+
             CompanyBranding::where('company_id', $company->id)->delete();
             Subscription::where('company_id', $company->id)->delete();
             DB::table('user_companies')->where('company_id', $company->id)->delete();
             $company->delete();
         });
 
-        return redirect()->route('my-companies.index')
+        return redirect()->back()
             ->with('success', 'Company deleted successfully.');
     }
 

@@ -47,8 +47,8 @@
 .rd-edit-toast.show { display:flex; }
 
 /* ── Slider ──────────────────────────────────────────────────── */
-.insight-slider-container { position:relative; }
-.insight-slider-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding:0 2px; }
+.insight-slider-container { position:relative; background:#f5f7fa; border-radius:12px; padding:20px; }
+.insight-slider-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:0 2px; position:relative; z-index:2; }
 .insight-slider-counter { color:#64748b;font-size:14px;font-weight:500; }
 .insight-slider-nav { display:flex;align-items:center;gap:16px; }
 .isnbc { display:flex;align-items:center;gap:10px;border:1px solid #dbdbdb;border-radius:30px;padding:5px;cursor:pointer;transition:all .3s;background:none;font-family:inherit;outline:none; }

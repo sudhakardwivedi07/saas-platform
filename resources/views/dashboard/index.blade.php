@@ -750,7 +750,7 @@
                         <td style="padding:10px 0;text-align:center">
                             <form method="POST" action="{{ route('clients.login-as', $mc->id) }}" style="display:inline">
                                 @csrf
-                                <input type="hidden" name="redirect_to" value="/dashboard">
+                                <input type="hidden" name="redirect_to" value="/">
                                 <button type="submit" style="display:inline-flex;align-items:center;gap:5px;padding:5px 14px;background:var(--orange);color:#fff;border-radius:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;white-space:nowrap">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
                                     View

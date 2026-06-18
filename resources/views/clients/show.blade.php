@@ -77,7 +77,7 @@ $totalCompanies = $allClientCompanies->count();
 
         <div class="cd-chip">
             <span class="cd-chip-val">{{ $totalCompanies }}</span>
-            <span class="cd-chip-lbl">Companies</span>
+            <span class="cd-chip-lbl">{{ $totalCompanies === 1 ? 'Company' : 'Companies' }}</span>
         </div>
 
         <div class="cd-chip">
@@ -197,7 +197,6 @@ $totalCompanies = $allClientCompanies->count();
                             <th>QB Connected</th>
                             <th>Status</th>
                             <th>Created</th>
-                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -224,23 +223,6 @@ $totalCompanies = $allClientCompanies->count();
                             </td>
                             <td style="font-size:0.8125rem;color:var(--text-2);">
                                 {{ $company->created_at?->format(active_date_format()) ?? '—' }}
-                            </td>
-                            <td>
-                                <div style="display:flex;align-items:center;gap:8px;">
-                                    <button type="button" class="btn btn-ghost btn-xs"
-                                        onclick="openShowEditCoModal(
-                                            {{ $company->id }},
-                                            '{{ addslashes($company->company_name) }}',
-                                            '{{ addslashes($company->company_email ?? '') }}',
-                                            '{{ addslashes($company->industry_type ?? '') }}',
-                                            '{{ addslashes($company->entity_type ?? '') }}'
-                                        )">Edit</button>
-                                    <form method="POST" action="{{ route('my-companies.destroy', $company->id) }}" onsubmit="return confirmCompanyDelete(this);">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-ghost btn-xs" style="color:var(--red);border-color:rgba(239,68,68,.3);">Delete</button>
-                                    </form>
-                                </div>
                             </td>
                         </tr>
                         @endforeach

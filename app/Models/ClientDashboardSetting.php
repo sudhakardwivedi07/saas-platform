@@ -30,7 +30,7 @@ class ClientDashboardSetting extends Model
     {
         return self::firstOrCreate(
             ['company_id' => $companyId],
-            ['hidden_kpis' => [], 'draft_hidden_kpis' => [], 'publish_status' => 'published']
+            ['hidden_kpis' => [], 'draft_hidden_kpis' => [], 'publish_status' => 'draft']
         );
     }
 

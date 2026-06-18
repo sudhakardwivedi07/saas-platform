@@ -622,7 +622,7 @@ function showToast(msg, type='success') {
         }
 
         // Don't show on the insights page itself — it has its own bar
-        if (window.location.pathname.includes('/insights')) return;
+        if (window.location.pathname.includes('partner-insights')) return;
 
         // Show the floating banner
         const msg    = document.getElementById('global-gen-msg');

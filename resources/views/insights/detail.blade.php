@@ -118,14 +118,16 @@
 .btn-back:hover { background: #eff6ff; color: #1a6aa8; text-decoration: none; }
 
 /* ── Slider ── */
-.insight-slider-container { position: relative; background: #f5f7fa; border-radius: 12px; min-height: 500px; margin-top: 0; }
+.insight-slider-container { position: relative; background: #f5f7fa; border-radius: 12px; min-height: 500px; margin-top: 0; padding: 20px; }
 .insight-slider-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
-    margin-top: 4px;
-    padding: 0 4px;
+    margin-bottom: 24px;
+    margin-top: 0;
+    padding: 0 2px;
+    position: relative;
+    z-index: 2;
 }
 .insight-slider-counter { color: #64748b; font-size: 15px; font-weight: 500; }
 .insight-slider-nav { display: flex; align-items: center; gap: 20px; }

@@ -719,10 +719,10 @@ class ClientController extends AccountBaseController
         ], now()->addHours(8));
 
         $redirectTo = $request->input('redirect_to');
-        $allowed    = ['/dashboard', '/insights'];
+        $allowed    = ['/', '/dashboard', '/insights'];
         $startPath  = ($redirectTo && in_array($redirectTo, $allowed, true))
             ? $redirectTo
-            : '/dashboard';
+            : '/';
 
         $tokenUrl = url($startPath) . '?_imp=' . $token;
 

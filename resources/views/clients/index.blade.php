@@ -527,7 +527,7 @@
                 </div>
                 <div class="mf-foot">
                     <button type="button" class="btn btn-ghost btn-sm" onclick="resetAddClientForm();document.getElementById('modal-add-client').classList.remove('open')">Cancel</button>
-                    <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitAddClient()">Add Client</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btn-add-client" onclick="validateAndSubmitAddClient(this)">Add Client</button>
                 </div>
             </form>
         </div>
@@ -989,7 +989,7 @@ $(document).ready(function() {
 });
 
 // ── Add Client validation ────────────────────────────────────
-function validateAndSubmitAddClient() {
+function validateAndSubmitAddClient(btn) {
     var valid = true;
 
     function setErr(inputId, errId, msg) {
@@ -1050,12 +1050,16 @@ function validateAndSubmitAddClient() {
     // Industry Type — optional, no validation required
 
     if (valid) {
+        if (btn) { btn.disabled = true; btn.innerHTML = 'Adding…'; }
         document.getElementById('add-client-form').submit();
     }
 }
 
 // ── Reset Add Client form (fields + errors + CSV state) ──────
 function resetAddClientForm() {
+    // Re-enable submit button
+    var submitBtn = document.getElementById('btn-add-client');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = 'Add Client'; }
     // Clear text inputs
     ['ac-name','ac-email','ac-phone','ac-company'].forEach(function(id) {
         var el = document.getElementById(id);

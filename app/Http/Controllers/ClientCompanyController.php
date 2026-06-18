@@ -190,7 +190,7 @@ class ClientCompanyController extends AccountBaseController
             $successRedirect = redirect()->to(route('clients.index') . '?tab=companies');
         }
 
-        return $successRedirect->with('success', 'Company <strong>' . e($company->company_name) . '</strong> updated successfully!');
+        return $successRedirect->with('success', 'Company <strong>' . e($company->company_name) . '</strong> updated successfully.');
     }
 
     public function destroy(int $id)
@@ -224,7 +224,7 @@ class ClientCompanyController extends AccountBaseController
         });
 
         return redirect()->route('my-companies.index')
-            ->with('success', 'Company deleted successfully!');
+            ->with('success', 'Company deleted successfully.');
     }
 
     // ── Store new company ────────────────────────────────────────────────────
@@ -368,7 +368,7 @@ class ClientCompanyController extends AccountBaseController
             $storeRedirect = redirect()->to(route('clients.index') . '?tab=companies');
         }
 
-        return $storeRedirect->with('success', 'Company <strong>' . e($company->company_name) . '</strong> added successfully!');
+        return $storeRedirect->with('success', 'Company <strong>' . e($company->company_name) . '</strong> added successfully.');
     }
 
     // ── Called by Stripe after successful payment ────────────────────────────

@@ -909,7 +909,7 @@ $(document).ready(function() {
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         order: [[0, 'desc']],
-        columnDefs: [{ orderable: false, targets: [6] }],
+        columnDefs: [{ orderable: false, targets: [2, 6] }],
         infoCallback: function(settings, start, end, max, total, pre) {
             return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'companies' : 'company');
         },

@@ -74,7 +74,7 @@ class DashboardController extends AccountBaseController
 
                 $this->isAdminView            = true;
                 $this->viewingAsUser          = $clientUser;
-                $this->dashboardPublishStatus = $dashSetting->publish_status ?? 'published';
+                $this->dashboardPublishStatus = $dashSetting->publish_status ?? 'draft';
                 $this->draftHiddenKpis        = $dashSetting->draft_hidden_kpis ?? [];
                 // Token-based: Exit is handled by JS __exitClientImpersonation().
                 // Session-based (legacy): server route restores the admin session.
@@ -147,9 +147,11 @@ class DashboardController extends AccountBaseController
 
         if ($reportCompanyIds->isNotEmpty()) {
             $this->insightsGenerated = Report::withoutGlobalScopes()
-                ->whereIn('company_id', $reportCompanyIds)
+                ->whereIn('company_id', $subCompanyIds)
+                ->where('is_firm_report', false)
+                ->whereNull('parent_report_id')
                 ->where('status', 'Analyzed')
-                ->whereBetween('updated_at', [$startDate, $endDate])
+                ->whereBetween('created_at', [$startDate, $endDate])
                 ->count();
 
             $this->insightsAvailable = $monthlyInsightLimit > 0
@@ -197,10 +199,12 @@ class DashboardController extends AccountBaseController
             $m = now()->subMonths($i);
             $chartLabels[]   = $m->format('M');
             $chartInsights[] = Report::withoutGlobalScopes()
-                ->whereIn('company_id', $reportCompanyIds)
+                ->whereIn('company_id', $subCompanyIds)
+                ->where('is_firm_report', false)
+                ->whereNull('parent_report_id')
                 ->where('status', 'Analyzed')
-                ->whereYear('updated_at', $m->year)
-                ->whereMonth('updated_at', $m->month)
+                ->whereYear('created_at', $m->year)
+                ->whereMonth('created_at', $m->month)
                 ->count();
         }
         $this->chartLabels   = $chartLabels;

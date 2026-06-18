@@ -50,16 +50,13 @@ class PartnerInsightsController extends AccountBaseController
             ->map(fn($group) => $group->sortByDesc('version')->first())
             ->values();
 
-        // Billing-cycle usage: count unique insight series (not versions) created this month.
-        // Using unique() on report_name+company_id handles data where parent_report_id wasn't set.
-        $cycleUsed = Report::whereIn('company_id', $subCompanyIds)
+        // Billing-cycle usage: all root reports this month (not versions, not failed).
+        $cycleUsed = Report::withTrashed()
+            ->whereIn('company_id', $subCompanyIds)
             ->where('is_firm_report', false)
-            ->whereNull('deleted_at')
             ->whereNull('parent_report_id')
             ->where('created_at', '>=', Carbon::now()->startOfMonth())
             ->whereNotIn('status', ['Failed'])
-            ->get(['report_name', 'company_id'])
-            ->unique(fn($r) => $r->report_name . '||' . $r->company_id)
             ->count();
 
         // Package limit from the admin company's subscription plan
@@ -193,9 +190,9 @@ class PartnerInsightsController extends AccountBaseController
 
         if ($monthlyLimit > 0) {
             $subCompanyIds = $this->allClientCompanyIds();
-            $cycleUsed = Report::whereIn('company_id', $subCompanyIds)
+            $cycleUsed = Report::withTrashed()
+                ->whereIn('company_id', $subCompanyIds)
                 ->where('is_firm_report', false)
-                ->whereNull('deleted_at')
                 ->whereNull('parent_report_id')
                 ->where('created_at', '>=', Carbon::now()->startOfMonth())
                 ->whereNotIn('status', ['Failed'])

@@ -171,7 +171,7 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
 </div>
 </div>
  
-        <button type="submit" class="login-btn">Sign In</button>
+        <button type="submit" class="login-btn" id="login-btn">Sign In</button>
 </form>
  
     @if($setting?->allow_registration && empty($tenantCompany))
@@ -183,6 +183,7 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
 
 <script>
 (function () {
+    // ── Password toggle ──────────────────────────────────────
     var toggle   = document.getElementById('pw-toggle');
     var input    = document.getElementById('password');
     var eyeShow  = document.getElementById('eye-show');
@@ -194,6 +195,23 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
         eyeShow.style.display = isPassword ? 'none'  : '';
         eyeHide.style.display = isPassword ? ''      : 'none';
         toggle.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+    });
+
+    // ── Sign In button: disable on submit, reset on page restore ──
+    var btn  = document.getElementById('login-btn');
+    var form = btn.closest('form');
+
+    form.addEventListener('submit', function () {
+        btn.disabled    = true;
+        btn.textContent = 'Loading';
+    });
+
+    // Back-forward cache: browser may restore the page with the button still disabled
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) {
+            btn.disabled    = false;
+            btn.textContent = 'Sign In';
+        }
     });
 }());
 </script>

@@ -84,6 +84,12 @@ class LogClientAdminActivity
             return false;
         }
 
+        // my-companies store/update/destroy have explicit EventLog calls with company
+        // names and richer metadata — skip the generic middleware entry to avoid duplicates.
+        if (in_array($routeName, ['my-companies.store', 'my-companies.update', 'my-companies.destroy'], true)) {
+            return false;
+        }
+
         $action = Str::lower((string) Str::of($routeName)->afterLast('.'));
         $functionalActions = [
             'store', 'update', 'destroy', 'delete', 'toggle', 'assign',

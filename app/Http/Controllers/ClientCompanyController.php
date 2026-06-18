@@ -233,7 +233,6 @@ class ClientCompanyController extends AccountBaseController
         $createdByKey = $this->companyOwnerKeyForCurrentUser();
 
         DB::transaction(function () use ($company) {
-            User::withoutGlobalScopes()->where('company_id', $company->id)->delete();
             CompanyBranding::where('company_id', $company->id)->delete();
             Subscription::where('company_id', $company->id)->delete();
             DB::table('user_companies')->where('company_id', $company->id)->delete();

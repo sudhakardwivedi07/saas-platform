@@ -1034,7 +1034,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                     </thead>
                     <tbody>
                         @foreach(($activities ?? collect()) as $activity)
-                        <tr>
+                        <tr data-event-type="{{ $activity->event_type ?? '' }}">
                             <td>
                                 <div style="display:flex;align-items:center;gap:8px;">
                                     @php
@@ -1208,16 +1208,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // ── Activity Log ──────────────────────────────────────────────────────────────
 @if($_atabs['tab-activity'])
-var _actDtSearchFn = null;
+var _actDtSearchFn  = null;
+var _actTypeFn      = null;
 
 function initActivityTable() {
     if (!window.$ || !document.getElementById('activity-table')) return;
 
-    // Remove any previously registered date-range search fn to avoid duplicates
+    // Remove any previously registered search fns to avoid duplicates
     if (_actDtSearchFn) {
         var idx = $.fn.dataTable.ext.search.indexOf(_actDtSearchFn);
         if (idx > -1) $.fn.dataTable.ext.search.splice(idx, 1);
         _actDtSearchFn = null;
+    }
+    if (_actTypeFn) {
+        var idx2 = $.fn.dataTable.ext.search.indexOf(_actTypeFn);
+        if (idx2 > -1) $.fn.dataTable.ext.search.splice(idx2, 1);
+        _actTypeFn = null;
     }
     // Destroy existing DataTable instance if present
     if ($.fn.DataTable && $.fn.DataTable.isDataTable('#activity-table')) {
@@ -1248,8 +1254,18 @@ function initActivityTable() {
         actTable.search(this.value).draw();
     });
 
+    // Event type filter — matches data-event-type attribute on each <tr>
+    _actTypeFn = function (settings, data, dataIndex) {
+        if (!settings.nTable || settings.nTable.id !== 'activity-table') return true;
+        var selected = document.getElementById('actFilterEventType').value;
+        if (!selected) return true;
+        var row = actTable.row(dataIndex).node();
+        return row ? row.getAttribute('data-event-type') === selected : true;
+    };
+    $.fn.dataTable.ext.search.push(_actTypeFn);
+
     document.getElementById('actFilterEventType').addEventListener('change', function () {
-        actTable.column(0).search(this.value ? this.value : '', false, false).draw();
+        actTable.draw();
     });
 
     // Date range filter — stored so it can be removed before the next re-init

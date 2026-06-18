@@ -158,7 +158,7 @@
                         <span class="u-last-login" style="color:var(--text-3)">Never</span>
                     @endif
                 </td>
-                <td>
+                <td data-search="{{ $status }}">
                     <span class="user-status-badge" style="font-size:13px;font-weight:500;color:{{ $isActive ? 'var(--green)' : 'var(--red)' }}">
                         {{ $isActive ? 'Active' : 'Inactive' }}
                     </span>
@@ -246,7 +246,8 @@
                 </div>
                 <div class="mf-field" style="margin:0">
                     <label class="mf-label">Job Title</label>
-                    <input type="text" name="job_title" class="mf-inp" placeholder="e.g. Financial Analyst" value="{{ old('job_title') }}">
+                    <input type="text" name="job_title" id="au-job-title" class="mf-inp" placeholder="e.g. Financial Analyst" value="{{ old('job_title') }}" maxlength="100">
+                    <div id="err-au-job-title" class="au-err"></div>
                 </div>
             </div>
             <div class="mf-field">
@@ -386,7 +387,7 @@ $(document).ready(function() {
 function resetAddUserModal() {
     var form = document.getElementById('add-user-form');
     if (form) form.reset();
-    ['err-au-name','err-au-email','err-au-role','err-au-pwd'].forEach(function(id) {
+    ['err-au-name','err-au-email','err-au-role','err-au-job-title','err-au-pwd'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) { el.textContent = ''; el.style.display = 'none'; }
     });
@@ -492,6 +493,15 @@ function validateAndSubmitAddUser() {
         auErr('err-au-role', ''); auMark('au-role', false);
     }
 
+    // Job Title (optional, max 100)
+    var jobEl  = document.getElementById('au-job-title');
+    var jobVal = jobEl ? jobEl.value.trim() : '';
+    if (jobVal.length > 100) {
+        auErr('err-au-job-title', 'Job title must not exceed 100 characters.'); auMark('au-job-title', true); ok = false;
+    } else {
+        auErr('err-au-job-title', ''); auMark('au-job-title', false);
+    }
+
     // Password
     var pwdEl = document.getElementById('add-pwd');
     var pwdVal = pwdEl ? pwdEl.value : '';
@@ -524,7 +534,7 @@ function validateAndSubmitAddUser() {
         if (r.status === 200 || r.status === 201) {
             closeAddUserModal();
             if (typeof Swal !== 'undefined') {
-                Swal.fire({ icon: 'success', title: 'Done!', text: r.body.message || 'User added successfully.', timer: 2000, showConfirmButton: false })
+                Swal.fire({ icon: 'success', title: 'Done!', html: boldName(r.body.message || 'User added successfully.'), timer: 2000, showConfirmButton: false })
                     .then(function() { window.location.reload(); });
             } else {
                 window.location.reload();
@@ -534,8 +544,9 @@ function validateAndSubmitAddUser() {
             if (errors.email && errors.email[0]) { auErr('err-au-email', errors.email[0]); auMark('au-email', true); }
             if (errors.name && errors.name[0]) { auErr('err-au-name', errors.name[0]); auMark('au-name', true); }
             if (errors.role && errors.role[0]) { auErr('err-au-role', errors.role[0]); auMark('au-role', true); }
+            if (errors.job_title && errors.job_title[0]) { auErr('err-au-job-title', errors.job_title[0]); auMark('au-job-title', true); }
             if (errors.password && errors.password[0]) { auErr('err-au-pwd', errors.password[0]); auMark('add-pwd', true); }
-            if (!errors.email && !errors.name && !errors.role && !errors.password && r.body.message) {
+            if (!errors.email && !errors.name && !errors.role && !errors.job_title && !errors.password && r.body.message) {
                 auErr('err-au-email', r.body.message);
             }
         }
@@ -612,7 +623,39 @@ function validateAndSubmitEditUser() {
         euErr('err-edit-pwd', 'Password must be at least 8 characters.'); ok = false;
     } else { euErr('err-edit-pwd', ''); }
 
-    if (ok) document.getElementById('form-edit-user').submit();
+    if (!ok) return;
+
+    var form = document.getElementById('form-edit-user');
+    var btn  = form.querySelector('button.btn-primary');
+    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+
+    fetch(form.action, {
+        method: 'POST',
+        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: new FormData(form),
+    })
+    .then(function(r) { return r.json().then(function(json) { return { status: r.status, body: json }; }); })
+    .then(function(r) {
+        if (r.status === 200 || r.status === 201) {
+            document.getElementById('modal-edit-user').classList.remove('open');
+            Swal.fire({ icon: 'success', title: 'Updated!', html: boldName(r.body.message || 'User updated successfully.'), timer: 2000, showConfirmButton: false })
+                .then(function() { window.location.reload(); });
+        } else if (r.status === 422) {
+            var errors = r.body.errors || {};
+            if (errors.name    && errors.name[0])    { euErr('err-edit-name',  errors.name[0]); }
+            if (errors.email   && errors.email[0])   { euErr('err-edit-email', errors.email[0]); }
+            if (errors.role    && errors.role[0])    { euErr('err-edit-role',  errors.role[0]); }
+            if (errors.password && errors.password[0]) { euErr('err-edit-pwd', errors.password[0]); }
+        } else {
+            Swal.fire({ icon: 'error', title: 'Error', text: r.body.message || 'Something went wrong.' });
+        }
+    })
+    .catch(function() {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Something went wrong. Please try again.' });
+    })
+    .finally(function() {
+        if (btn) { btn.disabled = false; btn.textContent = 'Save Changes'; }
+    });
 }
 
 function toggleUserStatus(id, currentStatus) {
@@ -641,13 +684,12 @@ function toggleUserStatus(id, currentStatus) {
         })
         .then(function(r) { return r.json(); })
         .then(function(data) {
-            // Show toast
-            SwalToast.fire({
-                icon: data.status === 'success' ? 'success' : 'warning',
-                title: data.message,
-            });
+            if (data.status !== 'success') {
+                Swal.fire({ icon: 'warning', title: data.message, timer: 2000, showConfirmButton: false });
+                return;
+            }
 
-            if (data.status !== 'success') return;
+            Swal.fire({ icon: 'success', title: 'Done!', html: boldName(data.message), timer: 2000, showConfirmButton: false });
 
             // Update the DataTable row without reload
             var row = document.querySelector('tr[data-user-id="' + id + '"]');
@@ -687,7 +729,7 @@ function toggleUserStatus(id, currentStatus) {
             }
         })
         .catch(function() {
-            SwalToast.fire({ icon: 'error', title: 'Something went wrong. Please try again.' });
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Something went wrong. Please try again.' });
         });
     });
 }
@@ -695,8 +737,8 @@ function toggleUserStatus(id, currentStatus) {
 function removeUser(id, name) {
     Swal.fire({
         title: 'Remove User?',
-        text: '"' + name + '" will be permanently removed. This cannot be undone.',
-        icon: 'error',
+        html: '<strong>' + name + '</strong> will be permanently removed. This cannot be undone.',
+        icon: 'warning',
         showCancelButton: true,
         confirmButtonText: 'Yes, Remove',
         cancelButtonText: 'Cancel',
@@ -705,10 +747,33 @@ function removeUser(id, name) {
         reverseButtons: true,
     }).then(function(result) {
         if (!result.isConfirmed) return;
-        var form = document.getElementById('form-remove-user');
-        form.action = '{{ route("users.destroy", ":id") }}'.replace(':id', id);
-        form.submit();
+        var url = '{{ route("users.destroy", ":id") }}'.replace(':id', id);
+        var fd  = new FormData();
+        fd.append('_token', '{{ csrf_token() }}');
+        fd.append('_method', 'DELETE');
+        fetch(url, {
+            method: 'POST',
+            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: fd,
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.status === 'success') {
+                Swal.fire({ icon: 'success', title: 'Removed!', html: boldName(data.message), timer: 2000, showConfirmButton: false })
+                    .then(function() { window.location.reload(); });
+            } else {
+                Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Something went wrong.' });
+            }
+        })
+        .catch(function() {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Something went wrong. Please try again.' });
+        });
     });
+}
+
+// Replace "name" → <strong>name</strong> (strips quotes, bolds the value)
+function boldName(msg) {
+    return (msg || '').replace(/"([^"]+)"/g, '<strong>$1</strong>');
 }
 
 function resetUsersFilters() {

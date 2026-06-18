@@ -109,7 +109,7 @@
             @php
                 $initials  = strtoupper(substr($user->name,0,1)) . strtoupper(substr(strstr($user->name,' ') ?: ' ',1,1));
                 $roleName  = $user->roles->first()?->name ?? 'client';
-                $roleLabel = ucwords(str_replace('_',' ',$roleName));
+                $roleLabel = $user->roles->first()?->display_name ?? ucwords(str_replace('_', ' ', $roleName));
                 $status    = $user->status ?? 'active';
                 $isActive  = $status === 'active';
                 $lastLogin = $user->last_login_at ? \Carbon\Carbon::parse($user->last_login_at) : null;
@@ -147,7 +147,7 @@
                     </div>
                 </td>
                 <td style="font-size:13px;color:var(--text-2);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ $user->email }}">{{ $user->email }}</td>
-                <td>
+                <td data-search="{{ $roleName }}">
                     <span class="role-badge role-badge-{{ $roleName }}">{{ $roleLabel }}</span>
                 </td>
                 <td class="u-perm-text">{{ $permSummary }}</td>

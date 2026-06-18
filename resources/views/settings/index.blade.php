@@ -937,7 +937,7 @@ $(document).ready(function() {
             order: [[0, 'asc']],
             columnDefs: [{ orderable: false, targets: [6] }],
             infoCallback: function(settings, start, end, max, total, pre) {
-                return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'plans' : 'plan');
+                return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'plans' : 'plan');
             },
             language: {
                 infoEmpty: 'No plans', paginate: { previous: '‹', next: '›' },
@@ -987,7 +987,7 @@ $(document).ready(function() {
             { visible: false, targets: [5] },
         ],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'roles' : 'role');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'roles' : 'role');
         },
         language: {
             infoEmpty: 'No roles found', paginate: { previous: '‹', next: '›' },

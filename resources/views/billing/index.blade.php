@@ -559,7 +559,7 @@ $(document).ready(function() {
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         columnDefs: [{ orderable: false, targets: [3, 8] }],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'companies' : 'company');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'companies' : 'company');
         },
         language: {
             infoEmpty: 'No companies',

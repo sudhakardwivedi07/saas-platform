@@ -344,7 +344,7 @@ $(document).ready(function() {
             { orderable: false, targets: [3, 7] },
         ],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'users' : 'user');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'users' : 'user');
         },
         language: {
             infoEmpty: 'No users found',

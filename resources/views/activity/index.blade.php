@@ -222,7 +222,7 @@ $(document).ready(function() {
             dom: '<"dt-tscroll"t><"dt-footer"ip>',
             order: [[2, 'desc']],
             infoCallback: function(settings, start, end, max, total, pre) {
-                return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'events' : 'event');
+                return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'events' : 'event');
             },
             language: {
                 infoEmpty: 'No activity found',

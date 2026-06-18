@@ -1230,7 +1230,7 @@ function initActivityTable() {
         dom: '<"dt-tscroll"t><"dt-footer"ip>',
         order: [[2, 'desc']],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'events' : 'event');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'events' : 'event');
         },
         language: {
             infoEmpty: 'No activity found',
@@ -1342,7 +1342,7 @@ function _refreshAccountTab(tabId) {
                         order: [[4, 'desc']],
                         columnDefs: [{ orderable: false, targets: [3] }],
                         infoCallback: function(settings, start, end, max, total, pre) {
-                            return 'Showing ' + start + ' to ' + end + ' of ' + total + ' ' + (total !== 1 ? 'payments' : 'payment');
+                            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'payments' : 'payment');
                         },
                         language: { infoEmpty: 'No payment records found', paginate: { previous: 'Previous', next: 'Next' }, emptyTable: 'No payment records found.' },
                     });
@@ -1685,7 +1685,7 @@ $(document).ready(function () {
         order:        [[4, 'desc']],
         columnDefs:   [{ orderable: false, targets: [3] }],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + ' to ' + end + ' of ' + total + ' ' + (total !== 1 ? 'payments' : 'payment');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'payments' : 'payment');
         },
         language: {
             infoEmpty:  'No payment records found',

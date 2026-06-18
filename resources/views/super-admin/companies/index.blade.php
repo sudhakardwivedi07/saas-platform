@@ -361,7 +361,7 @@ $(document).ready(function() {
         info:     true,
         dom: '<"dt-scroll"t><"dt-footer"ip>',
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'firms' : 'firm');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'firms' : 'firm');
         },
         language: {
             infoEmpty: 'No firms found',

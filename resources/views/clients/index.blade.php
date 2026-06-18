@@ -881,7 +881,7 @@ $(document).ready(function() {
         order: [[0, 'desc']],
         columnDefs: [{ orderable: false, targets: [2, 6] }],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'clients' : 'client');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'clients' : 'client');
         },
         language: {
             infoEmpty: 'No clients found',
@@ -910,7 +910,7 @@ $(document).ready(function() {
         order: [[0, 'desc']],
         columnDefs: [{ orderable: false, targets: [6] }],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'companies' : 'company');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'companies' : 'company');
         },
         language: {
             infoEmpty: 'No companies found',

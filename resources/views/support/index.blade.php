@@ -562,7 +562,7 @@ $(document).ready(function () {
         dom:'t<"dt-footer"ip>',
         columnDefs:[{orderable:false,targets:[1,6]}],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'tickets' : 'ticket');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'tickets' : 'ticket');
         },
         language:{
             infoEmpty:'No tickets found',
@@ -613,7 +613,7 @@ $(document).ready(function () {
         dom:'t<"dt-footer"ip>',
         columnDefs:[{orderable:false,targets:[5]}],
         infoCallback: function(settings, start, end, max, total, pre) {
-            return 'Showing ' + start + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'tickets' : 'ticket');
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'tickets' : 'ticket');
         },
         language:{
             infoEmpty:'No tickets found',

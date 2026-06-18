@@ -349,6 +349,7 @@
                                 <form method="POST" action="{{ route('my-companies.destroy', $company->id) }}" onsubmit="return confirmCompanyDelete(this);">
                                     @csrf
                                     @method('DELETE')
+                                    <input type="hidden" name="_from" value="clients_tab">
                                     <button type="submit" class="dm-item dm-danger" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M19 6l-1 14a1 1 0 01-1 1H7a1 1 0 01-1-1L5 6"/></svg>
                                         Delete

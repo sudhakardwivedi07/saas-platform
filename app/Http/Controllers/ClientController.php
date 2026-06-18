@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ClientDashboardSetting;
 use App\Models\ClientPackage;
 use App\Models\Company;
+use App\Models\EventLog;
 use App\Models\QuickBooksConnection;
 use App\Models\Report;
 use App\Models\SuperAdmin\Package;
@@ -370,6 +371,24 @@ class ClientController extends AccountBaseController
             ]);
             $user->assignRole('client');
             $added++;
+
+            try {
+                EventLog::create([
+                    'company_id'  => $parentCompanyId,
+                    'user_id'     => auth()->id(),
+                    'event_type'  => 'company_created',
+                    'description' => "Company '{$subCompany->company_name}' was created via bulk upload",
+                    'metadata'    => [
+                        'company_name'     => $subCompany->company_name,
+                        'actor_company_id' => $subCompany->id,
+                        'via'              => 'bulk_upload',
+                    ],
+                    'ip_address'  => request()->ip(),
+                    'created_at'  => now(),
+                ]);
+            } catch (\Throwable $e) {
+                \Log::warning('Bulk upload activity log failed: ' . $e->getMessage());
+            }
         }
 
         return response()->json([

@@ -1072,8 +1072,6 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
 </div>
 @endif {{-- /tab-activity --}}
 
-<div id="ac-tab-loader" aria-hidden="true"><div id="ac-tab-loader-ring"></div></div>
-
 @endsection
 
 @push('scripts')
@@ -1132,6 +1130,12 @@ function resetBranding() {
 
 function previewLogo(input) {
     if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 2 * 1024 * 1024) {
+            input.value = '';
+            Swal.fire({ icon: 'error', title: 'File too large', text: 'The logo must be 2 MB or smaller. Please choose a smaller file.', confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25' });
+            return;
+        }
         const reader = new FileReader();
         reader.onload = function(e) {
             const wrap = document.getElementById('preview-logo-wrap');
@@ -1141,7 +1145,7 @@ function previewLogo(input) {
                 content.innerHTML = '<img src="' + e.target.result + '" style="max-height:52px;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px"><p style="font-size:12.5px;color:var(--text-2)">Drag &amp; drop a new logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p>';
             }
         };
-        reader.readAsDataURL(input.files[0]);
+        reader.readAsDataURL(file);
     }
 }
 
@@ -1166,6 +1170,10 @@ function handleLogoDrop(event) {
     if (!files || !files[0]) return;
     const allowed = ['image/png','image/jpeg','image/jpg','image/svg+xml'];
     if (!allowed.includes(files[0].type)) return;
+    if (files[0].size > 2 * 1024 * 1024) {
+        Swal.fire({ icon: 'error', title: 'File too large', text: 'The logo must be 2 MB or smaller. Please choose a smaller file.', confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25' });
+        return;
+    }
     const dt = new DataTransfer();
     dt.items.add(files[0]);
     const inp = document.getElementById('logo-upload');
@@ -1291,8 +1299,6 @@ function _refreshAccountTab(tabId) {
     var panel = document.getElementById(tabId);
     if (!panel) return;
 
-    var overlay = document.getElementById('ac-tab-loader');
-    if (overlay) overlay.classList.add('on');
     panel.style.pointerEvents = 'none';
 
     fetch(window.location.pathname, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -1347,11 +1353,9 @@ function _refreshAccountTab(tabId) {
                     if (phSt) phSt.addEventListener('change', function () { if (phTable) phTable.column(3).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw(); });
                 }
             }
-            if (overlay) overlay.classList.remove('on');
             panel.style.pointerEvents = '';
         })
         .catch(function () {
-            if (overlay) overlay.classList.remove('on');
             panel.style.pointerEvents = '';
         });
 }
@@ -1444,16 +1448,20 @@ function lpPreviewBgImage(input) {
 
 function lpPreviewLogoImage(input) {
     if (input.files && input.files[0]) {
+        var file = input.files[0];
+        if (file.size > 2 * 1024 * 1024) {
+            input.value = '';
+            Swal.fire({ icon: 'error', title: 'File too large', text: 'The logo must be 2 MB or smaller. Please choose a smaller file.', confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25' });
+            return;
+        }
         var reader = new FileReader();
         reader.onload = function (e) {
-            // Update live preview
             var wrap = document.getElementById('lp-preview-logo-wrap');
             if (wrap) wrap.innerHTML = '<img src="' + e.target.result + '" alt="Logo" style="max-height:36px;max-width:140px;object-fit:contain;display:block;margin:0 auto">';
-            // Update drop zone to show selected image
             var content = document.getElementById('lp-logo-drop-content');
             if (content) content.innerHTML = '<img src="' + e.target.result + '" style="max-height:52px;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px"><p style="font-size:12.5px;color:var(--text-2)">Drag &amp; drop a new logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p><p style="font-size:12px;color:var(--text-3);margin-top:5px">PNG, SVG, JPG &middot; up to 2 MB &middot; Recommended: 200&times;60px</p>';
         };
-        reader.readAsDataURL(input.files[0]);
+        reader.readAsDataURL(file);
     }
 }
 
@@ -1463,6 +1471,10 @@ function lpHandleLogoDrop(event) {
     if (zone) { zone.style.borderColor = '#bfdbfe'; }
     var files = event.dataTransfer && event.dataTransfer.files;
     if (!files || !files[0]) return;
+    if (files[0].size > 2 * 1024 * 1024) {
+        Swal.fire({ icon: 'error', title: 'File too large', text: 'The logo must be 2 MB or smaller. Please choose a smaller file.', confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25' });
+        return;
+    }
     var input = document.getElementById('lp-logo');
     if (!input) return;
     var dt = new DataTransfer();
@@ -1976,9 +1988,5 @@ function validateAndSubmitPassword() {
     background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
 }
 .f-inp.ac-invalid { border-color: var(--red) !important; }
-#ac-tab-loader{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.45);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .2s}
-#ac-tab-loader.on{opacity:1;pointer-events:all}
-#ac-tab-loader-ring{width:46px;height:46px;border:3.5px solid rgba(0,0,0,.08);border-top-color:var(--orange,#f06b21);border-radius:50%;animation:ac-spin .7s linear infinite}
-@keyframes ac-spin{to{transform:rotate(360deg)}}
 </style>
 @endpush

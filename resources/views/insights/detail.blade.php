@@ -5,7 +5,6 @@
 @push('styles')
 <style>
 .report-detail-container { background-color: #f5f7fa; min-height: 100vh; }
-
 /* ── Header ── */
 .report-detail-header {
     display: flex;
@@ -40,6 +39,8 @@
 .rd-btn-save:hover { filter:brightness(.85);text-decoration:none; }
 .rd-btn-outline { background:#fff;color:var(--blue,#1a6aa8);border:1.5px solid var(--blue,#1a6aa8); }
 .rd-btn-outline:hover { background:#eff6ff;text-decoration:none; }
+.rd-btn-share { background:#16a34a;color:#fff;border:1.5px solid #16a34a; }
+.rd-btn-share:hover { background:#15803d;border-color:#15803d;color:#fff;text-decoration:none; }
 .rd-btn:disabled { opacity:.6;cursor:not-allowed; }
 
 /* ── Edit mode content area ── */
@@ -299,6 +300,12 @@
             <span>Export to PDF</span>
             <i class="fas fa-file-pdf"></i>
         </a>
+            @if(($report->publish_status ?? 'draft') === 'published')
+            <a href="javascript:void(0)" class="rd-btn rd-btn-share" id="ciBtnShare" onclick="ciShareInsight()">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                <span>Share</span>
+            </a>
+            @endif
         </div>
         @endif
     </div>
@@ -814,6 +821,7 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
     const CI_REPORT_ID = {{ $report->id }};
     const CI_CSRF      = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
     const CI_SAVE_URL  = '/insights/' + CI_REPORT_ID + '/update-content' + IMP_PARAM;
+    const CI_SHARE_URL = '/insights/' + CI_REPORT_ID + '/share' + IMP_PARAM;
     let ciEditMode = false;
     let ciOriginalContent = []; // per-slide HTML snapshots taken when edit mode opens
     let ciDirty = false;        // true only when the user has actually typed/edited
@@ -915,6 +923,54 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
     document.addEventListener('selectionchange', function () {
         if (ciEditMode && !ciPreviewMode) ciUpdateToolbarState();
     });
+
+    // ── Share ─────────────────────────────────────────────────────────────────
+    window.ciShareInsight = function () {
+        const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
+
+        Swal.fire({
+            title: 'Share Insight',
+            input: 'email',
+            inputPlaceholder: 'Enter recipient email address',
+            confirmButtonText: 'Send Now',
+            confirmButtonColor: brandColor,
+            showCancelButton: true,
+            cancelButtonText: 'Cancel',
+            showLoaderOnConfirm: true,
+            preConfirm: (email) => {
+                return fetch(CI_SHARE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CI_CSRF, 'Accept': 'application/json' },
+                    body: JSON.stringify({ recipient_email: email }),
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status !== 'success') {
+                        Swal.showValidationMessage(data.message || 'Failed to send email.');
+                    }
+                    return data;
+                })
+                .catch(() => Swal.showValidationMessage('Network error. Please try again.'));
+            },
+            allowOutsideClick: () => !Swal.isLoading(),
+        }).then(result => {
+            if (result.isConfirmed && result.value?.status === 'success') {
+                Swal.fire({
+                    html: `
+                        <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
+                            <div style="width:70px;height:70px;background:#ecfdf5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+                                <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#10b981" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+                            </div>
+                            <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Shared Successfully</h2>
+                            <p style="font-size:14px;color:#64748b;margin:0;">Insight shared successfully via email.</p>
+                        </div>`,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Got it',
+                    confirmButtonColor: brandColor,
+                });
+            }
+        });
+    };
 
     window.ciSaveEdits = function () {
         if (!window.insightSections) return;

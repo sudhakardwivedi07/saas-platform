@@ -775,8 +775,8 @@ class QuickBooksCSVExportService
     {
         $env = strtolower(trim($credentials['base_url'] ?? 'development'));
         return $env === 'production'
-            ? 'https://quickbooks.api.intuit.com'
-            : 'https://sandbox-quickbooks.api.intuit.com';
+            ? config('quickbooks.api_production_url')
+            : config('quickbooks.api_sandbox_url');
     }
 
     protected static function parseMonthLabel(string $title): ?string

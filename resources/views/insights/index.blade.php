@@ -501,6 +501,7 @@
                     @foreach($reports as $report)
                     @php
                         $isDeleted  = $report->trashed() || strtolower($report->status) === 'deleted';
+                        $isFailed   = strtolower($report->status) === 'failed';
                         $rowStatus  = $isDeleted ? 'deleted'
                             : (in_array(strtolower($report->status), ['uploading','analyzing']) ? 'processing'
                             : ($report->isReady() ? ($report->publish_status ?? 'draft')
@@ -551,19 +552,21 @@
                                 <span style="font-size:13px;color:#9ca3af;font-style:italic;">No actions available</span>
                             @else
                                 <div class="action-buttons">
-                                    @if($report->isProcessing())
-                                        <button class="btn-view-insight" disabled style="background:#9ca3af;cursor:not-allowed;">Processing…</button>
-                                    @else
-                                        <a href="{{ route('insights.view', $report->encrypted_id) }}" class="btn-view-insight">
-                                            View Insight
-                                        </a>
+                                    @if(!$isFailed)
+                                        @if($report->isProcessing())
+                                            <button class="btn-view-insight" disabled style="background:#9ca3af;cursor:not-allowed;">Processing…</button>
+                                        @else
+                                            <a href="{{ route('insights.view', $report->encrypted_id) }}" class="btn-view-insight">
+                                                View Insight
+                                            </a>
+                                        @endif
+                                        <button class="btn-icon download" title="Download Files"
+                                                onclick="downloadInsight({{ $report->id }})">
+                                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            </svg>
+                                        </button>
                                     @endif
-                                    <button class="btn-icon download" title="Download Files"
-                                            onclick="downloadInsight({{ $report->id }})">
-                                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                        </svg>
-                                    </button>
                                     <button class="btn-icon delete" title="Delete"
                                             onclick="deleteInsight({{ $report->id }}, '{{ addslashes($report->report_name) }}')">
                                         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -989,8 +992,14 @@
         if (badge) { badge.className = 'badge danger'; badge.textContent = 'Failed'; }
         const row = document.getElementById('insight-row-' + id);
         if (row) {
-            const viewBtn = row.querySelector('.btn-view-insight');
-            if (viewBtn) { viewBtn.style.background = '#9ca3af'; viewBtn.textContent = 'View Insight'; }
+            row.dataset.status = 'failed';
+            const actionDiv = row.querySelector('.action-buttons');
+            if (actionDiv) {
+                const viewBtn = actionDiv.querySelector('.btn-view-insight');
+                if (viewBtn) viewBtn.remove();
+                const dlBtn = actionDiv.querySelector('.btn-icon.download');
+                if (dlBtn) dlBtn.remove();
+            }
         }
     }
 
@@ -1125,8 +1134,8 @@
         const limitBadge  = document.querySelector('.limit-badge-inline');
 
         if (!limitReached) {
-            // Restore generate button if it was hidden
-            if (!btnNew) {
+            // Restore generate button if it was hidden — never show in impersonation/view-as-client mode
+            if (!btnNew && !_impToken) {
                 const header = document.querySelector('.table-header > div');
                 if (header) {
                     const btn = document.createElement('button');

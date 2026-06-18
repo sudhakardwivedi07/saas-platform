@@ -673,9 +673,9 @@
 </div>
 
 {{-- ── New Ticket Modal ───────────────────────────────────────────── --}}
-<div id="newTicketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+<div id="newTicketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this){resetUaTicketForm();this.style.display='none'}">
     <div class="modal-box" style="max-width:540px;width:100%">
-        <button class="modal-close" onclick="document.getElementById('newTicketModal').style.display='none'">
+        <button class="modal-close" onclick="resetUaTicketForm();document.getElementById('newTicketModal').style.display='none'">
             <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
         <div class="modal-title">New Support Ticket</div>
@@ -701,13 +701,31 @@
                 <textarea id="nt-message" name="message" class="mf-textarea" rows="5" placeholder="Provide as much detail as possible…" required>{{ old('message') }}</textarea>
             </div>
             <div class="mf-field">
-                <label class="mf-label" for="nt-attachment">Attachment <span style="color:var(--text-3);font-weight:400">(optional)</span></label>
+                <label class="mf-label">Attachment <span style="color:var(--text-3);font-weight:400">(optional)</span></label>
                 <input type="file" id="nt-attachment" name="attachment"
-                    style="display:block;width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;font-size:13px;color:var(--text-2);background:#fafafa;cursor:pointer">
-                <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block">Max 10MB. Accepted: jpg, png, pdf, zip.</span>
+                    accept=".jpg,.jpeg,.png,.pdf,.zip"
+                    style="display:none"
+                    onchange="ntAttChange(this)">
+                <div id="nt-att-empty" style="display:flex;align-items:center;gap:8px">
+                    <button type="button" onclick="document.getElementById('nt-attachment').click()"
+                        style="padding:7px 14px;border:1px solid var(--border);border-radius:6px;font-size:12.5px;color:var(--text-2);background:#fff;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;flex-shrink:0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                        Choose File
+                    </button>
+                    <span style="font-size:12.5px;color:var(--text-3)">No file chosen</span>
+                </div>
+                <div id="nt-att-preview" style="display:none;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" width="15" height="15" style="flex-shrink:0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span id="nt-att-filename" style="font-size:13px;color:var(--text-1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+                    <button type="button" onclick="clearNtAttachment()" title="Remove attachment"
+                        style="background:none;border:none;cursor:pointer;padding:2px;color:var(--text-3);display:flex;align-items:center;flex-shrink:0">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </button>
+                </div>
+                <span style="font-size:11.5px;color:var(--text-3);margin-top:4px;display:block">Max 10MB. Accepted: jpg, jpeg, png, pdf, zip.</span>
             </div>
             <div class="mf-foot">
-                <button type="button" class="btn btn-secondary" onclick="document.getElementById('newTicketModal').style.display='none'">Cancel</button>
+                <button type="button" class="btn btn-secondary" onclick="resetUaTicketForm();document.getElementById('newTicketModal').style.display='none'">Cancel</button>
                 <button type="submit" class="btn btn-primary">Submit Ticket</button>
             </div>
         </form>
@@ -795,6 +813,7 @@ function uaSelectPriority(btn) {
 
 // ── Raise Ticket button ───────────────────────────────────────────
 document.getElementById('btnRaiseTicket').addEventListener('click', function() {
+    resetUaTicketForm();
     document.getElementById('newTicketModal').style.display = 'flex';
 });
 
@@ -847,6 +866,40 @@ function openViewTicket(showUrl, notesUrl) {
         .catch(function() { showToast('Failed to load ticket.', 'error'); });
 }
 
+// ── Attachment helpers ─────────────────────────────────────────────
+function ntAttChange(input) {
+    if (input.files && input.files.length > 0) {
+        document.getElementById('nt-att-filename').textContent  = input.files[0].name;
+        document.getElementById('nt-att-empty').style.display   = 'none';
+        document.getElementById('nt-att-preview').style.display = 'flex';
+    } else {
+        clearNtAttachment();
+    }
+}
+
+function clearNtAttachment() {
+    document.getElementById('nt-attachment').value              = '';
+    document.getElementById('nt-att-filename').textContent      = '';
+    document.getElementById('nt-att-preview').style.display     = 'none';
+    document.getElementById('nt-att-empty').style.display       = 'flex';
+}
+
+// ── New Ticket Form Reset ─────────────────────────────────────────
+function resetUaTicketForm() {
+    var subEl  = document.getElementById('nt-subject');
+    var msgEl  = document.getElementById('nt-message');
+    if (subEl) subEl.value = '';
+    if (msgEl) msgEl.value = '';
+    clearNtAttachment();
+    // Reset priority to default 'low'
+    document.querySelectorAll('.ua-priority-toggle').forEach(function(b) {
+        b.style.borderColor = 'var(--border)'; b.style.background = '#fff';
+        b.style.color = 'var(--text-2)'; b.style.fontWeight = '400';
+    });
+    var defaultPriBtn = document.querySelector('.ua-priority-toggle[data-value="low"]');
+    if (defaultPriBtn) uaSelectPriority(defaultPriBtn);
+}
+
 // ── Profile & Password validation ─────────────────────────────────
 var _uaEmailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
@@ -866,17 +919,21 @@ function _uaOk(fldId, errId) {
 
 function validateAndSubmitUaProfile() {
     var ok = true;
-    var name  = (document.getElementById('ua-name')  || {value:''}).value;
-    var phone = (document.getElementById('ua-phone') || {value:''}).value;
+    var nameVal  = (document.getElementById('ua-name')  || {value:''}).value.trim();
+    var phone    = (document.getElementById('ua-phone') || {value:''}).value;
 
-    if (!name.trim()) {
+    if (!nameVal) {
         _uaErr('ua-name', 'ua-err-name', 'Full name is required.'); ok = false;
+    } else if (nameVal.length > 100 || !/^[a-zA-Z\s'\-]+$/.test(nameVal)) {
+        _uaErr('ua-name', 'ua-err-name', 'Only letters, spaces, hyphens and apostrophes are allowed.'); ok = false;
     } else { _uaOk('ua-name', 'ua-err-name'); }
 
     if (phone.trim()) {
         var phoneDigits = phone.replace(/[^\d]/g, '');
         if (phoneDigits.length !== 10) {
             _uaErr('ua-phone', 'ua-err-phone', 'Phone number must be exactly 10 digits.'); ok = false;
+        } else if (/^(\d)\1{9}$/.test(phoneDigits)) {
+            _uaErr('ua-phone', 'ua-err-phone', 'Please enter a valid phone number.'); ok = false;
         } else { _uaOk('ua-phone', 'ua-err-phone'); }
     } else { _uaOk('ua-phone', 'ua-err-phone'); }
 
@@ -922,6 +979,19 @@ function validateAndSubmitUaPassword() {
                 _uaOk(id, errId);
             });
         }
+    }
+    // Full Name: strip disallowed chars (numbers, specials, emojis) in real-time
+    var nameInp = document.getElementById('ua-name');
+    if (nameInp) {
+        nameInp.addEventListener('input', function() {
+            var pos = this.selectionStart;
+            var cleaned = this.value.replace(/[^a-zA-Z\s'\-]/g, '');
+            if (cleaned !== this.value) {
+                this.value = cleaned;
+                this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));
+            }
+            _uaOk('ua-name', 'ua-err-name');
+        });
     }
     clearOn('ua-name', 'ua-err-name');
     phoneOnly('ua-phone', 'ua-err-phone');

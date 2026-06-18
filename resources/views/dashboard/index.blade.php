@@ -353,7 +353,7 @@
 
 {{-- Trial Banner: only show when trialing and not yet on an active paid plan --}}
 @if($subscription && $subscription->isTrialing() && ($subscription->status ?? '') !== 'active')
-<div class="info-banner" style="background:#fffbeb;border-color:#fde68a;margin-bottom:16px">
+<div class="info-banner" style="background:#fffbeb;border-color:#fde68a;margin-bottom:16px;display:none">
     <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
     <div class="info-banner-txt" style="color:#92400e">
         Free trial active — ends {{ $subscription->trial_ends_at?->diffForHumans() }}.

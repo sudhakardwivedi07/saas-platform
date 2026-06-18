@@ -448,7 +448,7 @@
 
 {{-- ── Add Client Modal ─────────────────────────────────── --}}
 {{-- ── Add New Client Modal ──────────────────────────────── --}}
-<div class="modal-overlay {{ $errors->any() ? 'open' : '' }}" id="modal-add-client" onclick="if(event.target===this){resetAddClientForm();this.classList.remove('open');}">
+<div class="modal-overlay" id="modal-add-client" onclick="if(event.target===this){resetAddClientForm();this.classList.remove('open');}">
     <div class="modal-box" style="width:900px;max-width: 92vw;">
         <button class="modal-close" onclick="resetAddClientForm();document.getElementById('modal-add-client').classList.remove('open')">&times;</button>
         <div class="modal-title">Add New Client</div>
@@ -679,7 +679,7 @@
                         <label class="mf-label">Select Client <span style="color:var(--red)">*</span></label>
                         <select name="existing_client_id" id="modal-existing-client-id" class="mf-sel" style="height:38px"
                                 onchange="modalOnExistingClientChange(this)">
-                            <option value="">— Select a client —</option>
+                            <option value="">Select client</option>
                             @foreach($existingClients ?? [] as $client)
                             <option value="{{ $client->id }}"
                                 data-email="{{ $client->email }}"
@@ -1011,7 +1011,7 @@ function validateAndSubmitAddClient() {
     clearErr('ac-name', 'err-name');
     if (!name) {
         setErr('ac-name', 'err-name', 'Full Name is required.');
-    } else if (name.length < 2 || name.length > 100 || !/^[a-zA-Z\s]+$/.test(name)) {
+    } else if (name.length < 2 || name.length > 100 || !/^[a-zA-Z\s'\-]+$/.test(name)) {
         setErr('ac-name', 'err-name', 'Please enter a valid Full Name.');
     }
 
@@ -1111,7 +1111,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (nameInp) {
         nameInp.addEventListener('input', function() {
             var pos = this.selectionStart;
-            var cleaned = this.value.replace(/[^a-zA-Z\s]/g, '');
+            var cleaned = this.value.replace(/[^a-zA-Z\s'\-]/g, '');
             if (cleaned !== this.value) {
                 this.value = cleaned;
                 this.setSelectionRange(pos - 1, pos - 1);
@@ -1337,7 +1337,7 @@ function validateAndSubmitEditClient() {
         if (nameEl) nameEl.classList.add('ac-invalid');
         if (nameErr) { nameErr.textContent = 'Full Name is required.'; nameErr.style.display = 'block'; }
         ok = false;
-    } else if (name.length < 2 || name.length > 100 || !/^[a-zA-Z\s]+$/.test(name)) {
+    } else if (name.length < 2 || name.length > 100 || !/^[a-zA-Z\s'\-]+$/.test(name)) {
         if (nameEl) nameEl.classList.add('ac-invalid');
         if (nameErr) { nameErr.textContent = 'Please enter a valid Full Name.'; nameErr.style.display = 'block'; }
         ok = false;
@@ -1657,8 +1657,8 @@ function validateAndSubmitCompanyModal() {
                 modalCoErr('modal-err-co-admin-name', 'Full Name is required.'); modalCoMark('modal-co-admin-name', true); ok = false;
             } else if (adminNameVal.length < 2) {
                 modalCoErr('modal-err-co-admin-name', 'Full Name must be at least 2 characters.'); modalCoMark('modal-co-admin-name', true); ok = false;
-            } else if (!/^[a-zA-Z\s]+$/.test(adminNameVal)) {
-                modalCoErr('modal-err-co-admin-name', 'Full Name must contain only letters and spaces.'); modalCoMark('modal-co-admin-name', true); ok = false;
+            } else if (!/^[a-zA-Z\s'\-]+$/.test(adminNameVal)) {
+                modalCoErr('modal-err-co-admin-name', 'Only letters, spaces, hyphens and apostrophes are allowed.'); modalCoMark('modal-co-admin-name', true); ok = false;
             } else {
                 modalCoErr('modal-err-co-admin-name', ''); modalCoMark('modal-co-admin-name', false);
             }
@@ -1711,7 +1711,7 @@ function validateAndSubmitCompanyModal() {
     if (adminNameInp) {
         adminNameInp.addEventListener('input', function() {
             var pos = this.selectionStart;
-            var cleaned = this.value.replace(/[^a-zA-Z\s]/g, '');
+            var cleaned = this.value.replace(/[^a-zA-Z\s'\-]/g, '');
             if (cleaned !== this.value) {
                 this.value = cleaned;
                 this.setSelectionRange(Math.max(0, pos - 1), Math.max(0, pos - 1));

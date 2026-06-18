@@ -1130,6 +1130,12 @@ function resetBranding() {
 
 function previewLogo(input) {
     if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (file.size > 2 * 1024 * 1024) {
+            input.value = '';
+            Swal.fire({ icon: 'error', title: 'File too large', text: 'The logo must be 2 MB or smaller. Please choose a smaller file.', confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25' });
+            return;
+        }
         const reader = new FileReader();
         reader.onload = function(e) {
             const wrap = document.getElementById('preview-logo-wrap');
@@ -1139,7 +1145,7 @@ function previewLogo(input) {
                 content.innerHTML = '<img src="' + e.target.result + '" style="max-height:52px;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px"><p style="font-size:12.5px;color:var(--text-2)">Drag &amp; drop a new logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p>';
             }
         };
-        reader.readAsDataURL(input.files[0]);
+        reader.readAsDataURL(file);
     }
 }
 
@@ -1164,6 +1170,10 @@ function handleLogoDrop(event) {
     if (!files || !files[0]) return;
     const allowed = ['image/png','image/jpeg','image/jpg','image/svg+xml'];
     if (!allowed.includes(files[0].type)) return;
+    if (files[0].size > 2 * 1024 * 1024) {
+        Swal.fire({ icon: 'error', title: 'File too large', text: 'The logo must be 2 MB or smaller. Please choose a smaller file.', confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25' });
+        return;
+    }
     const dt = new DataTransfer();
     dt.items.add(files[0]);
     const inp = document.getElementById('logo-upload');
@@ -1438,16 +1448,20 @@ function lpPreviewBgImage(input) {
 
 function lpPreviewLogoImage(input) {
     if (input.files && input.files[0]) {
+        var file = input.files[0];
+        if (file.size > 2 * 1024 * 1024) {
+            input.value = '';
+            Swal.fire({ icon: 'error', title: 'File too large', text: 'The logo must be 2 MB or smaller. Please choose a smaller file.', confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25' });
+            return;
+        }
         var reader = new FileReader();
         reader.onload = function (e) {
-            // Update live preview
             var wrap = document.getElementById('lp-preview-logo-wrap');
             if (wrap) wrap.innerHTML = '<img src="' + e.target.result + '" alt="Logo" style="max-height:36px;max-width:140px;object-fit:contain;display:block;margin:0 auto">';
-            // Update drop zone to show selected image
             var content = document.getElementById('lp-logo-drop-content');
             if (content) content.innerHTML = '<img src="' + e.target.result + '" style="max-height:52px;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px"><p style="font-size:12.5px;color:var(--text-2)">Drag &amp; drop a new logo, or <span style="color:var(--blue);font-weight:600;text-decoration:underline">click to upload</span></p><p style="font-size:12px;color:var(--text-3);margin-top:5px">PNG, SVG, JPG &middot; up to 2 MB &middot; Recommended: 200&times;60px</p>';
         };
-        reader.readAsDataURL(input.files[0]);
+        reader.readAsDataURL(file);
     }
 }
 
@@ -1457,6 +1471,10 @@ function lpHandleLogoDrop(event) {
     if (zone) { zone.style.borderColor = '#bfdbfe'; }
     var files = event.dataTransfer && event.dataTransfer.files;
     if (!files || !files[0]) return;
+    if (files[0].size > 2 * 1024 * 1024) {
+        Swal.fire({ icon: 'error', title: 'File too large', text: 'The logo must be 2 MB or smaller. Please choose a smaller file.', confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25' });
+        return;
+    }
     var input = document.getElementById('lp-logo');
     if (!input) return;
     var dt = new DataTransfer();

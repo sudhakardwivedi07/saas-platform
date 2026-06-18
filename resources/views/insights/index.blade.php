@@ -1134,8 +1134,8 @@
         const limitBadge  = document.querySelector('.limit-badge-inline');
 
         if (!limitReached) {
-            // Restore generate button if it was hidden
-            if (!btnNew) {
+            // Restore generate button if it was hidden — never show in impersonation/view-as-client mode
+            if (!btnNew && !_impToken) {
                 const header = document.querySelector('.table-header > div');
                 if (header) {
                     const btn = document.createElement('button');

@@ -419,11 +419,14 @@
             dom:          '<"dt-tscroll"t><"dt-footer"ip>',
             order:        [[1, 'desc']],
             columnDefs:   [{ orderable: false, targets: [-1] }],
+            infoCallback: function(settings, start, end, max, total, pre) {
+                return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total > 1 ? 'insights' : 'insight');
+            },
             language: {
-                info:        'Showing _START_–_END_ of _TOTAL_ insights',
-                infoEmpty:   'No insights found',
+                infoFiltered: '',
                 paginate:    { previous: '‹', next: '›' },
                 emptyTable:  'No insights generated yet. Click <strong>Generate New Insight</strong> to get started.',
+                zeroRecords: 'No matching records found.',
             },
         });
 

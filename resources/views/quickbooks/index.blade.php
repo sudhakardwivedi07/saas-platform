@@ -242,11 +242,14 @@ $(document).ready(function () {
         order: [[0, 'desc']],
         columns: @json(array_fill(0, $showPartnerColumn ? 7 : 6, null)),
         columnDefs: [{ orderable: false, targets: [-1] }],
+        infoCallback: function(settings, start, end, max, total, pre) {
+            return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total > 1 ? 'companies' : 'company');
+        },
         language: {
-            info: 'Showing _START_–_END_ of _TOTAL_ companies',
-            infoEmpty: 'No companies',
+            infoFiltered: '',
             paginate: { previous: '‹', next: '›' },
             emptyTable: '<div style="text-align:center;padding:48px 20px;color:var(--text-3)">No companies found.</div>',
+            zeroRecords: '<div style="text-align:center;padding:48px 20px;color:var(--text-3)">No matching records found.</div>',
         },
     });
 

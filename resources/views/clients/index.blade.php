@@ -1201,8 +1201,39 @@ function switchAddClientTab(tab) {
 }
 
 var _csvFile = null;
+var _CSV_MAX_BYTES = 5 * 1024 * 1024;
+var _CSV_MAX_ROWS  = 200;
+
+function _showBulkError(msg) {
+    var el = document.getElementById('bulk-error');
+    if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+function _clearBulkError() {
+    var el = document.getElementById('bulk-error');
+    if (el) { el.textContent = ''; el.style.display = 'none'; }
+}
+function _resetDropZone() {
+    var nameEl = document.getElementById('csv-file-name');
+    if (nameEl) { nameEl.textContent = ''; nameEl.style.display = 'none'; }
+    var dz = document.getElementById('csv-drop-zone');
+    if (dz) dz.style.borderColor = '#c7d9f0';
+    var inp = document.getElementById('csv-file-input');
+    if (inp) inp.value = '';
+}
+
 function handleCsvFile(file) {
     if (!file) return;
+    _clearBulkError();
+
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        _showBulkError('Only .csv files are allowed. Please select a valid CSV file.');
+        _csvFile = null; _resetDropZone(); return;
+    }
+    if (file.size > _CSV_MAX_BYTES) {
+        _showBulkError('File size (' + (file.size / (1024 * 1024)).toFixed(2) + ' MB) exceeds the 5 MB limit. Please upload a smaller file.');
+        _csvFile = null; _resetDropZone(); return;
+    }
+
     _csvFile = file;
     var el = document.getElementById('csv-file-name');
     el.textContent = '✓ ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
@@ -1213,7 +1244,7 @@ function handleCsvDrop(e) {
     e.preventDefault();
     document.getElementById('csv-drop-zone').style.borderColor = '#c7d9f0';
     var file = e.dataTransfer.files[0];
-    if (file && file.name.endsWith('.csv')) handleCsvFile(file);
+    if (file) handleCsvFile(file);
 }
 function downloadSampleCsv() {
     var csv = 'client_name,email,phone,company_name\n'
@@ -1225,18 +1256,48 @@ function downloadSampleCsv() {
     a.download = 'sample_clients.csv';
     a.click();
 }
-function submitBulkUpload() {
-    var errBox  = document.getElementById('bulk-error');
+async function submitBulkUpload() {
+    var errBox    = document.getElementById('bulk-error');
     var uploadBtn = document.querySelector('#panel-bulk .btn-primary');
     errBox.style.display = 'none';
 
     if (!_csvFile) {
-        errBox.textContent   = 'Please select a CSV file first.';
+        errBox.textContent = 'Please select a CSV file first.';
+        errBox.style.display = 'block';
+        return;
+    }
+    if (!_csvFile.name.toLowerCase().endsWith('.csv')) {
+        errBox.textContent = 'Only .csv files are allowed.';
+        errBox.style.display = 'block';
+        return;
+    }
+    if (_csvFile.size > _CSV_MAX_BYTES) {
+        errBox.textContent = 'File size (' + (_csvFile.size / (1024 * 1024)).toFixed(2) + ' MB) exceeds the 5 MB limit.';
         errBox.style.display = 'block';
         return;
     }
 
-    // Show loading state
+    // Count data rows client-side before sending
+    try {
+        var text     = await _csvFile.text();
+        var allLines = text.split('\n').filter(function(l) { return l.trim() !== ''; });
+        var dataRows = allLines.length > 0 ? allLines.length - 1 : 0; // subtract header row
+        if (dataRows === 0) {
+            errBox.textContent = 'The CSV file is empty or contains only a header row. Please add at least one client row.';
+            errBox.style.display = 'block';
+            return;
+        }
+        if (dataRows > _CSV_MAX_ROWS) {
+            errBox.textContent = 'Your file contains ' + dataRows + ' client rows. The maximum allowed per upload is ' + _CSV_MAX_ROWS + '. Please split your file and upload in batches.';
+            errBox.style.display = 'block';
+            return;
+        }
+    } catch (readErr) {
+        errBox.textContent = 'Could not read the file. Please ensure it is a valid UTF-8 CSV.';
+        errBox.style.display = 'block';
+        return;
+    }
+
     if (uploadBtn) { uploadBtn.disabled = true; uploadBtn.textContent = 'Uploading…'; }
 
     var formData = new FormData();
@@ -1259,6 +1320,8 @@ function submitBulkUpload() {
                     lines.push('<b>' + data.duplicates + '</b> duplicate' + (data.duplicates !== 1 ? 's' : '') + ' skipped <span style="font-size:12px;color:#6b7280">(email already exists)</span>');
                 if (data.invalid > 0)
                     lines.push('<b>' + data.invalid + '</b> invalid row' + (data.invalid !== 1 ? 's' : '') + ' skipped <span style="font-size:12px;color:#6b7280">(bad format)</span>');
+                if (data.limitSkipped > 0)
+                    lines.push('<b>' + data.limitSkipped + '</b> row' + (data.limitSkipped !== 1 ? 's' : '') + ' skipped <span style="font-size:12px;color:#6b7280">(plan limit of ' + data.planLimit + ' clients reached)</span>');
 
                 var htmlMsg  = lines.length ? lines.join('<br>') : 'No clients were imported.';
                 var icon     = data.added > 0 ? 'success' : 'info';

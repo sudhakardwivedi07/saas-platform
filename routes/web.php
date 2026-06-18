@@ -262,6 +262,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{id}/data',                   [InsightsController::class, 'getData'])->name('data');
         Route::post('/{id}/update-content',        [InsightsController::class, 'updateContent'])->name('update-content');
         Route::get('/{id}/preview',                [InsightsController::class, 'previewPdf'])->name('preview');
+        Route::post('/{id}/share',                 [InsightsController::class, 'shareInsight'])->name('share');
         Route::get('/{id}/export-pdf',             [InsightsController::class, 'exportPdf'])->name('export-pdf');
         Route::get('/{id}/versions',               [InsightsController::class, 'getVersions'])->name('versions');
         Route::get('/{id}/download',               [InsightsController::class, 'download'])->name('download');
@@ -280,6 +281,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{id}/data',                   [PartnerInsightsController::class, 'getData'])->name('data');
         Route::post('/{id}/update-content',        [PartnerInsightsController::class, 'updateContent'])->name('update-content');
         Route::post('/{id}/publish',               [PartnerInsightsController::class, 'publish'])->name('publish');
+        Route::post('/{id}/share',                 [PartnerInsightsController::class, 'shareInsight'])->name('share');
         Route::get('/{id}/preview',                [PartnerInsightsController::class, 'previewPdf'])->name('preview');
         Route::get('/{id}/export-pdf',             [PartnerInsightsController::class, 'exportPdf'])->name('export-pdf');
         Route::get('/{id}/versions',               [PartnerInsightsController::class, 'getVersions'])->name('versions');

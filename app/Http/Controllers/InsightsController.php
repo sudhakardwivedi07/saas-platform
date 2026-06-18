@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ProcessReportInsightsJob;
+use App\Jobs\SendEmailJob;
 use App\Models\Company;
 use App\Models\EventLog;
 use App\Models\CompanyQuickbooksSetting;
@@ -991,5 +992,83 @@ class InsightsController extends AccountBaseController
             }
             return $html . '</tbody></table>';
         }, $text);
+    }
+
+    // ── Share insight (send PDF via email) ────────────────────────────────────
+
+    public function shareInsight(Request $request, int $id): \Illuminate\Http\JsonResponse
+    {
+        $request->validate(['recipient_email' => 'required|email']);
+
+        $impersonatingAdminId = $this->resolveImpersonatingAdminId();
+
+        $report = Report::with(['user', 'company'])
+            ->where('id', $id)
+            ->where('publish_status', 'published')
+            ->where(function ($q) use ($impersonatingAdminId) {
+                $q->where('user_id', auth()->id());
+                if ($impersonatingAdminId) {
+                    $q->orWhere('user_id', $impersonatingAdminId);
+                }
+            })
+            ->firstOrFail();
+
+        $sections = $this->getReportSections($report);
+
+        if (empty($sections)) {
+            return response()->json(['status' => 'error', 'message' => 'No report content found.'], 422);
+        }
+
+        $logoBase64 = '';
+        if ($this->branding?->logo) {
+            $logoPath = storage_path('app/public/' . $this->branding->logo);
+            if (file_exists($logoPath)) {
+                $mime       = mime_content_type($logoPath);
+                $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+            }
+        }
+
+        $pdf = app('dompdf.wrapper');
+        $pdf->setOption('enable_php', true);
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isRemoteEnabled', true);
+        $pdf->setOption('defaultFont', 'Arial');
+        $pdf->setOption('fontHeightRatio', 1.1);
+        $pdf->setOption('show_warnings', false);
+
+        $pdf->loadView('insights.pdf', [
+            'sections'    => $sections,
+            'report'      => $report,
+            'companyName' => $this->companyName,
+            'logoBase64'  => $logoBase64,
+            'reportDate'  => $report->created_at->format('M d, Y'),
+        ]);
+
+        $tempDir = storage_path('app/temp_pdfs');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+        $tempPath = $tempDir . '/' . Str::slug($report->report_name ?: 'insight') . '-' . uniqid() . '.pdf';
+        file_put_contents($tempPath, $pdf->output());
+
+        $authUser        = auth()->user();
+        $clientFirstName = explode(' ', trim($authUser->name))[0];
+
+        SendEmailJob::dispatchSync(
+            toEmail:        $request->recipient_email,
+            templateSlug:   'share_insight_with_client',
+            placeholders:   [
+                '{{insight_title}}'     => $report->report_name,
+                '{{company_name}}'      => $report->company?->company_name ?? '',
+                '{{client_first_name}}' => $clientFirstName,
+                '{{generated_date}}'    => $report->created_at->format('M d, Y'),
+                '{{cfo_name}}'          => $authUser->name,
+                '{{firm_name}}'         => $this->companyName,
+            ],
+            companyId:      $authUser->company_id,
+            attachmentPath: $tempPath,
+        );
+
+        return response()->json(['status' => 'success', 'message' => 'Insight shared successfully.']);
     }
 }

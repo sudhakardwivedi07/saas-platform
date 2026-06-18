@@ -12,8 +12,7 @@
 
 /* ── Header card ─────────────────────────────────────────────── */
 .rd-header { display:flex;justify-content:space-between;align-items:flex-start;background:#fff;border-radius:12px;padding:22px 26px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.07);flex-wrap:wrap;gap:14px; }
-.rd-header-left { min-width:0; }
-.rd-header-left h1 { font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.rd-header-left h1 { font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px; }
 .rd-meta { display:flex;flex-wrap:wrap;gap:18px;margin-top:4px; }
 .rd-meta-item { display:flex;align-items:center;gap:7px;color:#64748b;font-size:13px; }
 .rd-meta-item i { color:#94a3b8;font-size:14px; }
@@ -32,9 +31,10 @@
 .rd-btn-pdf:hover { background:var(--orange-dark);border-color:var(--orange-dark);text-decoration:none; }
 .rd-btn-publish { background:var(--orange);color:#fff;border:1.5px solid var(--orange); }
 .rd-btn-publish:hover { background:var(--orange-dark);border-color:var(--orange-dark);text-decoration:none; }
-.rd-btn-share { background:#fff;color:#374151;border:1.5px solid #e2e8f0; }
-.rd-btn-share:hover { background:#f8fafc;color:#1a202c;text-decoration:none; }
+.rd-btn-share { background:#16a34a;color:#fff;border:1.5px solid #16a34a; }
+.rd-btn-share:hover { background:#15803d;border-color:#15803d;color:#fff;text-decoration:none; }
 .rd-btn:disabled { opacity:.6;cursor:not-allowed; }
+@keyframes spin { to { transform:rotate(360deg); } }
 
 /* ── Publish status badge ────────────────────────────────────── */
 .rd-publish-badge { padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px; }
@@ -157,7 +157,7 @@
     {{-- Header --}}
     <div class="rd-header">
         <div class="rd-header-left">
-            <h1 title="{{ $report->report_name }} · {{ $report->company?->company_name ?? '' }}">{{ $report->report_name }} · {{ $report->company?->company_name ?? '' }}</h1>
+            <h1>{{ $report->report_name }} · {{ $report->company?->company_name ?? '' }}</h1>
             <div class="rd-meta">
                 <div class="rd-meta-item">
                     <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#94a3b8"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -222,6 +222,12 @@
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                 <span>Export to PDF</span>
             </a>
+            @if(!$report->isDraft())
+            <a href="javascript:void(0)" class="rd-btn rd-btn-share" id="rdBtnShare" onclick="rdShareInsight()">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                <span>Share</span>
+            </a>
+            @endif
         </div>
         @endif
     </div>
@@ -306,6 +312,8 @@
     const DATA_URL       = '/partner-insights/' + REPORT_ID + '/data';
     const SAVE_URL       = '/partner-insights/' + REPORT_ID + '/update-content';
     const PUBLISH_URL    = '/partner-insights/' + REPORT_ID + '/publish';
+    const SHARE_URL      = '/partner-insights/' + REPORT_ID + '/share';
+    const CLIENT_EMAIL   = '{{ addslashes($report->company?->users->first()?->email ?? $report->company?->company_email ?? '') }}';
 
     let insightSections  = [];
     let currentSlide     = 0;
@@ -658,6 +666,64 @@
     };
 
 
+    // ── Share ─────────────────────────────────────────────────────────────────
+    window.rdShareInsight = function () {
+        const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
+
+        if (!CLIENT_EMAIL) {
+            Swal.fire({ icon: 'error', title: 'No Client Email', text: 'No email address is configured for this client.', confirmButtonColor: brandColor });
+            return;
+        }
+
+        Swal.fire({
+            html: `
+                <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
+                    <div style="width:70px;height:70px;background:#fef2f2;border-radius:50%;border:2px solid #fca5a5;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+                        <svg width="30" height="30" fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="#ef4444" stroke="none"/></svg>
+                    </div>
+                    <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Share Insight</h2>
+                    <p style="font-size:14px;color:#64748b;margin:0;">Send this insight report to the client via email?</p>
+                </div>`,
+            showCancelButton: true,
+            cancelButtonText: 'Cancel',
+            confirmButtonText: 'Confirm',
+            confirmButtonColor: brandColor,
+            showLoaderOnConfirm: true,
+            preConfirm: () => {
+                return fetch(SHARE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                    body: JSON.stringify({ recipient_email: CLIENT_EMAIL }),
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status !== 'success') {
+                        Swal.showValidationMessage(data.message || 'Failed to send email.');
+                    }
+                    return data;
+                })
+                .catch(() => Swal.showValidationMessage('Network error. Please try again.'));
+            },
+            allowOutsideClick: () => !Swal.isLoading(),
+        }).then(result => {
+            if (result.isConfirmed && result.value?.status === 'success') {
+                Swal.fire({
+                    html: `
+                        <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
+                            <div style="width:70px;height:70px;background:#ecfdf5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+                                <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#10b981" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+                            </div>
+                            <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Shared Successfully</h2>
+                            <p style="font-size:14px;color:#64748b;margin:0;">Insight shared successfully via email.</p>
+                        </div>`,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Got it',
+                    confirmButtonColor: brandColor,
+                });
+            }
+        });
+    };
+
     // ── Publish ───────────────────────────────────────────────────────────────
     window.rdPublishInsight = function () {
         if (!IS_DRAFT) return;
@@ -674,16 +740,14 @@
             confirmButtonText: 'Yes, Publish',
             showCancelButton: true,
             cancelButtonText: 'Cancel',
-            confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
+            confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#1a6aa8',
             cancelButtonColor: '#6b7280',
             reverseButtons: true,
             didOpen: (popup) => {
-                const orange = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
                 const actions = popup.querySelector('.swal2-actions');
                 if (actions) actions.style.cssText = 'width:100%;padding:0 24px;display:flex;gap:10px;';
                 popup.querySelectorAll('.swal2-confirm,.swal2-cancel').forEach(b => {
-                    const bg = b.classList.contains('swal2-confirm') ? orange : '#6b7280';
-                    b.style.cssText = `flex:1;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;border:none;cursor:pointer;background:${bg};color:#fff;`;
+                    b.style.cssText = 'flex:1;border-radius:10px;font-size:15px;font-weight:600;padding:13px 0;border:none;cursor:pointer;';
                 });
             },
         }).then(result => {
@@ -711,7 +775,7 @@
                             </div>`,
                         showConfirmButton: true,
                         confirmButtonText: 'Got it',
-                        confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
+                        confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#1a6aa8',
                         allowOutsideClick: false,
                     }).then(() => {
                         if (data.redirect_url) window.location.href = data.redirect_url;

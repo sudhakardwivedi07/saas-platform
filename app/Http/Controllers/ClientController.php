@@ -188,6 +188,13 @@ class ClientController extends AccountBaseController
         return view('clients.show', $this->data);
     }
 
+    public function checkEmailExists(Request $request)
+    {
+        $email = $request->input('email', '');
+        $exists = User::where('email', $email)->exists();
+        return response()->json(['exists' => $exists]);
+    }
+
     public function store(Request $request)
     {
         abort_403(!auth()->user()->can('create_users'));

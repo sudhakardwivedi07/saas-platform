@@ -734,7 +734,7 @@
 
             <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;margin:0 0 0;border-top:1px solid var(--border);margin-top:20px">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="closeAddCompanyModal()">Cancel</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitCompanyModal()">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-add-company-modal" onclick="validateAndSubmitCompanyModal(this)">
                     Add Company
                 </button>
             </div>
@@ -989,7 +989,7 @@ $(document).ready(function() {
 });
 
 // ── Add Client validation ────────────────────────────────────
-function validateAndSubmitAddClient(btn) {
+async function validateAndSubmitAddClient(btn) {
     var valid = true;
 
     function setErr(inputId, errId, msg) {
@@ -1018,10 +1018,13 @@ function validateAndSubmitAddClient(btn) {
     // Email
     var email = (document.getElementById('ac-email').value || '').trim();
     clearErr('ac-email', 'err-email');
+    var emailFormatOk = true;
     if (!email) {
         setErr('ac-email', 'err-email', 'Email is required.');
+        emailFormatOk = false;
     } else if (email.length < 5 || email.length > 100 || !/^[a-zA-Z0-9@.\-_]+$/.test(email) || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
         setErr('ac-email', 'err-email', 'Please enter a valid email address.');
+        emailFormatOk = false;
     }
 
     // Phone Number (required — must be exactly 10 digits)
@@ -1049,10 +1052,34 @@ function validateAndSubmitAddClient(btn) {
 
     // Industry Type — optional, no validation required
 
-    if (valid) {
-        if (btn) { btn.disabled = true; btn.innerHTML = 'Adding…'; }
-        document.getElementById('add-client-form').submit();
+    if (!valid) return;
+
+    if (btn) { btn.disabled = true; btn.textContent = 'Processing'; }
+
+    // AJAX duplicate email check (only when email format is valid)
+    if (emailFormatOk) {
+        try {
+            var resp = await fetch('{{ route("clients.check-email") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ email: email })
+            });
+            var data = await resp.json();
+            if (data.exists) {
+                setErr('ac-email', 'err-email', 'This email is already registered.');
+                if (btn) { btn.disabled = false; btn.textContent = 'Add Client'; }
+                return;
+            }
+        } catch (e) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Add Client'; }
+            return;
+        }
     }
+
+    document.getElementById('add-client-form').submit();
 }
 
 // ── Reset Add Client form (fields + errors + CSV state) ──────
@@ -1233,14 +1260,14 @@ function submitBulkUpload() {
                 if (data.invalid > 0)
                     lines.push('<b>' + data.invalid + '</b> invalid row' + (data.invalid !== 1 ? 's' : '') + ' skipped <span style="font-size:12px;color:#6b7280">(bad format)</span>');
 
-                var htmlMsg = lines.length ? lines.join('<br>') : 'No clients were imported.';
-                var icon    = data.added > 0 ? 'success' : 'info';
+                var htmlMsg  = lines.length ? lines.join('<br>') : 'No clients were imported.';
+                var icon     = data.added > 0 ? 'success' : 'info';
                 var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
 
                 Swal.fire({
                     icon: icon,
                     title: 'Upload Complete',
-                    html: '<div style="text-align:left;line-height:2">' + htmlMsg + '</div>',
+                    html: '<div style="text-align:center;line-height:2">' + htmlMsg + '</div>',
                     confirmButtonText: 'OK',
                     confirmButtonColor: btnColor,
                 }).then(function() { window.location.reload(); });
@@ -1633,8 +1660,10 @@ function modalCoMark(inputId, invalid) {
     else el.classList.remove('co-invalid');
 }
 
-function validateAndSubmitCompanyModal() {
+async function validateAndSubmitCompanyModal(btn) {
     var ok = true;
+    var adminEmailFormatOk = true;
+    var adminEmailVal = '';
     var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 
     // Company Name
@@ -1668,11 +1697,11 @@ function validateAndSubmitCompanyModal() {
             }
 
             var adminEmailEl = document.getElementById('modal-co-admin-email');
-            var adminEmailVal = adminEmailEl ? adminEmailEl.value.trim() : '';
+            adminEmailVal = adminEmailEl ? adminEmailEl.value.trim() : '';
             if (!adminEmailVal) {
-                modalCoErr('modal-err-co-admin-email', 'Email is required.'); modalCoMark('modal-co-admin-email', true); ok = false;
+                modalCoErr('modal-err-co-admin-email', 'Email is required.'); modalCoMark('modal-co-admin-email', true); ok = false; adminEmailFormatOk = false;
             } else if (!emailRx.test(adminEmailVal)) {
-                modalCoErr('modal-err-co-admin-email', 'Enter a valid email address.'); modalCoMark('modal-co-admin-email', true); ok = false;
+                modalCoErr('modal-err-co-admin-email', 'Enter a valid email address.'); modalCoMark('modal-co-admin-email', true); ok = false; adminEmailFormatOk = false;
             } else {
                 modalCoErr('modal-err-co-admin-email', ''); modalCoMark('modal-co-admin-email', false);
             }
@@ -1698,9 +1727,36 @@ function validateAndSubmitCompanyModal() {
         }
     }
 
-    if (ok) {
-        document.getElementById('modal-add-company-form').submit();
+    if (!ok) return;
+
+    if (btn) { btn.disabled = true; btn.textContent = 'Processing'; }
+
+    // AJAX duplicate email check (New Client only)
+    var adminTypeVal = adminTypeEl ? adminTypeEl.value : '';
+    if (adminTypeVal === 'new' && adminEmailFormatOk) {
+        try {
+            var resp = await fetch('{{ route("clients.check-email") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ email: adminEmailVal })
+            });
+            var data = await resp.json();
+            if (data.exists) {
+                modalCoErr('modal-err-co-admin-email', 'This email is already registered.');
+                modalCoMark('modal-co-admin-email', true);
+                if (btn) { btn.disabled = false; btn.textContent = 'Add Company'; }
+                return;
+            }
+        } catch (e) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Add Company'; }
+            return;
+        }
     }
+
+    document.getElementById('modal-add-company-form').submit();
 }
 
 // Init modal on load

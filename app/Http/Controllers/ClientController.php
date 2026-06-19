@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ClientDashboardSetting;
 use App\Models\ClientPackage;
 use App\Models\Company;
+use App\Models\EventLog;
 use App\Models\QuickBooksConnection;
 use App\Models\Report;
 use App\Models\SuperAdmin\Package;
@@ -188,6 +189,13 @@ class ClientController extends AccountBaseController
         return view('clients.show', $this->data);
     }
 
+    public function checkEmailExists(Request $request)
+    {
+        $email = $request->input('email', '');
+        $exists = User::where('email', $email)->exists();
+        return response()->json(['exists' => $exists]);
+    }
+
     public function store(Request $request)
     {
         abort_403(!auth()->user()->can('create_users'));
@@ -206,13 +214,18 @@ class ClientController extends AccountBaseController
 
         $parentCompanyId = company()->id;
 
-        try {
-            $this->enforceMaxCompaniesLimit($parentCompanyId);
-        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
-            if ($e->getStatusCode() === 422) {
-                return redirect()->back()->with('error', $e->getMessage());
+        // Plan client-limit check (max_users on the firm's Package)
+        $ownerCompany = Company::withoutGlobalScopes()->find($parentCompanyId);
+        $plan         = $ownerCompany?->activePlan();
+        $planLimit    = (int) ($plan?->max_users ?? 0);
+        if ($planLimit > 0) {
+            $currentCount = Company::withoutGlobalScopes()
+                ->where('created_by', $parentCompanyId)
+                ->count();
+            if ($currentCount >= $planLimit) {
+                return redirect()->back()->withInput()
+                    ->with('error', "Client limit reached. Your plan allows {$planLimit} client" . ($planLimit !== 1 ? 's' : '') . " and you already have {$currentCount}. Please upgrade your plan to add more.");
             }
-            throw $e;
         }
 
         $subCompany = Company::create([
@@ -269,47 +282,28 @@ class ClientController extends AccountBaseController
         }
 
         // ── Pre-flight: plan client-limit check ───────────────
-        // Uses max_users which exists on both Package and ClientPackage.
-        $ownerCompany  = Company::withoutGlobalScopes()->find($parentCompanyId);
-        $plan          = $ownerCompany?->activePlan();
-        $planLimit     = (int) ($plan?->max_users ?? 0);
-        $currentCount  = Company::withoutGlobalScopes()
+        $ownerCompany = Company::withoutGlobalScopes()->find($parentCompanyId);
+        $plan         = $ownerCompany?->activePlan();
+        $planLimit    = (int) ($plan?->max_users ?? 0);
+        $currentCount = Company::withoutGlobalScopes()
                             ->where('created_by', $parentCompanyId)
                             ->count();
 
-        if ($planLimit > 0) {
-            // Count genuinely new (valid + non-duplicate) emails in the file.
-            $candidateEmails = [];
-            foreach ($rows as $row) {
-                if (count($row) < 2) continue;
-                $email = strtolower(trim($row[1]));
-                if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                    $candidateEmails[] = $email;
-                }
-            }
-            $candidateEmails = array_unique($candidateEmails);
-            $newCount = 0;
-            foreach ($candidateEmails as $email) {
-                if (!User::where('email', $email)->exists()) {
-                    $newCount++;
-                }
-            }
+        // How many slots are still available (-1 = unlimited)
+        $remaining = $planLimit > 0 ? max(0, $planLimit - $currentCount) : PHP_INT_MAX;
 
-            if ($currentCount + $newCount > $planLimit) {
-                $excess = ($currentCount + $newCount) - $planLimit;
-                return response()->json([
-                    'status'  => 'error',
-                    'message' => "Cannot upload: your plan allows {$planLimit} client" . ($planLimit !== 1 ? 's' : '') . ". "
-                                . "You currently have {$currentCount} and this file would add {$newCount} more, "
-                                . "exceeding your limit by {$excess}. Please upgrade your plan or reduce the file.",
-                ], 422);
-            }
+        if ($planLimit > 0 && $remaining === 0) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => "Client limit reached. Your plan allows {$planLimit} client" . ($planLimit !== 1 ? 's' : '') . " and you already have {$currentCount}. Please upgrade your plan to add more.",
+            ], 422);
         }
 
         // ── Row processing ─────────────────────────────────────
-        $added      = 0;
-        $duplicates = 0;
-        $invalid    = 0;
+        $added        = 0;
+        $duplicates   = 0;
+        $invalid      = 0;
+        $limitSkipped = 0;
 
         foreach ($rows as $row) {
             // All 4 columns are required: client_name, email, phone, company_name
@@ -347,6 +341,12 @@ class ClientController extends AccountBaseController
                 continue;
             }
 
+            // Plan limit: stop adding once the remaining slots are exhausted
+            if ($added >= $remaining) {
+                $limitSkipped++;
+                continue;
+            }
+
             // Duplicate check: email already registered
             if (User::where('email', $email)->exists()) {
                 $duplicates++;
@@ -371,13 +371,33 @@ class ClientController extends AccountBaseController
             ]);
             $user->assignRole('client');
             $added++;
+
+            try {
+                EventLog::create([
+                    'company_id'  => $parentCompanyId,
+                    'user_id'     => auth()->id(),
+                    'event_type'  => 'company_created',
+                    'description' => "Company '{$subCompany->company_name}' was created via bulk upload",
+                    'metadata'    => [
+                        'company_name'     => $subCompany->company_name,
+                        'actor_company_id' => $subCompany->id,
+                        'via'              => 'bulk_upload',
+                    ],
+                    'ip_address'  => request()->ip(),
+                    'created_at'  => now(),
+                ]);
+            } catch (\Throwable $e) {
+                \Log::warning('Bulk upload activity log failed: ' . $e->getMessage());
+            }
         }
 
         return response()->json([
-            'status'     => 'success',
-            'added'      => $added,
-            'duplicates' => $duplicates,
-            'invalid'    => $invalid,
+            'status'       => 'success',
+            'added'        => $added,
+            'duplicates'   => $duplicates,
+            'invalid'      => $invalid,
+            'limitSkipped' => $limitSkipped,
+            'planLimit'    => $planLimit,
         ]);
     }
 

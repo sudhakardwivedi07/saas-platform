@@ -127,6 +127,10 @@ class TenantUserController extends AccountBaseController
         $user->save();
         $user->syncRoles([$request->role]);
 
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'User "' . $user->name . '" updated successfully.']);
+        }
+
         return redirect()->route('users.index')
             ->with('toast_success', 'User "' . $user->name . '" updated successfully.');
     }
@@ -158,7 +162,7 @@ class TenantUserController extends AccountBaseController
         ]);
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         abort_403(!auth()->user()->can('delete_users'));
 
@@ -166,13 +170,21 @@ class TenantUserController extends AccountBaseController
 
         // Prevent self-deletion
         if ($user->id === auth()->id()) {
+            if ($request->expectsJson()) {
+                return response()->json(['status' => 'error', 'message' => 'You cannot remove yourself.'], 422);
+            }
             return redirect()->route('users.index')
                 ->with('toast_warning', 'You cannot remove yourself.');
         }
 
+        $name = $user->name;
         $user->delete();
 
+        if ($request->expectsJson()) {
+            return response()->json(['status' => 'success', 'message' => 'User "' . $name . '" removed successfully.']);
+        }
+
         return redirect()->route('users.index')
-            ->with('toast_success', 'User "' . $user->name . '" removed successfully.');
+            ->with('toast_success', 'User "' . $name . '" removed successfully.');
     }
 }

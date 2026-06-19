@@ -3,14 +3,6 @@
 
 @section('content')
 
-{{-- Page Header --}}
-<div class="ph">
-    <div class="ph-left">
-        <h1>Settings</h1>
-        <p>Configure Email, SMS, QuickBooks, and Roles &amp; Permissions settings</p>
-    </div>
-</div>
-
 @php
 // Determine which settings tabs this user may see, and which is first/active.
 $_stabs = [
@@ -23,7 +15,41 @@ $_stabs = [
     'tab-roles'          => auth()->user()->can('view_settings_roles'),
 ];
 $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
+
+// Build dynamic subtitle from visible tabs
+$_sTabLabels = [
+    'tab-payment'        => 'Payment',
+    'tab-email'          => 'Email',
+    'tab-sms'            => 'SMS',
+    'tab-quickbooks'     => 'QuickBooks',
+    'tab-plans'          => 'Plan Management',
+    'tab-insight-limits' => 'Insight Limits',
+    'tab-roles'          => 'Roles & Permissions',
+];
+$_sVisible = [];
+foreach ($_sTabLabels as $_k => $_lbl) {
+    if (!empty($_stabs[$_k])) $_sVisible[] = $_lbl;
+}
+$_n = count($_sVisible);
+if ($_n === 0) {
+    $_sSubtitle = 'Configure your settings';
+} elseif ($_n === 1) {
+    $_sSubtitle = 'Configure your ' . strtolower($_sVisible[0]) . ' settings';
+} elseif ($_n === 2) {
+    $_sSubtitle = 'Configure your ' . strtolower($_sVisible[0]) . ' and ' . strtolower($_sVisible[1]) . ' settings';
+} else {
+    $_sLast = array_pop($_sVisible);
+    $_sSubtitle = 'Configure your ' . implode(', ', array_map('strtolower', $_sVisible)) . ', and ' . strtolower($_sLast) . ' settings';
+}
 @endphp
+
+{{-- Page Header --}}
+<div class="ph">
+    <div class="ph-left">
+        <h1>Settings</h1>
+        <p>{{ $_sSubtitle }}</p>
+    </div>
+</div>
 
 {{-- Tab Bar --}}
 <div class="tab-bar">
@@ -733,7 +759,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                     <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="cr-name" class="mf-inp" placeholder="e.g. accountant" autocomplete="off">
                     <div id="err-cr-name" style="font-size:11.5px;color:var(--red);margin-top:2px;display:none"></div>
-                    <div id="hint-cr-name" style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase with underscores (e.g. senior_manager)</div>
+                    <div id="hint-cr-name" style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase (e.g. manager)</div>
                 </div>
                 <div class="mf-field">
                     <label class="mf-label">Alias <span style="color:var(--red)">*</span> <span style="font-size:11px;color:var(--text-3)">(display name)</span></label>
@@ -793,7 +819,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                     <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="er-name" class="mf-inp" autocomplete="off">
                     <div id="err-er-name" style="font-size:11.5px;color:var(--red);margin-top:2px;display:none"></div>
-                    <div id="hint-er-name" style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase with underscores (e.g. senior_manager)</div>
+                    <div id="hint-er-name" style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase (e.g. manager)</div>
                 </div>
                 <div class="mf-field">
                     <label class="mf-label">Alias <span style="color:var(--red)">*</span> <span style="font-size:11px;color:var(--text-3)">(display name)</span></label>
@@ -1032,8 +1058,8 @@ function crValidateName(show) {
     var err = '';
     if (!val.trim()) {
         err = show ? 'Role name is required.' : '';
-    } else if (!/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(val.trim())) {
-        err = 'Must be lowercase with underscores, e.g. senior_manager.';
+    } else if (!/^[a-z][a-z0-9_]*$/.test(val.trim())) {
+        err = 'Must be lowercase letters only (e.g. manager).';
     }
     crSetErr('err-cr-name', err);
     var hint = document.getElementById('hint-cr-name');
@@ -1133,8 +1159,8 @@ function erValidateName(show) {
     var err = '';
     if (!val.trim()) {
         err = show ? 'Role name is required.' : '';
-    } else if (!/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(val.trim())) {
-        err = 'Must be lowercase with underscores, e.g. senior_manager.';
+    } else if (!/^[a-z][a-z0-9_]*$/.test(val.trim())) {
+        err = 'Must be lowercase letters only (e.g. manager).';
     }
     erSetErr('err-er-name', err);
     var hint = document.getElementById('hint-er-name');

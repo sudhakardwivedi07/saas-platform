@@ -205,6 +205,7 @@ Route::middleware(['auth'])->group(function () {
         // ── Literal POST routes must come BEFORE /{id} wildcard ──
         Route::get('/stop-impersonating',    [ClientController::class, 'stopImpersonating'])->name('stop-impersonating');
         Route::post('/bulk-upload',          [ClientController::class, 'bulkUpload'])->name('bulk-upload');
+        Route::post('/check-email',          [ClientController::class, 'checkEmailExists'])->name('check-email');
         Route::post('/',       [ClientController::class, 'store'])->name('store');
         // ── Wildcard routes ───────────────────────────────────────
         Route::get('/{id}',    [ClientController::class, 'show'])->name('show');

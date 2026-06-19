@@ -174,6 +174,20 @@ class ClientCompanyController extends AccountBaseController
 
         $company->update($safeData);
 
+        try {
+            EventLog::create([
+                'company_id'  => $this->companyOwnerKeyForCurrentUser(),
+                'user_id'     => auth()->id(),
+                'event_type'  => 'company_updated',
+                'description' => "Company '{$company->company_name}' was updated",
+                'metadata'    => ['company_name' => $company->company_name, 'company_id' => $company->id],
+                'ip_address'  => request()->ip(),
+                'created_at'  => now(),
+            ]);
+        } catch (\Throwable $e) {
+            \Log::warning('Company update activity log failed: ' . $e->getMessage());
+        }
+
         $isClientUserFlow = auth()->user()->hasRole('client');
 
         if ($isClientUserFlow) {
@@ -215,6 +229,9 @@ class ClientCompanyController extends AccountBaseController
                 ->with('error', 'Your primary company cannot be deleted.');
         }
 
+        $companyName  = $company->company_name;
+        $createdByKey = $this->companyOwnerKeyForCurrentUser();
+
         // Block deletion if this is the primary (and only) company for any client.
         // Deleting it would make that client invisible in the clients list.
         $primaryOnlyUsers = User::withoutGlobalScopes()
@@ -253,6 +270,27 @@ class ClientCompanyController extends AccountBaseController
             DB::table('user_companies')->where('company_id', $company->id)->delete();
             $company->delete();
         });
+
+        try {
+            EventLog::create([
+                'company_id'  => $createdByKey,
+                'user_id'     => auth()->id(),
+                'event_type'  => 'company_deleted',
+                'description' => "Company '{$companyName}' was deleted",
+                'metadata'    => ['company_name' => $companyName],
+                'ip_address'  => request()->ip(),
+                'created_at'  => now(),
+            ]);
+        } catch (\Throwable $e) {
+            \Log::warning('Company deletion activity log failed: ' . $e->getMessage());
+        }
+
+        // Redirect back to the Companies tab in the client section when called from there
+        $from = request()->input('_from');
+        if ($from === 'clients_tab') {
+            return redirect()->to(route('clients.index') . '?tab=companies')
+                ->with('success', 'Company deleted successfully.');
+        }
 
         return redirect()->back()
             ->with('success', 'Company deleted successfully.');

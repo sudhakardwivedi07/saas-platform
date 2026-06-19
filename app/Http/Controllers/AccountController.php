@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Stripe\Stripe;
 use Stripe\Subscription as StripeSubscription;
-
+ 
 class AccountController extends AccountBaseController
 {
     public function __construct()

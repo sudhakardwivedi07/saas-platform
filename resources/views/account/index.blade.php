@@ -3,14 +3,6 @@
 
 @section('content')
 
-{{-- Page Header --}}
-<div class="ph">
-    <div class="ph-left">
-        <h1>My Account</h1>
-        <p>Manage your profile, branding, login page, forgot password, subscription, and activity log</p>
-    </div>
-</div>
-
 @php
 // Determine which My Account tabs this user may see, and which is first/active.
 $_atabs = [
@@ -22,7 +14,40 @@ $_atabs = [
     'tab-activity'         => auth()->user()->can('view_account_activity'),
 ];
 $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
+
+// Build dynamic subtitle from visible tabs
+$_aTabLabels = [
+    'tab-profile'         => 'profile',
+    'tab-branding'        => 'branding',
+    'tab-login-page'      => 'login page',
+    'tab-forgot-password' => 'forgot password',
+    'tab-subscription'    => 'subscription',
+    'tab-activity'        => 'activity log',
+];
+$_aVisible = [];
+foreach ($_aTabLabels as $_k => $_lbl) {
+    if (!empty($_atabs[$_k])) $_aVisible[] = $_lbl;
+}
+$_n = count($_aVisible);
+if ($_n === 0) {
+    $_aSubtitle = 'Manage your account settings';
+} elseif ($_n === 1) {
+    $_aSubtitle = 'Manage your ' . $_aVisible[0];
+} elseif ($_n === 2) {
+    $_aSubtitle = 'Manage your ' . $_aVisible[0] . ' and ' . $_aVisible[1];
+} else {
+    $_aLast = array_pop($_aVisible);
+    $_aSubtitle = 'Manage your ' . implode(', ', $_aVisible) . ', and ' . $_aLast;
+}
 @endphp
+
+{{-- Page Header --}}
+<div class="ph">
+    <div class="ph-left">
+        <h1>My Account</h1>
+        <p>{{ $_aSubtitle }}</p>
+    </div>
+</div>
 
 {{-- Tab Bar --}}
 <div class="tab-bar">
@@ -1034,7 +1059,7 @@ $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
                     </thead>
                     <tbody>
                         @foreach(($activities ?? collect()) as $activity)
-                        <tr>
+                        <tr data-event-type="{{ $activity->event_type ?? '' }}">
                             <td>
                                 <div style="display:flex;align-items:center;gap:8px;">
                                     @php
@@ -1208,16 +1233,22 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // ── Activity Log ──────────────────────────────────────────────────────────────
 @if($_atabs['tab-activity'])
-var _actDtSearchFn = null;
+var _actDtSearchFn  = null;
+var _actTypeFn      = null;
 
 function initActivityTable() {
     if (!window.$ || !document.getElementById('activity-table')) return;
 
-    // Remove any previously registered date-range search fn to avoid duplicates
+    // Remove any previously registered search fns to avoid duplicates
     if (_actDtSearchFn) {
         var idx = $.fn.dataTable.ext.search.indexOf(_actDtSearchFn);
         if (idx > -1) $.fn.dataTable.ext.search.splice(idx, 1);
         _actDtSearchFn = null;
+    }
+    if (_actTypeFn) {
+        var idx2 = $.fn.dataTable.ext.search.indexOf(_actTypeFn);
+        if (idx2 > -1) $.fn.dataTable.ext.search.splice(idx2, 1);
+        _actTypeFn = null;
     }
     // Destroy existing DataTable instance if present
     if ($.fn.DataTable && $.fn.DataTable.isDataTable('#activity-table')) {
@@ -1248,8 +1279,18 @@ function initActivityTable() {
         actTable.search(this.value).draw();
     });
 
+    // Event type filter — matches data-event-type attribute on each <tr>
+    _actTypeFn = function (settings, data, dataIndex) {
+        if (!settings.nTable || settings.nTable.id !== 'activity-table') return true;
+        var selected = document.getElementById('actFilterEventType').value;
+        if (!selected) return true;
+        var row = actTable.row(dataIndex).node();
+        return row ? row.getAttribute('data-event-type') === selected : true;
+    };
+    $.fn.dataTable.ext.search.push(_actTypeFn);
+
     document.getElementById('actFilterEventType').addEventListener('change', function () {
-        actTable.column(0).search(this.value ? this.value : '', false, false).draw();
+        actTable.draw();
     });
 
     // Date range filter — stored so it can be removed before the next re-init

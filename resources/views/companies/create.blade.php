@@ -331,7 +331,7 @@ function coMark(inputId, invalid) {
     else el.classList.remove('co-invalid');
 }
 
-function validateCompanyForm(e) {
+async function validateCompanyForm(e) {
     e.preventDefault();
     var ok = true;
     var emailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
@@ -378,10 +378,11 @@ function validateCompanyForm(e) {
             // Admin Email
             var adminEmailEl = document.getElementById('co-admin-email');
             var adminEmailVal = adminEmailEl ? adminEmailEl.value.trim() : '';
+            var adminEmailFormatOk = true;
             if (!adminEmailVal) {
-                coErr('err-co-admin-email', 'Email is required.'); coMark('co-admin-email', true); ok = false;
+                coErr('err-co-admin-email', 'Email is required.'); coMark('co-admin-email', true); ok = false; adminEmailFormatOk = false;
             } else if (!emailRx.test(adminEmailVal)) {
-                coErr('err-co-admin-email', 'Enter a valid email address.'); coMark('co-admin-email', true); ok = false;
+                coErr('err-co-admin-email', 'Enter a valid email address.'); coMark('co-admin-email', true); ok = false; adminEmailFormatOk = false;
             } else {
                 coErr('err-co-admin-email', ''); coMark('co-admin-email', false);
             }
@@ -409,9 +410,37 @@ function validateCompanyForm(e) {
         }
     }
 
-    if (ok) {
-        document.getElementById('create-company-form').submit();
+    if (!ok) return;
+
+    var submitBtn = document.getElementById('submit-btn');
+    var origLabel = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.innerHTML = 'Processing'; }
+
+    // AJAX duplicate email check for new client admin
+    var adminTypeVal = document.getElementById('admin_type') ? document.getElementById('admin_type').value : '';
+    if (adminTypeVal === 'new' && adminEmailFormatOk) {
+        try {
+            var resp = await fetch('{{ route("clients.check-email") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ email: adminEmailVal })
+            });
+            var data = await resp.json();
+            if (data.exists) {
+                coErr('err-co-admin-email', 'This email is already registered.'); coMark('co-admin-email', true);
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = origLabel; }
+                return;
+            }
+        } catch (err) {
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = origLabel; }
+            return;
+        }
     }
+
+    document.getElementById('create-company-form').submit();
 }
 
 // Real-time: restrict admin name to letters + spaces

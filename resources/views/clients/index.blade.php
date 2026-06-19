@@ -414,7 +414,7 @@
             </div>
             <div class="mf-foot">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-edit-client').classList.remove('open')">Cancel</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitEditClient()">Save Changes</button>
+                <button type="button" class="btn btn-primary btn-sm" id="btn-edit-client" onclick="validateAndSubmitEditClient()">Save Changes</button>
             </div>
         </form>
     </div>
@@ -734,7 +734,7 @@
 
             <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;margin:0 0 0;border-top:1px solid var(--border);margin-top:20px">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="closeAddCompanyModal()">Cancel</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitCompanyModal()">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-add-company-modal" onclick="validateAndSubmitCompanyModal()">
                     Add Company
                 </button>
             </div>
@@ -782,7 +782,7 @@
 
             <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;border-top:1px solid var(--border);margin-top:20px">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="closeEditCompanyModal()">Cancel</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitEditCompanyModal()">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-edit-company-modal" onclick="validateAndSubmitEditCompanyModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
                     Save Changes
                 </button>
@@ -1310,6 +1310,8 @@ function submitAssignClientPlan() {
 }
 
 function openEditClientModal(clientId, name, email, phone) {
+    var saveBtn = document.getElementById('btn-edit-client');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Changes'; }
     var cleanPhone = (phone || '').replace(/\D/g, '').slice(0, 10);
     document.getElementById('edit-client-id').value = clientId;
     document.getElementById('edit-client-name').value = name;
@@ -1367,7 +1369,11 @@ function validateAndSubmitEditClient() {
         ok = false;
     }
 
-    if (ok) document.getElementById('edit-client-form').submit();
+    if (ok) {
+        var btn = document.getElementById('btn-edit-client');
+        if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+        document.getElementById('edit-client-form').submit();
+    }
 }
 
 // Clear edit-client field errors on user input
@@ -1495,6 +1501,8 @@ if (new URLSearchParams(window.location.search).get('add') === '1') {
 
 // ── Add Company Modal ────────────────────────────────────────
 function resetAddCompanyForm() {
+    var addBtn = document.getElementById('btn-add-company-modal');
+    if (addBtn) { addBtn.disabled = false; addBtn.textContent = 'Add Company'; }
     // Text / email inputs
     ['modal-co-admin-name','modal-co-admin-email','modal-co-admin-phone',
      'modal-company-name'].forEach(function(id) {
@@ -1531,6 +1539,8 @@ function closeAddCompanyModal() {
 }
 
 function openEditCompanyModal(id, name, email, industry, entity) {
+    var saveBtn = document.getElementById('btn-edit-company-modal');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg> Save Changes'; }
     var updateUrl = '{{ route("my-companies.update", ":id") }}'.replace(':id', id);
     document.getElementById('modal-edit-company-form').action = updateUrl;
     document.getElementById('edit-co-company-name').value = name;
@@ -1579,6 +1589,8 @@ function validateAndSubmitEditCompanyModal() {
     }
 
     if (ok) {
+        var btn = document.getElementById('btn-edit-company-modal');
+        if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
         document.getElementById('modal-edit-company-form').submit();
     }
 }
@@ -1699,6 +1711,8 @@ function validateAndSubmitCompanyModal() {
     }
 
     if (ok) {
+        var btn = document.getElementById('btn-add-company-modal');
+        if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
         document.getElementById('modal-add-company-form').submit();
     }
 }

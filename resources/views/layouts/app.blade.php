@@ -335,8 +335,8 @@ tbody tr:hover td{background:#fafcff}
 table.dataTable{border-collapse:collapse!important;width:100%!important}
 table.dataTable thead th{cursor:pointer;padding:9px 14px!important;font-size:10.5px!important;font-weight:500!important;text-transform:uppercase!important;letter-spacing:.06em!important;color:var(--text-3)!important;background:#fafbfc!important;border-bottom:1px solid var(--border)!important;border-top:none!important;white-space:nowrap}
 table.dataTable thead th.sorting,table.dataTable thead th.sorting_asc,table.dataTable thead th.sorting_desc,table.dataTable thead th.sorting_asc_disabled,table.dataTable thead th.sorting_desc_disabled{padding-right:26px!important}
-.cell-trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;display:block}
-.cell-trunc-sm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;display:block}
+.cell-trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px;display:block;text-transform:capitalize}
+.cell-trunc-sm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px;display:block;text-transform:capitalize}
 table.dataTable tbody td{padding:11px 14px!important;font-size:13px!important;border-bottom:1px solid var(--border)!important;border-top:none!important;vertical-align:middle!important}
 table.dataTable tbody tr:last-child td{border-bottom:none!important}
 table.dataTable tbody tr:hover td{background:#fafcff!important}
@@ -811,7 +811,7 @@ SwalToast && SwalToast.fire({ icon: 'error', title: @json(session('toast_error')
     @if(session('success'))
     Swal.fire(Object.assign({}, swalCfg, { icon: 'success', html: @json(session('success')) }));
     @elseif(session('error'))
-    Swal.fire(Object.assign({}, swalCfg, { icon: 'error', html: @json(session('error')) }));
+    Swal.fire(Object.assign({}, swalCfg, { icon: 'error', title: @json(session('error_title', '')), html: @json(session('error')), confirmButtonText: @json(session('error_confirm', 'Ok')) }));
     @elseif(session('info'))
     Swal.fire(Object.assign({}, swalCfg, { icon: 'info', text: @json(session('info')) }));
     @elseif(session('warning'))

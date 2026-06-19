@@ -278,6 +278,8 @@ class InsightsController extends AccountBaseController
                     ]);
                 } catch (\Throwable $e) {}
 
+                Company::withoutGlobalScopes()->where('id', $reportCompanyId)->update(['last_active_at' => now()]);
+
                 return response()->json([
                     'status'      => 'processing',
                     'message'     => 'QuickBooks data synced successfully! Insights have been generated.',
@@ -423,6 +425,8 @@ class InsightsController extends AccountBaseController
         if ($report->isDraft()) {
             $report->update(['insight_json_data' => $jsonData]);
 
+            Company::withoutGlobalScopes()->where('id', $report->company_id)->update(['last_active_at' => now()]);
+
             return response()->json([
                 'status'       => 'success',
                 'message'      => 'Draft updated.',
@@ -439,6 +443,8 @@ class InsightsController extends AccountBaseController
                 'report_name' => $report->report_name ?? null,
             ]);
         } catch (\Throwable $e) {}
+
+        Company::withoutGlobalScopes()->where('id', $report->company_id)->update(['last_active_at' => now()]);
 
         return response()->json([
             'status'       => 'success',

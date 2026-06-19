@@ -72,6 +72,12 @@ class DashboardController extends AccountBaseController
                 $selectedCompanyId = $this->selectedKpiCompanyId ?? $company->id;
                 $dashSetting = ClientDashboardSetting::forCompany($selectedCompanyId);
 
+                // If Save Draft / Publish happened more recently than the last analyzed report,
+                // use that timestamp so "Last updated" reflects the most recent admin action.
+                if ($this->kpiLastUpdatedAt && $dashSetting->updated_at && $dashSetting->updated_at > $this->kpiLastUpdatedAt) {
+                    $this->kpiLastUpdatedAt = $dashSetting->updated_at;
+                }
+
                 $this->isAdminView            = true;
                 $this->viewingAsUser          = $clientUser;
                 $this->dashboardPublishStatus = $dashSetting->publish_status ?? 'draft';

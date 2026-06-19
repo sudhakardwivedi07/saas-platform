@@ -569,11 +569,6 @@
                                             </button>
                                             <div class="dm-divider"></div>
                                         @endif
-                                        <button class="dm-item" style="color:var(--red);width:100%;text-align:left;border:0;background:transparent;cursor:pointer"
-                                                onclick="deleteInsight({{ $report->id }}, '{{ addslashes($report->report_name) }}')">
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                                            Delete
-                                        </button>
                                     </div>
                                 </div>
                             @endif
@@ -947,11 +942,6 @@
                     <button class="dot-menu" data-menu="dm-ins-${id}" title="Actions">•••</button>
                     <div class="dm-popup ins-actions" id="dm-ins-${id}">
                         <span class="dm-item" style="opacity:.5;cursor:not-allowed;display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:13px">Processing…</span>
-                        <div class="dm-divider"></div>
-                        <button class="dm-item" style="color:var(--red);width:100%;text-align:left;border:0;background:transparent;cursor:pointer" onclick="deleteInsight(${id},'This insight')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                            Delete
-                        </button>
                     </div>
                 </div>
             </td>`;
@@ -980,11 +970,6 @@
                 <button class="dm-item" onclick="downloadInsight(${id})" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     Download
-                </button>
-                <div class="dm-divider"></div>
-                <button class="dm-item" style="color:var(--red);width:100%;text-align:left;border:0;background:transparent;cursor:pointer" onclick="deleteInsight(${id},'This insight')">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    Delete
                 </button>`;
         }
         const nameLink = row.querySelector('.insight-name-cell a, .insight-name-cell span[style*="color:#1a202c"]');
@@ -1006,11 +991,7 @@
             row.dataset.status = 'failed';
             const popup = row.querySelector('.dm-popup');
             if (popup) {
-                popup.innerHTML = `
-                    <button class="dm-item" style="color:var(--red);width:100%;text-align:left;border:0;background:transparent;cursor:pointer" onclick="deleteInsight(${id},'This insight')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        Delete
-                    </button>`;
+                popup.innerHTML = '';
             }
             if (window.insightsDT) window.insightsDT.row(row).invalidate().draw(false);
         }

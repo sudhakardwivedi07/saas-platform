@@ -119,8 +119,22 @@
     background: #fff;
     outline: none;
     width: 200px;
+    max-width: 100%;
 }
 .bar-search-inp:focus { border-color: #1a6aa8; }
+@media(max-width:860px) {
+    .bar-right { width:100%; margin-left:0; }
+    .bar-search-inp { flex:1; width:auto; }
+    .bar-select { min-width:120px; }
+}
+@media(max-width:640px) {
+    .insights-company-bar { flex-direction:column; align-items:stretch; }
+    .bar-right { flex-direction:column; }
+    .bar-search-wrap { width:100%; }
+    .bar-search-inp { width:100%; box-sizing:border-box; }
+    .bar-select { width:100%; }
+    .reports-table-container { padding:16px; }
+}
 /* ── Monthly Usage Bar ───────────────────────────────────────── */
 .monthly-usage-bar {
     background: #f8fafc;
@@ -151,7 +165,7 @@
     margin-bottom: 20px;
 }
 .table-header h2 { font-size: 20px; font-weight: 600; color: #1a202c; margin: 0; }
-.reports-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.reports-table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 560px; }
 .reports-table th {
     text-align: left;
     padding: 10px 20px;

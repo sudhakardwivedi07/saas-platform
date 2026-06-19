@@ -219,6 +219,24 @@
 .ci-vi-badge.draft { background:#fef3c7;color:#92400e; }
 .ci-vi-badge.published { background:#d1fae5;color:#065f46; }
 .ci-vi-date { font-size:11.5px;color:#94a3b8; }
+
+/* ── Responsive ── */
+@media(max-width:860px) {
+    .report-detail-header { flex-direction:column; gap:16px; }
+    .report-header-actions { width:100%; flex-wrap:wrap; }
+    .export-pdf-btn, .rd-btn { flex:1; justify-content:center; }
+    .insight-slider-card { padding:20px 18px; }
+}
+@media(max-width:640px) {
+    .report-detail-header { padding:16px; }
+    .report-meta { gap:12px; }
+    .insight-slider-header { flex-direction:column; gap:12px; align-items:flex-start; }
+    .insight-slider-nav { width:100%; justify-content:space-between; }
+    .insight-slider-title h2 { font-size:18px; }
+    .insight-slider-card { padding:16px 14px; }
+    .insight-slider-content table.insight-table { min-width:420px; }
+    .insight-slider-container { padding:14px; }
+}
 </style>
 @endpush
 

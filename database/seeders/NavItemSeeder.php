@@ -83,15 +83,6 @@ class NavItemSeeder extends Seeder
                 ],
             ],
             [
-                'nav_key'  => 'settings',
-                'label'    => 'Settings',
-                'icon_svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
-                'roles' => [
-                    'admin'   => ['route' => 'settings.index', 'active' => 'settings.*', 'permission' => 'view_settings'],
-                    'manager' => ['route' => 'settings.index', 'active' => 'settings.*', 'permission' => 'view_settings'],
-                ],
-            ],
-            [
                 'nav_key'  => 'my_financials',
                 'label'    => 'My Financials',
                 'icon_svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
@@ -143,6 +134,15 @@ class NavItemSeeder extends Seeder
                 'roles' => [
                     'admin'   => ['route' => 'support.index', 'active' => 'support.*'],
                     'manager' => ['route' => 'support.index', 'active' => 'support.*'],
+                ],
+            ],
+            [
+                'nav_key'  => 'settings',
+                'label'    => 'Settings',
+                'icon_svg' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>',
+                'roles' => [
+                    'admin'   => ['route' => 'settings.index', 'active' => 'settings.*', 'permission' => 'view_settings'],
+                    'manager' => ['route' => 'settings.index', 'active' => 'settings.*', 'permission' => 'view_settings'],
                 ],
             ],
             [

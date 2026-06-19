@@ -1803,13 +1803,10 @@ async function validateAndSubmitCompanyModal(btn) {
         }
     }
 
-    if (ok) {
-        var btn = document.getElementById('btn-add-company-modal');
-        if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
-        document.getElementById('modal-add-company-form').submit();
     if (!ok) return;
 
-    if (btn) { btn.disabled = true; btn.textContent = 'Processing'; }
+    var btn = document.getElementById('btn-add-company-modal');
+    if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
 
     // AJAX duplicate email check (New Client only)
     var adminTypeVal = adminTypeEl ? adminTypeEl.value : '';

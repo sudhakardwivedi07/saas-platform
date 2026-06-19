@@ -356,14 +356,13 @@ class QuickBooksCSVExportService
             match ($group) {
                 'Income'              => $data['revenue']          = abs($val),
                 'COGS'                => $data['cogs']             = abs($val),
-                'GrossProfit'         => $data['gross_profit']     = $val,
                 'NetOperatingIncome'  => $data['operating_income'] = $val,
                 'NetIncome'           => $data['net_income']       = $val,
                 default               => null,
             };
 
-            // Drill into expense sub-accounts
-            if (isset($row['Rows']['Row'])) {
+            // Drill into expense sub-accounts — only for expense sections
+            if (($group === 'Expenses' || $group === 'OtherExpenses' || $group === 'OtherExpense') && isset($row['Rows']['Row'])) {
                 foreach ($row['Rows']['Row'] as $sub) {
                     $name   = strtolower($sub['ColData'][0]['value'] ?? $sub['Header']['ColData'][0]['value'] ?? '');
                     $subVal = 0;
@@ -391,10 +390,8 @@ class QuickBooksCSVExportService
             }
         }
 
-        // Fallback: calculate gross_profit if not returned by QB
-        if ($data['gross_profit'] == 0 && ($data['revenue'] > 0 || $data['cogs'] > 0)) {
-            $data['gross_profit'] = $data['revenue'] - $data['cogs'];
-        }
+        // Always derive gross_profit from revenue - cogs (matches CFO behaviour)
+        $data['gross_profit'] = $data['revenue'] - $data['cogs'];
 
         // Fallback: calculate operating_income if not returned by QB as NetOperatingIncome
         if ($data['operating_income'] == 0 && $totalExpenses > 0) {

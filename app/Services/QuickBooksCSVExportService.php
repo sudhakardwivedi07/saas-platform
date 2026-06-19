@@ -526,24 +526,16 @@ class QuickBooksCSVExportService
             elseif ($group === 'Liability' || $group === 'TotalLiabilities') $curSec = 'liabilities';
             elseif ($group === 'Equity' || $group === 'TotalEquity')    $curSec = 'equity';
 
-            $val     = 0;
-            $mapName = $name; // may be overridden by Summary label below
+            $val = 0;
 
-            // Section rows store their total in Summary.ColData; use the Summary label
-            // (e.g. "total for fixed assets") so mapBSValue matches correctly instead of
-            // the section-header label (e.g. "fixed assets") which has no match.
+            // Summary value always takes priority (section totals)
             if (isset($row['Summary']['ColData'])) {
-                $summaryLabel = strtolower($row['Summary']['ColData'][0]['value'] ?? '');
                 foreach ($row['Summary']['ColData'] as $c) {
                     $v = str_replace([',', '$', ' '], '', $c['value'] ?? '');
-                    if (is_numeric($v)) {
-                        $val     = (float) $v;
-                        $mapName = $summaryLabel;
-                        break;
-                    }
+                    if (is_numeric($v)) { $val = (float) $v; break; }
                 }
             }
-            // Data row value (only when Summary produced nothing)
+            // Data row value — only when Summary produced nothing to avoid overwrite
             if ($val == 0 && $group !== 'TotalAssets' && isset($row['ColData'])) {
                 foreach (array_slice($row['ColData'], 1) as $c) {
                     $v = str_replace(',', '', $c['value'] ?? '');
@@ -551,7 +543,7 @@ class QuickBooksCSVExportService
                 }
             }
 
-            if ($val != 0) self::mapBSValue($mapName, $val, $group, $curSec, $data);
+            if ($val != 0) self::mapBSValue($name, $val, $group, $curSec, $data);
 
             if (isset($row['Rows']['Row'])) {
                 self::extractSingleMonthBSValues($row['Rows']['Row'], $data, $curSec);
@@ -606,7 +598,7 @@ class QuickBooksCSVExportService
             $data['total_assets'] = $val;
         } elseif (preg_match('/\btotal\s+(for\s+)?bank(\s+accounts?)?\b/i', $name)) {
             $data['cash'] = $val;
-        } elseif ((str_contains($name, 'checking') || str_contains($name, 'savings') || str_contains($name, 'cash on hand') || str_contains($name, 'petty cash') || preg_match('/^cash$/i', trim($name))) && !str_contains($name, 'undeposited') && !str_contains($name, 'flow')) {
+        } elseif ((str_contains($name, 'checking') || str_contains($name, 'savings') || str_contains($name, 'cash on hand') || str_contains($name, 'petty cash') || str_contains($name, 'money market') || preg_match('/^cash$/i', trim($name)) || preg_match('/^cash\s/i', trim($name))) && !str_contains($name, 'undeposited') && !str_contains($name, 'flow')) {
             if (!str_contains($name, 'total')) $data['cash'] += $val;
         } elseif (str_contains($name, 'total for accounts receivable')) {
             $data['ar'] = $val;
@@ -615,7 +607,7 @@ class QuickBooksCSVExportService
         } elseif (str_contains($name, 'inventory')) {
             if (str_contains($name, 'total')) $data['inventory'] = $val;
             elseif ($data['inventory'] == 0) $data['inventory'] = $val;
-        } elseif (str_contains($name, 'total for fixed assets')) {
+        } elseif (str_contains($name, 'total for fixed assets') || str_contains($name, 'total fixed assets') || $name === 'fixed assets') {
             $data['fixed_assets'] = $val;
         } elseif (str_contains($name, 'total for accounts payable') || (str_contains($name, 'total') && str_contains($name, 'accounts payable'))) {
             $data['ap'] = -abs($val);

@@ -733,7 +733,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                     <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="cr-name" class="mf-inp" placeholder="e.g. accountant" autocomplete="off">
                     <div id="err-cr-name" style="font-size:11.5px;color:var(--red);margin-top:2px;display:none"></div>
-                    <div id="hint-cr-name" style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase with underscores (e.g. senior_manager)</div>
+                    <div id="hint-cr-name" style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase (e.g. manager)</div>
                 </div>
                 <div class="mf-field">
                     <label class="mf-label">Alias <span style="color:var(--red)">*</span> <span style="font-size:11px;color:var(--text-3)">(display name)</span></label>
@@ -793,7 +793,7 @@ $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
                     <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="er-name" class="mf-inp" autocomplete="off">
                     <div id="err-er-name" style="font-size:11.5px;color:var(--red);margin-top:2px;display:none"></div>
-                    <div id="hint-er-name" style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase with underscores (e.g. senior_manager)</div>
+                    <div id="hint-er-name" style="font-size:11.5px;color:var(--text-3);margin-top:4px">Use lowercase (e.g. manager)</div>
                 </div>
                 <div class="mf-field">
                     <label class="mf-label">Alias <span style="color:var(--red)">*</span> <span style="font-size:11px;color:var(--text-3)">(display name)</span></label>
@@ -1032,8 +1032,8 @@ function crValidateName(show) {
     var err = '';
     if (!val.trim()) {
         err = show ? 'Role name is required.' : '';
-    } else if (!/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(val.trim())) {
-        err = 'Must be lowercase with underscores, e.g. senior_manager.';
+    } else if (!/^[a-z][a-z0-9_]*$/.test(val.trim())) {
+        err = 'Must be lowercase letters only (e.g. manager).';
     }
     crSetErr('err-cr-name', err);
     var hint = document.getElementById('hint-cr-name');
@@ -1133,8 +1133,8 @@ function erValidateName(show) {
     var err = '';
     if (!val.trim()) {
         err = show ? 'Role name is required.' : '';
-    } else if (!/^[a-z][a-z0-9]*(_[a-z0-9]+)+$/.test(val.trim())) {
-        err = 'Must be lowercase with underscores, e.g. senior_manager.';
+    } else if (!/^[a-z][a-z0-9_]*$/.test(val.trim())) {
+        err = 'Must be lowercase letters only (e.g. manager).';
     }
     erSetErr('err-er-name', err);
     var hint = document.getElementById('hint-er-name');

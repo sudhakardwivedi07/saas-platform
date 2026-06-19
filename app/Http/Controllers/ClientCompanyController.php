@@ -245,10 +245,10 @@ class ClientCompanyController extends AccountBaseController
                 ->exists();
 
             if (!$hasOtherCompany) {
-                return redirect()->back()->with(
-                    'error',
-                    'Deletion not allowed. This company is the only company assigned to the client.'
-                );
+                return redirect()->back()
+                    ->with('error_title', "Can't Delete This Company")
+                    ->with('error', "<p style='margin:0 0 10px'><strong>{$company->company_name}</strong> is the only company assigned to <strong>{$affectedUser->name}</strong>.</p><p style='margin:0;color:#64748b;font-size:13.5px'>Every client must have at least one company on file. To remove this company, first assign another company to the client.</p>")
+                    ->with('error_confirm', 'Got It');
             }
         }
 

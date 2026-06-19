@@ -172,15 +172,6 @@
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 113 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
                                     Edit
                                 </a>
-                                <div class="dm-divider"></div>
-                                <form method="POST" action="{{ route('my-companies.destroy', $co->id) . (isset($__imp) ? '?_imp=' . $__imp['token'] : '') }}" onsubmit="return confirmCompanyDelete(this);">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="dm-item" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2"/><path d="M19 6l-1 14a1 1 0 01-1 1H7a1 1 0 01-1-1L5 6"/></svg>
-                                        Delete
-                                    </button>
-                                </form>
                             </div>
                         </div>
                     </td>
@@ -239,7 +230,7 @@
 
             <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;border-top:1px solid var(--border);margin-top:20px">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="closeAddCoModal()">Cancel</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitAddCoModal()">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-add-co-modal" onclick="validateAndSubmitAddCoModal()">
                     Add Company
                 </button>
             </div>
@@ -285,7 +276,7 @@
 
             <div class="mf-foot" style="position:sticky;bottom:0;background:var(--card-bg,#fff);padding:16px 0;border-top:1px solid var(--border);margin-top:20px">
                 <button type="button" class="btn btn-ghost btn-sm" onclick="closeClientEditCoModal()">Cancel</button>
-                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitClientEditCoModal()">
+                <button type="button" class="btn btn-primary btn-sm" id="btn-edit-co-modal" onclick="validateAndSubmitClientEditCoModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>
                     Save Changes
                 </button>
@@ -396,6 +387,8 @@ function openAddCoModal() {
 }
 
 function closeAddCoModal() {
+    var btn = document.getElementById('btn-add-co-modal');
+    if (btn) { btn.disabled = false; btn.textContent = 'Add Company'; }
     document.getElementById('modal-add-co').classList.remove('open');
     document.getElementById('modal-add-co-form').reset();
     ['co-modal-err-name','co-modal-err-email'].forEach(function(id) { _cliCoErr(id, ''); });
@@ -421,7 +414,11 @@ function validateAndSubmitAddCoModal() {
         _cliCoMark('co-modal-name', false);
     }
 
-    if (ok) { document.getElementById('modal-add-co-form').submit(); }
+    if (ok) {
+        var btn = document.getElementById('btn-add-co-modal');
+        if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+        document.getElementById('modal-add-co-form').submit();
+    }
 }
 
 // Real-time validation clearing — Add & Edit Company modals (client portal)
@@ -467,6 +464,8 @@ function validateAndSubmitAddCoModal() {
 
 /* ── Edit Company Modal ── */
 function openClientEditCoModal(id, name, email, industry, entity) {
+    var saveBtn = document.getElementById('btn-edit-co-modal');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg> Save Changes'; }
     var updateUrl = '{{ route("my-companies.update", ":id") . (isset($__imp) ? "?_imp=" . $__imp["token"] : "") }}'.replace(':id', id);
     document.getElementById('modal-client-edit-co-form').action = updateUrl;
     document.getElementById('client-edit-co-name').value  = name;
@@ -509,7 +508,11 @@ function validateAndSubmitClientEditCoModal() {
         _cliCoMark('client-edit-co-name', false);
     }
 
-    if (ok) { document.getElementById('modal-client-edit-co-form').submit(); }
+    if (ok) {
+        var btn = document.getElementById('btn-edit-co-modal');
+        if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+        document.getElementById('modal-client-edit-co-form').submit();
+    }
 }
 </script>
 @endpush

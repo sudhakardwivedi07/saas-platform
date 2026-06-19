@@ -11,13 +11,21 @@
     $kpiCoSettingsMap = [];
     foreach(($kpiCompanies ?? collect()) as $__co) {
         $__s = \App\Models\ClientDashboardSetting::forCompany($__co->id);
+        $__latestReport = \App\Models\Report::where('company_id', $__co->id)
+            ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
+            ->latest('updated_at')
+            ->first(['updated_at', 'created_at']);
+        $__reportTime   = $__latestReport ? ($__latestReport->updated_at ?? $__latestReport->created_at) : null;
+        $__settingTime  = $__s->updated_at;
+        $__displayTime  = $__reportTime
+            ? ($__settingTime && $__settingTime > $__reportTime ? $__settingTime : $__reportTime)
+            : null;
         $kpiCoSettingsMap[$__co->id] = [
-            'name'           => $__co->company_name,
-            'hidden_kpis'    => array_values($__s->draft_hidden_kpis ?? []),
-            'publish_status' => $__s->publish_status ?? 'draft',
-            'has_insights'   => \App\Models\Report::where('company_id', $__co->id)
-                ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
-                ->exists(),
+            'name'             => $__co->company_name,
+            'hidden_kpis'      => array_values($__s->draft_hidden_kpis ?? []),
+            'publish_status'   => $__s->publish_status ?? 'draft',
+            'has_insights'     => !is_null($__latestReport),
+            'last_updated_at'  => $__displayTime?->format(active_date_format() . ' g:i A'),
         ];
     }
 
@@ -607,16 +615,13 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
 
     {{-- Right: last updated + action buttons ------------------------------------ --}}
     <div class="cfo-kpi-exec-right">
-        <p class="cfo-kpi-exec-updated">
+        <p class="cfo-kpi-exec-updated" id="kpiLastUpdatedLabel"
+           style="{{ empty($kpiLastUpdatedAt) ? 'display:none;' : '' }}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="11" height="11"
                  style="display:inline-block;vertical-align:middle;margin-right:4px;stroke:#9ca3af">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
-            @if(!empty($kpiLastUpdatedAt))
-            Last updated {{ $kpiLastUpdatedAt->format(active_date_format() . ' g:i A') }}
-            @else
-            Last updated {{ now()->format(active_date_format() . ' g:i A') }}
-            @endif
+            Last updated <span id="kpiLastUpdatedText">{{ $kpiLastUpdatedAt ? $kpiLastUpdatedAt->format(active_date_format() . ' g:i A') : '' }}</span>
         </p>
         <div class="cfo-kpi-exec-actions">
             @if(!empty($isQuickbooksConnected))
@@ -716,9 +721,34 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
     const SAVE_DRAFT_URL   = '{{ route("clients.dashboard.save-draft", $viewingAsUser->id) }}';
     const PUBLISH_URL      = '{{ route("clients.dashboard.publish",    $viewingAsUser->id) }}';
     const KPI_CO_SETTINGS  = {!! json_encode($kpiCoSettingsMap ?? []) !!};
+    const ACTIVE_DATE_FMT  = '{{ active_date_format() }}';
     let editModeActive     = false;
     let currentCompanyId   = {{ $selectedKpiCompanyId ?? 'null' }};
     let draftHiddenKpis    = {!! json_encode(array_values($draftHiddenKpis ?? [])) !!};
+
+    function _fmtNow() {
+        // Use UTC methods to match server-side PHP (app timezone = UTC)
+        var d = new Date();
+        var m = String(d.getUTCMonth() + 1).padStart(2, '0');
+        var day = String(d.getUTCDate()).padStart(2, '0');
+        var Y = d.getUTCFullYear();
+        var h = d.getUTCHours(), min = String(d.getUTCMinutes()).padStart(2, '0');
+        var ap = h >= 12 ? 'PM' : 'AM';
+        h = h % 12 || 12;
+        var datePart = ACTIVE_DATE_FMT
+            .replace('m', m).replace('d', day).replace('Y', Y)
+            .replace('j', d.getUTCDate()).replace('n', d.getUTCMonth() + 1);
+        return datePart + ' ' + h + ':' + min + ' ' + ap;
+    }
+
+    function _updateLastUpdatedNow() {
+        var nowStr = _fmtNow();
+        var label = document.getElementById('kpiLastUpdatedLabel');
+        var text  = document.getElementById('kpiLastUpdatedText');
+        if (label) label.style.display = '';
+        if (text)  text.textContent = nowStr;
+        if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].last_updated_at = nowStr;
+    }
 
     // Called by the embed after cards are in the DOM; also called immediately below
     // in case the embed's script already ran before this one (script ordering race).
@@ -831,6 +861,7 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
             var badge = document.getElementById('cdbStatusBadge');
             if (badge) { badge.textContent = 'Draft'; badge.className = 'cdb-status-badge cdb-status-draft'; }
             if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].publish_status = 'draft';
+            _updateLastUpdatedNow();
             // Exit edit mode so hidden cards are completely hidden (not just greyed out)
             editModeActive = false;
             var _eb = document.getElementById('cdbEditModeBtn'), _db = document.getElementById('kpiDashboard');
@@ -861,6 +892,7 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
             var badge = document.getElementById('cdbStatusBadge');
             if (badge) { badge.textContent = 'Published'; badge.className = 'cdb-status-badge cdb-status-published'; }
             if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].publish_status = 'published';
+            _updateLastUpdatedNow();
             // Exit edit mode so hidden cards are completely hidden (not just greyed out)
             editModeActive = false;
             var _eb2 = document.getElementById('cdbEditModeBtn'), _db2 = document.getElementById('kpiDashboard');
@@ -909,6 +941,13 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
             if (noInsights) noInsights.style.display = hasInsights ? 'none' : '';
             var actionBtns  = document.getElementById('cdb-action-btns');
             if (actionBtns) actionBtns.style.display = hasInsights ? '' : 'none';
+
+            // Update "Last updated" label for the selected company
+            var lastUpdatedLabel = document.getElementById('kpiLastUpdatedLabel');
+            var lastUpdatedText  = document.getElementById('kpiLastUpdatedText');
+            var lastUpdated = s ? (s.last_updated_at || null) : null;
+            if (lastUpdatedLabel) lastUpdatedLabel.style.display = (hasInsights && lastUpdated) ? '' : 'none';
+            if (lastUpdatedText && lastUpdated) lastUpdatedText.textContent = lastUpdated;
 
             if (hasInsights && _orig) _orig(id);
         };

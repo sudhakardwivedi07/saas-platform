@@ -347,6 +347,8 @@ class PartnerInsightsController extends AccountBaseController
                     ]);
                 } catch (\Throwable $e) {}
 
+                Company::withoutGlobalScopes()->where('id', $companyId)->update(['last_active_at' => now()]);
+
                 // Re-refresh token after the sync job so the connection stays "Connected"
                 // (the job can take 10–30 min; the access token may expire during that time)
                 try {
@@ -543,6 +545,8 @@ class PartnerInsightsController extends AccountBaseController
                 ]);
             } catch (\Throwable $e) {}
 
+            Company::withoutGlobalScopes()->where('id', $report->company_id)->update(['last_active_at' => now()]);
+
             return response()->json([
                 'status'       => 'success',
                 'message'      => 'Saved as new version.',
@@ -562,6 +566,8 @@ class PartnerInsightsController extends AccountBaseController
                 'status'      => $report->status ?? null,
             ]);
         } catch (\Throwable $e) {}
+
+        Company::withoutGlobalScopes()->where('id', $report->company_id)->update(['last_active_at' => now()]);
 
         return response()->json(['status' => 'success', 'message' => 'Insight updated.']);
     }
@@ -606,6 +612,8 @@ class PartnerInsightsController extends AccountBaseController
                 'client_company_id' => $report->company_id ?? null,
             ]);
         } catch (\Throwable $e) {}
+
+        Company::withoutGlobalScopes()->where('id', $report->company_id)->update(['last_active_at' => now()]);
 
         return response()->json([
             'status'       => 'success',

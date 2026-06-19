@@ -932,6 +932,8 @@ function validateAndSubmitUaProfile() {
         var phoneDigits = phone.replace(/[^\d]/g, '');
         if (phoneDigits.length !== 10) {
             _uaErr('ua-phone', 'ua-err-phone', 'Phone number must be exactly 10 digits.'); ok = false;
+        } else if (phoneDigits.charAt(0) === '0') {
+            _uaErr('ua-phone', 'ua-err-phone', 'Phone number must not start with 0.'); ok = false;
         } else if (/^(\d)\1{9}$/.test(phoneDigits)) {
             _uaErr('ua-phone', 'ua-err-phone', 'Please enter a valid phone number.'); ok = false;
         } else { _uaOk('ua-phone', 'ua-err-phone'); }

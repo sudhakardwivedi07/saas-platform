@@ -331,7 +331,8 @@ class QuickBooksCSVExportService
             'net_income'       => 0,
         ];
 
-        $parseVal = fn($v) => is_numeric(str_replace(',', '', $v ?? '')) ? (float) str_replace(',', '', $v) : 0;
+        $parseVal      = fn($v) => is_numeric(str_replace(',', '', $v ?? '')) ? (float) str_replace(',', '', $v) : 0;
+        $totalExpenses = 0;
 
         foreach ($rows as $row) {
             $group = $row['group'] ?? '';
@@ -345,20 +346,27 @@ class QuickBooksCSVExportService
                 }
             }
 
+            // Track total expenses separately; do NOT write it to misc
+            if ($group === 'Expenses') {
+                $totalExpenses = abs($val);
+            } elseif ($group === 'OtherExpenses' || $group === 'OtherExpense') {
+                $totalExpenses += abs($val);
+            }
+
             match ($group) {
-                'Income'      => $data['revenue']          = abs($val),
-                'COGS'        => $data['cogs']             = abs($val),
-                'GrossProfit' => $data['gross_profit']     = $val,
-                'Expenses'    => $data['misc']             = abs($val),
-                'NetIncome'   => $data['net_income']       = $val,
-                default       => null,
+                'Income'              => $data['revenue']          = abs($val),
+                'COGS'                => $data['cogs']             = abs($val),
+                'GrossProfit'         => $data['gross_profit']     = $val,
+                'NetOperatingIncome'  => $data['operating_income'] = $val,
+                'NetIncome'           => $data['net_income']       = $val,
+                default               => null,
             };
 
-            // Drill into expense sub-accounts for payroll, marketing, rent, software
+            // Drill into expense sub-accounts
             if (isset($row['Rows']['Row'])) {
                 foreach ($row['Rows']['Row'] as $sub) {
-                    $name    = strtolower($sub['ColData'][0]['value'] ?? $sub['Header']['ColData'][0]['value'] ?? '');
-                    $subVal  = 0;
+                    $name   = strtolower($sub['ColData'][0]['value'] ?? $sub['Header']['ColData'][0]['value'] ?? '');
+                    $subVal = 0;
                     if (isset($sub['ColData'][1]['value'])) {
                         $subVal = abs($parseVal($sub['ColData'][1]['value']));
                     } elseif (isset($sub['Summary']['ColData'])) {
@@ -372,16 +380,26 @@ class QuickBooksCSVExportService
                         $data['payroll'] += $subVal;
                     } elseif (str_contains($name, 'market') || str_contains($name, 'advertis')) {
                         $data['marketing'] += $subVal;
-                    } elseif (str_contains($name, 'rent') || str_contains($name, 'lease')) {
+                    } elseif ($name === 'rent or lease' || $name === 'rent/lease' || $name === 'rent' || $name === 'lease') {
                         $data['rent'] += $subVal;
                     } elseif (str_contains($name, 'software') || str_contains($name, 'subscription') || str_contains($name, 'saas')) {
                         $data['software'] += $subVal;
+                    } elseif (str_contains($name, 'miscellaneous') || $name === 'misc' || str_contains($name, 'other misc')) {
+                        $data['misc'] += $subVal;
                     }
                 }
             }
         }
 
-        $data['operating_income'] = $data['gross_profit'] - $data['misc'];
+        // Fallback: calculate gross_profit if not returned by QB
+        if ($data['gross_profit'] == 0 && ($data['revenue'] > 0 || $data['cogs'] > 0)) {
+            $data['gross_profit'] = $data['revenue'] - $data['cogs'];
+        }
+
+        // Fallback: calculate operating_income if not returned by QB as NetOperatingIncome
+        if ($data['operating_income'] == 0 && $totalExpenses > 0) {
+            $data['operating_income'] = $data['gross_profit'] - $totalExpenses;
+        }
 
         return $data;
     }
@@ -428,7 +446,38 @@ class QuickBooksCSVExportService
             self::extractMultiMonthBSValues($reportData['Rows']['Row'], $monthlyData, $monthLabels);
         }
 
+        // Fixed Assets section rows store their totals only in Summary.ColData at arbitrary
+        // nesting depth. A targeted tree search reliably catches what the general pass misses.
+        self::findFixedAssetsInTree($reportData, $monthlyData, $monthLabels);
+
         return array_values($monthlyData);
+    }
+
+    protected static function findFixedAssetsInTree(array $node, array &$monthlyData, array $monthLabels): void
+    {
+        if (isset($node['Summary']['ColData'])) {
+            $summaryData = $node['Summary']['ColData'];
+            $label       = strtolower($summaryData[0]['value'] ?? '');
+
+            if (str_contains($label, 'total for fixed assets') || str_contains($label, 'total fixed assets')) {
+                foreach ($monthLabels as $colIndex => $monthLabel) {
+                    if (!isset($monthlyData[$colIndex])) continue;
+                    if ($monthlyData[$colIndex]['fixed_assets'] != 0) continue; // already captured
+
+                    $raw = str_replace([',', '$', ' '], '', $summaryData[$colIndex]['value'] ?? '');
+                    if (is_numeric($raw) && (float) $raw != 0) {
+                        $monthlyData[$colIndex]['fixed_assets'] = (float) $raw;
+                    }
+                }
+                return; // found — no need to recurse further
+            }
+        }
+
+        if (isset($node['Rows']['Row']) && is_array($node['Rows']['Row'])) {
+            foreach ($node['Rows']['Row'] as $row) {
+                self::findFixedAssetsInTree($row, $monthlyData, $monthLabels);
+            }
+        }
     }
 
     protected static function fetchBalanceSheetMonthByMonth(
@@ -478,15 +527,16 @@ class QuickBooksCSVExportService
             elseif ($group === 'Equity' || $group === 'TotalEquity')    $curSec = 'equity';
 
             $val = 0;
-            // Summary value
+
+            // Summary value always takes priority (section totals)
             if (isset($row['Summary']['ColData'])) {
                 foreach ($row['Summary']['ColData'] as $c) {
-                    $v = str_replace(',', '', $c['value'] ?? '');
+                    $v = str_replace([',', '$', ' '], '', $c['value'] ?? '');
                     if (is_numeric($v)) { $val = (float) $v; break; }
                 }
             }
-            // Data row value
-            if ($group !== 'TotalAssets' && isset($row['ColData'])) {
+            // Data row value — only when Summary produced nothing to avoid overwrite
+            if ($val == 0 && $group !== 'TotalAssets' && isset($row['ColData'])) {
                 foreach (array_slice($row['ColData'], 1) as $c) {
                     $v = str_replace(',', '', $c['value'] ?? '');
                     if (is_numeric($v)) { $val = (float) $v; break; }
@@ -548,7 +598,7 @@ class QuickBooksCSVExportService
             $data['total_assets'] = $val;
         } elseif (preg_match('/\btotal\s+(for\s+)?bank(\s+accounts?)?\b/i', $name)) {
             $data['cash'] = $val;
-        } elseif ((str_contains($name, 'checking') || str_contains($name, 'savings') || str_contains($name, 'cash on hand') || str_contains($name, 'petty cash') || preg_match('/^cash$/i', trim($name))) && !str_contains($name, 'undeposited') && !str_contains($name, 'flow')) {
+        } elseif ((str_contains($name, 'checking') || str_contains($name, 'savings') || str_contains($name, 'cash on hand') || str_contains($name, 'petty cash') || str_contains($name, 'money market') || preg_match('/^cash$/i', trim($name)) || preg_match('/^cash\s/i', trim($name))) && !str_contains($name, 'undeposited') && !str_contains($name, 'flow')) {
             if (!str_contains($name, 'total')) $data['cash'] += $val;
         } elseif (str_contains($name, 'total for accounts receivable')) {
             $data['ar'] = $val;
@@ -557,7 +607,7 @@ class QuickBooksCSVExportService
         } elseif (str_contains($name, 'inventory')) {
             if (str_contains($name, 'total')) $data['inventory'] = $val;
             elseif ($data['inventory'] == 0) $data['inventory'] = $val;
-        } elseif (str_contains($name, 'total for fixed assets')) {
+        } elseif (str_contains($name, 'total for fixed assets') || str_contains($name, 'total fixed assets') || $name === 'fixed assets') {
             $data['fixed_assets'] = $val;
         } elseif (str_contains($name, 'total for accounts payable') || (str_contains($name, 'total') && str_contains($name, 'accounts payable'))) {
             $data['ap'] = -abs($val);
@@ -706,24 +756,51 @@ class QuickBooksCSVExportService
     protected static function extractCashFlowValues(array $rows, array &$monthlyData, array $monthLabels): void
     {
         foreach ($rows as $row) {
-            $group   = $row['group'] ?? '';
-            $colData = $row['ColData'] ?? [];
+            // QB stores section totals (Operating/Investing/Financing) in Summary.ColData, not ColData.
+            // Match by Summary label text to extract the correct totals.
+            if (isset($row['Summary']['ColData'])) {
+                $summaryData  = $row['Summary']['ColData'];
+                $summaryLabel = strtolower($summaryData[0]['value'] ?? '');
 
-            if (!empty($colData)) {
                 foreach ($monthLabels as $idx => $label) {
                     if (!isset($monthlyData[$idx])) continue;
-                    $v = str_replace(',', '', $colData[$idx]['value'] ?? '');
+                    $v = str_replace([',', '$', ' '], '', $summaryData[$idx]['value'] ?? '');
                     if (!is_numeric($v)) continue;
                     $val = (float) $v;
 
-                    match ($group) {
-                        'OperatingActivities' => $monthlyData[$idx]['operating']   += $val,
-                        'InvestingActivities' => $monthlyData[$idx]['investing']   += $val,
-                        'FinancingActivities' => $monthlyData[$idx]['financing']   += $val,
-                        'NetIncome'           => $monthlyData[$idx]['net_income']  += $val,
-                        'NetChange'           => $monthlyData[$idx]['net_change']   = $val,
-                        default               => null,
-                    };
+                    if (str_contains($summaryLabel, 'net cash provided by operating') || str_contains($summaryLabel, 'net cash used in operating')) {
+                        $monthlyData[$idx]['operating'] = $val;
+                    } elseif (str_contains($summaryLabel, 'net cash provided by investing') || str_contains($summaryLabel, 'net cash used in investing')) {
+                        $monthlyData[$idx]['investing'] = $val;
+                    } elseif (str_contains($summaryLabel, 'net cash provided by financing') || str_contains($summaryLabel, 'net cash used in financing')) {
+                        $monthlyData[$idx]['financing'] = $val;
+                    }
+                }
+            }
+
+            // Individual line items (Net Income, Net Change) appear in ColData rows.
+            // Match by the row label to assign to the correct field.
+            if (isset($row['ColData'])) {
+                $colData  = $row['ColData'];
+                $colLabel = strtolower($colData[0]['value'] ?? '');
+
+                foreach ($monthLabels as $idx => $label) {
+                    if (!isset($monthlyData[$idx])) continue;
+                    $v = str_replace([',', '$', ' '], '', $colData[$idx]['value'] ?? '');
+                    if (!is_numeric($v)) continue;
+                    $val = (float) $v;
+
+                    if (str_contains($colLabel, 'net income') && !str_contains($colLabel, 'adjust')) {
+                        $monthlyData[$idx]['net_income'] = $val;
+                    } elseif (str_contains($colLabel, 'net cash increase') || str_contains($colLabel, 'net cash decrease')) {
+                        $monthlyData[$idx]['net_change'] = $val;
+                    } elseif (str_contains($colLabel, 'net cash provided by operating') || str_contains($colLabel, 'net cash used in operating')) {
+                        $monthlyData[$idx]['operating'] = $val;
+                    } elseif (str_contains($colLabel, 'net cash provided by investing') || str_contains($colLabel, 'net cash used in investing')) {
+                        $monthlyData[$idx]['investing'] = $val;
+                    } elseif (str_contains($colLabel, 'net cash provided by financing') || str_contains($colLabel, 'net cash used in financing')) {
+                        $monthlyData[$idx]['financing'] = $val;
+                    }
                 }
             }
 

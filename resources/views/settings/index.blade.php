@@ -3,14 +3,6 @@
 
 @section('content')
 
-{{-- Page Header --}}
-<div class="ph">
-    <div class="ph-left">
-        <h1>Settings</h1>
-        <p>Configure Email, SMS, QuickBooks, and Roles &amp; Permissions settings</p>
-    </div>
-</div>
-
 @php
 // Determine which settings tabs this user may see, and which is first/active.
 $_stabs = [
@@ -23,7 +15,41 @@ $_stabs = [
     'tab-roles'          => auth()->user()->can('view_settings_roles'),
 ];
 $_sfirst = array_key_first(array_filter($_stabs)) ?? 'tab-payment';
+
+// Build dynamic subtitle from visible tabs
+$_sTabLabels = [
+    'tab-payment'        => 'Payment',
+    'tab-email'          => 'Email',
+    'tab-sms'            => 'SMS',
+    'tab-quickbooks'     => 'QuickBooks',
+    'tab-plans'          => 'Plan Management',
+    'tab-insight-limits' => 'Insight Limits',
+    'tab-roles'          => 'Roles & Permissions',
+];
+$_sVisible = [];
+foreach ($_sTabLabels as $_k => $_lbl) {
+    if (!empty($_stabs[$_k])) $_sVisible[] = $_lbl;
+}
+$_n = count($_sVisible);
+if ($_n === 0) {
+    $_sSubtitle = 'Configure your settings';
+} elseif ($_n === 1) {
+    $_sSubtitle = 'Configure your ' . strtolower($_sVisible[0]) . ' settings';
+} elseif ($_n === 2) {
+    $_sSubtitle = 'Configure your ' . strtolower($_sVisible[0]) . ' and ' . strtolower($_sVisible[1]) . ' settings';
+} else {
+    $_sLast = array_pop($_sVisible);
+    $_sSubtitle = 'Configure your ' . implode(', ', array_map('strtolower', $_sVisible)) . ', and ' . strtolower($_sLast) . ' settings';
+}
 @endphp
+
+{{-- Page Header --}}
+<div class="ph">
+    <div class="ph-left">
+        <h1>Settings</h1>
+        <p>{{ $_sSubtitle }}</p>
+    </div>
+</div>
 
 {{-- Tab Bar --}}
 <div class="tab-bar">

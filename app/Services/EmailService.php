@@ -94,6 +94,38 @@ class EmailService
     }
 
     /**
+     * Send a raw HTML email using DB-configured SMTP, bypassing template lookup.
+     * Used as a fallback when no DB template exists for a given slug.
+     */
+    public function sendHtml(
+        string  $toEmail,
+        string  $subject,
+        string  $htmlBody,
+        ?int    $companyId = null,
+        ?string $fromEmail = null,
+        ?string $fromName  = null,
+        ?string $appName   = null
+    ): bool {
+        try {
+            $this->configureMailer($companyId);
+
+            $from = $fromEmail ?? config('mail.from.address');
+            $name = $fromName  ?? config('mail.from.name');
+
+            $wrapped = $this->wrapInLayout($htmlBody, ['{{app_name}}' => $appName ?? config('app.name')]);
+
+            Mail::html($wrapped, function ($msg) use ($toEmail, $subject, $from, $name) {
+                $msg->to($toEmail)->subject($subject)->from($from, $name);
+            });
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::error("EmailService::sendHtml failed for {$toEmail}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Replace {{placeholder}} tokens in a string.
      */
     public function replacePlaceholders(string $content, array $placeholders): string

@@ -3,14 +3,6 @@
 
 @section('content')
 
-{{-- Page Header --}}
-<div class="ph">
-    <div class="ph-left">
-        <h1>My Account</h1>
-        <p>Manage your profile, branding, login page, forgot password, subscription, and activity log</p>
-    </div>
-</div>
-
 @php
 // Determine which My Account tabs this user may see, and which is first/active.
 $_atabs = [
@@ -22,7 +14,40 @@ $_atabs = [
     'tab-activity'         => auth()->user()->can('view_account_activity'),
 ];
 $_afirst = array_key_first(array_filter($_atabs)) ?? 'tab-profile';
+
+// Build dynamic subtitle from visible tabs
+$_aTabLabels = [
+    'tab-profile'         => 'profile',
+    'tab-branding'        => 'branding',
+    'tab-login-page'      => 'login page',
+    'tab-forgot-password' => 'forgot password',
+    'tab-subscription'    => 'subscription',
+    'tab-activity'        => 'activity log',
+];
+$_aVisible = [];
+foreach ($_aTabLabels as $_k => $_lbl) {
+    if (!empty($_atabs[$_k])) $_aVisible[] = $_lbl;
+}
+$_n = count($_aVisible);
+if ($_n === 0) {
+    $_aSubtitle = 'Manage your account settings';
+} elseif ($_n === 1) {
+    $_aSubtitle = 'Manage your ' . $_aVisible[0];
+} elseif ($_n === 2) {
+    $_aSubtitle = 'Manage your ' . $_aVisible[0] . ' and ' . $_aVisible[1];
+} else {
+    $_aLast = array_pop($_aVisible);
+    $_aSubtitle = 'Manage your ' . implode(', ', $_aVisible) . ', and ' . $_aLast;
+}
 @endphp
+
+{{-- Page Header --}}
+<div class="ph">
+    <div class="ph-left">
+        <h1>My Account</h1>
+        <p>{{ $_aSubtitle }}</p>
+    </div>
+</div>
 
 {{-- Tab Bar --}}
 <div class="tab-bar">

@@ -444,11 +444,25 @@ class AuthController extends Controller
         );
 
         if (!$sent) {
-            // EmailService failed (no SMTP configured or delivery error).
-            // Fall back to Laravel's built-in password-reset notification.
-            $status = Password::broker()->sendResetLink(['email' => $user->email]);
+            // Template not found or first attempt failed.
+            // Send an inline HTML email via the same DB-configured SMTP so
+            // SendGrid credentials are applied even without a DB template.
+            $body = '<h2>Password Reset Request</h2>'
+                  . '<p>Hi ' . e($user->name) . ',</p>'
+                  . '<p>We received a request to reset your <strong>' . e($appName) . '</strong> password.</p>'
+                  . '<p><a href="' . e($resetUrl) . '" style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;font-weight:600;">Reset Password</a></p>'
+                  . '<p>This link expires in 60 minutes. If you did not request this, you can safely ignore this email.</p>'
+                  . '<p>— The ' . e($appName) . ' Team</p>';
 
-            if ($status !== Password::RESET_LINK_SENT) {
+            $sent = app(EmailService::class)->sendHtml(
+                toEmail:   $user->email,
+                subject:   'Reset Your ' . $appName . ' Password',
+                htmlBody:  $body,
+                companyId: $company?->id,
+                appName:   $appName,
+            );
+
+            if (!$sent) {
                 return back()->withErrors(['email' => 'Unable to send reset email. Please configure SMTP settings under Settings → Email.']);
             }
         }

@@ -123,6 +123,28 @@
 }
 .ipv-footer-brand { font-size:11px; color:#9ca3af; font-weight:500; }
 .ipv-footer-conf  { font-size:11px; color:#9ca3af; }
+
+/* ── Responsive ── */
+@media(max-width:860px) {
+    .ipv-cover, .ipv-toc, .ipv-section { padding-left:24px; padding-right:24px; }
+    .ipv-meta-grid { grid-template-columns:1fr 1fr; }
+    .ipv-footer { padding-left:24px; padding-right:24px; }
+    .ipv-topbar { flex-wrap:wrap; gap:10px; }
+    .ipv-export-btn { flex:1; justify-content:center; }
+    .ipv-company-name { font-size:22px; }
+}
+@media(max-width:600px) {
+    .ipv-cover { padding:24px 16px 20px; }
+    .ipv-toc, .ipv-section { padding:24px 16px; }
+    .ipv-meta-grid { grid-template-columns:1fr; gap:14px; }
+    .ipv-footer { flex-direction:column; gap:6px; align-items:flex-start; padding:14px 16px; }
+    .ipv-topbar { flex-direction:column; align-items:stretch; }
+    .ipv-back, .ipv-export-btn { justify-content:center; }
+    .ipv-company-name { font-size:20px; }
+    .ipv-section-title { font-size:18px; }
+    .ipv-section-content table { min-width:420px; }
+    .ipv-section-content { overflow-x:auto; }
+}
 </style>
 @endpush
 

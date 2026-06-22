@@ -53,8 +53,8 @@
 .pi-btn-export:disabled { opacity:.45;cursor:not-allowed;pointer-events:none; }
 
 /* ── Table ───────────────────────────────────────── */
-.pi-table-card { background:#fff;border-radius:12px;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden; }
-.pi-table { width:100%;border-collapse:collapse; }
+.pi-table-card { background:#fff;border-radius:12px;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.06);overflow:hidden;min-width:0; }
+.pi-table { width:100%;border-collapse:collapse;min-width:700px; }
 .pi-table th { text-align:left;padding:11px 16px;font-size:11px;font-weight:700;color:#64748b;border-bottom:1px solid #f1f5f9;background:#f8fafc;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap; }
 .pi-table td { padding:14px 16px;font-size:13.5px;color:#1a202c;border-bottom:1px solid #f8fafc;vertical-align:middle; }
 .pi-table th:first-child, .pi-table td:first-child { max-width:340px; }

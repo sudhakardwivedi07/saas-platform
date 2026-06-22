@@ -67,8 +67,9 @@ class PartnerInsightsController extends AccountBaseController
         $this->totalInsights     = $monthlyLimit;
         $this->insightsUsed      = $cycleUsed;
         $this->insightsRemaining = max(0, $monthlyLimit - $cycleUsed);
-        $this->avgPerClient      = $subCompanyIds->count() > 0
-            ? round($cycleUsed / $subCompanyIds->count(), 1)
+        $clientCount             = $this->directClientCount();
+        $this->avgPerClient      = $clientCount > 0
+            ? round($cycleUsed / $clientCount, 2)
             : 0;
         $this->limitReached      = $monthlyLimit > 0 && $cycleUsed >= $monthlyLimit;
 
@@ -859,6 +860,22 @@ class PartnerInsightsController extends AccountBaseController
             ->pluck('company_id');
 
         return $directClientIds->merge($linkedCompanyIds)->unique()->filter()->values();
+    }
+
+    /**
+     * Returns only the direct client company count (companies created by this partner's admin).
+     * Used for the "average per client" stat to avoid inflation from user_companies links.
+     */
+    private function directClientCount(): int
+    {
+        $partnerCompanyId = $this->partnerCompanyId();
+        $adminCompanyIds = collect([$partnerCompanyId])
+            ->merge(auth()->user()->managedCompanies()->withoutGlobalScopes()->pluck('companies.id'))
+            ->unique()->filter()->values()->all();
+
+        return Company::withoutGlobalScopes()
+            ->whereIn('created_by', $adminCompanyIds)
+            ->count();
     }
 
     // ── Version helper ────────────────────────────────────────────────────────

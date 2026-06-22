@@ -61,6 +61,14 @@
         .kpi-detail-synopsis-grid { grid-template-columns: 1fr; }
         .kpi-explain-grid { grid-template-columns: 1fr; }
     }
+    @media (max-width: 640px) {
+        .kpi-detail-metrics-row { grid-template-columns: 1fr; }
+        .kpi-detail-page-head h2 { font-size: 18px; }
+        .kpi-detail-page-head { padding: 10px 12px; }
+        .kpi-section-card { overflow-x: auto; }
+        .kpi-mini-chart { height: 180px; }
+        .kpi-chart-bar-wrap { height: 130px; }
+    }
     @keyframes kpiSpin { to { transform: rotate(360deg); } }
     /* Synopsis edit modal */
     .synopsis-edit-popup .swal2-title { font-size: 18px !important; padding-bottom: 0 !important; }

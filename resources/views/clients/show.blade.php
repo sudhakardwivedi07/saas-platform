@@ -22,6 +22,8 @@
     margin-top: 4px;
 }
 .co-invalid { border-color: var(--red, #ef4444) !important; }
+.cd-section-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; margin-top:1.25rem; }
+@media(max-width:768px) { .cd-section-grid { grid-template-columns:1fr; } }
 </style>
 @endpush
 
@@ -110,7 +112,7 @@ $totalCompanies = $allClientCompanies->count();
 
 {{-- ==================== TAB: Overview ==================== --}}
 <div class="tab-panel" id="tab-overview" style="display:block;">
-    <div class="cd-section-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-top:1.25rem;">
+    <div class="cd-section-grid">
 
         {{-- Notes --}}
         <div class="card">

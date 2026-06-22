@@ -185,6 +185,10 @@
 .mini-bar      { height: 100%; border-radius: 3px; }
 
 @media(max-width:960px){
+    .plans-grid { grid-template-columns: repeat(2, 1fr); }
+    .usage-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media(max-width:600px){
     .plans-grid { grid-template-columns: 1fr; }
     .usage-kpi-grid { grid-template-columns: 1fr; }
 }

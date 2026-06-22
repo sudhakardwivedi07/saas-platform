@@ -2,6 +2,13 @@
 @section('title','Email Templates')
 @section('page-title','Email Templates')
 
+@push('styles')
+<style>
+.et-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media(max-width:700px) { .et-grid { grid-template-columns:1fr; } }
+</style>
+@endpush
+
 @section('content')
 <div class="ph">
     <div class="ph-left">
@@ -29,7 +36,7 @@ $templateLabels = [
 ];
 @endphp
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+<div class="et-grid">
     @foreach($templates as $slug => $group)
     @php
         $info = $templateLabels[$slug] ?? ['label' => Str::title(str_replace('_',' ',$slug)), 'color' => 'var(--text-3)', 'icon' => 'mail'];

@@ -51,6 +51,20 @@
     .insight-slider-slide { display:block !important;page-break-after:always; }
     .insight-slider-card { box-shadow:none;border:1px solid #e2e8f0; }
 }
+@media(max-width:860px) {
+    .report-detail-header { flex-direction:column; gap:16px; }
+    .export-pdf-btn { align-self:flex-start; }
+    .insight-slider-card { padding:20px 18px; }
+}
+@media(max-width:640px) {
+    .report-detail-header { padding:16px; }
+    .insight-slider-header { flex-direction:column; gap:12px; align-items:flex-start; }
+    .insight-slider-nav { width:100%; justify-content:space-between; }
+    .insight-slider-title h2 { font-size:18px; }
+    .insight-slider-card { padding:16px 14px; }
+    .insight-slider-content table.insight-table { min-width:420px; }
+    .insight-slider-container { padding:14px; }
+}
 </style>
 @endpush
 

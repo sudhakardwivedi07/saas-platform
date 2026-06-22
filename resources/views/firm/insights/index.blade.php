@@ -79,6 +79,20 @@
 .ind-btn-confirm:disabled { opacity:.6;cursor:not-allowed; }
 .ind-btn-cancel { flex:1;background:transparent;color:var(--orange);border:1.5px solid var(--orange);padding:12px 20px;border-radius:10px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s; }
 .ind-btn-cancel:hover { opacity:.8; }
+
+/* ── Responsive ── */
+@media(max-width:900px) {
+    .dashboard-action-cards-row { grid-template-columns:1fr; }
+    .bar-right { width:100%; margin-left:0; }
+}
+@media(max-width:640px) {
+    .fi-bar { flex-direction:column; align-items:stretch; }
+    .bar-right { flex-direction:column; }
+    .bar-search-inp { width:100%; box-sizing:border-box; }
+    .bar-select { width:100%; }
+    .reports-table-container { padding:16px; }
+    .reports-table { min-width:500px; }
+}
 </style>
 @endpush
 

@@ -27,7 +27,7 @@
                 </select>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="form-group">
                     <label class="form-label">Account SID</label>
                     <input type="text" name="account_sid" class="form-control font-mono text-sm"

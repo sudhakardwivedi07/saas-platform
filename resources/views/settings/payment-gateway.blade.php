@@ -29,7 +29,7 @@
         <form id="gateway-form" method="POST" action="{{ route('settings.payment-gateway.update') }}">
             @csrf
 
-            <div class="grid grid-cols-2 gap-4 mb-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
                 <div class="form-group">
                     <label class="form-label">Mode</label>
                     <div class="flex gap-4 mt-1">

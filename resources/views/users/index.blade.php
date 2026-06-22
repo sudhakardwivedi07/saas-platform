@@ -18,6 +18,7 @@
     display: none;
 }
 .mf-inp.au-invalid, .mf-sel.au-invalid { border-color: var(--red) !important; }
+#users-table { min-width: 700px; }
 </style>
 @endpush
 

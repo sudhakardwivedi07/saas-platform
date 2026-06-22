@@ -2,6 +2,14 @@
 @section('title', 'Connections')
 @section('page-title', 'Connections')
 
+@push('styles')
+<style>
+.qb-stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+@media(max-width:900px) { .qb-stats-grid { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:600px) { .qb-stats-grid { grid-template-columns:1fr; } }
+</style>
+@endpush
+
 @section('content')
 
 @php
@@ -37,7 +45,7 @@
 {{-- Info Banner hidden --}}
 
 {{-- Stats Cards --}}
-<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+<div class="qb-stats-grid">
     <div class="acc-card" style="padding:20px 24px">
         <div style="font-size:11px;font-weight:600;color:var(--text-3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">TOTAL COMPANIES</div>
         <div style="font-size:32px;font-weight:700;color:var(--text-1)">{{ $managedCompanies->count() }}</div>

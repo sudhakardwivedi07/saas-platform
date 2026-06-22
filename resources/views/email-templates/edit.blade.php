@@ -21,6 +21,13 @@ $phList = [
 ];
 @endphp
 
+@push('styles')
+<style>
+.et-layout { display:grid; grid-template-columns:1fr 280px; gap:14px; align-items:start; }
+@media(max-width:900px) { .et-layout { grid-template-columns:1fr; } }
+</style>
+@endpush
+
 @section('content')
 <div class="ph">
     <div class="ph-left">
@@ -38,7 +45,7 @@ $phList = [
     </div>
 </div>
 
-<div style="display:grid;grid-template-columns:1fr 280px;gap:14px;align-items:start">
+<div class="et-layout">
     <div class="acc-card">
         <form id="template-form" method="POST" action="{{ route('email-templates.update', $slug) }}">
             @csrf

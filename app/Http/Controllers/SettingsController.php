@@ -37,9 +37,7 @@ class SettingsController extends AccountBaseController
         $this->qbSetting      = CompanyQuickbooksSetting::where('company_id', $companyId)->first();
         $this->clientPackages = ClientPackage::forCompany($companyId)->orderBy('sort')->get();
         $this->branding             = company()?->branding;
-        $this->firmEmailTemplates   = EmailTemplate::where('firm_id', company()->id)
-                                                    ->whereNotNull('firm_id')
-                                                    ->whereNull('company_id')
+        $this->firmEmailTemplates   = EmailTemplate::where('company_id', company()->id)
                                                     ->orderBy('name')
                                                     ->get();
         $this->insightSetting       = CompanyInsightSetting::where('company_id', $companyId)->first();

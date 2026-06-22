@@ -85,16 +85,23 @@ class TenantUserController extends AccountBaseController
 
         $user->assignRole($request->role);
 
-        // Send invitation email via DB template with all dynamic variables resolved
+        // Send invitation email using firm's own template + SMTP only (no superadmin fallback)
         try {
-            app(EmailService::class)->sendToUser($user, 'partner_user_welcome_email', [
-                '{{first_name}}'   => trim($user->name),
-                '{{email}}'        => $user->email,
-                '{{password}}'     => $plainPassword,
-                '{{company_name}}' => $companyName,
-                '{{role}}'         => ucfirst($request->role),
-                '{{portal_url}}'   => $portalUrl,
-            ]);
+            app(EmailService::class)->sendFromFirm(
+                firmId:      company()->id,
+                toEmail:     $user->email,
+                templateSlug: 'partner_user_welcome_email',
+                placeholders: [
+                    '{{client_name}}'  => trim($user->name),
+                    '{{first_name}}'   => trim($user->name),
+                    '{{email}}'        => $user->email,
+                    '{{password}}'     => $plainPassword,
+                    '{{company_name}}' => $companyName,
+                    '{{partner_name}}' => $companyName,
+                    '{{role}}'         => ucfirst($request->role),
+                    '{{portal_url}}'   => $portalUrl,
+                ],
+            );
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('User invitation email failed: ' . $e->getMessage());
         }

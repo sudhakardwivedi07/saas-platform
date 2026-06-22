@@ -69,7 +69,7 @@ class PartnerInsightsController extends AccountBaseController
         $this->insightsRemaining = max(0, $monthlyLimit - $cycleUsed);
         $clientCount             = $this->directClientCount();
         $this->avgPerClient      = $clientCount > 0
-            ? $cycleUsed / $clientCount
+            ? round($cycleUsed / $clientCount, 2)
             : 0;
         $this->limitReached      = $monthlyLimit > 0 && $cycleUsed >= $monthlyLimit;
 

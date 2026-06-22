@@ -489,7 +489,7 @@ if ($_n === 0) {
 
             <form id="insight-limit-form" onsubmit="submitInsightLimitForm(event)">
                 @csrf
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:start">
+                <div class="il-grid">
                     <div class="f-group" style="margin:0">
                         <label class="f-label">Default Limit Per Client</label>
                         <div style="display:flex;align-items:center;gap:8px">
@@ -754,7 +754,7 @@ if ($_n === 0) {
         <div class="modal-sub">Define a role name and assign permissions.</div>
         <form id="create-role-form" onsubmit="submitCreateRole(event)" novalidate data-no-loader>
             @csrf
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
+            <div class="form-2col">
                 <div class="mf-field">
                     <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="cr-name" class="mf-inp" placeholder="e.g. accountant" autocomplete="off">
@@ -782,7 +782,7 @@ if ($_n === 0) {
                                 onchange="toggleModule(this)" style="accent-color:var(--orange);cursor:pointer;width:14px;height:14px">
                             <label for="cr-modall-{{ Str::slug($module) }}" style="font-size:11.5px;font-weight:700;color:var(--text-1);cursor:pointer;text-transform:uppercase;letter-spacing:.5px">{{ $module }}</label>
                         </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px" class="cr-mod-{{ Str::slug($module) }}">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px" class="cr-mod-{{ Str::slug($module) }} cr-perms-grid">
                             @foreach($perms as $perm)
                             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-2)">
                                 <input type="checkbox" name="permissions[]" value="{{ $perm->name }}"
@@ -814,7 +814,7 @@ if ($_n === 0) {
         <form id="edit-role-form" onsubmit="submitEditRole(event)" novalidate data-no-loader>
             @csrf
             <input type="hidden" id="er-role-id">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
+            <div class="form-2col">
                 <div class="mf-field">
                     <label class="mf-label">Role Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="er-name" class="mf-inp" autocomplete="off">
@@ -841,7 +841,7 @@ if ($_n === 0) {
                                 onchange="toggleModule(this)" style="accent-color:var(--orange);cursor:pointer;width:14px;height:14px">
                             <label for="er-modall-{{ Str::slug($module) }}" style="font-size:11.5px;font-weight:700;color:var(--text-1);cursor:pointer;text-transform:uppercase;letter-spacing:.5px">{{ $module }}</label>
                         </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px" class="er-mod-{{ Str::slug($module) }}">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 8px" class="er-mod-{{ Str::slug($module) }} er-perms-grid">
                             @foreach($perms as $perm)
                             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-2)">
                                 <input type="checkbox" name="permissions[]" value="{{ $perm->name }}"
@@ -870,6 +870,12 @@ if ($_n === 0) {
 <style>
 .st-err{display:none;color:var(--red);font-size:11.5px;margin-top:4px}
 .f-inp.st-invalid,.f-sel.st-invalid{border-color:var(--red)!important;outline:none}
+.il-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;align-items:start}
+@media(max-width:700px){.il-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:480px){.il-grid{grid-template-columns:1fr}}
+@media(max-width:640px){
+  .cr-perms-grid,.er-perms-grid{grid-template-columns:1fr!important}
+}
 </style>
 @endpush
 

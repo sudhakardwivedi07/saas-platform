@@ -74,6 +74,69 @@ class EmailService
     }
 
     /**
+     * Send an email using ONLY the firm's own template + SMTP.
+     * Does NOT fall back to global/superadmin templates or SMTP.
+     * Returns false silently if the template is missing or inactive.
+     */
+    public function sendFromFirm(
+        int    $firmId,
+        string $toEmail,
+        string $templateSlug,
+        array  $placeholders   = [],
+        ?string $attachmentPath = null
+    ): bool {
+        $template = EmailTemplate::where('company_id', $firmId)
+                                 ->where('slug', $templateSlug)
+                                 ->where('is_active', true)
+                                 ->first();
+
+        if (!$template) {
+            Log::info("EmailService: firm {$firmId} template '{$templateSlug}' not found or inactive — skipping.");
+            return false;
+        }
+
+        $subject = $this->replacePlaceholders($template->subject, $placeholders);
+        $body    = $this->replacePlaceholders($template->body,    $placeholders);
+
+        $log = EmailLog::create([
+            'company_id'  => $firmId,
+            'template_id' => $template->id,
+            'to_email'    => $toEmail,
+            'subject'     => $subject,
+            'status'      => 'queued',
+        ]);
+
+        try {
+            $this->configureFirmMailer($firmId);
+
+            $fromName  = $template->from_name  ?? config('mail.from.name');
+            $fromEmail = $template->from_email ?? config('mail.from.address');
+
+            Mail::html($this->wrapInLayout($body, $placeholders), function ($msg) use (
+                $toEmail, $subject, $fromName, $fromEmail, $template, $attachmentPath
+            ) {
+                $msg->to($toEmail)
+                    ->subject($subject)
+                    ->from($fromEmail, $fromName);
+
+                if ($template->cc)  $msg->cc(explode(',', $template->cc));
+                if ($template->bcc) $msg->bcc(explode(',', $template->bcc));
+                if ($attachmentPath && file_exists($attachmentPath)) {
+                    $msg->attach($attachmentPath);
+                }
+            });
+
+            $log->update(['status' => 'sent', 'sent_at' => now()]);
+            return true;
+
+        } catch (\Throwable $e) {
+            Log::error("EmailService::sendFromFirm failed for {$toEmail}: " . $e->getMessage());
+            $log->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
+            return false;
+        }
+    }
+
+    /**
      * Send directly to a User model (convenience wrapper).
      */
     public function sendToUser(User $user, string $templateSlug, array $extra = []): bool
@@ -164,6 +227,36 @@ class EmailService
 </body>
 </html>
 HTML;
+    }
+
+    /**
+     * Configure mailer using ONLY the firm's own SMTP (no global fallback).
+     */
+    private function configureFirmMailer(int $firmId): void
+    {
+        $setting = \App\Models\EmailSmtpSetting::where('company_id', $firmId)
+                        ->where('is_active', true)
+                        ->first();
+
+        if (!$setting) return;
+
+        if ($setting->driver === 'smtp') {
+            Config::set('mail.default', 'smtp');
+            Config::set('mail.mailers.smtp', [
+                'transport'  => 'smtp',
+                'host'       => $setting->host,
+                'port'       => $setting->port,
+                'encryption' => $setting->encryption === 'none' ? null : $setting->encryption,
+                'username'   => $setting->username,
+                'password'   => $setting->password,
+            ]);
+            app('mail.manager')->purge('smtp');
+        }
+
+        if ($setting->from_email) {
+            Config::set('mail.from.address', $setting->from_email);
+            Config::set('mail.from.name', $setting->from_name ?? config('app.name'));
+        }
     }
 
     /**

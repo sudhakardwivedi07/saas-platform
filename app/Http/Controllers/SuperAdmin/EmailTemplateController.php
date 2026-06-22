@@ -19,7 +19,7 @@ class EmailTemplateController extends AccountBaseController
 
     private function globalScope(): \Illuminate\Database\Eloquent\Builder
     {
-        return EmailTemplate::whereNull('company_id')->whereNull('firm_id');
+        return EmailTemplate::whereNull('company_id');
     }
 
     public function index()

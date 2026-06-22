@@ -441,7 +441,7 @@ document.getElementById('smtpTestModal').addEventListener('click', function(e) {
 
 {{-- ── Add / Edit / View Email Template Modal ──────────────────────────────── --}}
 <div id="et-modal" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:16px">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18);position:relative">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:1000px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18);position:relative">
         {{-- Header --}}
         <div style="padding:22px 26px 0">
             <button onclick="etCloseModal()" style="position:absolute;top:16px;right:18px;background:none;border:none;font-size:20px;cursor:pointer;color:#aaa;line-height:1">&times;</button>

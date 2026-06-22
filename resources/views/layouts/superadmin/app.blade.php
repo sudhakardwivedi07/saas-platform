@@ -227,6 +227,39 @@ tbody tr:hover td{background:#fafcff}
 .btn-loading{pointer-events:none!important;opacity:.75!important}
 .btn-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── RESPONSIVE: KPI GRIDS ────────────────────────────── */
+@media(max-width:900px){
+  .kpi-4{grid-template-columns:repeat(2,1fr)}
+  .kpi-3{grid-template-columns:repeat(2,1fr)}
+  .charts-2col{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .kpi-4,.kpi-3{grid-template-columns:1fr}
+}
+
+/* ── RESPONSIVE: FORM ─────────────────────────────────── */
+@media(max-width:640px){.form-2col{grid-template-columns:1fr}}
+
+/* ── RESPONSIVE: MOBILE SIDEBAR ──────────────────────── */
+.sa-hamburger{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;flex-shrink:0;margin-right:6px}
+.sa-hamburger svg{width:18px;height:18px;stroke:var(--text-2);stroke-width:2;pointer-events:none}
+.sa-sidebar-overlay{display:none;position:fixed;inset:0;z-index:199;background:rgba(10,25,45,.4)}
+.sa-sidebar-overlay.open{display:block}
+
+@media(max-width:1024px){
+  .sa-hamburger{display:flex}
+  .sa-sidebar{transform:translateX(-252px);transition:transform .24s ease}
+  .sa-sidebar.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,.2)}
+  .sa-topbar{left:0}
+  .sa-main{margin-left:0;padding:16px}
+}
+@media(max-width:640px){
+  .sa-main{padding:14px 12px}
+  .sa-tb-uname,.sa-tb-urole{display:none}
+  .sa-tb-user{gap:0;padding:5px}
+  .sa-topbar-bc{font-size:12px}
+}
     </style>
     @stack('styles')
 </head>
@@ -244,8 +277,11 @@ tbody tr:hover td{background:#fafcff}
 <script>document.documentElement.classList.add('has-impersonate-bar')</script>
 @endif
 
+{{-- Mobile sidebar overlay --}}
+<div class="sa-sidebar-overlay" id="sa-sidebar-overlay" onclick="saCloseSidebar()"></div>
+
 {{-- Sidebar --}}
-<aside class="sa-sidebar">
+<aside class="sa-sidebar" id="sa-sidebar">
     <div class="sa-logo-area">
         @if($globalSetting?->logo)
             <img src="{{ asset('storage/'.$globalSetting->logo) }}" alt="{{ $globalSetting->global_app_name }}" class="sa-logo-img">
@@ -319,6 +355,9 @@ tbody tr:hover td{background:#fafcff}
 
 {{-- Topbar --}}
 <div class="sa-topbar">
+    <button class="sa-hamburger" id="sa-hamburger" onclick="saToggleSidebar()" aria-label="Toggle navigation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
     <div class="sa-topbar-bc">
         {{ $globalSetting?->global_app_name ?? config('app.name', 'CFO Insights') }}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
@@ -356,6 +395,21 @@ tbody tr:hover td{background:#fafcff}
 
 <script>
 const csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+// ── Mobile sidebar toggle ─────────────────────────────────────────────────
+function saToggleSidebar() {
+    document.getElementById('sa-sidebar').classList.toggle('open');
+    document.getElementById('sa-sidebar-overlay').classList.toggle('open');
+}
+function saCloseSidebar() {
+    document.getElementById('sa-sidebar').classList.remove('open');
+    document.getElementById('sa-sidebar-overlay').classList.remove('open');
+}
+document.querySelectorAll('.sa-nav-item').forEach(function(el) {
+    el.addEventListener('click', function() {
+        if (window.innerWidth <= 1024) saCloseSidebar();
+    });
+});
 
 // Toast
 function showToast(msg, type='success') {

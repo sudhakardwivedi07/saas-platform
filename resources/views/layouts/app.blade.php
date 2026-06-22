@@ -302,6 +302,7 @@ tbody tr:hover td{background:#fafcff}
 .cd-chip-val{font-weight:600;color:var(--text-1)}
 .cd-chip-lbl{color:var(--text-3)}
 .cd-section-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:768px){.cd-section-grid{grid-template-columns:1fr}}
 
 /* ── PLAN BANNER ──────────────────────────────────────── */
 .plan-card{background:var(--blue-pale);border:1px solid #bfdbfe;border-left:4px solid var(--blue);border-radius:var(--r-lg);padding:18px 22px;margin-bottom:16px}
@@ -412,6 +413,53 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 .dr-cal-btn-apply{padding:6px 18px;border:none;border-radius:7px;background:#2563eb;color:#fff;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .12s}
 .dr-cal-btn-apply:hover{background:#1d4ed8}
 
+/* ── RESPONSIVE: KPI GRIDS & CHARTS ──────────────────── */
+@media(max-width:900px){
+  .kpi-4{grid-template-columns:repeat(2,1fr)}
+  .kpi-3{grid-template-columns:repeat(2,1fr)}
+  .charts-row{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .kpi-4,.kpi-3{grid-template-columns:1fr}
+}
+
+/* ── RESPONSIVE: TAB BAR ──────────────────────────────── */
+.tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* ── RESPONSIVE: DATE RANGE PICKER ───────────────────── */
+@media(max-width:760px){
+  .dr-menu.dr-cal-mode{flex-direction:column;min-width:min(340px,calc(100vw - 32px))}
+  .dr-menu.dr-cal-mode .dr-list{border-right:none;border-bottom:1px solid var(--border);min-width:unset;width:100%;display:flex;flex-wrap:wrap;gap:0;padding:4px 6px}
+  .dr-menu.dr-cal-mode .dr-opt{padding:5px 10px;font-size:12px;white-space:nowrap}
+  .dr-cal-panel{min-width:unset;width:100%;padding:10px 8px}
+  .dr-cal-months{flex-direction:column;gap:10px}
+}
+@media(max-width:480px){
+  .dr-field{min-width:0;flex:1}
+  .dr-wrap{display:flex;flex:1}
+  .dr-menu{max-width:calc(100vw - 20px)}
+}
+
+/* ── RESPONSIVE: MOBILE SIDEBAR ──────────────────────── */
+.ca-hamburger{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:#fff;cursor:pointer;flex-shrink:0;margin-right:6px}
+.ca-hamburger svg{width:18px;height:18px;stroke:var(--text-2);stroke-width:2;pointer-events:none}
+.ca-sidebar-overlay{display:none;position:fixed;inset:0;z-index:99;background:rgba(10,25,45,.4)}
+.ca-sidebar-overlay.open{display:block}
+
+@media(max-width:1024px){
+  .ca-hamburger{display:flex}
+  .ca-sidebar{transform:translateX(-242px);transition:transform .24s ease;z-index:200}
+  .ca-sidebar.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,.15)}
+  .ca-main{margin-left:0}
+  .ca-topbar{padding:0 14px 0 10px}
+  .ca-content{padding:18px 16px}
+}
+@media(max-width:640px){
+  .ca-content{padding:14px 12px}
+  .ca-tb-uname,.ca-tb-urole{display:none}
+  .ca-tb-user{gap:0;padding:4px}
+}
+
     </style>
     @stack('styles')
     <link rel="stylesheet" href="{{ asset(config('assets.sweetalert2_css')) }}">
@@ -457,6 +505,9 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
     </a>
 </div>
 @endif
+
+{{-- Mobile sidebar overlay --}}
+<div class="ca-sidebar-overlay" id="ca-sidebar-overlay" onclick="caCloseSidebar()"></div>
 
 <div style="display:flex;min-height:100vh">
 
@@ -517,6 +568,9 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 <div class="ca-main">
     {{-- Topbar --}}
     <header class="ca-topbar">
+        <button class="ca-hamburger" id="ca-hamburger" onclick="caToggleSidebar()" aria-label="Toggle navigation">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
         <div class="ca-topbar-bc">
             <span>@yield('page-title', 'Dashboard')</span>
         </div>
@@ -560,6 +614,22 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 
 <script>
 const csrf = document.querySelector('meta[name="csrf-token"]').content;
+
+// ── Mobile sidebar toggle ─────────────────────────────────────────────────
+function caToggleSidebar() {
+    document.getElementById('ca-sidebar').classList.toggle('open');
+    document.getElementById('ca-sidebar-overlay').classList.toggle('open');
+}
+function caCloseSidebar() {
+    document.getElementById('ca-sidebar').classList.remove('open');
+    document.getElementById('ca-sidebar-overlay').classList.remove('open');
+}
+// Close sidebar when a nav link is clicked on mobile
+document.querySelectorAll('.ca-nav-item, .ca-nav-sub-item').forEach(function(el) {
+    el.addEventListener('click', function() {
+        if (window.innerWidth <= 1024) caCloseSidebar();
+    });
+});
 
 function showToast(msg, type='success') {
     const t = document.getElementById('ca-toast');

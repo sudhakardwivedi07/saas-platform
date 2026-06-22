@@ -64,6 +64,7 @@ body {
 
 /* Grid */
 .form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px }
+@media(max-width:640px){.form-2col{grid-template-columns:1fr}}
 .f-group { margin-bottom: 14px }
 .f-label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-1); margin-bottom: 5px }
 .f-inp {

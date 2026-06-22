@@ -222,7 +222,7 @@
 
         <form method="POST" action="{{ route('users.store') }}" id="add-user-form" novalidate autocomplete="off">
             @csrf
-            <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:14px;row-gap:10px;align-items:start">
+            <div class="form-2col">
                 <div class="mf-field" style="margin:0">
                     <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="au-name" class="mf-inp" placeholder="e.g. Priya Sharma" value="{{ old('name') }}" maxlength="100">
@@ -285,7 +285,7 @@
 
         <form method="POST" id="form-edit-user" novalidate>
             @csrf
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;align-items:start">
+            <div class="form-2col">
                 <div class="mf-field" style="margin:0 0 14px">
                     <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
                     <input type="text" name="name" id="edit-name" class="mf-inp" maxlength="100" autocomplete="off">

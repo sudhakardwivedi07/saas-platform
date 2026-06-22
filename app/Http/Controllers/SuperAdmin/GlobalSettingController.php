@@ -12,6 +12,10 @@ use App\Models\SuperAdmin\GlobalPaymentGatewayCredentials;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\Mailer\Mailer as SymfonyMailer;
+use Symfony\Component\Mailer\Transport;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mime\Email as SymfonyEmail;
 
 class GlobalSettingController extends AccountBaseController
 {
@@ -152,6 +156,54 @@ class GlobalSettingController extends AccountBaseController
         SmsSetting::updateOrCreate(['company_id' => null], $dbData);
 
         return Reply::success('SMS settings saved successfully.');
+    }
+
+    public function testSmtp(Request $request)
+    {
+        $request->validate(['to_email' => 'required|email|max:255']);
+
+        $setting = EmailSmtpSetting::whereNull('company_id')->first();
+
+        if (!$setting || !$setting->host) {
+            return Reply::error('No SMTP settings saved yet. Please save your settings first, then test.');
+        }
+
+        try {
+            $username   = rawurlencode((string)($setting->username ?? ''));
+            $password   = rawurlencode((string)($setting->password ?? ''));
+            $host       = $setting->host;
+            $port       = (int)($setting->port ?? 587);
+            $encryption = $setting->encryption ?? 'tls';
+
+            if ($encryption === 'ssl') {
+                $dsn = "smtps://{$username}:{$password}@{$host}:{$port}?timeout=15";
+            } elseif ($encryption === 'tls') {
+                $dsn = "smtp://{$username}:{$password}@{$host}:{$port}?timeout=15";
+            } else {
+                $dsn = "smtp://{$username}:{$password}@{$host}:{$port}?timeout=15&verify_peer=0";
+            }
+
+            $transport = Transport::fromDsn($dsn);
+            $mailer    = new SymfonyMailer($transport);
+
+            $appName = GlobalSetting::first()?->global_app_name ?? config('app.name');
+
+            $email = (new SymfonyEmail())
+                ->from(new Address($setting->from_email, $setting->from_name ?? ''))
+                ->to($request->to_email)
+                ->subject('SMTP Test — ' . $appName)
+                ->html(
+                    '<p>Hi,</p>'
+                    . '<p>This is a test email sent from <strong>' . e($appName) . '</strong> to verify your SMTP configuration.</p>'
+                    . '<p>If you received this, your SMTP settings are working correctly.</p>'
+                );
+
+            $mailer->send($email);
+
+            return Reply::success('Test email sent successfully to ' . $request->to_email . '. Please check your inbox.');
+        } catch (\Exception $e) {
+            return Reply::error('SMTP test failed: ' . $e->getMessage());
+        }
     }
 
 }

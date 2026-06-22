@@ -157,7 +157,7 @@
                     </div>
                     <div class="f-group">
                         <label class="f-label">Password</label>
-                        <input type="password" name="smtp_password" class="f-inp"
+                        <input type="password" name="smtp_password" id="smtp-password" class="f-inp"
                                placeholder="••••••••" autocomplete="new-password">
                     </div>
                     <div class="f-group">
@@ -264,6 +264,30 @@
     document.getElementById('saSmtpTestModal').addEventListener('click', function(e) {
         if (e.target === this) closeSaSmtpTestModal();
     });
+
+    // Enable/disable Send Test Email trigger based on required fields
+    (function() {
+        const triggerBtn = document.getElementById('saSmtpTestTrigger');
+        const requiredIds = ['smtp-host', 'smtp-port', 'smtp-username', 'smtp-from_address', 'smtp-from_name'];
+
+        function checkSaSmtpFields() {
+            const allFilled = requiredIds.every(id => {
+                const el = document.getElementById(id);
+                return el && el.value.trim() !== '';
+            });
+            triggerBtn.disabled = !allFilled;
+            triggerBtn.style.opacity = allFilled ? '1' : '0.45';
+            triggerBtn.style.pointerEvents = allFilled ? 'auto' : 'none';
+            triggerBtn.style.cursor = allFilled ? 'pointer' : 'default';
+        }
+
+        requiredIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', checkSaSmtpFields);
+        });
+
+        checkSaSmtpFields(); // run once on page load to handle pre-filled values
+    })();
     </script>
 
     {{-- Email Templates --}}

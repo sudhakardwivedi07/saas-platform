@@ -17,9 +17,14 @@ class EmailTemplateController extends AccountBaseController
         $this->pageTitle = 'Email Templates';
     }
 
+    private function globalScope(): \Illuminate\Database\Eloquent\Builder
+    {
+        return EmailTemplate::whereNull('company_id')->whereNull('firm_id');
+    }
+
     public function index()
     {
-        $this->templates = EmailTemplate::whereNull('company_id')->orderBy('name')->get();
+        $this->templates = $this->globalScope()->orderBy('name')->get();
         return view('super-admin.email-templates.index', $this->data);
     }
 
@@ -40,12 +45,13 @@ class EmailTemplateController extends AccountBaseController
 
         $slug = Str::slug($request->name, '_');
 
-        if (EmailTemplate::whereNull('company_id')->where('slug', $slug)->exists()) {
+        if ($this->globalScope()->where('slug', $slug)->exists()) {
             $slug = $slug . '_' . time();
         }
 
         EmailTemplate::create([
             'company_id'    => null,
+            'firm_id'       => null,
             'name'          => $request->name,
             'slug'          => $slug,
             'subject'       => $request->subject,
@@ -62,7 +68,7 @@ class EmailTemplateController extends AccountBaseController
 
     public function edit(string $slug)
     {
-        $this->template = EmailTemplate::whereNull('company_id')->where('slug', $slug)->firstOrFail();
+        $this->template = $this->globalScope()->where('slug', $slug)->firstOrFail();
         return view('super-admin.email-templates.edit', $this->data);
     }
 
@@ -77,10 +83,10 @@ class EmailTemplateController extends AccountBaseController
             'is_active'     => 'nullable|boolean',
         ]);
 
-        $template = EmailTemplate::whereNull('company_id')->where('slug', $slug)->firstOrFail();
+        $template = $this->globalScope()->where('slug', $slug)->firstOrFail();
 
         $newSlug = Str::slug($request->name, '_');
-        if (EmailTemplate::whereNull('company_id')->where('slug', $newSlug)->where('id', '!=', $template->id)->exists()) {
+        if ($this->globalScope()->where('slug', $newSlug)->where('id', '!=', $template->id)->exists()) {
             $newSlug = $newSlug . '_' . time();
         }
 
@@ -101,7 +107,7 @@ class EmailTemplateController extends AccountBaseController
 
     public function destroy(string $slug)
     {
-        $template = EmailTemplate::whereNull('company_id')->where('slug', $slug)->firstOrFail();
+        $template = $this->globalScope()->where('slug', $slug)->firstOrFail();
         $template->delete();
 
         return Reply::success('Template deleted.');

@@ -688,7 +688,7 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
         paragraphs.forEach(para => {
             para = para.trim();
             if (!para) return;
-            if (para.match(/^<(ul|ol|table|h[1-6])/i)) {
+            if (para.match(/^<(ul|ol|table|div|h[1-6])/i)) {
                 formatted += para + '\n';
             } else {
                 formatted += '<p>' + para.replace(/\n/g, '<br>') + '</p>\n';

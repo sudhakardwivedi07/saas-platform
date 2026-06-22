@@ -99,6 +99,7 @@ class CompanyController extends AccountBaseController
                 ]);
 
                 CompanyBranding::create(['company_id' => $company->id]);
+                \App\Models\EmailTemplate::seedForFirm($company->id);
 
                 if ($package) {
                     Subscription::create([
@@ -214,6 +215,7 @@ class CompanyController extends AccountBaseController
         ]);
 
         CompanyBranding::create(['company_id' => $company->id]);
+        \App\Models\EmailTemplate::seedForFirm($company->id);
 
         if ($package) {
             Subscription::create([

@@ -194,6 +194,7 @@ class AuthController extends Controller
         ]);
 
         CompanyBranding::create(['company_id' => $company->id]);
+        \App\Models\EmailTemplate::seedForFirm($company->id);
 
         // Create subscription record (trialing if no payment required)
         if ($package && !$requiresPayment) {

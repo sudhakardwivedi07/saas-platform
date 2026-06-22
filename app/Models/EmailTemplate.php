@@ -6,11 +6,11 @@ class EmailTemplate extends BaseModel
 {
     protected $table = 'email_templates';
 
-    // EmailTemplates can be global (company_id = NULL) or tenant-specific.
+    // EmailTemplates can be global (company_id = NULL) or firm-specific (company_id = firm_id).
     // HasTenant is intentionally NOT used — resolution uses resolveFor() fallback logic.
 
     protected $fillable = [
-        'company_id', 'firm_id', 'name', 'slug', 'subject', 'body',
+        'company_id', 'name', 'slug', 'subject', 'body',
         'from_name', 'from_email', 'cc', 'bcc', 'is_active',
         'trigger_event',
     ];
@@ -41,13 +41,12 @@ class EmailTemplate extends BaseModel
         ];
 
         foreach ($defaults as $tpl) {
-            if (self::where('firm_id', $firmId)->where('slug', $tpl['slug'])->exists()) {
+            if (self::where('company_id', $firmId)->where('slug', $tpl['slug'])->exists()) {
                 continue;
             }
 
             self::create([
-                'firm_id'       => $firmId,
-                'company_id'    => null,
+                'company_id'    => $firmId,
                 'name'          => $tpl['name'],
                 'slug'          => $tpl['slug'],
                 'trigger_event' => $tpl['trigger_event'],

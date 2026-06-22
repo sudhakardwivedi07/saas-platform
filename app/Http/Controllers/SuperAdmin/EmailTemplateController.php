@@ -51,7 +51,6 @@ class EmailTemplateController extends AccountBaseController
 
         EmailTemplate::create([
             'company_id'    => null,
-            'firm_id'       => null,
             'name'          => $request->name,
             'slug'          => $slug,
             'subject'       => $request->subject,

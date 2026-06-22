@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Jobs\ProcessReportInsightsJob;
 use App\Jobs\SendEmailJob;
 use App\Models\Company;
+use App\Models\EmailSmtpSetting;
+use App\Models\EmailTemplate;
 use App\Models\EventLog;
 use App\Models\CompanyQuickbooksSetting;
 use App\Models\QuickBooksConnection;
@@ -357,6 +359,18 @@ class InsightsController extends AccountBaseController
                 }
             })
             ->firstOrFail();
+
+        // Firm is the parent of the client's sub-company
+        $firmId = company()->created_by ?? company()->id;
+        $this->canShareInsight =
+            EmailTemplate::where('company_id', $firmId)
+                         ->where('slug', 'share_insight_with_client')
+                         ->where('is_active', true)
+                         ->exists()
+            &&
+            EmailSmtpSetting::where('company_id', $firmId)
+                             ->where('is_active', true)
+                             ->exists();
 
         $this->pageTitle = 'Insights';
         return view('insights.detail', $this->data);
@@ -1060,18 +1074,21 @@ class InsightsController extends AccountBaseController
         $authUser        = auth()->user();
         $clientFirstName = explode(' ', trim($authUser->name))[0];
 
-        SendEmailJob::dispatchSync(
+        app(\App\Services\EmailService::class)->sendFromFirm(
+            firmId:         $authUser->company_id,
             toEmail:        $request->recipient_email,
             templateSlug:   'share_insight_with_client',
             placeholders:   [
+                '{{client_name}}'       => $clientFirstName,
                 '{{insight_title}}'     => $report->report_name,
                 '{{company_name}}'      => $report->company?->company_name ?? '',
                 '{{client_first_name}}' => $clientFirstName,
                 '{{generated_date}}'    => $report->created_at->format('M d, Y'),
                 '{{cfo_name}}'          => $authUser->name,
+                '{{partner_name}}'      => $this->companyName,
                 '{{firm_name}}'         => $this->companyName,
+                '{{portal_url}}'        => company()?->domainUrlFor('login') ?? url('/login'),
             ],
-            companyId:      $authUser->company_id,
             attachmentPath: $tempPath,
         );
 

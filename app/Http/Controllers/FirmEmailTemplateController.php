@@ -16,9 +16,7 @@ class FirmEmailTemplateController extends AccountBaseController
 
     private function firmScope(): \Illuminate\Database\Eloquent\Builder
     {
-        return EmailTemplate::where('firm_id', company()->id)
-                            ->whereNotNull('firm_id')
-                            ->whereNull('company_id');
+        return EmailTemplate::where('company_id', company()->id);
     }
 
     public function show(int $id)
@@ -54,12 +52,12 @@ class FirmEmailTemplateController extends AccountBaseController
         $firmId = company()->id;
         $slug   = \Str::slug($request->name, '_');
         $base   = $slug; $i = 1;
-        while (EmailTemplate::where('firm_id', $firmId)->where('slug', $slug)->exists()) {
+        while (EmailTemplate::where('company_id', $firmId)->where('slug', $slug)->exists()) {
             $slug = $base . '_' . $i++;
         }
 
         $template = EmailTemplate::create([
-            'firm_id'       => $firmId,
+            'company_id'    => $firmId,
             'name'          => $request->name,
             'slug'          => $slug,
             'trigger_event' => $request->trigger_event,

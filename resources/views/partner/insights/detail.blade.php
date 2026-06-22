@@ -17,6 +17,8 @@
 .rd-meta-item { display:flex;align-items:center;gap:7px;color:#64748b;font-size:13px; }
 .rd-meta-item i { color:#94a3b8;font-size:14px; }
 .rd-header-actions { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
+.rd-header-actions-group { display:flex;align-items:center;gap:8px; }
+.rd-header-actions-divider { width:1px;height:24px;background:#e2e8f0;flex-shrink:0;margin:0 2px; }
 
 /* ── Buttons ─────────────────────────────────────────────────── */
 .rd-btn { height:40px;padding:0 18px;border-radius:7px;font-size:13.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;border:none;transition:all .2s;white-space:nowrap; }
@@ -27,8 +29,8 @@
 .rd-btn-edit.active { background:var(--blue);color:#fff; }
 .rd-btn-save { background:var(--orange);color:#fff;border:1.5px solid var(--orange); }
 .rd-btn-save:hover { background:var(--orange-dark);border-color:var(--orange-dark);text-decoration:none; }
-.rd-btn-pdf { background:var(--orange);color:#fff;border:1.5px solid var(--orange); }
-.rd-btn-pdf:hover { background:var(--orange-dark);border-color:var(--orange-dark);text-decoration:none; }
+.rd-btn-pdf { background:#fff;color:#374151;border:1.5px solid #e2e8f0; }
+.rd-btn-pdf:hover { background:#f8fafc;color:#1a202c;text-decoration:none; }
 .rd-btn-publish { background:var(--orange);color:#fff;border:1.5px solid var(--orange); }
 .rd-btn-publish:hover { background:var(--orange-dark);border-color:var(--orange-dark);text-decoration:none; }
 .rd-btn-share { background:#16a34a;color:#fff;border:1.5px solid #16a34a; }
@@ -199,35 +201,44 @@
 
         @if($report->insight_json_data)
         <div class="rd-header-actions">
-            <a href="{{ route('partner-insights.preview', $report->id) }}" class="rd-btn rd-btn-outline" id="rdBtnPdfPreview">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                <span>Preview</span>
-            </a>
-            <button id="rdBtnEdit" class="rd-btn rd-btn-edit" onclick="rdToggleEdit()">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                <span id="rdBtnEditLabel">Edit Insight</span>
-            </button>
-            <button id="rdBtnSave" class="rd-btn rd-btn-save" onclick="rdSaveEdits()">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                <span id="rdBtnSaveLabel">Save</span>
-            </button>
-            @if($report->isDraft())
-            <button id="rdBtnPublish" class="rd-btn rd-btn-publish" onclick="rdPublishInsight()">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <span id="rdBtnPublishLabel">Publish Insight</span>
-            </button>
-            @endif
-            <a href="{{ route('partner-insights.export-pdf', $report->id) }}" class="rd-btn rd-btn-pdf" id="rdBtnPdf"
-               onclick="var btn=this;btn.querySelector('span').textContent='Generating…';btn.style.pointerEvents='none';btn.style.opacity='.8';setTimeout(function(){btn.querySelector('span').textContent='Export to PDF';btn.style.pointerEvents='';btn.style.opacity='';},8000);">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                <span>Export to PDF</span>
-            </a>
-            @if(!$report->isDraft())
-            <a href="javascript:void(0)" class="rd-btn rd-btn-share" id="rdBtnShare" onclick="rdShareInsight()">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                <span>Share</span>
-            </a>
-            @endif
+            {{-- Action CTAs: Preview & Export to PDF --}}
+            <div class="rd-header-actions-group">
+                <a href="{{ route('partner-insights.preview', $report->id) }}" class="rd-btn rd-btn-outline" id="rdBtnPdfPreview">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    <span>Preview</span>
+                </a>
+                <a href="{{ route('partner-insights.export-pdf', $report->id) }}" class="rd-btn rd-btn-pdf" id="rdBtnPdf"
+                   onclick="var btn=this;btn.querySelector('span').textContent='Generating…';btn.style.pointerEvents='none';btn.style.opacity='.8';setTimeout(function(){btn.querySelector('span').textContent='Export to PDF';btn.style.pointerEvents='';btn.style.opacity='';},8000);">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    <span>Export to PDF</span>
+                </a>
+            </div>
+
+            <div class="rd-header-actions-divider"></div>
+
+            {{-- Primary CTAs: Edit Insight, Save, Publish Insight --}}
+            <div class="rd-header-actions-group">
+                <button id="rdBtnEdit" class="rd-btn rd-btn-edit" onclick="rdToggleEdit()">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span id="rdBtnEditLabel">Edit Insight</span>
+                </button>
+                <button id="rdBtnSave" class="rd-btn rd-btn-save" onclick="rdSaveEdits()">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    <span id="rdBtnSaveLabel">Save</span>
+                </button>
+                @if($report->isDraft())
+                <button id="rdBtnPublish" class="rd-btn rd-btn-publish" onclick="rdPublishInsight()">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span id="rdBtnPublishLabel">Publish Insight</span>
+                </button>
+                @endif
+                @if(!$report->isDraft())
+                <a href="javascript:void(0)" class="rd-btn rd-btn-share" id="rdBtnShare" onclick="rdShareInsight()">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    <span>Share</span>
+                </a>
+                @endif
+            </div>
         </div>
         @endif
     </div>

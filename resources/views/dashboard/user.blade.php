@@ -208,7 +208,7 @@
         <div class="cdb-client-info">
             <span class="cdb-client-name">{{ $adminViewUser->name }}</span>
             <span class="cdb-sep">·</span>
-            <span class="cdb-company-name" title="{{ $adminCompany?->company_name ?? '' }}">{{ $adminCompany?->company_name ?? '' }}</span>
+            <span class="cdb-company-name" title="{{ ucfirst($adminCompany?->company_name ?? '') }}">{{ ucfirst($adminCompany?->company_name ?? '') }}</span>
             <span id="cdbStatusBadge" class="cdb-status-badge cdb-status-{{ $adminPubStatus }}">{{ ucfirst($adminPubStatus) }}</span>
         </div>
     </div>
@@ -598,12 +598,12 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
                 onchange="if(window.__kpiEmbedChangeCompany)window.__kpiEmbedChangeCompany(this.value)">
             @foreach($__kpiCoList as $__co)
             <option value="{{ $__co->id }}" {{ $__co->id == $selectedKpiCompanyId ? 'selected' : '' }}>
-                {{ $__co->company_name }}
+                {{ ucfirst($__co->company_name) }}
             </option>
             @endforeach
         </select>
         @else
-        <span class="cfo-kpi-exec-entity-name">{{ $__selectedKpiCo?->company_name ?? 'Company' }}</span>
+        <span class="cfo-kpi-exec-entity-name">{{ ucfirst($__selectedKpiCo?->company_name ?? 'Company') }}</span>
         @endif
     </div>
 

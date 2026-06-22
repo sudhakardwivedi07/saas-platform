@@ -136,7 +136,7 @@
                                 <div class="cell-trunc-sm" style="font-size:11.5px;color:var(--text-3)">{{ $co->subdomain }}.{{ config('tenancy.root_domain', 'yourdomain.com') }}</div>
                                 @endif
                                 @if($co->company_email)
-                                <div class="cell-trunc-sm" style="font-size:11px;color:var(--text-3)" title="{{ $co->company_email }}">{{ $co->company_email }}</div>
+                                <div class="cell-trunc-sm" style="font-size:11px;color:var(--text-3);text-transform:none" title="{{ $co->company_email }}">{{ $co->company_email }}</div>
                                 @endif
                             </div>
                         </div>

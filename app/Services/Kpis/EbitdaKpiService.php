@@ -28,15 +28,15 @@ class EbitdaKpiService
             }
             $pl = self::activeProfitLossRows($pl);
 
+            // Use ALL 12 months including zero-revenue months (e.g. payroll-only months).
+            // activeProfitLossRows already includes them when net_income != 0.
             $recent = array_slice($pl, -12);
             $monthlyBars = [];
             $revenueLtm = 0.0;
             foreach ($recent as $row) {
-                $rev = (float) ($row['revenue'] ?? 0);
-                $cogs = (float) ($row['cogs'] ?? 0);
-                $opex = (float) ($row['misc'] ?? 0);
-                $revenueLtm += $rev;
-                $monthlyBars[] = $rev - $cogs - $opex;
+                $revenueLtm += (float) ($row['revenue'] ?? 0);
+                // EBITDA = Net Income (accounts for all operating expenses, not just COGS)
+                $monthlyBars[] = (float) ($row['net_income'] ?? 0);
             }
             $ebitda = array_sum($monthlyBars);
             $latest = end($recent) ?: [];

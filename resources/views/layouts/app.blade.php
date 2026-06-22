@@ -428,7 +428,8 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
 }
 
 /* ── RESPONSIVE: TAB BAR ──────────────────────────────── */
-.tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
+.tab-bar::-webkit-scrollbar{display:none}
 
 /* ── RESPONSIVE: DATE RANGE PICKER ───────────────────── */
 @media(max-width:760px){

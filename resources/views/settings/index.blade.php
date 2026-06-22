@@ -987,15 +987,8 @@ document.getElementById('smtpTestModal').addEventListener('click', function(e) {
     function resetTabContent(tabId) {
         var panel = document.getElementById(tabId);
         if (!panel) return;
-        // Reset all plain forms inside the panel
-        panel.querySelectorAll('form').forEach(function(f) { f.reset(); });
-        // Clear all text/search inputs that are not inside modals
-        panel.querySelectorAll('input[type="text"], input[type="search"], input[type="email"]').forEach(function(el) {
-            el.value = '';
-        });
-        // Reset all <select> elements to first option
-        panel.querySelectorAll('select').forEach(function(el) { el.selectedIndex = 0; });
-        // Reset DataTable search/filters for tables inside this panel
+        // Only reset DataTable search/filters — do NOT clear form fields
+        // (form values are server-rendered from DB and must stay intact on tab switch)
         panel.querySelectorAll('table[id]').forEach(function(tbl) {
             if (window.$ && $.fn.DataTable && $.fn.DataTable.isDataTable('#' + tbl.id)) {
                 $('#' + tbl.id).DataTable().search('').columns().search('').draw();

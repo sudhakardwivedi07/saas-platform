@@ -15,6 +15,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DashboardKPIController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\EmailTemplateController;
+use App\Http\Controllers\FirmEmailTemplateController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FirmQuickBooksController;
@@ -198,6 +199,14 @@ Route::middleware(['auth'])->group(function () {
         // Insight Limits
         Route::post('/insight-limits',                      [InsightLimitController::class, 'updateLimitSetup'])->name('insight-limits.update');
         Route::post('/insight-limits/{companyId}/custom',   [InsightLimitController::class, 'setCustomLimit'])->name('insight-limits.custom');
+
+        // Firm Email Templates (partner portal settings — AJAX)
+        Route::prefix('firm-email-templates')->name('firm-email-templates.')->group(function () {
+            Route::post('/',        [FirmEmailTemplateController::class, 'store'])->name('store');
+            Route::get('/{id}',     [FirmEmailTemplateController::class, 'show'])->name('show');
+            Route::post('/{id}',    [FirmEmailTemplateController::class, 'update'])->name('update');
+            Route::delete('/{id}',  [FirmEmailTemplateController::class, 'destroy'])->name('destroy');
+        });
     });
 
     // Clients

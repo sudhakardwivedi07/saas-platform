@@ -15,9 +15,9 @@ class RunwayBurnKpiService
         return KpiService::getCachedKpiData($companyId, 'runway-burn', function () use ($companyId) {
             $dataset = QuickBooksKpiDataService::dataset($companyId) ?? QuickBooksKpiDataService::emptyDatasetShape();
             $bs = array_values($dataset['balance_sheet_monthly'] ?? []);
-            $cf = array_values($dataset['cash_flow_monthly'] ?? []);
+            $pl = array_values($dataset['profit_loss_monthly'] ?? []);
 
-            if (empty($bs) || empty($cf)) {
+            if (empty($bs) || empty($pl)) {
                 return [
                     'cash_balance' => null,
                     'monthly_burn' => null,
@@ -33,55 +33,54 @@ class RunwayBurnKpiService
             $latestBs = end($bs) ?: [];
             $cashBalance = (float) ($latestBs['cash'] ?? 0);
 
-            $monthlySeries = array_map(static function (array $m) {
-                $operating = (float) ($m['operating'] ?? 0);
-                $netIncome = (float) ($m['net_income'] ?? 0);
-                $net = (float) ($m['net_change'] ?? 0);
-                if (abs($net) < 0.00001) {
-                    $net = abs($operating) > 0.00001 ? $operating : $netIncome;
-                }
+            // Enforce exactly 12 months from P&L regardless of how many rows the CSV contains.
+            // Using P&L (not cash flow statement) avoids unreliable operating-CF months where
+            // QB returns $0 and the average collapses, inflating runway to absurd levels.
+            $recent12 = array_slice($pl, -12);
+            $months = max(1, count($recent12));
 
-                return [
-                    'month' => $m['month'] ?? '',
-                    'net_change' => $net,
-                    'operating' => (float) ($m['operating'] ?? 0),
-                    'investing' => (float) ($m['investing'] ?? 0),
-                    'financing' => (float) ($m['financing'] ?? 0),
-                ];
-            }, $cf);
-            $activeMonthlySeries = array_values(array_filter($monthlySeries, static function (array $m) {
-                return abs((float) ($m['net_change'] ?? 0)) > 0.00001
-                    || abs((float) ($m['operating'] ?? 0)) > 0.00001;
-            }));
-            if (! empty($activeMonthlySeries)) {
-                $monthlySeries = $activeMonthlySeries;
-            }
+            $totalCogs        = array_sum(array_map(static fn($r) => (float) ($r['cogs']         ?? 0), $recent12));
+            $totalGrossProfit = array_sum(array_map(static fn($r) => (float) ($r['gross_profit'] ?? 0), $recent12));
+            $netIncomeTotal   = array_sum(array_map(static fn($r) => (float) ($r['net_income']   ?? 0), $recent12));
 
-            $last12 = array_slice($monthlySeries, -12);
-            $burnValues = array_values(array_filter(
-                array_map(static fn(array $x) => (float) $x['net_change'], $last12),
-                static fn(float $value) => $value < -0.00001
-            ));
+            // total_opex = gross_profit − net_income captures ALL operating expenses, not only
+            // named buckets (payroll/marketing/rent/software/misc) which miss implicit costs.
+            $totalOpex = $totalGrossProfit - $netIncomeTotal;
 
-            $avg = ! empty($burnValues) ? array_sum($burnValues) / count($burnValues) : null;
+            // gross_burn_rate = (COGS + all opex) / 12
+            $grossBurnRate = ($totalCogs + max(0.0, $totalOpex)) / $months;
 
-            $runwayMonths = null;
-            if ($avg !== null) {
-                $runwayMonths = $cashBalance / abs($avg);
-            }
+            // net_burn = |net_income| / 12 when losing; 0 when profitable
+            $netBurnRate = $netIncomeTotal >= 0 ? 0.0 : abs($netIncomeTotal) / $months;
 
-            $status = self::determineRunwayStatus($runwayMonths);
-            $burnType = $avg === null ? null : ($avg < 0 ? 'burn' : ($avg > 0 ? 'build' : 'stable'));
+            // Runway uses the rate that matches actual cash depletion:
+            // - Losing money → net_burn (how fast NI erodes cash)
+            // - Profitable   → gross_burn (conservative coverage baseline)
+            $burnRateForRunway = $netIncomeTotal < 0 ? $netBurnRate : $grossBurnRate;
+            $runwayMonths = $burnRateForRunway > 0.00001 ? $cashBalance / $burnRateForRunway : null;
+
+            $status   = self::determineRunwayStatus($runwayMonths);
+            $burnType = $netIncomeTotal >= 0 ? 'build' : 'burn';
+
+            $monthlyData = array_map(static fn($r) => [
+                'month'      => $r['month'] ?? '',
+                'net_change' => (float) ($r['net_income'] ?? 0),
+                'operating'  => (float) ($r['net_income'] ?? 0),
+                'investing'  => 0.0,
+                'financing'  => 0.0,
+            ], $recent12);
 
             return [
-                'cash_balance' => $cashBalance,
-                'monthly_burn' => $avg,
-                'runway_months' => $runwayMonths,
-                'status' => $status,
-                'burn_type' => $burnType,
-                'runway_percent' => $runwayMonths !== null ? min(100, max(0, ($runwayMonths / 24) * 100)) : 0,
-                'monthly_data' => $last12,
-                'last_updated' => now(),
+                'cash_balance'    => $cashBalance,
+                'monthly_burn'    => $burnRateForRunway, // rate used for runway; net when losing, gross when profitable
+                'gross_burn_rate' => $grossBurnRate,
+                'net_burn_rate'   => $netBurnRate,
+                'runway_months'   => $runwayMonths,
+                'status'          => $status,
+                'burn_type'       => $burnType,
+                'runway_percent'  => $runwayMonths !== null ? min(100, max(0, ($runwayMonths / 24) * 100)) : 0,
+                'monthly_data'    => $monthlyData,
+                'last_updated'    => now(),
             ];
         });
     }
@@ -131,10 +130,10 @@ class RunwayBurnKpiService
     {
         $data = self::calculate($companyId);
 
-        $avg = $data['monthly_burn'];
+        $avg = $data['monthly_burn']; // gross_burn_rate (always >= 0)
         $avgFormatted = '—';
         if ($avg !== null) {
-            $avgFormatted = ($avg > 0 ? '+' : ($avg < 0 ? '-' : '')) . KpiService::formatCurrency(abs($avg)) . '/mo';
+            $avgFormatted = KpiService::formatCurrency(abs($avg)) . '/mo';
         }
 
         $runwayDisplay = '—';

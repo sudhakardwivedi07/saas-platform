@@ -39,12 +39,14 @@ class ApLeverageKpiService
                     ? round($amt / $totalAp * 100, 1)
                     : 0.0;
             }
-            $cogsT12 = 0.0;
+            // DPO denominator = Revenue (not COGS). Using COGS when COGS ≈ 0 (service businesses)
+            // produces astronomically wrong DPO (e.g. $1,603 ÷ $405 × 365 = 1,444 days).
+            $revenueT12 = 0.0;
             foreach (array_slice(array_values($pl), -12) as $m) {
-                $cogsT12 += (float) ($m['cogs'] ?? 0);
+                $revenueT12 += (float) ($m['revenue'] ?? 0);
             }
-            $avgDailyCogs = $cogsT12 / 365;
-            $dpo = $avgDailyCogs > 0 ? ($totalAp / $avgDailyCogs) : null;
+            $avgDailyRevenue = $revenueT12 / 365;
+            $dpo = $avgDailyRevenue > 0 ? ($totalAp / $avgDailyRevenue) : null;
 
             $monthlyTrend = array_map(static function (array $row) {
                 return [

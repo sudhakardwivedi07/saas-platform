@@ -123,31 +123,26 @@
 .pi-modal-btn-cancel { flex:1;background:#fff;color:#374151;border:1.5px solid #e2e8f0;padding:11px 20px;border-radius:9px;font-size:14px;font-weight:500;cursor:pointer;transition:all .2s; }
 .pi-modal-btn-cancel:hover { background:#f8fafc; }
 
-/* ── Responsive ───────────────────────────────────────── */
-/* Sidebar is 242px fixed; breakpoints target viewport width          */
-/* 4→2 cols: viewport <1100px (content ~858px, cards ~200px each)    */
-/* 2→1 cols: viewport <640px                                          */
-@media(max-width:1100px) {
-    .pi-stats-row { grid-template-columns:repeat(2,1fr); }
-}
-@media(max-width:860px) {
-    .pi-stat-value { font-size:28px; }
-    .pi-page-header-actions { width:100%; }
-    .pi-btn-generate, .pi-btn-export { flex:1; justify-content:center; }
-    .pi-search-inp { width:100%; }
-    .pi-status-sel { flex:1; }
-    .pi-actions { flex-wrap:wrap; gap:4px; }
-    .pi-btn-view, .pi-btn-portal { font-size:12px; padding:5px 10px; }
-}
-@media(max-width:640px) {
-    .pi-stats-row { grid-template-columns:1fr; }
-    .pi-page-header { flex-direction:column; }
-    .pi-toolbar { flex-direction:column; align-items:stretch; }
-    .pi-toolbar-right { margin-left:0; width:100%; }
-    .pi-search-wrap { width:100%; }
-    .pi-search-inp { width:100%; box-sizing:border-box; }
-    .pi-stat-value { font-size:26px; }
-}
+/* ── Download Modal ──────────────────────────────── */
+.pi-dl-options { display:flex;flex-direction:column;gap:10px;margin-bottom:24px; }
+.pi-dl-option { cursor:pointer;display:block; }
+.pi-dl-option input[type=radio] { position:absolute;opacity:0;width:0;height:0; }
+.pi-dl-card { display:flex;align-items:center;gap:14px;padding:14px 16px;border:1.5px solid #e2e8f0;border-radius:12px;background:#fff;transition:all .2s;cursor:pointer; }
+.pi-dl-card:hover { border-color:#93c5fd;background:#f8faff; }
+.pi-dl-card.pi-dl-selected { border-color:var(--blue,#2563eb);background:#eff6ff; }
+.pi-dl-icon-box { width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.pi-dl-icon-box.zip { background:#1d4ed8; }
+.pi-dl-icon-box.pdf { background:#475569; }
+.pi-dl-icon-box svg { width:22px;height:22px;stroke:#fff;fill:none;stroke-width:1.8; }
+.pi-dl-info { flex:1;min-width:0; }
+.pi-dl-title { font-size:14px;font-weight:600;color:#1a202c;margin-bottom:2px; }
+.pi-dl-desc { font-size:12.5px;color:#6b7280;line-height:1.4; }
+.pi-dl-radio-dot { width:18px;height:18px;border-radius:50%;border:2px solid #cbd5e0;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .2s; }
+.pi-dl-card.pi-dl-selected .pi-dl-radio-dot { border-color:var(--blue,#2563eb); }
+.pi-dl-card.pi-dl-selected .pi-dl-radio-dot::after { content:'';width:10px;height:10px;border-radius:50%;background:var(--blue,#2563eb);display:block; }
+
+@media(max-width:900px) { .pi-stats-row { grid-template-columns:repeat(2,1fr); } }
+@media(max-width:600px) { .pi-stats-row { grid-template-columns:1fr; } .pi-page-header { flex-direction:column; } .pi-toolbar { flex-direction:column;align-items:stretch; } }
 </style>
 @endpush
 
@@ -348,13 +343,30 @@
                                 @elseif($isFailed)
                                     <button class="pi-btn-retry" onclick="piRetry({{ $report->id }})">Retry</button>
                                 @else
-                                    <a href="{{ route('partner-insights.view', $report->encrypted_id) }}" class="pi-btn-view">View Insights</a>
-                                    @if($report->user_id)
-                                    <form method="POST" action="{{ route('clients.login-as', $report->user_id) }}" style="display:inline;">
-                                        @csrf
-                                        <button type="submit" class="pi-btn-portal">View as Client</button>
-                                    </form>
-                                    @endif
+                                    <div class="dm-wrap">
+                                        <button class="dot-menu" data-menu="pi-dm-{{ $report->id }}" title="Actions">•••</button>
+                                        <div class="dm-popup" id="pi-dm-{{ $report->id }}">
+                                            <a href="{{ route('partner-insights.view', $report->encrypted_id) }}" class="dm-item">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                View Insight
+                                            </a>
+                                            @if($report->user_id)
+                                            <div class="dm-divider"></div>
+                                            <form method="POST" action="{{ route('clients.login-as', $report->user_id) }}" style="margin:0">
+                                                @csrf
+                                                <button type="submit" class="dm-item" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                                    View as Client
+                                                </button>
+                                            </form>
+                                            @endif
+                                            <div class="dm-divider"></div>
+                                            <a href="javascript:void(0)" class="dm-item" onclick="piDownload({{ $report->id }})">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                                Download
+                                            </a>
+                                        </div>
+                                    </div>
                                 @endif
                             </div>
                         @endif
@@ -393,6 +405,52 @@
             <button class="pi-modal-btn-generate" id="piBtnGenerate" onclick="piDoGenerate()" disabled>
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
                 Generate Insight
+            </button>
+        </div>
+    </div>
+</div>
+
+{{-- Download Format Modal --}}
+<div id="piDownloadModal" class="pi-modal-overlay">
+    <div class="pi-modal">
+        <button class="pi-modal-close" onclick="piCloseDownloadModal()" title="Close">&times;</button>
+        <h3>Download Report</h3>
+        <p class="pi-modal-sub">Choose the format to download</p>
+
+        <div class="pi-dl-options">
+            <label class="pi-dl-option">
+                <input type="radio" name="pi-dl-format" value="zip" checked>
+                <div class="pi-dl-card pi-dl-selected">
+                    <div class="pi-dl-icon-box zip">
+                        <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    </div>
+                    <div class="pi-dl-info">
+                        <div class="pi-dl-title">KPI Data Report (ZIP)</div>
+                        <div class="pi-dl-desc">Excel KPI data files packaged as a ZIP archive</div>
+                    </div>
+                    <div class="pi-dl-radio-dot"></div>
+                </div>
+            </label>
+            <label class="pi-dl-option">
+                <input type="radio" name="pi-dl-format" value="pdf">
+                <div class="pi-dl-card">
+                    <div class="pi-dl-icon-box pdf">
+                        <svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
+                    <div class="pi-dl-info">
+                        <div class="pi-dl-title">Insight Analysis Report (PDF)</div>
+                        <div class="pi-dl-desc">Full insight analysis report exported as PDF</div>
+                    </div>
+                    <div class="pi-dl-radio-dot"></div>
+                </div>
+            </label>
+        </div>
+
+        <div class="pi-modal-actions">
+            <button class="pi-modal-btn-cancel" onclick="piCloseDownloadModal()">Cancel</button>
+            <button class="pi-modal-btn-generate" onclick="piConfirmDownload()">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download
             </button>
         </div>
     </div>
@@ -744,10 +802,11 @@
             const actions = row.querySelector('.pi-actions');
             if (actions) {
                 const userId   = row.dataset.userId || '';
-                const portalBtn = userId
-                    ? `<form method="POST" action="/clients/${userId}/login-as" style="display:inline;"><input type="hidden" name="_token" value="${CSRF}"><button type="submit" class="pi-btn-portal">View as Client</button></form>`
+                const reportId = row.id.replace('pi-row-', '');
+                const portalItem = userId
+                    ? `<div class="dm-divider"></div><form method="POST" action="/clients/${userId}/login-as" style="margin:0"><input type="hidden" name="_token" value="${CSRF}"><button type="submit" class="dm-item" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> View as Client</button></form>`
                     : '';
-                actions.innerHTML = `<a href="${viewUrl}" class="pi-btn-view">View Insights</a>${portalBtn}`;
+                actions.innerHTML = `<div class="dm-wrap"><button class="dot-menu" data-menu="pi-dm-${reportId}" title="Actions">•••</button><div class="dm-popup" id="pi-dm-${reportId}"><a href="${viewUrl}" class="dm-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> View Insight</a>${portalItem}<div class="dm-divider"></div><a href="javascript:void(0)" class="dm-item" onclick="piDownload(${reportId})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download</a></div></div>`;
             }
             if (table) table.row(row).invalidate().draw(false);
         }
@@ -758,9 +817,10 @@
         const compName = row?.cells[3]?.textContent?.trim() || '';
         Swal.fire({
             title: 'Insight Generated!',
-            html:  `<p style="color:#6b7280;font-size:14px;line-height:1.6">Your CFO level Financial Insight is ready to view${compName ? ` for <strong>"${compName}"</strong>` : ''}.</p>`,
-            icon: 'success', confirmButtonText: 'View Insight', showCancelButton: false, confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
-        }).then(result => { if (result.isConfirmed) window.location.href = viewUrl; });
+            html:  `<p style="color:#6b7280;font-size:14px;line-height:1.6">Your CFO level Financial Insight is ready${compName ? ` for <strong>"${compName}"</strong>` : ''}.</p>`,
+            icon: 'success', confirmButtonText: 'Ok', showCancelButton: false, confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
+            timer: 3000, timerProgressBar: true,
+        }).then(() => window.location.reload());
     }
 
     // ── Mark failed ───────────────────────────────────────────────────────────
@@ -779,10 +839,46 @@
 
     // ── Download ──────────────────────────────────────────────────────────────
     window.piDownload = function (id) {
-        Swal.fire({ title: 'Preparing Download', html: '<p>Creating ZIP file…</p>', icon: 'info', allowOutsideClick: false, showConfirmButton: false, willOpen: () => Swal.showLoading() });
-        window.location.href = `/partner-insights/${id}/download`;
-        setTimeout(() => Swal.close(), 2500);
+        const modal = document.getElementById('piDownloadModal');
+        modal.dataset.reportId = id;
+        // Reset to ZIP selection
+        document.querySelectorAll('input[name="pi-dl-format"]').forEach(r => { r.checked = r.value === 'zip'; });
+        document.querySelectorAll('.pi-dl-card').forEach(card => {
+            const r = card.closest('.pi-dl-option').querySelector('input[type=radio]');
+            card.classList.toggle('pi-dl-selected', r && r.checked);
+        });
+        modal.classList.add('open');
     };
+
+    window.piCloseDownloadModal = function () {
+        document.getElementById('piDownloadModal').classList.remove('open');
+    };
+
+
+    window.piConfirmDownload = function () {
+        const id     = document.getElementById('piDownloadModal').dataset.reportId;
+        const format = document.querySelector('input[name="pi-dl-format"]:checked')?.value || 'zip';
+        piCloseDownloadModal();
+        if (format === 'pdf') {
+            Swal.fire({ title: 'Preparing PDF', html: '<p>Generating PDF report…</p>', icon: 'info', allowOutsideClick: false, showConfirmButton: false, willOpen: () => Swal.showLoading() });
+            window.location.href = `/partner-insights/${id}/export-pdf`;
+            setTimeout(() => Swal.close(), 3500);
+        } else {
+            Swal.fire({ title: 'Preparing Download', html: '<p>Creating ZIP file…</p>', icon: 'info', allowOutsideClick: false, showConfirmButton: false, willOpen: () => Swal.showLoading() });
+            window.location.href = `/partner-insights/${id}/download`;
+            setTimeout(() => Swal.close(), 2500);
+        }
+    };
+
+    // Update card selection visual when radio changes
+    document.querySelectorAll('input[name="pi-dl-format"]').forEach(radio => {
+        radio.addEventListener('change', function () {
+            document.querySelectorAll('.pi-dl-card').forEach(card => {
+                const r = card.closest('.pi-dl-option').querySelector('input[type=radio]');
+                card.classList.toggle('pi-dl-selected', r && r.checked);
+            });
+        });
+    });
 
     // ── Delete ────────────────────────────────────────────────────────────────
     window.piDelete = function (id, name) {

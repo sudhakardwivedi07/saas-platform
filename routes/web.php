@@ -177,6 +177,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/branding',     [BrandingController::class, 'update'])->name('branding.update');
         Route::get('/email',         [SmtpSettingController::class, 'index'])->name('email');
         Route::post('/email',        [SmtpSettingController::class, 'update'])->name('email.update');
+        Route::post('/email/test',   [SmtpSettingController::class, 'testSmtp'])->name('email.test');
         Route::get('/sms',           [SmsSettingController::class, 'index'])->name('sms');
         Route::post('/sms',          [SmsSettingController::class, 'update'])->name('sms.update');
         Route::get('/payment-gateway',  [TenantPaymentGatewayController::class, 'index'])->name('payment-gateway');

@@ -365,6 +365,11 @@
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                                 Download
                                             </a>
+                                            <div class="dm-divider"></div>
+                                            <a href="javascript:void(0)" class="dm-item dm-item--danger" onclick="piDelete({{ $report->id }}, {{ json_encode($report->report_name) }})">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+                                                Delete
+                                            </a>
                                         </div>
                                     </div>
                                 @endif
@@ -806,7 +811,8 @@
                 const portalItem = userId
                     ? `<div class="dm-divider"></div><form method="POST" action="/clients/${userId}/login-as" style="margin:0"><input type="hidden" name="_token" value="${CSRF}"><button type="submit" class="dm-item" style="width:100%;text-align:left;border:0;background:transparent;cursor:pointer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> View as Client</button></form>`
                     : '';
-                actions.innerHTML = `<div class="dm-wrap"><button class="dot-menu" data-menu="pi-dm-${reportId}" title="Actions">•••</button><div class="dm-popup" id="pi-dm-${reportId}"><a href="${viewUrl}" class="dm-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> View Insight</a>${portalItem}<div class="dm-divider"></div><a href="javascript:void(0)" class="dm-item" onclick="piDownload(${reportId})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download</a></div></div>`;
+                const reportName = row.querySelector('.pi-name-link')?.textContent?.trim() || '';
+                actions.innerHTML = `<div class="dm-wrap"><button class="dot-menu" data-menu="pi-dm-${reportId}" title="Actions">•••</button><div class="dm-popup" id="pi-dm-${reportId}"><a href="${viewUrl}" class="dm-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> View Insight</a>${portalItem}<div class="dm-divider"></div><a href="javascript:void(0)" class="dm-item" onclick="piDownload(${reportId})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download</a><div class="dm-divider"></div><a href="javascript:void(0)" class="dm-item dm-item--danger" onclick="piDelete(${reportId}, ${JSON.stringify(reportName)})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg> Delete</a></div></div>`;
             }
             if (table) table.row(row).invalidate().draw(false);
         }

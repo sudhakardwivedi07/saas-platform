@@ -36,6 +36,8 @@
 .rd-btn-share { background:#16a34a;color:#fff;border:1.5px solid #16a34a; }
 .rd-btn-share:hover { background:#15803d;border-color:#15803d;color:#fff;text-decoration:none; }
 .rd-btn:disabled { opacity:.6;cursor:not-allowed; }
+.rd-btn-more { background:#fff;color:#374151;border:1.5px solid #e2e8f0;padding:0 12px; }
+.rd-btn-more:hover { background:#f8fafc;color:#1a202c; }
 @keyframes spin { to { transform:rotate(360deg); } }
 
 /* ── Publish status badge ────────────────────────────────────── */
@@ -225,22 +227,30 @@
 
         @if($report->insight_json_data)
         <div class="rd-header-actions">
-            {{-- Action CTAs: Preview & Export to PDF --}}
+            {{-- Action CTAs: ••• dot menu --}}
             <div class="rd-header-actions-group">
-                <a href="{{ route('partner-insights.preview', $report->id) }}" class="rd-btn rd-btn-outline" id="rdBtnPdfPreview">
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                    <span>Preview</span>
-                </a>
-                <a href="{{ route('partner-insights.export-pdf', $report->id) }}" class="rd-btn rd-btn-pdf" id="rdBtnPdf"
-                   onclick="var btn=this;btn.querySelector('span').textContent='Generating…';btn.style.pointerEvents='none';btn.style.opacity='.8';setTimeout(function(){btn.querySelector('span').textContent='Export to PDF';btn.style.pointerEvents='';btn.style.opacity='';},8000);">
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                    <span>Export to PDF</span>
-                </a>
+                <div class="dm-wrap">
+                    <button class="rd-btn rd-btn-more" data-menu="rd-more-menu" title="Actions">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                    </button>
+                    <div class="dm-popup" id="rd-more-menu">
+                        <a href="{{ route('partner-insights.preview', $report->id) }}" class="dm-item" id="rdBtnPdfPreview">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            Preview
+                        </a>
+                        <div class="dm-divider"></div>
+                        <a href="{{ route('partner-insights.export-pdf', $report->id) }}" class="dm-item" id="rdBtnPdf"
+                           onclick="var el=this;el.textContent='Generating…';el.style.pointerEvents='none';setTimeout(function(){el.innerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\'><path d=\'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z\'/></svg> Export to PDF';el.style.pointerEvents='';},8000);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            Export to PDF
+                        </a>
+                    </div>
+                </div>
             </div>
 
             <div class="rd-header-actions-divider"></div>
 
-            {{-- Primary CTAs: Edit Insight, Save, Publish Insight --}}
+            {{-- Primary CTAs: Edit Insight, Save Draft, Publish Insight --}}
             <div class="rd-header-actions-group">
                 <button id="rdBtnEdit" class="rd-btn rd-btn-edit" onclick="rdToggleEdit()">
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -248,19 +258,13 @@
                 </button>
                 <button id="rdBtnSave" class="rd-btn rd-btn-save" onclick="rdSaveEdits()">
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    <span id="rdBtnSaveLabel">Save</span>
+                    <span id="rdBtnSaveLabel">Save Draft</span>
                 </button>
                 @if($report->isDraft())
                 <button id="rdBtnPublish" class="rd-btn rd-btn-publish" onclick="rdPublishInsight()">
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                     <span id="rdBtnPublishLabel">Publish Insight</span>
                 </button>
-                @endif
-                @if(!$report->isDraft())
-                <a href="javascript:void(0)" class="rd-btn rd-btn-share" id="rdBtnShare" onclick="rdShareInsight()">
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                    <span>Share</span>
-                </a>
                 @endif
             </div>
         </div>
@@ -628,19 +632,6 @@
     });
 
     window.rdSaveEdits = function () {
-        // Only save if the user actually typed or edited something
-        if (!rdDirty) {
-            const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
-            Swal.fire({
-                icon: 'info',
-                title: 'No Changes',
-                text: 'No modifications were made to the report content.',
-                confirmButtonText: 'OK',
-                confirmButtonColor: brandColor,
-            });
-            return;
-        }
-
         // Collect innerHTML so all formatting (bullets, bold, headings) is preserved exactly
         const sections = insightSections.map((sec, i) => {
             const contentEl = document.getElementById('sl-content-' + i);
@@ -662,7 +653,7 @@
         .then(r => r.json())
         .then(data => {
             btn.disabled = false;
-            document.getElementById('rdBtnSaveLabel').textContent = 'Save';
+            document.getElementById('rdBtnSaveLabel').textContent = 'Save Draft';
             if (data.status === 'success') {
                 rdDirty = false; // reset so re-saving without further edits is blocked
                 const redirectUrl = data.redirect_url || null;
@@ -695,7 +686,7 @@
         })
         .catch(() => {
             btn.disabled = false;
-            document.getElementById('rdBtnSaveLabel').textContent = 'Save';
+            document.getElementById('rdBtnSaveLabel').textContent = 'Save Draft';
             Swal.fire({ icon:'error', title:'Error', text:'Network error. Please try again.' });
         });
     };

@@ -11,20 +11,27 @@
     $kpiCoSettingsMap = [];
     foreach(($kpiCompanies ?? collect()) as $__co) {
         $__s = \App\Models\ClientDashboardSetting::forCompany($__co->id);
-        $__latestReport = \App\Models\Report::where('company_id', $__co->id)
+        $__hasInsights  = \App\Models\Report::where('company_id', $__co->id)
             ->whereRaw('LOWER(TRIM(status)) = ?', ['analyzed'])
-            ->latest('updated_at')
-            ->first(['updated_at', 'created_at']);
-        $__reportTime   = $__latestReport ? ($__latestReport->updated_at ?? $__latestReport->created_at) : null;
+            ->exists();
+        // company.last_active_at is set via raw SQL on every insight action (generate/save/publish)
+        // so it's always reliable regardless of Eloquent dirty-check behaviour.
+        $__reportTime   = $__co->last_active_at;
         $__settingTime  = $__s->updated_at;
-        $__displayTime  = $__reportTime
-            ? ($__settingTime && $__settingTime > $__reportTime ? $__settingTime : $__reportTime)
-            : null;
+        if ($__reportTime && $__settingTime) {
+            $__displayTime = $__settingTime > $__reportTime ? $__settingTime : $__reportTime;
+        } elseif ($__reportTime) {
+            $__displayTime = $__reportTime;
+        } elseif ($__settingTime) {
+            $__displayTime = $__settingTime;
+        } else {
+            $__displayTime = null;
+        }
         $kpiCoSettingsMap[$__co->id] = [
             'name'             => $__co->company_name,
             'hidden_kpis'      => array_values($__s->draft_hidden_kpis ?? []),
             'publish_status'   => $__s->publish_status ?? 'draft',
-            'has_insights'     => !is_null($__latestReport),
+            'has_insights'     => $__hasInsights,
             'last_updated_at'  => $__displayTime?->format(active_date_format() . ' g:i A'),
         ];
     }
@@ -40,6 +47,12 @@
     $_selHasInsights = $_selCoId && isset($kpiCoSettingsMap[$_selCoId])
         ? $kpiCoSettingsMap[$_selCoId]['has_insights']
         : ($hasAnalyzedInsights ?? false);
+
+    // For admin view, use the pre-computed per-company timestamp (already uses latest updated_at)
+    // so the initial render reflects the correct last-modified time even if $kpiLastUpdatedAt is stale or null.
+    if ($_selCoId && !empty($kpiCoSettingsMap[$_selCoId]['last_updated_at'])) {
+        $kpiLastUpdatedAt = $kpiCoSettingsMap[$_selCoId]['last_updated_at']; // formatted string
+    }
 @endphp
 <style>
 /* ── Admin action toast ───────────────────────────────────────────── */
@@ -141,7 +154,8 @@
     transition: opacity .12s, background .12s;
     text-decoration: none;
 }
-.cdb-btn:hover { opacity: .88; }
+.cdb-btn:hover:not(:disabled) { opacity: .88; }
+.cdb-btn:disabled { opacity: .38; cursor: not-allowed; }
 .cdb-btn-edit   { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.2); }
 .cdb-btn-edit.active { background: var(--orange); border-color: var(--orange); }
 .cdb-btn-draft  { background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); border: 1px solid rgba(255,255,255,.15); }
@@ -218,11 +232,11 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Edit Mode
         </button>
-        <button class="cdb-btn cdb-btn-draft" id="cdbSaveDraftBtn" onclick="cdbSaveDraft()">
+        <button class="cdb-btn cdb-btn-draft" id="cdbSaveDraftBtn" onclick="cdbSaveDraft()" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
             Save Draft
         </button>
-        <button class="cdb-btn cdb-btn-publish" id="cdbPublishBtn" onclick="cdbPublish()">
+        <button class="cdb-btn cdb-btn-publish" id="cdbPublishBtn" onclick="cdbPublish()" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Publish
         </button>
@@ -622,7 +636,7 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
                  style="display:inline-block;vertical-align:middle;margin-right:4px;stroke:#9ca3af">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
-            Last updated <span id="kpiLastUpdatedText">{{ $kpiLastUpdatedAt ? $kpiLastUpdatedAt->format(active_date_format() . ' g:i A') : '' }}</span>
+            Last updated <span id="kpiLastUpdatedText">{{ $kpiLastUpdatedAt ? (is_string($kpiLastUpdatedAt) ? $kpiLastUpdatedAt : $kpiLastUpdatedAt->format(active_date_format() . ' g:i A')) : '' }}</span>
         </p>
         <div class="cfo-kpi-exec-actions">
             @if(!empty($isQuickbooksConnected))
@@ -820,6 +834,10 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
         var dash  = document.getElementById('kpiDashboard');
         if (btn)  btn.classList.remove('active');
         if (dash) dash.classList.remove('kpi-edit-active');
+        var saveBtn = document.getElementById('cdbSaveDraftBtn');
+        var pubBtn  = document.getElementById('cdbPublishBtn');
+        if (saveBtn) saveBtn.disabled = true;
+        if (pubBtn)  pubBtn.disabled  = true;
     };
 
     window.cdbConfirmEditMode = function () {
@@ -830,6 +848,10 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
         var dash  = document.getElementById('kpiDashboard');
         if (btn)  btn.classList.add('active');
         if (dash) dash.classList.add('kpi-edit-active');
+        var saveBtn = document.getElementById('cdbSaveDraftBtn');
+        var pubBtn  = document.getElementById('cdbPublishBtn');
+        if (saveBtn) saveBtn.disabled = false;
+        if (pubBtn)  pubBtn.disabled  = false;
     };
 
     window.cdbCancelEditMode = function () {
@@ -857,17 +879,26 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
             body:    JSON.stringify({ hidden_kpis: draftHiddenKpis, company_id: currentCompanyId }),
         })
         .then(function (r) { return r.json(); })
-        .then(function () {
+        .then(function (data) {
             if (btn) { btn.disabled = false; btn.innerHTML = draftSvg + ' Save Draft'; }
             var badge = document.getElementById('cdbStatusBadge');
             if (badge) { badge.textContent = 'Draft'; badge.className = 'cdb-status-badge cdb-status-draft'; }
             if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].publish_status = 'draft';
-            _updateLastUpdatedNow();
+            // Use server-returned timestamp so display matches DB (avoids client/server clock skew)
+            if (data && data.updated_at) {
+                var _lbl = document.getElementById('kpiLastUpdatedLabel');
+                var _txt = document.getElementById('kpiLastUpdatedText');
+                if (_lbl) _lbl.style.display = '';
+                if (_txt) _txt.textContent = data.updated_at;
+                if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].last_updated_at = data.updated_at;
+            } else { _updateLastUpdatedNow(); }
             // Exit edit mode so hidden cards are completely hidden (not just greyed out)
             editModeActive = false;
             var _eb = document.getElementById('cdbEditModeBtn'), _db = document.getElementById('kpiDashboard');
             if (_eb) _eb.classList.remove('active');
             if (_db) _db.classList.remove('kpi-edit-active');
+            if (btn) btn.disabled = true;
+            var _pb = document.getElementById('cdbPublishBtn'); if (_pb) _pb.disabled = true;
             if (typeof Swal !== 'undefined') {
                 Swal.fire({ icon: 'success', title: 'Draft Saved', text: 'Changes have been saved as a draft.', confirmButtonText: 'View Dashboard', confirmButtonColor: '#0788be', showCancelButton: false}).then(function(r) { if (r.isConfirmed) window.location.reload(); });
             }
@@ -888,17 +919,24 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
             body:    JSON.stringify({ hidden_kpis: draftHiddenKpis, company_id: currentCompanyId }),
         })
         .then(function (r) { return r.json(); })
-        .then(function () {
-            if (btn) { btn.disabled = false; btn.innerHTML = pubSvg + ' Publish'; }
+        .then(function (data) {
             var badge = document.getElementById('cdbStatusBadge');
             if (badge) { badge.textContent = 'Published'; badge.className = 'cdb-status-badge cdb-status-published'; }
             if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].publish_status = 'published';
-            _updateLastUpdatedNow();
+            if (data && data.updated_at) {
+                var _lbl2 = document.getElementById('kpiLastUpdatedLabel');
+                var _txt2 = document.getElementById('kpiLastUpdatedText');
+                if (_lbl2) _lbl2.style.display = '';
+                if (_txt2) _txt2.textContent = data.updated_at;
+                if (KPI_CO_SETTINGS[currentCompanyId]) KPI_CO_SETTINGS[currentCompanyId].last_updated_at = data.updated_at;
+            } else { _updateLastUpdatedNow(); }
             // Exit edit mode so hidden cards are completely hidden (not just greyed out)
             editModeActive = false;
             var _eb2 = document.getElementById('cdbEditModeBtn'), _db2 = document.getElementById('kpiDashboard');
             if (_eb2) _eb2.classList.remove('active');
             if (_db2) _db2.classList.remove('kpi-edit-active');
+            if (btn) btn.disabled = true;
+            var _sd2 = document.getElementById('cdbSaveDraftBtn'); if (_sd2) _sd2.disabled = true;
             if (typeof Swal !== 'undefined') {
                 Swal.fire({ icon: 'success', title: 'Published!', text: 'Successfully published! The client can now see all reviewed content.', confirmButtonText: 'View Dashboard', confirmButtonColor: '#0788be', showCancelButton: false, }).then(function(r) { if (r.isConfirmed) window.location.reload(); });
             }
@@ -933,6 +971,9 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
             var dash      = document.getElementById('kpiDashboard');
             if (editBtn) editBtn.classList.remove('active');
             if (dash)    dash.classList.remove('kpi-edit-active');
+            var _sd3 = document.getElementById('cdbSaveDraftBtn'), _pb3 = document.getElementById('cdbPublishBtn');
+            if (_sd3) _sd3.disabled = true;
+            if (_pb3) _pb3.disabled = true;
 
             // Show/hide KPI embed based on whether the selected company has insights
             var hasInsights = s ? (s.has_insights !== false) : true;

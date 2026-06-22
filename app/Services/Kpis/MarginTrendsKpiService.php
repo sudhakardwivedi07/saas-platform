@@ -18,7 +18,11 @@ class MarginTrendsKpiService
             $summaryRows = self::revenueRows($pl);
             $summaryRevenue = array_sum(array_map(static fn (array $row) => (float) ($row['revenue'] ?? 0), $summaryRows));
             $summaryCogs = array_sum(array_map(static fn (array $row) => (float) ($row['cogs'] ?? 0), $summaryRows));
-            $summaryNetIncome = array_sum(array_map(static fn (array $row) => (float) ($row['net_income'] ?? 0), $summaryRows));
+            // Net Income must include ALL 12 months (including months with zero revenue such as
+            // payroll-only months). Filtering by revenue > 0 would skip negative-NI months and
+            // artificially inflate the LTM net margin.
+            $allRecent12 = array_slice($pl, -12);
+            $summaryNetIncome = array_sum(array_map(static fn (array $row) => (float) ($row['net_income'] ?? 0), $allRecent12));
             $recent = array_slice($pl, -12);
             $monthlyData = array_map(static function (array $row) {
                 $rev = (float) ($row['revenue'] ?? 0);

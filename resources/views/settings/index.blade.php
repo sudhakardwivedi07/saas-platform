@@ -225,8 +225,9 @@ if ($_n === 0) {
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                     Save Changes
                 </button>
-                <button type="button" class="btn btn-secondary" onclick="openSmtpTestModal()" style="background:#fff;border:1.5px solid #6c5ecf;color:#6c5ecf;font-weight:600;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;vertical-align:middle;margin-right:5px"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                <button type="button" id="smtpTestTrigger" onclick="openSmtpTestModal()" disabled
+                    style="background:#fff;border:1.5px solid #6c5ecf;color:#6c5ecf;font-weight:600;padding:9px 18px;border-radius:7px;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;opacity:0.45;pointer-events:none;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     Send Test Email
                 </button>
             </div>
@@ -303,6 +304,30 @@ function showSmtpResult(type, msg) {
 document.getElementById('smtpTestModal').addEventListener('click', function(e) {
     if (e.target === this) closeSmtpTestModal();
 });
+
+// Enable/disable Send Test Email trigger based on required fields
+(function() {
+    const triggerBtn = document.getElementById('smtpTestTrigger');
+    const requiredIds = ['smtp-from-name', 'smtp-from-email', 'smtp-host', 'smtp-port', 'smtp-username'];
+
+    function checkSmtpFields() {
+        const allFilled = requiredIds.every(id => {
+            const el = document.getElementById(id);
+            return el && el.value.trim() !== '';
+        });
+        triggerBtn.disabled = !allFilled;
+        triggerBtn.style.opacity = allFilled ? '1' : '0.45';
+        triggerBtn.style.pointerEvents = allFilled ? 'auto' : 'none';
+        triggerBtn.style.cursor = allFilled ? 'pointer' : 'default';
+    }
+
+    requiredIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', checkSmtpFields);
+    });
+
+    checkSmtpFields(); // run once on page load to handle pre-filled values
+})();
 </script>
 <style>
 @keyframes spin { to { transform: rotate(360deg); } }

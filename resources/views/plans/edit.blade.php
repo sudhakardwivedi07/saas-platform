@@ -2,6 +2,13 @@
 @section('title', 'Edit Plan — ' . $plan->name)
 @section('page-title', 'Edit Plan')
 
+@push('styles')
+<style>
+.plan-opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+@media(max-width:640px){.plan-opts-grid{grid-template-columns:1fr}}
+</style>
+@endpush
+
 @section('content')
 
 <a href="{{ route('settings.index') }}#tab-plans" class="back-btn">
@@ -98,7 +105,7 @@
         <div style="border-top:1px solid var(--border);margin:20px 0 18px"></div>
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);margin-bottom:14px">Options</div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px">
+        <div class="plan-opts-grid">
 
             <label style="display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;background:#fff;transition:border-color .14s" onmouseenter="this.style.borderColor='var(--blue)'" onmouseleave="this.style.borderColor='var(--border)'">
                 <input type="hidden" name="is_free" value="0">

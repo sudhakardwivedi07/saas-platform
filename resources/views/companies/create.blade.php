@@ -40,8 +40,9 @@
     background: var(--border);
     margin: 22px -22px;
 }
-
-
+@media(max-width:900px) {
+    .create-co-layout { grid-template-columns: 1fr; }
+}
 </style>
 @endpush
 

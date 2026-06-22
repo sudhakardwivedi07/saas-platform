@@ -36,9 +36,11 @@ return [
     ],
 
     'stripe' => [
-        'key'           => env('STRIPE_KEY'),
-        'secret'        => env('STRIPE_SECRET'),
-        'dashboard_url' => env('STRIPE_DASHBOARD_URL'),
+        'key'                  => env('STRIPE_KEY'),
+        'secret'               => env('STRIPE_SECRET'),
+        'dashboard_url'        => env('STRIPE_DASHBOARD_URL'),
+        'dashboard_live_url'   => env('STRIPE_DASHBOARD_LIVE_URL'),
+        'dashboard_test_url'   => env('STRIPE_DASHBOARD_TEST_URL'),
     ],
 
 ];

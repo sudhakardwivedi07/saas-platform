@@ -15,7 +15,7 @@
             {{-- Logo & Images --}}
             <div class="card">
                 <div class="card-header"><h3>Logo & Images</h3></div>
-                <div class="card-body grid grid-cols-2 gap-5">
+                <div class="card-body grid grid-cols-1 sm:grid-cols-2 gap-5">
                     @foreach([
                         ['logo',             'Primary Logo',          'Shown in the sidebar and emails. Recommended: 200×60px PNG'],
                         ['dark_logo',        'Dark Mode Logo',        'Used when dark mode is enabled. Same dimensions as primary logo.'],
@@ -47,7 +47,7 @@
             <div class="card">
                 <div class="card-header"><h3>Brand Colours</h3></div>
                 <div class="card-body">
-                    <div class="grid grid-cols-3 gap-5">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
                         @foreach([
                             ['primary_color',   'Primary',   'Main brand colour — buttons, links, sidebar'],
                             ['secondary_color', 'Secondary', 'Supporting colour — headers, borders'],

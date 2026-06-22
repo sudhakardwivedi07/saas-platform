@@ -220,15 +220,93 @@ if ($_n === 0) {
                     <option value="none" {{ ($smtpSetting->encryption ?? '') === 'none' ? 'selected' : '' }}>None</option>
                 </select>
             </div>
-            <div style="margin-top:20px">
+            <div style="margin-top:20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                 <button type="submit" class="btn btn-primary">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                     Save Changes
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="openSmtpTestModal()" style="background:#fff;border:1.5px solid #6c5ecf;color:#6c5ecf;font-weight:600;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;vertical-align:middle;margin-right:5px"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                    Send Test Email
                 </button>
             </div>
         </form>
     </div>
 </div>
+
+{{-- SMTP Test Email Modal --}}
+<div id="smtpTestModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:12px;padding:28px 32px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.18);position:relative;">
+        <button onclick="closeSmtpTestModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1;">&times;</button>
+        <div style="font-size:17px;font-weight:700;color:#1a1a2e;margin-bottom:6px;">Send Test Email</div>
+        <div style="font-size:13px;color:#666;margin-bottom:18px;">Enter an email address to receive a test message using your saved SMTP settings.</div>
+        <label style="font-size:13px;font-weight:600;color:#444;display:block;margin-bottom:6px;">Recipient Email</label>
+        <input type="email" id="smtpTestEmail" class="f-inp" placeholder="you@example.com" value="{{ auth()->user()->email }}" style="width:100%;margin-bottom:16px;">
+        <div id="smtpTestResult" style="display:none;padding:10px 14px;border-radius:7px;font-size:13px;margin-bottom:14px;"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+            <button type="button" onclick="closeSmtpTestModal()" style="padding:8px 18px;border-radius:7px;border:1.5px solid #ddd;background:#fff;color:#555;font-size:14px;cursor:pointer;font-weight:600;">Cancel</button>
+            <button type="button" id="smtpTestBtn" onclick="sendSmtpTest()" style="padding:8px 20px;border-radius:7px;background:#6c5ecf;color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;">
+                <svg id="smtpTestSpinner" style="display:none;animation:spin .8s linear infinite;" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" width="15" height="15"><circle cx="12" cy="12" r="10" stroke-opacity=".3"/><path d="M12 2a10 10 0 010 20"/></svg>
+                Send
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function openSmtpTestModal() {
+    document.getElementById('smtpTestModal').style.display = 'flex';
+    document.getElementById('smtpTestResult').style.display = 'none';
+    document.getElementById('smtpTestEmail').value = '{{ auth()->user()->email }}';
+}
+function closeSmtpTestModal() {
+    document.getElementById('smtpTestModal').style.display = 'none';
+}
+function sendSmtpTest() {
+    const email = document.getElementById('smtpTestEmail').value.trim();
+    const result = document.getElementById('smtpTestResult');
+    const btn = document.getElementById('smtpTestBtn');
+    const spinner = document.getElementById('smtpTestSpinner');
+
+    if (!email) { showSmtpResult('error', 'Please enter a recipient email address.'); return; }
+
+    btn.disabled = true;
+    spinner.style.display = 'inline-block';
+    result.style.display = 'none';
+
+    fetch('{{ route('settings.email.test') }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+        body: JSON.stringify({ to_email: email })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showSmtpResult('success', data.message || 'Test email sent successfully!');
+        } else {
+            showSmtpResult('error', data.message || 'SMTP test failed.');
+        }
+    })
+    .catch(() => showSmtpResult('error', 'Network error. Please try again.'))
+    .finally(() => { btn.disabled = false; spinner.style.display = 'none'; });
+}
+function showSmtpResult(type, msg) {
+    const el = document.getElementById('smtpTestResult');
+    el.style.display = 'block';
+    if (type === 'success') {
+        el.style.background = '#f0fdf4'; el.style.color = '#166534'; el.style.border = '1px solid #bbf7d0';
+    } else {
+        el.style.background = '#fef2f2'; el.style.color = '#991b1b'; el.style.border = '1px solid #fecaca';
+    }
+    el.textContent = msg;
+}
+document.getElementById('smtpTestModal').addEventListener('click', function(e) {
+    if (e.target === this) closeSmtpTestModal();
+});
+</script>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
 
 @endif {{-- /tab-email --}}
 

@@ -254,9 +254,14 @@ class User extends Authenticatable
         );
     }
 
+    protected function name(): Attribute
+    {
+        return Attribute::get(fn ($value) => $value ? mb_convert_case($value, MB_CASE_TITLE, 'UTF-8') : $value);
+    }
+
     protected function firstName(): Attribute
     {
-        return Attribute::get(fn () => explode(' ', trim($this->name))[0]);
+        return Attribute::get(fn () => explode(' ', trim($this->attributes['name'] ?? ''))[0]);
     }
 
     // ─── Business Logic ────────────────────────────────────────────────────────

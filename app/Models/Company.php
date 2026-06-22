@@ -156,6 +156,11 @@ class Company extends BaseModel
 
     // ─── Computed Properties ───────────────────────────────────────────────────
 
+    protected function companyName(): Attribute
+    {
+        return Attribute::get(fn ($value) => $value ? mb_convert_case($value, MB_CASE_TITLE, 'UTF-8') : $value);
+    }
+
     protected function displayName(): Attribute
     {
         return Attribute::get(fn () => $this->app_name ?: $this->company_name);

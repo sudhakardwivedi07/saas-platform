@@ -61,6 +61,7 @@ Route::middleware(['auth', 'super-admin'])
         Route::get('settings',       [GlobalSettingController::class, 'index'])->name('settings');
         Route::post('settings',      [GlobalSettingController::class, 'update'])->name('settings.update');
         Route::post('smtp-settings',  [GlobalSettingController::class, 'updateSmtp'])->name('smtp_settings.update');
+        Route::post('smtp-test',      [GlobalSettingController::class, 'testSmtp'])->name('smtp_settings.test');
         Route::post('sms-settings',   [GlobalSettingController::class, 'updateSms'])->name('sms_settings.update');
         Route::post('date-format',    [GlobalSettingController::class, 'updateDateFormat'])->name('settings.date_format.update');
 

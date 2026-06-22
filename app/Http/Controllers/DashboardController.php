@@ -72,9 +72,9 @@ class DashboardController extends AccountBaseController
                 $selectedCompanyId = $this->selectedKpiCompanyId ?? $company->id;
                 $dashSetting = ClientDashboardSetting::forCompany($selectedCompanyId);
 
-                // If Save Draft / Publish happened more recently than the last analyzed report,
+                // If dashboard settings were saved more recently than the last insight action,
                 // use that timestamp so "Last updated" reflects the most recent admin action.
-                if ($this->kpiLastUpdatedAt && $dashSetting->updated_at && $dashSetting->updated_at > $this->kpiLastUpdatedAt) {
+                if ($dashSetting->updated_at && ($this->kpiLastUpdatedAt === null || $dashSetting->updated_at > $this->kpiLastUpdatedAt)) {
                     $this->kpiLastUpdatedAt = $dashSetting->updated_at;
                 }
 
@@ -502,8 +502,14 @@ class DashboardController extends AccountBaseController
         // manages multiple companies — so the company selector is always visible for multi-company users.
         $this->showKpiDashboard = $this->hasAnalyzedInsights || ($this->kpiCompanies->count() > 1);
         // Timestamp of the most recent analyzed insight — shown as "Last updated" on the dashboard.
-        // Null when no insights exist (falls back to hiding the timestamp gracefully).
-        $this->kpiLastUpdatedAt = $latestAnalyzedReport?->updated_at ?? $latestAnalyzedReport?->created_at;
+        // Use company.last_active_at (updated via raw SQL on every insight action) as the source of
+        // truth so it reflects Generate, Save Draft, and Publish without relying on Eloquent timestamps.
+        $_lastUpdatedCoId = (int) ($latestAnalyzedReport?->company_id ?? $tenantId);
+        $_lastUpdatedCo   = $allPortfolioCompanies->firstWhere('id', $_lastUpdatedCoId)
+            ?? Company::withoutGlobalScopes()->find($_lastUpdatedCoId);
+        $this->kpiLastUpdatedAt = $_lastUpdatedCo?->last_active_at
+            ?? $latestAnalyzedReport?->updated_at
+            ?? $latestAnalyzedReport?->created_at;
 
         // Per-company insights flag used by the client-side company switch to toggle embed/placeholder.
         $kpiCompanyInsightsMap = [];
@@ -565,7 +571,7 @@ class DashboardController extends AccountBaseController
                     $q->orWhereNull('company_id');
                 }
             })
-            ->orderByDesc('created_at')
+            ->orderByDesc('updated_at')
             ->first();
     }
 

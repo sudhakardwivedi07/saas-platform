@@ -136,7 +136,7 @@
                             <div style="width:34px;height:34px;border-radius:9px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:-.2px">{{ $initials }}</div>
                             <div style="min-width:0" title="{{ $client->name }}">
                                 <div style="font-weight:500;font-size:13px;color:var(--text-1);text-transform:capitalize;white-space:nowrap">{{ Str::limit($client->name, 30) }}</div>
-                                <div class="cell-trunc-sm" style="font-size:11.5px;color:var(--text-3)">{{ $client->email }}</div>
+                                <div class="cell-trunc-sm" style="font-size:11.5px;color:var(--text-3);text-transform:none" title="{{ $client->email }}">{{ $client->email }}</div>
                             </div>
                         </div>
                     </td>
@@ -300,7 +300,7 @@
                             <div style="min-width:0" title="{{ $company->company_name }}">
                                 <div style="font-weight:600;font-size:13px;color:var(--text-1);text-transform:capitalize;white-space:nowrap">{{ Str::limit($company->company_name, 30) }}</div>
                                 @if($company->company_email)
-                                <div class="cell-trunc-sm" style="font-size:11px;color:var(--text-3)">{{ $company->company_email }}</div>
+                                <div class="cell-trunc-sm" style="font-size:11px;color:var(--text-3);text-transform:none" title="{{ $company->company_email }}">{{ $company->company_email }}</div>
                                 @endif
                             </div>
                         </div>

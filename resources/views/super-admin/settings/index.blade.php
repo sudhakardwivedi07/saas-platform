@@ -157,7 +157,7 @@
                     </div>
                     <div class="f-group">
                         <label class="f-label">Password</label>
-                        <input type="password" name="smtp_password" class="f-inp"
+                        <input type="password" name="smtp_password" id="smtp-password" class="f-inp"
                                placeholder="••••••••" autocomplete="new-password">
                     </div>
                     <div class="f-group">
@@ -185,10 +185,110 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     <div class="info-banner-txt">SMTP settings are stored in the database and applied at runtime when sending emails.</div>
                 </div>
-                <button type="button" onclick="saveSmtpSettings()" class="btn btn-primary">Save SMTP Settings</button>
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                    <button type="button" onclick="saveSmtpSettings()" class="btn btn-primary">Save SMTP Settings</button>
+                    <button type="button" id="saSmtpTestTrigger" onclick="openSaSmtpTestModal()" disabled
+                        style="padding:9px 18px;border-radius:7px;background:#fff;border:1.5px solid #6c5ecf;color:#6c5ecf;font-weight:600;font-size:14px;cursor:default;display:flex;align-items:center;gap:6px;opacity:0.45;pointer-events:none;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Send Test Email
+                    </button>
+                </div>
             </form>
         </div>
     </div>
+
+    {{-- SA SMTP Test Modal --}}
+    <div id="saSmtpTestModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:12px;padding:28px 32px;width:100%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,.18);position:relative;">
+            <button onclick="closeSaSmtpTestModal()" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1;">&times;</button>
+            <div style="font-size:17px;font-weight:700;color:#1a1a2e;margin-bottom:6px;">Send Test Email</div>
+            <div style="font-size:13px;color:#666;margin-bottom:18px;">Enter an email address to receive a test message using your saved SMTP settings.</div>
+            <label style="font-size:13px;font-weight:600;color:#444;display:block;margin-bottom:6px;">Recipient Email</label>
+            <input type="email" id="saSmtpTestEmail" class="f-inp" placeholder="you@example.com" value="{{ auth()->user()->email }}" style="width:100%;margin-bottom:16px;">
+            <div id="saSmtpTestResult" style="display:none;padding:10px 14px;border-radius:7px;font-size:13px;margin-bottom:14px;"></div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" onclick="closeSaSmtpTestModal()" style="padding:8px 18px;border-radius:7px;border:1.5px solid #ddd;background:#fff;color:#555;font-size:14px;cursor:pointer;font-weight:600;">Cancel</button>
+                <button type="button" id="saSmtpTestBtn" onclick="sendSaSmtpTest()" style="padding:8px 20px;border-radius:7px;background:#6c5ecf;color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:7px;">
+                    <svg id="saSmtpTestSpinner" style="display:none;animation:spin .8s linear infinite;" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" width="15" height="15"><circle cx="12" cy="12" r="10" stroke-opacity=".3"/><path d="M12 2a10 10 0 010 20"/></svg>
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+    <script>
+    function openSaSmtpTestModal() {
+        document.getElementById('saSmtpTestModal').style.display = 'flex';
+        document.getElementById('saSmtpTestResult').style.display = 'none';
+    }
+    function closeSaSmtpTestModal() {
+        document.getElementById('saSmtpTestModal').style.display = 'none';
+    }
+    function sendSaSmtpTest() {
+        const email = document.getElementById('saSmtpTestEmail').value.trim();
+        const result = document.getElementById('saSmtpTestResult');
+        const btn = document.getElementById('saSmtpTestBtn');
+        const spinner = document.getElementById('saSmtpTestSpinner');
+
+        if (!email) { showSaSmtpResult('error', 'Please enter a recipient email address.'); return; }
+
+        btn.disabled = true;
+        spinner.style.display = 'inline-block';
+        result.style.display = 'none';
+
+        fetch('{{ route('superadmin.smtp_settings.test') }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+            body: JSON.stringify({ to_email: email })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showSaSmtpResult('success', data.message || 'Test email sent successfully!');
+            } else {
+                showSaSmtpResult('error', data.message || 'SMTP test failed.');
+            }
+        })
+        .catch(() => showSaSmtpResult('error', 'Network error. Please try again.'))
+        .finally(() => { btn.disabled = false; spinner.style.display = 'none'; });
+    }
+    function showSaSmtpResult(type, msg) {
+        const el = document.getElementById('saSmtpTestResult');
+        el.style.display = 'block';
+        if (type === 'success') {
+            el.style.background = '#f0fdf4'; el.style.color = '#166534'; el.style.border = '1px solid #bbf7d0';
+        } else {
+            el.style.background = '#fef2f2'; el.style.color = '#991b1b'; el.style.border = '1px solid #fecaca';
+        }
+        el.textContent = msg;
+    }
+    document.getElementById('saSmtpTestModal').addEventListener('click', function(e) {
+        if (e.target === this) closeSaSmtpTestModal();
+    });
+
+    // Enable/disable Send Test Email trigger based on required fields
+    (function() {
+        const triggerBtn = document.getElementById('saSmtpTestTrigger');
+        const requiredIds = ['smtp-host', 'smtp-port', 'smtp-username', 'smtp-from_address', 'smtp-from_name'];
+
+        function checkSaSmtpFields() {
+            const allFilled = requiredIds.every(id => {
+                const el = document.getElementById(id);
+                return el && el.value.trim() !== '';
+            });
+            triggerBtn.disabled = !allFilled;
+            triggerBtn.style.opacity = allFilled ? '1' : '0.45';
+            triggerBtn.style.pointerEvents = allFilled ? 'auto' : 'none';
+            triggerBtn.style.cursor = allFilled ? 'pointer' : 'default';
+        }
+
+        requiredIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', checkSaSmtpFields);
+        });
+
+        checkSaSmtpFields(); // run once on page load to handle pre-filled values
+    })();
+    </script>
 
     {{-- Email Templates --}}
     <div id="sub-templates" class="tab-panel">

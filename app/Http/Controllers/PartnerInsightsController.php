@@ -559,6 +559,8 @@ class PartnerInsightsController extends AccountBaseController
         // Draft → update in place
         $report->insight_json_data = $jsonData;
         $report->save();
+        // Always bump updated_at so "Last Updated" reflects this save even when content is unchanged
+        $report->touch();
 
         try {
             EventLog::record('insight_saved', 'Insight report draft saved', [

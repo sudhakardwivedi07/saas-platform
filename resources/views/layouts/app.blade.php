@@ -247,6 +247,10 @@ tbody tr:hover td{background:#fafcff}
 .dm-item:hover svg{stroke:var(--blue)}
 .dm-divider{height:1px;background:var(--border);margin:3px 0}
 .dm-danger{color:var(--red)}
+.dm-item--danger{color:#ef4444}
+.dm-item--danger svg{stroke:#ef4444}
+.dm-item--danger:hover{background:#fef2f2}
+.dm-item--danger:hover svg{stroke:#dc2626}
 .dm-danger svg{stroke:var(--red)}
 .dm-danger:hover{background:#fff5f5}
 

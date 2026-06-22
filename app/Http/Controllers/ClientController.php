@@ -530,7 +530,7 @@ class ClientController extends AccountBaseController
                     $q->orWhereNull('company_id');
                 }
             })
-            ->orderByDesc('created_at')
+            ->orderByDesc('updated_at')
             ->first();
 
         $hasAnalyzedInsights  = (bool) $latestAnalyzedReport;
@@ -573,7 +573,17 @@ class ClientController extends AccountBaseController
         $this->insightInProgress   = $insightInProgress;
         $this->monthlyLimit        = $monthlyLimit;
         $this->monthlyUsed         = $monthlyUsed;
+        // Use company.last_active_at as source of truth (updated via raw SQL on all insight actions)
+        $_lastUpdatedCo = $kpiCompanies->firstWhere('id', $selectedKpiCompanyId)
+            ?? Company::withoutGlobalScopes()->find($selectedKpiCompanyId);
+        $kpiLastUpdatedAt = $_lastUpdatedCo?->last_active_at
+            ?? $latestAnalyzedReport?->updated_at
+            ?? $latestAnalyzedReport?->created_at;
         $dashSetting = ClientDashboardSetting::forCompany($company->id);
+        if ($dashSetting->updated_at && ($kpiLastUpdatedAt === null || $dashSetting->updated_at > $kpiLastUpdatedAt)) {
+            $kpiLastUpdatedAt = $dashSetting->updated_at;
+        }
+        $this->kpiLastUpdatedAt       = $kpiLastUpdatedAt;
         $this->dashboardPublishStatus = $dashSetting->publish_status;
         $this->hiddenKpis             = $dashSetting->hidden_kpis ?? [];
         $this->draftHiddenKpis        = $dashSetting->draft_hidden_kpis ?? [];
@@ -608,7 +618,15 @@ class ClientController extends AccountBaseController
             'publish_status'    => 'draft',
         ]);
 
-        return response()->json(['status' => 'success', 'message' => 'Draft saved']);
+        // Always bump last_active_at via raw SQL so "Last Updated" reflects this action
+        // regardless of whether the setting values changed (Eloquent dirty-check would skip it).
+        Company::withoutGlobalScopes()->where('id', $company->id)->update(['last_active_at' => now()]);
+
+        return response()->json([
+            'status'     => 'success',
+            'message'    => 'Draft saved',
+            'updated_at' => now()->format(active_date_format() . ' g:i A'),
+        ]);
     }
 
     public function publishDashboard(Request $request, $id)
@@ -634,7 +652,13 @@ class ClientController extends AccountBaseController
             'publish_status'    => 'published',
         ]);
 
-        return response()->json(['status' => 'success', 'message' => 'Dashboard published']);
+        Company::withoutGlobalScopes()->where('id', $company->id)->update(['last_active_at' => now()]);
+
+        return response()->json([
+            'status'     => 'success',
+            'message'    => 'Dashboard published',
+            'updated_at' => now()->format(active_date_format() . ' g:i A'),
+        ]);
     }
 
     public function insights($id)

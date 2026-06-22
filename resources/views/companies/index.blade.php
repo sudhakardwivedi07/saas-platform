@@ -185,6 +185,7 @@
 .co-err{font-size:11.5px;color:#ef4444;margin-top:5px;display:flex;align-items:center;gap:5px;line-height:1.3}
 .co-err::before{content:'';height:12px;flex-shrink:0;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat}
 .mf-inp.co-invalid,.mf-sel.co-invalid{border-color:#ef4444!important;box-shadow:0 0 0 3px rgba(239,68,68,.08)}
+#co-table { min-width: 560px; }
 </style>
 
 {{-- ── Add Company Modal ── --}}

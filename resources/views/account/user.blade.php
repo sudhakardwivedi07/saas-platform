@@ -19,6 +19,8 @@
 .ua-tabs {
     display: flex;
     gap: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 .ua-tab {
     padding: 14px 22px;

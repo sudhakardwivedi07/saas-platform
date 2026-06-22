@@ -13,7 +13,7 @@
                   action="{{ route('profile.update') }}" enctype="multipart/form-data">
                 @csrf
 
-                <div class="flex items-center gap-5 mb-6">
+                <div class="flex flex-wrap items-center gap-5 mb-6">
                     <div class="relative">
                         <img id="avatar-preview"
                              src="{{ $profileUser->image_url }}"
@@ -37,8 +37,8 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="form-group col-span-2">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="form-group col-span-2 sm:col-span-2">
                         <label class="form-label">Full Name <span>*</span></label>
                         <input type="text" name="name" class="form-control"
                                value="{{ old('name', $profileUser->name) }}" required>
@@ -117,7 +117,7 @@
     <div class="card">
         <div class="card-header"><h3>Account Information</h3></div>
         <div class="card-body">
-            <div class="grid grid-cols-2 gap-4 text-sm">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                     <p class="text-gray-400 text-xs uppercase tracking-wider mb-1">Account Type</p>
                     <p class="font-medium">{{ $profileUser->is_superadmin ? 'Super Administrator' : 'Tenant User' }}</p>

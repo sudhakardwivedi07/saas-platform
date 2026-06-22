@@ -26,7 +26,7 @@
 
             {{-- SMTP fields --}}
             <div id="smtp-fields" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="form-group">
                         <label class="form-label">SMTP Host</label>
                         <input type="text" name="host" class="form-control"
@@ -38,7 +38,7 @@
                                value="{{ $smtpSetting?->port ?? 587 }}">
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="form-group">
                         <label class="form-label">Username</label>
                         <input type="text" name="username" class="form-control"

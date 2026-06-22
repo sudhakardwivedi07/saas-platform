@@ -224,6 +224,7 @@ tbody tr:hover td{background:#fafcff}
 .mf-field{margin-bottom:8px}
 .mf-foot{display:flex;justify-content:flex-end;gap:9px;margin-top:20px}
 .form-2col{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px;align-items:start}
+@media(max-width:640px){.form-2col{grid-template-columns:1fr}}
 
 /* ── FORMS ────────────────────────────────────────────── */
 .f-label{display:block;font-size:13px;font-weight:500;margin-bottom:5px;color:var(--text-1)}
@@ -310,6 +311,7 @@ tbody tr:hover td{background:#fafcff}
 
 /* ── BRANDING ─────────────────────────────────────────── */
 .brand-layout{display:grid;grid-template-columns:1fr 310px;gap:16px;align-items:start}
+@media(max-width:900px){.brand-layout{grid-template-columns:1fr}.preview-sticky{position:static;top:auto}}
 .brand-sec{background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;box-shadow:var(--sh-sm);margin-bottom:14px}
 .brand-sec-title{font-size:13.5px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:7px}
 .upload-zone{border:1.5px dashed #bfdbfe;border-radius:9px;background:var(--blue-pale);padding:22px;text-align:center;cursor:pointer;transition:border-color .14s}

@@ -222,7 +222,7 @@
         <div class="fin-hist-title">Invoice &amp; Payment History</div>
     </div>
     @if($recentPayments->isNotEmpty())
-    <table class="fin-table">
+    <div style="overflow-x:auto"><table class="fin-table" style="min-width:560px">
         <thead>
             <tr>
                 <th>Client Name</th>
@@ -275,12 +275,12 @@
         </tr>
         @endforeach
         </tbody>
-    </table>
+    </table></div>
     @elseif(isset($subscribedCompanies) && $subscribedCompanies->isNotEmpty())
     <p style="font-size:12.5px;color:var(--text-3);padding:0 24px 12px;margin:0;border-bottom:1px solid var(--border)">
         No card payments recorded yet. Below is each client company’s assigned plan and subscription status (invoices appear after Stripe charges).
     </p>
-    <table class="fin-table">
+    <div style="overflow-x:auto"><table class="fin-table" style="min-width:560px">
         <thead>
             <tr>
                 <th>Client Name</th>
@@ -344,7 +344,7 @@
         </tr>
         @endforeach
         </tbody>
-    </table>
+    </table></div>
     @else
     <div class="fin-empty-state" style="padding:40px 24px">
         <div class="fin-empty-title" style="font-size:15px">No billing rows yet</div>

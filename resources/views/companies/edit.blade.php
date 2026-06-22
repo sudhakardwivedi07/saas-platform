@@ -25,6 +25,9 @@
     margin-right: 8px;
 }
 .mf-inp.co-invalid { border-color: var(--red) !important; }
+@media(max-width:900px) {
+    .create-co-layout { grid-template-columns: 1fr; }
+}
 </style>
 @endpush
 

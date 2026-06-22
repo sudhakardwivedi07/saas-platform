@@ -796,6 +796,9 @@
 
 @push('styles')
 <style>
+#clients-table { min-width: 700px; }
+#companies-table { min-width: 700px; }
+
 /* ── Disabled CTA tooltip ─────────────────────────────── */
 .cta-disabled-wrap {
     position: relative;

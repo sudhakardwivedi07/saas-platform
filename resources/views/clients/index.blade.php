@@ -134,9 +134,9 @@
                     <td data-date="{{ $client->created_at?->format('Y-m-d') ?? '' }}" data-order="{{ $client->created_at?->timestamp ?? 0 }}">
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:34px;height:34px;border-radius:9px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;letter-spacing:-.2px">{{ $initials }}</div>
-                            <div style="min-width:0">
-                                <div class="cell-trunc" style="font-weight:500;font-size:13px;color:var(--text-1);text-transform:capitalize" title="{{ $client->name }}">{{ $client->name }}</div>
-                                <div class="cell-trunc-sm" style="font-size:11.5px;color:var(--text-3)" title="{{ $client->email }}">{{ $client->email }}</div>
+                            <div style="min-width:0" title="{{ $client->name }}">
+                                <div style="font-weight:500;font-size:13px;color:var(--text-1);text-transform:capitalize;white-space:nowrap">{{ Str::limit($client->name, 30) }}</div>
+                                <div class="cell-trunc-sm" style="font-size:11.5px;color:var(--text-3)">{{ $client->email }}</div>
                             </div>
                         </div>
                     </td>
@@ -218,10 +218,10 @@
                     <option value="connected">Connected</option>
                     <option value="not connected">Not Connected</option>
                 </select>
-                <select class="sel" id="company-client-filter" autocomplete="off">
+                <select class="sel" id="company-client-filter" autocomplete="off" style="max-width:200px">
                     <option value="">Select Client</option>
                     @foreach($clientsList as $cl)
-                    <option value="{{ $cl->name }}">{{ $cl->name }}</option>
+                    <option value="{{ $cl->name }}" title="{{ $cl->name }}">{{ Str::limit($cl->name, 25) }}</option>
                     @endforeach
                 </select>
                 {{-- Date range filter --}}
@@ -297,10 +297,10 @@
                     <td data-order="{{ $company->created_at->timestamp }}">
                         <div style="display:flex;align-items:center;gap:10px">
                             <div style="width:34px;height:34px;border-radius:9px;background:{{ $avatarColor }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">{{ $initials }}</div>
-                            <div style="min-width:0">
-                                <div class="cell-trunc" style="font-weight:600;font-size:13px;color:var(--text-1);text-transform:capitalize" title="{{ $company->company_name }}">{{ $company->company_name }}</div>
+                            <div style="min-width:0" title="{{ $company->company_name }}">
+                                <div style="font-weight:600;font-size:13px;color:var(--text-1);text-transform:capitalize;white-space:nowrap">{{ Str::limit($company->company_name, 30) }}</div>
                                 @if($company->company_email)
-                                <div class="cell-trunc-sm" style="font-size:11px;color:var(--text-3)" title="{{ $company->company_email }}">{{ $company->company_email }}</div>
+                                <div class="cell-trunc-sm" style="font-size:11px;color:var(--text-3)">{{ $company->company_email }}</div>
                                 @endif
                             </div>
                         </div>
@@ -400,7 +400,7 @@
             <input type="hidden" id="edit-client-id">
             <div class="mf-field" style="margin-top:4px">
                 <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
-                <input type="text" name="name" id="edit-client-name" class="mf-inp">
+                <input type="text" name="name" id="edit-client-name" class="mf-inp" maxlength="100">
                 <div id="err-edit-name" class="ac-err"></div>
             </div>
             <div class="mf-field">
@@ -883,7 +883,8 @@ $(document).ready(function() {
         paging: true, pageLength: 15, lengthChange: false,
         searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
         order: [[0, 'desc']],
-        columnDefs: [{ orderable: false, targets: [2, 6] }],
+        autoWidth: false,
+        columnDefs: [{ orderable: false, targets: [2, 6] }, { width: '240px', targets: [0] }],
         infoCallback: function(settings, start, end, max, total, pre) {
             return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'clients' : 'client');
         },
@@ -1015,7 +1016,9 @@ async function validateAndSubmitAddClient(btn) {
     clearErr('ac-name', 'err-name');
     if (!name) {
         setErr('ac-name', 'err-name', 'Full Name is required.');
-    } else if (name.length < 2 || name.length > 100 || !/^[a-zA-Z\s'\-]+$/.test(name)) {
+    } else if (name.length > 100) {
+        setErr('ac-name', 'err-name', 'Full Name cannot exceed 100 characters.');
+    } else if (name.length < 2 || !/^[a-zA-Z\s'\-]+$/.test(name)) {
         setErr('ac-name', 'err-name', 'Please enter a valid Full Name.');
     }
 
@@ -1437,7 +1440,11 @@ function validateAndSubmitEditClient() {
         if (nameEl) nameEl.classList.add('ac-invalid');
         if (nameErr) { nameErr.textContent = 'Full Name is required.'; nameErr.style.display = 'block'; }
         ok = false;
-    } else if (name.length < 2 || name.length > 100 || !/^[a-zA-Z\s'\-]+$/.test(name)) {
+    } else if (name.length > 100) {
+        if (nameEl) nameEl.classList.add('ac-invalid');
+        if (nameErr) { nameErr.textContent = 'Full Name cannot exceed 100 characters.'; nameErr.style.display = 'block'; }
+        ok = false;
+    } else if (name.length < 2 || !/^[a-zA-Z\s'\-]+$/.test(name)) {
         if (nameEl) nameEl.classList.add('ac-invalid');
         if (nameErr) { nameErr.textContent = 'Please enter a valid Full Name.'; nameErr.style.display = 'block'; }
         ok = false;

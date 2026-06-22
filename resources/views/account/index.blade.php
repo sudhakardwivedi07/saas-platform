@@ -1326,13 +1326,13 @@ function actClearFilters() {
 
 // ── Tab auto-refresh (Activity Log & Subscription tabs) ───────────────────────
 // Fires whenever the global tab-switcher dispatches 'tabActivated'.
-// Only the two live-data tabs are refreshed; edit-form tabs (Profile, Branding,
-// Login Page) are intentionally skipped so unsaved changes are not lost.
+// Only tab-subscription is refreshed (live billing data); edit-form tabs and
+// tab-activity use the initial server render so the layout stays stable.
 document.addEventListener('tabActivated', function (e) {
     var tabId = e.detail.tabId;
     // Guard: only run on the My Account page
     if (!document.getElementById('tab-profile')) return;
-    if (['tab-activity', 'tab-subscription'].indexOf(tabId) === -1) return;
+    if (tabId !== 'tab-subscription') return;
     _refreshAccountTab(tabId);
 });
 

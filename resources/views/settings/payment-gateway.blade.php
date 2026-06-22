@@ -18,7 +18,7 @@
             <div>
                 <p class="font-medium mb-1">Setup Instructions</p>
                 <ol class="list-decimal list-inside space-y-1 text-blue-700">
-                    <li>Get your API keys from <a href="https://dashboard.stripe.com/apikeys" target="_blank" class="underline">Stripe Dashboard</a></li>
+                    <li>Get your API keys from <a href="{{ ($gateway?->mode ?? 'test') === 'live' ? config('services.stripe.dashboard_live_url') : config('services.stripe.dashboard_test_url') }}" target="_blank" rel="noopener noreferrer" class="underline">Stripe Dashboard</a></li>
                     <li>Add your webhook endpoint in Stripe: <code class="bg-blue-100 px-1 rounded text-xs">{{ url('webhooks/stripe') }}</code></li>
                     <li>Copy the webhook signing secret and paste it below</li>
                     <li>Switch to Live mode only when ready for production</li>

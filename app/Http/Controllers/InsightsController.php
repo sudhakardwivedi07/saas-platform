@@ -1075,9 +1075,10 @@ class InsightsController extends AccountBaseController
 
         $authUser        = auth()->user();
         $clientFirstName = explode(' ', trim($authUser->name))[0];
+        $firmId          = company()->created_by ?? company()->id;
 
         app(\App\Services\EmailService::class)->sendFromFirm(
-            firmId:         $authUser->company_id,
+            firmId:         $firmId,
             toEmail:        $request->recipient_email,
             templateSlug:   'share_insight_with_client',
             placeholders:   [

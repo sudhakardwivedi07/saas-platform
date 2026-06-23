@@ -226,7 +226,6 @@
         {{-- ── Sections ──────────────────────────────────── --}}
         @foreach($sections as $i => $section)
         <div class="ipv-section">
-            <div class="ipv-section-label">SECTION {{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}</div>
             <div class="ipv-section-title">{{ $section['title'] }}</div>
             <div class="ipv-section-sep"></div>
             <div class="ipv-section-content">{!! $section['formatted_content'] !!}</div>

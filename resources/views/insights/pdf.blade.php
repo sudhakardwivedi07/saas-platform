@@ -129,7 +129,6 @@
 {{-- ── Section pages ────────────────────────────────────────────── --}}
 @foreach($sections as $i => $section)
 <div class="page">
-    <div class="section-label">SECTION {{ str_pad($i + 1, 2, '0', STR_PAD_LEFT) }}</div>
     <div class="section-title">{{ $section['title'] }}</div>
     <div class="section-sep"></div>
     <div class="section-content">

@@ -686,13 +686,16 @@ class PartnerInsightsController extends AccountBaseController
         }
 
         // Convert logo to base64 so DOMPDF can embed it without HTTP requests
+        // Only JPEG/PNG/GIF are supported by DOMPDF; SVG/WebP cause "image not found" errors
         $logoBase64 = '';
         $branding   = $this->branding;
         if ($branding?->logo) {
             $logoPath = storage_path('app/public/' . $branding->logo);
             if (file_exists($logoPath)) {
-                $mime       = mime_content_type($logoPath);
-                $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                $mime = mime_content_type($logoPath);
+                if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
+                    $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                }
             }
         }
 
@@ -1167,8 +1170,13 @@ class PartnerInsightsController extends AccountBaseController
                 $processed[] = $line; continue;
             }
             if (preg_match('/^[\-\*\+]\s+(.+)$/', $trimmed, $m)) {
-                if ($inList && $listType !== 'ul') { $processed[] = "<{$listType}>" . implode('', $listItems) . "</{$listType}>"; $listItems = []; }
-                $inList = true; $listType = 'ul'; $listItems[] = "<li>{$m[1]}</li>";
+                if (str_ends_with(trim($m[1]), ':')) {
+                    if ($inList && $listItems) { $processed[] = "<{$listType}>" . implode('', $listItems) . "</{$listType}>"; $listItems = []; $inList = false; }
+                    $processed[] = '<p><strong style="color:inherit;">' . $m[1] . '</strong></p>';
+                } else {
+                    if ($inList && $listType !== 'ul') { $processed[] = "<{$listType}>" . implode('', $listItems) . "</{$listType}>"; $listItems = []; }
+                    $inList = true; $listType = 'ul'; $listItems[] = "<li>{$m[1]}</li>";
+                }
             } elseif (preg_match('/^\d+\.\s+(.+)$/', $trimmed, $m) && !preg_match('/^[A-Z\s:]+$/', $trimmed)) {
                 if ($inList && $listType !== 'ol') { $processed[] = "<{$listType}>" . implode('', $listItems) . "</{$listType}>"; $listItems = []; }
                 $inList = true; $listType = 'ol'; $listItems[] = "<li>{$m[1]}</li>";
@@ -1184,7 +1192,7 @@ class PartnerInsightsController extends AccountBaseController
         foreach (preg_split('/\n\n+/', $content) as $para) {
             $para = trim($para);
             if (!$para) continue;
-            if (preg_match('/^<(ul|ol|table|h[1-6]|hr)/i', $para)) $out .= $para . "\n";
+            if (preg_match('/^<(ul|ol|table|div|h[1-6]|hr)/i', $para)) $out .= $para . "\n";
             else $out .= '<p>' . preg_replace('/\n/', '<br>', $para) . '</p>' . "\n";
         }
         $out = preg_replace('/<p>\s*<\/p>/', '', $out);
@@ -1236,8 +1244,10 @@ class PartnerInsightsController extends AccountBaseController
         if ($this->branding?->logo) {
             $logoPath = storage_path('app/public/' . $this->branding->logo);
             if (file_exists($logoPath)) {
-                $mime       = mime_content_type($logoPath);
-                $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                $mime = mime_content_type($logoPath);
+                if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
+                    $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                }
             }
         }
 

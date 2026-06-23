@@ -808,7 +808,7 @@
                             </div>`,
                         showConfirmButton: true,
                         confirmButtonText: 'Got it',
-                        confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--blue').trim() || '#1a6aa8',
+                        confirmButtonColor: getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25',
                         allowOutsideClick: false,
                     }).then(() => {
                         if (data.redirect_url) window.location.href = data.redirect_url;

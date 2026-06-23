@@ -357,14 +357,31 @@ class QuickBooksKpiDataService
             if ($name === '') {
                 continue;
             }
+
+            $current  = self::n($r[1] ?? 0);
+            $b1_30    = self::n($r[2] ?? 0);
+            $b31_60   = self::n($r[3] ?? 0);
+            $b61_90   = self::n($r[4] ?? 0);
+            $bOver90  = self::n($r[5] ?? 0);
+            $rowTotal = self::n($r[6] ?? 0);
+
+            // Guard against cumulative (running-total) aging data where each bucket
+            // accumulates all previous buckets. Detect: naive bucket sum > row total.
+            // If cumulative, isolate each bucket by subtracting the preceding one.
+            $naiveSum = $current + $b1_30 + $b31_60 + $b61_90 + $bOver90;
+            if ($rowTotal > 0.00001 && $naiveSum > $rowTotal * 1.005) {
+                $b61_90  = max(0.0, $b61_90  - $b31_60);
+                $bOver90 = max(0.0, $bOver90 - ($b31_60 + $b61_90));
+            }
+
             $out[] = [
-                $kind => $name,
-                'current' => self::n($r[1] ?? 0),
-                '1_30' => self::n($r[2] ?? 0),
-                '31_60' => self::n($r[3] ?? 0),
-                '61_90' => self::n($r[4] ?? 0),
-                'over_90' => self::n($r[5] ?? 0),
-                'total' => self::n($r[6] ?? 0),
+                $kind     => $name,
+                'current' => $current,
+                '1_30'    => $b1_30,
+                '31_60'   => $b31_60,
+                '61_90'   => $b61_90,
+                'over_90' => $bOver90,
+                'total'   => $rowTotal,
             ];
         }
 

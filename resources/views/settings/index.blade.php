@@ -167,10 +167,27 @@ if ($_n === 0) {
 {{-- Tab 2: Email --}}
 @if($_stabs['tab-email'])
 <div class="tab-panel {{ $_sfirst === 'tab-email' ? 'active' : '' }}" id="tab-email">
+
+    {{-- Email sub-tab bar --}}
+    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:22px">
+        <button class="email-stab" data-epanel="epanel-smtp"
+            style="padding:9px 18px;font-size:13.5px;font-weight:600;background:none;border:none;cursor:pointer;border-bottom:2px solid var(--orange);margin-bottom:-2px;color:var(--orange);display:inline-flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            SMTP Configuration
+        </button>
+        <button class="email-stab" data-epanel="epanel-templates"
+            style="padding:9px 18px;font-size:13.5px;font-weight:500;background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;color:var(--text-3);display:inline-flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            Email Templates
+        </button>
+    </div>
+
+    {{-- Sub-panel 1: SMTP Configuration --}}
+    <div id="epanel-smtp" class="epanel">
     <div class="acc-card">
         <div class="acc-section-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-            Email SMTP Settings 
+            Email SMTP Settings
         </div>
 
         <form method="POST" action="{{ route('settings.email.update') }}" id="email-form" onsubmit="if(!validateSmtpForm()){return false;} submitSettingsForm(event,this,'Email settings updated.')">
@@ -233,6 +250,95 @@ if ($_n === 0) {
             </div>
         </form>
     </div>
+    </div>{{-- /epanel-smtp --}}
+
+    {{-- Sub-panel 2: Email Templates --}}
+    <div id="epanel-templates" class="epanel" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px">
+            <div>
+                <div style="font-size:15px;font-weight:700;color:var(--text-1)">Email Templates</div>
+                <div style="font-size:12.5px;color:var(--text-3);margin-top:2px">Customise the emails sent to your clients. Use placeholders like <code style="background:var(--bg);padding:1px 5px;border-radius:4px;font-size:11.5px">&#123;&#123;client_name&#125;&#125;</code> to personalise content.</div>
+            </div>
+            @can('add_email_templates')
+            <button onclick="etOpenAdd()" class="btn btn-primary btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Add Email Template
+            </button>
+            @endcan
+        </div>
+
+        <div style="background:var(--bg-blue,#f0f7ff);border:1px solid var(--blue-light,#bfdbfe);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--blue-dark,#1e40af);margin-bottom:18px;display:flex;align-items:center;gap:8px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Templates are sent using your configured SMTP settings. Each template can be customised or deleted. Disabled templates will not be used.
+        </div>
+
+        <div style="background:#fff;border:1px solid var(--border);border-radius:10px;overflow:visible">
+        <table id="et-table" style="width:100%;border-collapse:collapse;table-layout:fixed">
+            <colgroup>
+                <col style="width:26%">
+                <col style="width:22%">
+                <col style="width:28%">
+                <col style="width:12%">
+                <col style="width:12%">
+            </colgroup>
+            <thead>
+                <tr style="border-bottom:1px solid var(--border);background:#fafafa">
+                    <th style="padding:11px 20px;text-align:left;font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;border-radius:10px 0 0 0">Template Name</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px">Trigger</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px">Subject Line</th>
+                    <th style="padding:11px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px">Status</th>
+                    <th style="padding:11px 16px;width:52px;border-radius:0 10px 0 0"></th>
+                </tr>
+            </thead>
+            <tbody id="et-tbody">
+                @forelse($firmEmailTemplates as $tpl)
+                <tr id="et-row-{{ $tpl->id }}" style="border-bottom:1px solid var(--border);transition:background .12s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+                    <td style="padding:14px 20px">
+                        <div style="font-size:14px;font-weight:600;color:var(--text-1)">{{ $tpl->name }}</div>
+                        <div style="font-size:11.5px;color:var(--text-3);margin-top:2px;font-family:monospace">{{ $tpl->slug }}</div>
+                    </td>
+                    <td style="padding:14px 16px;font-size:13px;color:var(--text-2)">{{ $tpl->trigger_event ?: '—' }}</td>
+                    <td style="padding:14px 16px;font-size:13px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0">{{ $tpl->subject }}</td>
+                    <td style="padding:14px 16px">
+                        @if($tpl->is_active)
+                            <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;background:#dcfce7;color:#166534">Active</span>
+                        @else
+                            <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;background:#f3f4f6;color:#6b7280">Inactive</span>
+                        @endif
+                    </td>
+                    <td style="padding:14px 16px;text-align:right">
+                        <div class="et-action-wrap" style="position:relative;display:inline-block">
+                            <button class="et-menu-btn" onclick="etToggleMenu(this)" style="background:none;border:none;cursor:pointer;color:var(--text-3);font-size:20px;line-height:1;padding:2px 6px;border-radius:5px" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='none'">&#8943;</button>
+                            <div class="et-dropdown" style="display:none;position:absolute;right:0;top:110%;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.10);z-index:200;min-width:140px;overflow:hidden">
+                                <button onclick="etOpenView({{ $tpl->id }})" class="et-dd-item" style="display:flex;align-items:center;gap:9px;padding:10px 15px;font-size:13px;color:var(--text-1);background:none;border:none;cursor:pointer;width:100%;text-align:left" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    View
+                                </button>
+                                <button onclick="etOpenEdit({{ $tpl->id }})" class="et-dd-item" style="display:flex;align-items:center;gap:9px;padding:10px 15px;font-size:13px;color:var(--text-1);background:none;border:none;cursor:pointer;width:100%;text-align:left" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    Edit
+                                </button>
+                                <div style="height:1px;background:var(--border);margin:3px 0"></div>
+                                <button onclick="etDeleteConfirm({{ $tpl->id }}, '{{ addslashes($tpl->name) }}')" class="et-dd-item" style="display:flex;align-items:center;gap:9px;padding:10px 15px;font-size:13px;color:#ef4444;background:none;border:none;cursor:pointer;width:100%" onmouseover="this.style.background='#fff5f5'" onmouseout="this.style.background=''">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                                    Delete
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                @empty
+                <tr id="et-empty-row">
+                    <td colspan="5" style="text-align:center;padding:40px;color:var(--text-3);font-size:13px">
+                        No email templates yet. Click <strong>+ Add Email Template</strong> to create one.
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
+        </div>
+    </div>{{-- /epanel-templates --}}
+
 </div>
 
 {{-- SMTP Test Email Modal --}}
@@ -332,6 +438,350 @@ document.getElementById('smtpTestModal').addEventListener('click', function(e) {
 <style>
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
+
+{{-- ── Add / Edit / View Email Template Modal ──────────────────────────────── --}}
+<div id="et-modal" style="display:none;position:fixed;inset:0;z-index:9990;background:rgba(0,0,0,.45);align-items:center;justify-content:center;padding:16px">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:1000px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18);position:relative">
+        {{-- Header --}}
+        <div style="padding:22px 26px 0">
+            <button onclick="etCloseModal()" style="position:absolute;top:16px;right:18px;background:none;border:none;font-size:20px;cursor:pointer;color:#aaa;line-height:1">&times;</button>
+            <div id="et-modal-title" style="font-size:17px;font-weight:700;color:#1a1a2e"></div>
+            <div id="et-modal-sub"   style="font-size:13px;color:#888;margin-top:3px"></div>
+        </div>
+
+        {{-- Form --}}
+        <form id="et-modal-form" onsubmit="etModalSubmit(event)" style="padding:20px 26px 24px">
+            <input type="hidden" id="et-modal-id">
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+                <div>
+                    <label style="display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:6px">
+                        Template Name <span style="color:var(--orange)">*</span>
+                    </label>
+                    <input type="text" id="et-m-name" name="name"
+                           style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13.5px;outline:none;box-sizing:border-box"
+                           placeholder="e.g. Client Invitation" required>
+                </div>
+                <div>
+                    <label style="display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:6px">
+                        Trigger Condition
+                    </label>
+                    <input type="text" id="et-m-trigger" name="trigger_event"
+                           style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13.5px;outline:none;box-sizing:border-box"
+                           placeholder="e.g. Client completes registration">
+                </div>
+            </div>
+
+            <div style="margin-bottom:14px">
+                <label style="display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:6px">
+                    Subject Line <span style="color:var(--orange)">*</span>
+                </label>
+                <input type="text" id="et-m-subject" name="subject"
+                       style="width:100%;padding:9px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13.5px;outline:none;box-sizing:border-box"
+                       placeholder="Email subject line" required>
+            </div>
+
+            <div style="margin-bottom:14px">
+                <label style="display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:6px">
+                    Email Body <span style="color:var(--orange)">*</span>
+                </label>
+                <textarea id="et-m-body" name="body" rows="7"
+                          style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;outline:none;resize:vertical;box-sizing:border-box;font-family:inherit"
+                          placeholder="Write your email body here…" required></textarea>
+            </div>
+
+            {{-- Status --}}
+            <div style="margin-bottom:14px">
+                <label style="display:block;font-size:13px;font-weight:500;color:#444;margin-bottom:8px">Status</label>
+                <div id="et-status-wrap" style="display:flex;gap:10px">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:9px 16px;border:1.5px solid #e2e8f0;border-radius:8px;flex:1;transition:border-color .15s" id="et-status-active-wrap">
+                        <input type="radio" id="et-status-active" name="is_active" value="1"
+                               style="accent-color:#22c55e;width:15px;height:15px;cursor:pointer" checked
+                               onchange="etStatusHighlight()">
+                        <span style="font-size:13.5px;font-weight:500;color:#16a34a">Active</span>
+                        <span style="margin-left:auto;width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block"></span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:9px 16px;border:1.5px solid #e2e8f0;border-radius:8px;flex:1;transition:border-color .15s" id="et-status-inactive-wrap">
+                        <input type="radio" id="et-status-inactive" name="is_active" value="0"
+                               style="accent-color:#9ca3af;width:15px;height:15px;cursor:pointer"
+                               onchange="etStatusHighlight()">
+                        <span style="font-size:13.5px;font-weight:500;color:#6b7280">Inactive</span>
+                        <span style="margin-left:auto;width:8px;height:8px;border-radius:50%;background:#d1d5db;display:inline-block"></span>
+                    </label>
+                </div>
+            </div>
+
+            {{-- Available Variables --}}
+            <div style="background:#f8f9fb;border:1px solid #e8eaf0;border-radius:9px;padding:14px;margin-bottom:14px">
+                <div style="font-size:12.5px;font-weight:600;color:#555;margin-bottom:10px">Available Variables</div>
+                @php
+                    $etVars = ['{{client_name}}','{{partner_name}}','{{portal_name}}','{{portal_url}}','{{company_name}}'];
+                @endphp
+                <div style="display:flex;flex-wrap:wrap;gap:7px" id="et-var-btns">
+                    @foreach($etVars as $ph)
+                    <button type="button" onclick="etInsertVar('{{ $ph }}')"
+                            style="padding:5px 13px;border:1.5px solid #bfdbfe;border-radius:20px;background:#eff6ff;font-size:12px;font-family:monospace;color:#2563eb;cursor:pointer;transition:background .15s"
+                            onmouseover="this.style.background='#dbeafe';this.style.borderColor='#93c5fd'"
+                            onmouseout="this.style.background='#eff6ff';this.style.borderColor='#bfdbfe'">{{ $ph }}</button>
+                    @endforeach
+                </div>
+                <div style="font-size:11.5px;color:#9ca3af;margin-top:9px">Click a placeholder to insert it at the cursor position in the body.</div>
+            </div>
+
+            {{-- Warning --}}
+            <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:10px 14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:20px">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span style="font-size:12.5px;color:#9a3412;line-height:1.5">Changes apply immediately for all new outbound emails. To discard changes, delete the template from the table.</span>
+            </div>
+
+            {{-- Footer --}}
+            <div style="display:flex;justify-content:flex-end;gap:10px">
+                <button type="button" onclick="etCloseModal()"
+                        style="padding:9px 20px;border-radius:8px;border:1.5px solid #e2e8f0;background:#fff;color:#555;font-size:14px;font-weight:500;cursor:pointer">
+                    Cancel
+                </button>
+                <button type="submit" id="et-modal-submit"
+                        style="padding:9px 22px;border-radius:8px;background:var(--orange,#f06b21);color:#fff;border:none;font-size:14px;font-weight:600;cursor:pointer">
+                    Save Template
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// ── Email sub-tab switching ────────────────────────────────────────────────────
+(function() {
+    var stabs = document.querySelectorAll('.email-stab');
+    function activatePanel(target) {
+        stabs.forEach(function(b) {
+            var on = b.dataset.epanel === target;
+            b.style.color             = on ? 'var(--orange)' : 'var(--text-3)';
+            b.style.borderBottomColor = on ? 'var(--orange)' : 'transparent';
+            b.style.fontWeight        = on ? '600' : '500';
+        });
+        document.querySelectorAll('.epanel').forEach(function(p) { p.style.display = 'none'; });
+        var p = document.getElementById(target); if (p) p.style.display = '';
+    }
+    stabs.forEach(function(b) { b.addEventListener('click', function() { activatePanel(this.dataset.epanel); }); });
+}());
+
+// ── Close dropdown on outside click ──────────────────────────────────────────
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.et-action-wrap'))
+        document.querySelectorAll('.et-dropdown').forEach(function(d) { d.style.display = 'none'; });
+});
+function etToggleMenu(btn) {
+    var dd = btn.nextElementSibling;
+    var open = dd.style.display === 'block';
+    document.querySelectorAll('.et-dropdown').forEach(function(d) { d.style.display = 'none'; });
+    if (!open) dd.style.display = 'block';
+}
+
+// ── Modal helpers ─────────────────────────────────────────────────────────────
+var _etBodyEditor = null;
+function etShowModal(title, sub, readonly) {
+    document.getElementById('et-modal-title').textContent = title;
+    document.getElementById('et-modal-sub').textContent   = sub;
+    var fields = document.querySelectorAll('#et-modal-form input, #et-modal-form textarea');
+    fields.forEach(function(f) { f.readOnly = !!readonly; f.style.background = readonly ? '#f9fafb' : '#fff'; });
+    document.getElementById('et-modal-submit').style.display = readonly ? 'none' : '';
+    document.getElementById('et-var-btns').style.pointerEvents = readonly ? 'none' : '';
+    var sw = document.getElementById('et-status-wrap');
+    sw.style.pointerEvents = readonly ? 'none' : '';
+    sw.querySelectorAll('label').forEach(function(l) { l.style.cursor = readonly ? 'default' : 'pointer'; });
+    document.getElementById('et-modal').style.display = 'flex';
+    _etBodyEditor = document.getElementById('et-m-body');
+}
+function etCloseModal() {
+    document.getElementById('et-modal').style.display = 'none';
+    document.getElementById('et-modal-form').reset();
+    document.getElementById('et-modal-id').value = '';
+}
+document.getElementById('et-modal').addEventListener('click', function(e) {
+    if (e.target === this) etCloseModal();
+});
+
+function etInsertVar(ph) {
+    var el = _etBodyEditor;
+    if (!el || el.readOnly) return;
+    var s = el.selectionStart, e = el.selectionEnd;
+    el.value = el.value.substring(0,s) + ph + el.value.substring(e);
+    el.selectionStart = el.selectionEnd = s + ph.length;
+    el.focus();
+}
+
+// ── Add ───────────────────────────────────────────────────────────────────────
+// ── Status radio highlight ────────────────────────────────────────────────────
+function etStatusHighlight() {
+    var isActive = document.getElementById('et-status-active').checked;
+    document.getElementById('et-status-active-wrap').style.borderColor   = isActive ? '#22c55e' : '#e2e8f0';
+    document.getElementById('et-status-inactive-wrap').style.borderColor = !isActive ? '#9ca3af' : '#e2e8f0';
+}
+function etSetStatus(val) {
+    document.getElementById('et-status-active').checked   = !!val;
+    document.getElementById('et-status-inactive').checked = !val;
+    etStatusHighlight();
+}
+
+function etOpenAdd() {
+    document.getElementById('et-modal-id').value = '';
+    document.getElementById('et-m-name').value    = '';
+    document.getElementById('et-m-trigger').value = '';
+    document.getElementById('et-m-subject').value = '';
+    document.getElementById('et-m-body').value    = '';
+    etSetStatus(true);
+    etShowModal('Add Email Template', 'Create a new custom email template', false);
+    setTimeout(function() { document.getElementById('et-m-name').focus(); }, 80);
+}
+
+// ── Edit ──────────────────────────────────────────────────────────────────────
+function etOpenEdit(id) {
+    document.querySelectorAll('.et-dropdown').forEach(function(d) { d.style.display='none'; });
+    var csrf = document.querySelector('meta[name="csrf-token"]').content;
+    fetch('{{ url("settings/firm-email-templates") }}/' + id, { headers:{'Accept':'application/json','X-CSRF-TOKEN':csrf} })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (res.status !== 'success') { showToast(res.message || 'Could not load template.', 'error'); return; }
+            var t = res.template;
+            document.getElementById('et-modal-id').value  = t.id;
+            document.getElementById('et-m-name').value    = t.name;
+            document.getElementById('et-m-trigger').value = t.trigger_event;
+            document.getElementById('et-m-subject').value = t.subject;
+            document.getElementById('et-m-body').value    = t.body;
+            etSetStatus(t.is_active);
+            etShowModal('Edit Email Template', 'Update "' + t.name + '"', false);
+        })
+        .catch(function() { showToast('Request failed.', 'error'); });
+}
+
+// ── View (read-only) ──────────────────────────────────────────────────────────
+function etOpenView(id) {
+    document.querySelectorAll('.et-dropdown').forEach(function(d) { d.style.display='none'; });
+    var csrf = document.querySelector('meta[name="csrf-token"]').content;
+    fetch('{{ url("settings/firm-email-templates") }}/' + id, { headers:{'Accept':'application/json','X-CSRF-TOKEN':csrf} })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (res.status !== 'success') { showToast(res.message || 'Could not load template.', 'error'); return; }
+            var t = res.template;
+            document.getElementById('et-modal-id').value  = t.id;
+            document.getElementById('et-m-name').value    = t.name;
+            document.getElementById('et-m-trigger').value = t.trigger_event;
+            document.getElementById('et-m-subject').value = t.subject;
+            document.getElementById('et-m-body').value    = t.body;
+            etSetStatus(t.is_active);
+            etShowModal('View Email Template', t.name, true);
+        })
+        .catch(function() { showToast('Request failed.', 'error'); });
+}
+
+// ── Save (add or edit) ────────────────────────────────────────────────────────
+async function etModalSubmit(e) {
+    e.preventDefault();
+    var id   = document.getElementById('et-modal-id').value;
+    var btn  = document.getElementById('et-modal-submit');
+    var orig = btn.innerHTML;
+    btn.disabled = true; btn.innerHTML = 'Saving…';
+    var csrf = document.querySelector('meta[name="csrf-token"]').content;
+    var fd = new FormData(document.getElementById('et-modal-form'));
+    var url = id
+        ? '{{ url("settings/firm-email-templates") }}/' + id
+        : '{{ url("settings/firm-email-templates") }}';
+    try {
+        var res = await fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+            body: fd,
+        }).then(function(r) { return r.json(); });
+        if (res.status === 'success') {
+            etCloseModal();
+            if (id) { etUpdateRow(res.template); }
+            else    { etAppendRow(res.template); }
+            showToast(res.message || 'Saved.', 'success');
+        } else {
+            showToast(res.message || 'Error saving template.', 'error');
+        }
+    } catch(err) { showToast('Request failed.', 'error'); }
+    btn.disabled = false; btn.innerHTML = orig;
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+function etDeleteConfirm(id, name) {
+    document.querySelectorAll('.et-dropdown').forEach(function(d) { d.style.display='none'; });
+    Swal.fire({
+        title: 'Delete template?',
+        text: 'Delete "' + name + '"? This cannot be undone.',
+        icon: 'warning', showCancelButton: true,
+        confirmButtonText: 'Yes, delete', cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444', cancelButtonColor: '#6b7280', reverseButtons: true,
+    }).then(function(result) {
+        if (!result.isConfirmed) return;
+        var csrf = document.querySelector('meta[name="csrf-token"]').content;
+        fetch('{{ url("settings/firm-email-templates") }}/' + id, {
+            method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+        }).then(function(r) { return r.json(); }).then(function(res) {
+            if (res.status === 'success') {
+                var row = document.getElementById('et-row-' + id);
+                if (row) row.remove();
+                var tbody = document.getElementById('et-tbody');
+                if (tbody && tbody.querySelectorAll('tr').length === 0) {
+                    var tr = document.createElement('tr'); tr.id = 'et-empty-row';
+                    tr.innerHTML = '<td colspan="5" style="text-align:center;padding:40px;color:var(--text-3);font-size:13px">No email templates yet. Click <strong>+ Add Email Template</strong> to create one.</td>';
+                    tbody.appendChild(tr);
+                }
+                showToast(res.message || 'Template deleted.', 'success');
+            } else { showToast(res.message || 'Could not delete.', 'error'); }
+        }).catch(function() { showToast('Request failed.', 'error'); });
+    });
+}
+
+// ── DOM row helpers ───────────────────────────────────────────────────────────
+function etBadge(active) {
+    return active
+        ? '<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;background:#dcfce7;color:#166534">Active</span>'
+        : '<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;background:#f3f4f6;color:#6b7280">Inactive</span>';
+}
+function etMenu(t) {
+    return '<div class="et-action-wrap" style="position:relative;display:inline-block">'
+        + '<button class="et-menu-btn" onclick="etToggleMenu(this)" style="background:none;border:none;cursor:pointer;color:var(--text-3);font-size:20px;line-height:1;padding:2px 6px;border-radius:5px">&#8943;</button>'
+        + '<div class="et-dropdown" style="display:none;position:absolute;right:0;top:110%;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.10);z-index:200;min-width:140px;overflow:hidden">'
+        + '<button onclick="etOpenView(' + t.id + ')" class="et-dd-item" style="display:flex;align-items:center;gap:9px;padding:10px 15px;font-size:13px;color:var(--text-1);background:none;border:none;cursor:pointer;width:100%">'
+        + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>View</button>'
+        + '<button onclick="etOpenEdit(' + t.id + ')" class="et-dd-item" style="display:flex;align-items:center;gap:9px;padding:10px 15px;font-size:13px;color:var(--text-1);background:none;border:none;cursor:pointer;width:100%">'
+        + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Edit</button>'
+        + '<div style="height:1px;background:var(--border);margin:3px 0"></div>'
+        + '<button onclick="etDeleteConfirm(' + t.id + ',\'' + t.name.replace(/'/g,"\\'") + '\')" class="et-dd-item" style="display:flex;align-items:center;gap:9px;padding:10px 15px;font-size:13px;color:#ef4444;background:none;border:none;cursor:pointer;width:100%">'
+        + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Delete</button>'
+        + '</div></div>';
+}
+function etEsc(s) {
+    return s ? s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '';
+}
+function etAppendRow(t) {
+    var empty = document.getElementById('et-empty-row'); if (empty) empty.remove();
+    var tr = document.createElement('tr');
+    tr.id = 'et-row-' + t.id;
+    tr.style.borderBottom = '1px solid var(--border)';
+    tr.setAttribute('onmouseover',"this.style.background='var(--bg)'");
+    tr.setAttribute('onmouseout', "this.style.background=''");
+    tr.innerHTML = '<td style="padding:14px 20px"><div style="font-size:14px;font-weight:600;color:var(--text-1)">' + etEsc(t.name) + '</div>'
+        + '<div style="font-size:11.5px;color:var(--text-3);margin-top:2px;font-family:monospace">' + etEsc(t.slug) + '</div></td>'
+        + '<td style="padding:14px 16px;font-size:13px;color:var(--text-2)">' + (etEsc(t.trigger_event) || '—') + '</td>'
+        + '<td style="padding:14px 16px;font-size:13px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:0">' + etEsc(t.subject) + '</td>'
+        + '<td style="padding:14px 16px">' + etBadge(t.is_active) + '</td>'
+        + '<td style="padding:14px 16px;text-align:right">' + etMenu(t) + '</td>';
+    document.getElementById('et-tbody').appendChild(tr);
+}
+function etUpdateRow(t) {
+    var row = document.getElementById('et-row-' + t.id); if (!row) return;
+    row.cells[0].innerHTML = '<div style="font-size:14px;font-weight:600;color:var(--text-1)">' + etEsc(t.name) + '</div>'
+        + '<div style="font-size:11.5px;color:var(--text-3);margin-top:2px;font-family:monospace">' + etEsc(t.slug) + '</div>';
+    row.cells[1].textContent = t.trigger_event || '—';
+    row.cells[2].textContent = t.subject;
+    row.cells[3].innerHTML   = etBadge(t.is_active);
+    row.cells[4].innerHTML   = etMenu(t);
+}
+</script>
 
 @endif {{-- /tab-email --}}
 

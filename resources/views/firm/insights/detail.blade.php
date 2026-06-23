@@ -281,7 +281,7 @@
         let fmt = '';
         content.split(/\n\n+/).forEach(para => {
             para = para.trim(); if (!para) return;
-            if (para.match(/^<(ul|ol|table|h[1-6])/i)) fmt += para+'\n';
+            if (para.match(/^<(ul|ol|table|div|h[1-6])/i)) fmt += para+'\n';
             else fmt += '<p>'+para.replace(/\n/g,'<br>')+'</p>\n';
         });
         if (!fmt) fmt = '<p>'+content.replace(/\n/g,'<br>')+'</p>';

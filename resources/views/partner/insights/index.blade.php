@@ -569,27 +569,20 @@
         if (table) table.search('').columns().search('').draw();
     };
 
-    // ── Export CSV ────────────────────────────────────────────────────────────
+
+    // ── Export CSV (with current search/filter state) ─────────────────────────
     window.piExportCSV = function () {
-        const rows = [['Insight Report', 'Generated', 'Version', 'Client Name', 'Company Name', 'Status']];
-        document.querySelectorAll('#pi-table tbody tr[data-status]').forEach(r => {
-            const cells = r.querySelectorAll('td');
-            if (cells.length < 6) return;
-            rows.push([
-                cells[0].querySelector('a, .pi-name-deleted, span[style]')?.textContent?.trim() ?? '',
-                cells[1].textContent.trim(),
-                cells[2].textContent.trim(),
-                cells[3].textContent.trim(),
-                cells[4].textContent.trim(),
-                cells[5].textContent.trim(),
-            ]);
-        });
-        const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
-        const a = document.createElement('a');
-        a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-        const nd = new Date(); const mm = String(nd.getMonth()+1).padStart(2,'0'); const dd = String(nd.getDate()).padStart(2,'0'); const yyyy = nd.getFullYear();
-        a.download = 'insights_' + mm + '-' + dd + '-' + yyyy + '.csv';
-        a.click();
+        const search    = (document.getElementById('piSearch')?.value    ?? '').trim();
+        const status    = (document.getElementById('piStatusFilter')?.value ?? '').trim();
+        const dateFrom  = (document.getElementById('pi-dr-from')?.value  ?? '').trim();
+        const dateTo    = (document.getElementById('pi-dr-to')?.value    ?? '').trim();
+        const params    = new URLSearchParams();
+        if (search)   params.set('search',    search);
+        if (status)   params.set('status',    status);
+        if (dateFrom) params.set('date_from', dateFrom);
+        if (dateTo)   params.set('date_to',   dateTo);
+        const base = '{{ route("partner-insights.export-csv") }}';
+        window.location.href = params.toString() ? base + '?' + params.toString() : base;
     };
 
     // ── Generate Modal ────────────────────────────────────────────────────────

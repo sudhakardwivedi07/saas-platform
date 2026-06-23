@@ -8,6 +8,7 @@ use App\Models\CompanyBranding;
 use App\Models\CompanyInsightSetting;
 use App\Models\CompanyQuickbooksSetting;
 use App\Models\EmailSmtpSetting;
+use App\Models\EmailTemplate;
 use App\Models\SmsSetting;
 use App\Models\CompanyPaymentGateway;
 use App\Models\ClientPackage;
@@ -35,7 +36,10 @@ class SettingsController extends AccountBaseController
         $this->paymentGateway = CompanyPaymentGateway::where('company_id', $companyId)->first();
         $this->qbSetting      = CompanyQuickbooksSetting::where('company_id', $companyId)->first();
         $this->clientPackages = ClientPackage::forCompany($companyId)->orderBy('sort')->get();
-        $this->branding       = company()?->branding;
+        $this->branding             = company()?->branding;
+        $this->firmEmailTemplates   = EmailTemplate::where('company_id', company()->id)
+                                                    ->orderBy('name')
+                                                    ->get();
         $this->insightSetting       = CompanyInsightSetting::where('company_id', $companyId)->first();
         $this->companiesWithUsage   = Company::withoutGlobalScopes()
             ->where('created_by', $companyId)

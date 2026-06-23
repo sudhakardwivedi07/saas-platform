@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Jobs\ProcessReportInsightsJob;
 use App\Jobs\SendEmailJob;
 use App\Models\Company;
+use App\Models\EmailSmtpSetting;
+use App\Models\EmailTemplate;
 use App\Models\EventLog;
 use App\Models\CompanyQuickbooksSetting;
 use App\Models\QuickBooksConnection;
@@ -102,7 +104,7 @@ class PartnerInsightsController extends AccountBaseController
         $directUsers = User::withoutGlobalScopes()
             ->whereIn('company_id', $qbConnectedCompanyIds)
             ->where('is_superadmin', false)
-            ->select('id', 'name', 'email', 'company_id')
+            ->select('id', 'name', 'email', 'company_id', 'created_at')
             ->get();
 
         // Users linked via user_companies, excluding super admins and partner's own users
@@ -114,11 +116,12 @@ class PartnerInsightsController extends AccountBaseController
             })
             ->where('is_superadmin', false)
             ->whereNotIn('company_id', $partnerCompanyIds)
-            ->select('id', 'name', 'email', 'company_id')
+            ->select('id', 'name', 'email', 'company_id', 'created_at')
             ->get();
 
         $clients = $directUsers->merge($linkedUsers)
             ->unique('email')
+            ->sortByDesc('created_at')
             ->map(fn($u) => [
                 'id'    => $u->id,
                 'name'  => $u->name,
@@ -163,8 +166,8 @@ class PartnerInsightsController extends AccountBaseController
 
         $companies = Company::withoutGlobalScopes()
             ->whereIn('id', $qbConnectedIds)
-            ->select('id', 'company_name')
-            ->orderBy('company_name')
+            ->select('id', 'company_name', 'created_at')
+            ->orderByDesc('created_at')
             ->get()
             ->map(fn($c) => ['id' => $c->id, 'name' => $c->company_name]);
 
@@ -436,6 +439,17 @@ class PartnerInsightsController extends AccountBaseController
             ->whereIn('company_id', $subCompanyIds)
             ->where('id', $reportId)
             ->firstOrFail();
+
+        $firmId = company()->id;
+        $this->canShareInsight =
+            EmailTemplate::where('company_id', $firmId)
+                         ->where('slug', 'share_insight_with_client')
+                         ->where('is_active', true)
+                         ->exists()
+            &&
+            EmailSmtpSetting::where('company_id', $firmId)
+                             ->where('is_active', true)
+                             ->exists();
 
         $this->pageTitle = 'Insight Report';
         return view('partner.insights.detail', $this->data);
@@ -742,6 +756,114 @@ class PartnerInsightsController extends AccountBaseController
         return $sections;
     }
 
+    // ── Export all insights as CSV ────────────────────────────────────────────
+
+    public function exportCsv(Request $request)
+    {
+        $subCompanyIds = $this->allClientCompanyIds();
+
+        $search   = trim($request->get('search',    ''));
+        $status   = trim($request->get('status',    ''));
+        $dateFrom = trim($request->get('date_from', ''));
+        $dateTo   = trim($request->get('date_to',   ''));
+
+        $query = Report::withTrashed()
+            ->with(['user', 'company'])
+            ->whereIn('company_id', $subCompanyIds)
+            ->where('is_firm_report', false);
+
+        // Date range filter on created_at
+        if ($dateFrom) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        $reports = $query->orderByDesc('created_at')
+            ->get()
+            ->groupBy(fn($r) => $r->report_name . '||' . $r->company_id)
+            ->map(fn($group) => $group->sortByDesc('version')->first())
+            ->values();
+
+        // Status filter — map UI filter value to row status
+        if ($status) {
+            $reports = $reports->filter(function ($report) use ($status) {
+                $isDeleted    = $report->trashed() || strtolower($report->status ?? '') === 'deleted';
+                $isProcessing = $report->isProcessing();
+                $isFailed     = strtolower($report->status ?? '') === 'failed';
+                $isReady      = $report->isReady();
+                $publishSt    = $report->publish_status ?? 'draft';
+
+                $rowStatus = $isDeleted    ? 'deleted'
+                           : ($isProcessing ? 'processing'
+                           : ($isFailed     ? 'failed'
+                           : ($isReady      ? $publishSt : 'processing')));
+
+                return $rowStatus === $status;
+            })->values();
+        }
+
+        // Text search — report name, client name, company name
+        if ($search) {
+            $lower = strtolower($search);
+            $reports = $reports->filter(function ($report) use ($lower) {
+                $haystack = strtolower(
+                    ($report->report_name ?? '') . ' ' .
+                    ($report->user?->name ?? '') . ' ' .
+                    ($report->company?->company_name ?? '')
+                );
+                return str_contains($haystack, $lower);
+            })->values();
+        }
+
+        $filename = 'insights_' . now()->format('m-d-Y') . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($reports) {
+            $handle = fopen('php://output', 'w');
+            // UTF-8 BOM so Excel opens with correct encoding
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['Insight Report', 'Generated', 'Client Name', 'Company Name', 'Status']);
+
+            foreach ($reports as $report) {
+                $isDeleted    = $report->trashed() || strtolower($report->status ?? '') === 'deleted';
+                $isProcessing = $report->isProcessing();
+                $isFailed     = strtolower($report->status ?? '') === 'failed';
+                $isReady      = $report->isReady();
+                $publishSt    = $report->publish_status ?? 'draft';
+
+                if ($isDeleted) {
+                    $status = 'Deleted';
+                } elseif ($isProcessing) {
+                    $status = 'Processing';
+                } elseif ($isFailed) {
+                    $status = 'Failed';
+                } elseif ($isReady) {
+                    $status = ucfirst($publishSt);
+                } else {
+                    $status = 'Processing';
+                }
+
+                fputcsv($handle, [
+                    $report->report_name ?? '',
+                    $report->created_at->format('m/d/Y'),
+                    $report->user?->name ?? '—',
+                    $report->company?->company_name ?? '—',
+                    $status,
+                ]);
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
     // ── Download CSV ZIP ──────────────────────────────────────────────────────
 
     public function download(int $reportId)
@@ -966,7 +1088,32 @@ class PartnerInsightsController extends AccountBaseController
                 }
             }
             foreach (self::CANONICAL_SECTIONS as $canon) {
+                $key = $this->normalizeTitle($canon);
                 if (!empty($map[$canon])) $sections[] = ['title' => $canon, 'content' => $map[$canon]];
+                elseif (!empty($map[$key]))  $sections[] = ['title' => $canon, 'content' => $map[$key]];
+            }
+            if (!empty($sections)) return $sections;
+        }
+
+        if (preg_match_all('/^##\s+(?:\d+\.\s*)?(.+)$/m', $text, $m, PREG_OFFSET_CAPTURE)) {
+            $list = [];
+            foreach ($m[1] as $i => $match) {
+                $start = $m[0][$i][1] + strlen($m[0][$i][0]);
+                $end   = isset($m[0][$i + 1]) ? $m[0][$i + 1][1] : strlen($text);
+                $title = preg_replace('/^\d+\.\s*/', '', trim($match[0]));
+                $body  = trim(substr($text, $start, $end - $start));
+                if (strlen($title) > 2 && $body) $list[] = ['title' => $title, 'content' => $body];
+            }
+            $byNorm = [];
+            foreach ($list as $s) $byNorm[$this->normalizeTitle($s['title'])] = $s;
+            foreach (self::CANONICAL_SECTIONS as $canon) {
+                $key = $this->normalizeTitle($canon);
+                if (isset($byNorm[$key])) $sections[] = $byNorm[$key];
+            }
+            foreach ($list as $s) {
+                if (!in_array($this->normalizeTitle($s['title']), array_map([$this, 'normalizeTitle'], self::CANONICAL_SECTIONS))) {
+                    $sections[] = $s;
+                }
             }
             if (!empty($sections)) return $sections;
         }
@@ -1121,18 +1268,21 @@ class PartnerInsightsController extends AccountBaseController
         $clientUser      = $report->company?->users->first();
         $clientFirstName = $clientUser ? explode(' ', trim($clientUser->name))[0] : ($report->company?->company_name ?? '');
 
-        SendEmailJob::dispatchSync(
+        app(\App\Services\EmailService::class)->sendFromFirm(
+            firmId:         auth()->user()->company_id,
             toEmail:        $request->recipient_email,
             templateSlug:   'share_insight_with_client',
             placeholders:   [
+                '{{client_name}}'       => $clientFirstName,
                 '{{insight_title}}'     => $report->report_name,
                 '{{company_name}}'      => $report->company?->company_name ?? '',
                 '{{client_first_name}}' => $clientFirstName,
                 '{{generated_date}}'    => $report->created_at->format('M d, Y'),
                 '{{cfo_name}}'          => auth()->user()->name,
+                '{{partner_name}}'      => $this->companyName,
                 '{{firm_name}}'         => $this->companyName,
+                '{{portal_url}}'        => company()?->domainUrlFor('login') ?? url('/login'),
             ],
-            companyId:      auth()->user()->company_id,
             attachmentPath: $tempPath,
         );
 

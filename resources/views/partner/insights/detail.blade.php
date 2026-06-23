@@ -244,6 +244,13 @@
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                             Export to PDF
                         </a>
+                        @if(($report->publish_status ?? 'draft') === 'published' && !empty($canShareInsight))
+                        <div class="dm-divider"></div>
+                        <a href="javascript:void(0)" class="dm-item" id="rdBtnShare" onclick="rdShareInsight()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            Share
+                        </a>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -918,7 +925,7 @@
         let fmt = '';
         content.split(/\n\n+/).forEach(para => {
             para = para.trim(); if (!para) return;
-            if (para.match(/^<(ul|ol|table|h[1-6])/i)) fmt += para+'\n';
+            if (para.match(/^<(ul|ol|table|div|h[1-6])/i)) fmt += para+'\n';
             else fmt += '<p>'+para.replace(/\n/g,'<br>')+'</p>\n';
         });
         if (!fmt) fmt = '<p>'+content.replace(/\n/g,'<br>')+'</p>';

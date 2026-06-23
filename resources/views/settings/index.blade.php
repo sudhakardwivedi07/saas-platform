@@ -1160,8 +1160,17 @@ function crValidateName(show) {
     var err = '';
     if (!val.trim()) {
         err = show ? 'Role name is required.' : '';
-    } else if (!/^[a-z][a-z0-9_]*$/.test(val.trim())) {
-        err = 'Must be lowercase letters only (e.g. manager).';
+    } else {
+        var v = val.trim();
+        if (/\s/.test(v)) {
+            err = 'Spaces are not allowed. Use underscores instead (e.g. account_manager).';
+        } else if (/[A-Z]/.test(v)) {
+            err = 'Uppercase letters are not allowed. Use all lowercase (e.g. manager).';
+        } else if (!/^[a-z]/.test(v)) {
+            err = 'Must start with a lowercase letter (e.g. manager).';
+        } else if (!/^[a-z][a-z0-9_]*$/.test(v)) {
+            err = 'Only lowercase letters, numbers, and underscores are allowed (e.g. account_manager).';
+        }
     }
     crSetErr('err-cr-name', err);
     var hint = document.getElementById('hint-cr-name');
@@ -1261,8 +1270,17 @@ function erValidateName(show) {
     var err = '';
     if (!val.trim()) {
         err = show ? 'Role name is required.' : '';
-    } else if (!/^[a-z][a-z0-9_]*$/.test(val.trim())) {
-        err = 'Must be lowercase letters only (e.g. manager).';
+    } else {
+        var v = val.trim();
+        if (/\s/.test(v)) {
+            err = 'Spaces are not allowed. Use underscores instead (e.g. account_manager).';
+        } else if (/[A-Z]/.test(v)) {
+            err = 'Uppercase letters are not allowed. Use all lowercase (e.g. manager).';
+        } else if (!/^[a-z]/.test(v)) {
+            err = 'Must start with a lowercase letter (e.g. manager).';
+        } else if (!/^[a-z][a-z0-9_]*$/.test(v)) {
+            err = 'Only lowercase letters, numbers, and underscores are allowed (e.g. account_manager).';
+        }
     }
     erSetErr('err-er-name', err);
     var hint = document.getElementById('hint-er-name');

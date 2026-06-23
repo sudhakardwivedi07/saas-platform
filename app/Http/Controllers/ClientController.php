@@ -535,7 +535,15 @@ class ClientController extends AccountBaseController
 
         $hasAnalyzedInsights  = (bool) $latestAnalyzedReport;
         $showKpiDashboard     = $hasAnalyzedInsights;
-        $selectedKpiCompanyId = (int) ($latestAnalyzedReport?->company_id ?: $company->id);
+
+        // Prefer an explicit company_id from the URL (e.g. after Save Draft / Publish page refresh)
+        // so the user stays on the company they were viewing, not the latest-report company.
+        $urlCompanyId = (int) request()->get('company_id', 0);
+        if ($urlCompanyId && in_array($urlCompanyId, $portfolioIds, true)) {
+            $selectedKpiCompanyId = $urlCompanyId;
+        } else {
+            $selectedKpiCompanyId = (int) ($latestAnalyzedReport?->company_id ?: $company->id);
+        }
 
         $kpiCompanies = $clientUser->kpiEligiblePortfolioCompanies();
         if ($kpiCompanies->isEmpty()) {

@@ -579,13 +579,16 @@ class InsightsController extends AccountBaseController
         }
 
         // Convert logo to base64 so DOMPDF can embed it without HTTP requests
+        // Only JPEG/PNG/GIF are supported by DOMPDF; SVG/WebP cause "image not found" errors
         $logoBase64 = '';
         $branding   = $this->branding;
         if ($branding?->logo) {
             $logoPath = storage_path('app/public/' . $branding->logo);
             if (file_exists($logoPath)) {
-                $mime       = mime_content_type($logoPath);
-                $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                $mime = mime_content_type($logoPath);
+                if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
+                    $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                }
             }
         }
 
@@ -1045,8 +1048,10 @@ class InsightsController extends AccountBaseController
         if ($this->branding?->logo) {
             $logoPath = storage_path('app/public/' . $this->branding->logo);
             if (file_exists($logoPath)) {
-                $mime       = mime_content_type($logoPath);
-                $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                $mime = mime_content_type($logoPath);
+                if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
+                    $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                }
             }
         }
 

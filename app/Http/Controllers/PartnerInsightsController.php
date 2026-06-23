@@ -756,6 +756,69 @@ class PartnerInsightsController extends AccountBaseController
         return $sections;
     }
 
+    // ── Export all insights as CSV ────────────────────────────────────────────
+
+    public function exportCsv()
+    {
+        $subCompanyIds = $this->allClientCompanyIds();
+
+        $reports = Report::withTrashed()
+            ->with(['user', 'company'])
+            ->whereIn('company_id', $subCompanyIds)
+            ->where('is_firm_report', false)
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy(fn($r) => $r->report_name . '||' . $r->company_id)
+            ->map(fn($group) => $group->sortByDesc('version')->first())
+            ->values();
+
+        $filename = 'insights_' . now()->format('m-d-Y') . '.csv';
+
+        $headers = [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () use ($reports) {
+            $handle = fopen('php://output', 'w');
+            // UTF-8 BOM so Excel opens with correct encoding
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['Insight Report', 'Generated', 'Client Name', 'Company Name', 'Status']);
+
+            foreach ($reports as $report) {
+                $isDeleted    = $report->trashed() || strtolower($report->status ?? '') === 'deleted';
+                $isProcessing = $report->isProcessing();
+                $isFailed     = strtolower($report->status ?? '') === 'failed';
+                $isReady      = $report->isReady();
+                $publishSt    = $report->publish_status ?? 'draft';
+
+                if ($isDeleted) {
+                    $status = 'Deleted';
+                } elseif ($isProcessing) {
+                    $status = 'Processing';
+                } elseif ($isFailed) {
+                    $status = 'Failed';
+                } elseif ($isReady) {
+                    $status = ucfirst($publishSt);
+                } else {
+                    $status = 'Processing';
+                }
+
+                fputcsv($handle, [
+                    $report->report_name ?? '',
+                    $report->created_at->format('m/d/Y'),
+                    $report->user?->name ?? '—',
+                    $report->company?->company_name ?? '—',
+                    $status,
+                ]);
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
     // ── Download CSV ZIP ──────────────────────────────────────────────────────
 
     public function download(int $reportId)

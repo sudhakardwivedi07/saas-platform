@@ -285,6 +285,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('partner-insights')->name('partner-insights.')->group(function () {
         Route::get('/',                            [PartnerInsightsController::class, 'index'])->name('index');
         Route::post('/generate',                   [PartnerInsightsController::class, 'generate'])->name('generate');
+        Route::get('/export-csv',                  [PartnerInsightsController::class, 'exportCsv'])->name('export-csv');
         Route::get('/clients',                     [PartnerInsightsController::class, 'getClients'])->name('clients');
         Route::get('/clients/{clientId}/companies',[PartnerInsightsController::class, 'getCompanies'])->name('companies');
         Route::get('/status/{id}',                 [PartnerInsightsController::class, 'checkStatus'])->name('status');

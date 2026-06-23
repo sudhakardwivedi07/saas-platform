@@ -155,10 +155,10 @@
         <p class="pi-page-subtitle">All CFO financial insights generated across your client portfolio</p>
     </div>
     <div class="pi-page-header-actions">
-        <button id="piExportBtn" class="pi-btn-export" onclick="piExportCSV()">
+        <a id="piExportBtn" class="pi-btn-export" href="{{ route('partner-insights.export-csv') }}">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             Export
-        </button>
+        </a>
         <button id="piHeaderGenerateBtn" class="pi-btn-generate" onclick="{{ $limitReached ?? false ? 'piShowLimitModal()' : 'piOpenGenerateModal()' }}"
             @if($limitReached ?? false) title="Monthly insight limit reached" @endif>
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
@@ -569,28 +569,6 @@
         if (table) table.search('').columns().search('').draw();
     };
 
-    // ── Export CSV ────────────────────────────────────────────────────────────
-    window.piExportCSV = function () {
-        const rows = [['Insight Report', 'Generated', 'Version', 'Client Name', 'Company Name', 'Status']];
-        document.querySelectorAll('#pi-table tbody tr[data-status]').forEach(r => {
-            const cells = r.querySelectorAll('td');
-            if (cells.length < 6) return;
-            rows.push([
-                cells[0].querySelector('a, .pi-name-deleted, span[style]')?.textContent?.trim() ?? '',
-                cells[1].textContent.trim(),
-                cells[2].textContent.trim(),
-                cells[3].textContent.trim(),
-                cells[4].textContent.trim(),
-                cells[5].textContent.trim(),
-            ]);
-        });
-        const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
-        const a = document.createElement('a');
-        a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-        const nd = new Date(); const mm = String(nd.getMonth()+1).padStart(2,'0'); const dd = String(nd.getDate()).padStart(2,'0'); const yyyy = nd.getFullYear();
-        a.download = 'insights_' + mm + '-' + dd + '-' + yyyy + '.csv';
-        a.click();
-    };
 
     // ── Generate Modal ────────────────────────────────────────────────────────
     window.piOpenGenerateModal = function () {

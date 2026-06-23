@@ -155,10 +155,10 @@
         <p class="pi-page-subtitle">All CFO financial insights generated across your client portfolio</p>
     </div>
     <div class="pi-page-header-actions">
-        <a id="piExportBtn" class="pi-btn-export" href="{{ route('partner-insights.export-csv') }}">
+        <button id="piExportBtn" class="pi-btn-export" onclick="piExportCSV()">
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
             Export
-        </a>
+        </button>
         <button id="piHeaderGenerateBtn" class="pi-btn-generate" onclick="{{ $limitReached ?? false ? 'piShowLimitModal()' : 'piOpenGenerateModal()' }}"
             @if($limitReached ?? false) title="Monthly insight limit reached" @endif>
             <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
@@ -569,6 +569,21 @@
         if (table) table.search('').columns().search('').draw();
     };
 
+
+    // ── Export CSV (with current search/filter state) ─────────────────────────
+    window.piExportCSV = function () {
+        const search    = (document.getElementById('piSearch')?.value    ?? '').trim();
+        const status    = (document.getElementById('piStatusFilter')?.value ?? '').trim();
+        const dateFrom  = (document.getElementById('pi-dr-from')?.value  ?? '').trim();
+        const dateTo    = (document.getElementById('pi-dr-to')?.value    ?? '').trim();
+        const params    = new URLSearchParams();
+        if (search)   params.set('search',    search);
+        if (status)   params.set('status',    status);
+        if (dateFrom) params.set('date_from', dateFrom);
+        if (dateTo)   params.set('date_to',   dateTo);
+        const base = '{{ route("partner-insights.export-csv") }}';
+        window.location.href = params.toString() ? base + '?' + params.toString() : base;
+    };
 
     // ── Generate Modal ────────────────────────────────────────────────────────
     window.piOpenGenerateModal = function () {

@@ -118,8 +118,15 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
             @error('email')<span class="err-msg">{{ $message }}</span>@enderror
         </div>
 
-        <button type="submit" class="login-btn">Send Reset Link</button>
+        <button type="submit" class="login-btn" id="reset-btn">Send Reset Link</button>
     </form>
+    <script>
+    document.querySelector('form').addEventListener('submit', function() {
+        var btn = document.getElementById('reset-btn');
+        btn.disabled = true;
+        btn.textContent = 'Loading...';
+    });
+    </script>
 
     <div class="login-divider">
         <a href="{{ route('login') }}">← Back to login</a>

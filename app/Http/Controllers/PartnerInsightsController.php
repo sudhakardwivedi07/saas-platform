@@ -758,19 +758,64 @@ class PartnerInsightsController extends AccountBaseController
 
     // ── Export all insights as CSV ────────────────────────────────────────────
 
-    public function exportCsv()
+    public function exportCsv(Request $request)
     {
         $subCompanyIds = $this->allClientCompanyIds();
 
-        $reports = Report::withTrashed()
+        $search   = trim($request->get('search',    ''));
+        $status   = trim($request->get('status',    ''));
+        $dateFrom = trim($request->get('date_from', ''));
+        $dateTo   = trim($request->get('date_to',   ''));
+
+        $query = Report::withTrashed()
             ->with(['user', 'company'])
             ->whereIn('company_id', $subCompanyIds)
-            ->where('is_firm_report', false)
-            ->orderByDesc('created_at')
+            ->where('is_firm_report', false);
+
+        // Date range filter on created_at
+        if ($dateFrom) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        $reports = $query->orderByDesc('created_at')
             ->get()
             ->groupBy(fn($r) => $r->report_name . '||' . $r->company_id)
             ->map(fn($group) => $group->sortByDesc('version')->first())
             ->values();
+
+        // Status filter — map UI filter value to row status
+        if ($status) {
+            $reports = $reports->filter(function ($report) use ($status) {
+                $isDeleted    = $report->trashed() || strtolower($report->status ?? '') === 'deleted';
+                $isProcessing = $report->isProcessing();
+                $isFailed     = strtolower($report->status ?? '') === 'failed';
+                $isReady      = $report->isReady();
+                $publishSt    = $report->publish_status ?? 'draft';
+
+                $rowStatus = $isDeleted    ? 'deleted'
+                           : ($isProcessing ? 'processing'
+                           : ($isFailed     ? 'failed'
+                           : ($isReady      ? $publishSt : 'processing')));
+
+                return $rowStatus === $status;
+            })->values();
+        }
+
+        // Text search — report name, client name, company name
+        if ($search) {
+            $lower = strtolower($search);
+            $reports = $reports->filter(function ($report) use ($lower) {
+                $haystack = strtolower(
+                    ($report->report_name ?? '') . ' ' .
+                    ($report->user?->name ?? '') . ' ' .
+                    ($report->company?->company_name ?? '')
+                );
+                return str_contains($haystack, $lower);
+            })->values();
+        }
 
         $filename = 'insights_' . now()->format('m-d-Y') . '.csv';
 

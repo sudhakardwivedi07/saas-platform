@@ -496,7 +496,16 @@ class DashboardController extends AccountBaseController
         // End-user dashboard should switch to KPI counters after an analyzed insight,
         // using the company that produced the latest analyzed report.
         $this->kpiCompanies = $allPortfolioCompanies->isNotEmpty() ? $allPortfolioCompanies->unique('id')->values() : collect([$company]);
-        $this->selectedKpiCompanyId = (int) ($latestAnalyzedReport?->company_id ?: $tenantId);
+
+        // Prefer explicit company_id from URL (e.g. after Save Draft / Publish reload via history.replaceState)
+        // so the user stays on the company they were viewing, not the latest-report company.
+        $urlCompanyId = (int) request()->get('company_id', 0);
+        $validCompanyIds = $this->kpiCompanies->pluck('id')->map(fn ($i) => (int) $i)->all();
+        if ($urlCompanyId && in_array($urlCompanyId, $validCompanyIds, true)) {
+            $this->selectedKpiCompanyId = $urlCompanyId;
+        } else {
+            $this->selectedKpiCompanyId = (int) ($latestAnalyzedReport?->company_id ?: $tenantId);
+        }
         $this->hasAnalyzedInsights = (bool) $latestAnalyzedReport;
         // Show the KPI executive layout (with company dropdown) when insights exist OR when the user
         // manages multiple companies — so the company selector is always visible for multi-company users.

@@ -372,6 +372,8 @@ class InsightsController extends AccountBaseController
                              ->where('is_active', true)
                              ->exists();
 
+        $this->clientEmail = auth()->user()->email ?? '';
+
         $this->pageTitle = 'Insights';
         return view('insights.detail', $this->data);
     }

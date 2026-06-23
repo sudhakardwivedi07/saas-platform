@@ -838,10 +838,11 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
     };
 
     // ── Edit / Save ──────────────────────────────────────────────────────
-    const CI_REPORT_ID = {{ $report->id }};
-    const CI_CSRF      = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
-    const CI_SAVE_URL  = '/insights/' + CI_REPORT_ID + '/update-content' + IMP_PARAM;
-    const CI_SHARE_URL = '/insights/' + CI_REPORT_ID + '/share' + IMP_PARAM;
+    const CI_REPORT_ID    = {{ $report->id }};
+    const CI_CSRF         = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const CI_SAVE_URL     = '/insights/' + CI_REPORT_ID + '/update-content' + IMP_PARAM;
+    const CI_SHARE_URL    = '/insights/' + CI_REPORT_ID + '/share' + IMP_PARAM;
+    const CI_CLIENT_EMAIL = '{{ addslashes($clientEmail ?? auth()->user()->email ?? '') }}';
     let ciEditMode = false;
     let ciOriginalContent = []; // per-slide HTML snapshots taken when edit mode opens
     let ciDirty = false;        // true only when the user has actually typed/edited
@@ -948,20 +949,30 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
     window.ciShareInsight = function () {
         const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
 
+        if (!CI_CLIENT_EMAIL) {
+            Swal.fire({ icon: 'error', title: 'No Email Found', text: 'No email address found for your account.', confirmButtonColor: brandColor });
+            return;
+        }
+
         Swal.fire({
-            title: 'Share Insight',
-            input: 'email',
-            inputPlaceholder: 'Enter recipient email address',
-            confirmButtonText: 'Send Now',
-            confirmButtonColor: brandColor,
+            html: `
+                <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
+                    <div style="width:70px;height:70px;background:#fef2f2;border-radius:50%;border:2px solid #fca5a5;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+                        <svg width="30" height="30" fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="#ef4444" stroke="none"/></svg>
+                    </div>
+                    <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Share Insight</h2>
+                    <p style="font-size:14px;color:#64748b;margin:0;">Send this insight report to <strong>${CI_CLIENT_EMAIL}</strong> via email?</p>
+                </div>`,
             showCancelButton: true,
             cancelButtonText: 'Cancel',
+            confirmButtonText: 'Confirm',
+            confirmButtonColor: brandColor,
             showLoaderOnConfirm: true,
-            preConfirm: (email) => {
+            preConfirm: () => {
                 return fetch(CI_SHARE_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CI_CSRF, 'Accept': 'application/json' },
-                    body: JSON.stringify({ recipient_email: email }),
+                    body: JSON.stringify({ recipient_email: CI_CLIENT_EMAIL }),
                 })
                 .then(r => r.json())
                 .then(data => {

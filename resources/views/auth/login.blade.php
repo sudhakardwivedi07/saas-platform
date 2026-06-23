@@ -44,7 +44,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In — {{ $branding ? ($branding->app_name ?? config('app.name')) : ($setting?->global_app_name ?? config('app.name')) }}</title>
+    <title>Sign In</title>
 
     {{-- Favicon: explicit empty URI prevents browser showing its own default icon --}}
     @if($faviconUrl)
@@ -203,7 +203,7 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
 
     form.addEventListener('submit', function () {
         btn.disabled    = true;
-        btn.textContent = 'Loading';
+        btn.textContent = 'Loading...';
     });
 
     // Back-forward cache: browser may restore the page with the button still disabled

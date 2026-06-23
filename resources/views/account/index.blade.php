@@ -125,7 +125,7 @@ if ($_n === 0) {
                         <div style="font-size:11px;color:var(--text-3);margin-top:4px">Email address cannot be changed.</div>
                     </div>
                 </div>
-                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitProfile()">
+                <button type="button" id="profile-submit-btn" class="btn btn-primary btn-sm" onclick="validateAndSubmitProfile()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                     Save Profile
                 </button>
@@ -160,7 +160,7 @@ if ($_n === 0) {
                         <div id="err-confirm-pwd" class="ac-err" style="display:none"></div>
                     </div>
                 </div>
-                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitPassword()">
+                <button type="button" id="password-submit-btn" class="btn btn-primary btn-sm" onclick="validateAndSubmitPassword()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                     Save Password
                 </button>
@@ -1530,6 +1530,7 @@ function submitLoginPageForm(e) {
     var btn  = document.getElementById('lp-submit');
     var data = new FormData(form);
     btn.disabled = true;
+    btn.textContent = 'Saving...';
     fetch('{{ parse_url(route("settings.login-page.update"), PHP_URL_PATH) }}', {
         method: 'POST',
         headers: {'X-Requested-With': 'XMLHttpRequest'},
@@ -1538,6 +1539,7 @@ function submitLoginPageForm(e) {
     .then(function (r) { return r.json(); })
     .then(function (res) {
         btn.disabled = false;
+        btn.textContent = 'Save Login Page';
         if (res.status === 'success') {
             var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
             Swal.fire({ icon: 'success', text: res.message || 'Login page saved.', confirmButtonText: 'Ok', confirmButtonColor: btnColor });
@@ -1545,7 +1547,11 @@ function submitLoginPageForm(e) {
             showToast(res.message || 'Something went wrong.', 'error');
         }
     })
-    .catch(function () { btn.disabled = false; showToast('Request failed.', 'error'); });
+    .catch(function () {
+        btn.disabled = false;
+        btn.textContent = 'Save Login Page';
+        showToast('Request failed.', 'error');
+    });
 }
 @endif
 
@@ -1598,6 +1604,7 @@ function submitFpPageForm(e) {
     var btn  = document.getElementById('fp-submit');
     var data = new FormData(form);
     btn.disabled = true;
+    btn.textContent = 'Saving...';
     fetch('{{ parse_url(route("settings.forgot-password-page.update"), PHP_URL_PATH) }}', {
         method: 'POST',
         headers: {'X-Requested-With': 'XMLHttpRequest'},
@@ -1606,6 +1613,7 @@ function submitFpPageForm(e) {
     .then(function (r) { return r.json(); })
     .then(function (res) {
         btn.disabled = false;
+        btn.textContent = 'Save Forgot Password Page';
         if (res.status === 'success') {
             var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
             Swal.fire({ icon: 'success', text: res.message || 'Forgot password page saved.', confirmButtonText: 'Ok', confirmButtonColor: btnColor });
@@ -1613,7 +1621,11 @@ function submitFpPageForm(e) {
             showToast(res.message || 'Something went wrong.', 'error');
         }
     })
-    .catch(function () { btn.disabled = false; showToast('Request failed.', 'error'); });
+    .catch(function () {
+        btn.disabled = false;
+        btn.textContent = 'Save Forgot Password Page';
+        showToast('Request failed.', 'error');
+    });
 }
 @endif
 
@@ -1897,7 +1909,11 @@ function validateAndSubmitProfile() {
         acErr('err-profile-name', ''); acMark('ac-profile-name', false);
         if (nameEl) nameEl.value = nameVal;
     }
-    if (ok) document.getElementById('profile-form').submit();
+    if (ok) {
+        var btn = document.getElementById('profile-submit-btn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+        document.getElementById('profile-form').submit();
+    }
 }
 
 // Real-time: restrict name to letters + spaces
@@ -1946,7 +1962,11 @@ function validateAndSubmitPassword() {
         acErr('err-confirm-pwd', ''); acMark('ac-confirm-pwd', false);
     }
 
-    if (ok) document.getElementById('password-form').submit();
+    if (ok) {
+        var btn = document.getElementById('password-submit-btn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+        document.getElementById('password-form').submit();
+    }
 }
 </script>
 @endpush

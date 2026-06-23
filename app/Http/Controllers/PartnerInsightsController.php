@@ -104,7 +104,7 @@ class PartnerInsightsController extends AccountBaseController
         $directUsers = User::withoutGlobalScopes()
             ->whereIn('company_id', $qbConnectedCompanyIds)
             ->where('is_superadmin', false)
-            ->select('id', 'name', 'email', 'company_id')
+            ->select('id', 'name', 'email', 'company_id', 'created_at')
             ->get();
 
         // Users linked via user_companies, excluding super admins and partner's own users
@@ -116,11 +116,12 @@ class PartnerInsightsController extends AccountBaseController
             })
             ->where('is_superadmin', false)
             ->whereNotIn('company_id', $partnerCompanyIds)
-            ->select('id', 'name', 'email', 'company_id')
+            ->select('id', 'name', 'email', 'company_id', 'created_at')
             ->get();
 
         $clients = $directUsers->merge($linkedUsers)
             ->unique('email')
+            ->sortByDesc('created_at')
             ->map(fn($u) => [
                 'id'    => $u->id,
                 'name'  => $u->name,
@@ -165,8 +166,8 @@ class PartnerInsightsController extends AccountBaseController
 
         $companies = Company::withoutGlobalScopes()
             ->whereIn('id', $qbConnectedIds)
-            ->select('id', 'company_name')
-            ->orderBy('company_name')
+            ->select('id', 'company_name', 'created_at')
+            ->orderByDesc('created_at')
             ->get()
             ->map(fn($c) => ['id' => $c->id, 'name' => $c->company_name]);
 
@@ -979,7 +980,32 @@ class PartnerInsightsController extends AccountBaseController
                 }
             }
             foreach (self::CANONICAL_SECTIONS as $canon) {
+                $key = $this->normalizeTitle($canon);
                 if (!empty($map[$canon])) $sections[] = ['title' => $canon, 'content' => $map[$canon]];
+                elseif (!empty($map[$key]))  $sections[] = ['title' => $canon, 'content' => $map[$key]];
+            }
+            if (!empty($sections)) return $sections;
+        }
+
+        if (preg_match_all('/^##\s+(?:\d+\.\s*)?(.+)$/m', $text, $m, PREG_OFFSET_CAPTURE)) {
+            $list = [];
+            foreach ($m[1] as $i => $match) {
+                $start = $m[0][$i][1] + strlen($m[0][$i][0]);
+                $end   = isset($m[0][$i + 1]) ? $m[0][$i + 1][1] : strlen($text);
+                $title = preg_replace('/^\d+\.\s*/', '', trim($match[0]));
+                $body  = trim(substr($text, $start, $end - $start));
+                if (strlen($title) > 2 && $body) $list[] = ['title' => $title, 'content' => $body];
+            }
+            $byNorm = [];
+            foreach ($list as $s) $byNorm[$this->normalizeTitle($s['title'])] = $s;
+            foreach (self::CANONICAL_SECTIONS as $canon) {
+                $key = $this->normalizeTitle($canon);
+                if (isset($byNorm[$key])) $sections[] = $byNorm[$key];
+            }
+            foreach ($list as $s) {
+                if (!in_array($this->normalizeTitle($s['title']), array_map([$this, 'normalizeTitle'], self::CANONICAL_SECTIONS))) {
+                    $sections[] = $s;
+                }
             }
             if (!empty($sections)) return $sections;
         }

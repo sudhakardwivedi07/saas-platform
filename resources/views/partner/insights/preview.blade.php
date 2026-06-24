@@ -99,7 +99,11 @@
 .ipv-section-content li  { margin:6px 0; }
 .ipv-section-content h3  { font-size:15px; font-weight:700; color:var(--blue,#1a6aa8); margin:14px 0 6px; }
 .ipv-section-content h4  { font-size:14px; font-weight:700; color:var(--blue,#1a6aa8); margin:10px 0 4px; }
-.ipv-section-content strong { color:var(--blue,#1a6aa8); font-weight:600; }
+.ipv-section-content strong { color:#1a202c; font-weight:700; }
+.ipv-section-content li strong { color:inherit; font-weight:normal; }
+.ipv-section-content p.is-section-heading { margin:14px 0 4px; }
+.ipv-section-content p.is-section-heading > strong { display:block; font-size:15px; font-weight:700; color:#1a202c; border-bottom:2px solid #e8eef5; padding-bottom:5px; }
+.ipv-section-content .insight-subheading { font-weight:700; font-size:15px; color:#1a202c; margin:14px 0 4px; padding-bottom:5px; border-bottom:2px solid #e8eef5; }
 
 .ipv-section-content table {
     width:100%; border-collapse:collapse; margin:10px 0;

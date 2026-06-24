@@ -123,7 +123,12 @@
                         $qbConnected++;
                     }
                     $plan         = $co ? ($co->clientPackage ?? $co->package) : null;
-                    $insightsUsed = $co?->insights_used ?? 0;
+                    // Sum insights_used across ALL companies this client manages (portfolio + primary).
+                    // Reading only the primary company misses counts stored on portfolio company rows.
+                    $insightsUsed = (int) $client->managedCompanies->sum('insights_used');
+                    if ($co && !$_primaryCounted) {
+                        $insightsUsed += (int) ($co->insights_used ?? 0);
+                    }
                     $maxInsights  = $plan
                         ? ($plan->insights_per_month ?? $plan->max_insights_per_month ?? $plan->max_documents ?? null)
                         : null;

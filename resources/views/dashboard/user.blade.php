@@ -953,6 +953,10 @@ window._kpiCoInsights = @json($kpiCompanyInsightsMap ?? []);
         window.__kpiEmbedChangeCompany = function (id) {
             id = parseInt(String(id), 10);
             currentCompanyId = id;
+            // Keep URL in sync so a page refresh stays on the selected company
+            var _u = new URL(window.location.href);
+            _u.searchParams.set('company_id', id);
+            history.replaceState(null, '', _u.toString());
             var s = KPI_CO_SETTINGS[id];
             if (s) {
                 var nameEl = document.querySelector('.cdb-company-name');

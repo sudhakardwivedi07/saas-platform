@@ -249,8 +249,7 @@
 .att-name{font-size:13px;font-weight:500;color:var(--text-1)}
 .att-dl{padding:5px 12px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-weight:500;color:var(--text-2);background:#fff;cursor:pointer;text-decoration:none}
 .att-dl:hover{background:var(--bg)}
-.ac-err { font-size:11.5px; color:var(--red); margin-top:4px; display:flex; align-items:center; gap:4px; }
-.ac-err::before { content:''; display:inline-block; width:12px; height:12px; flex-shrink:0; background:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat; }
+.ac-err,.ua-err { font-size:11.5px; color:var(--red); margin-top:4px; display:block; }
 .f-inp.ac-invalid { border-color:var(--red) !important; }
 </style>
 @endpush
@@ -320,29 +319,29 @@
         {{-- 2. Change Password --}}
         <div>
             <div style="font-size:13.5px;font-weight:600;color:var(--text-1);margin-bottom:16px">Change Password</div>
-            <form method="POST" action="{{ route('account.password') . (request()->query('_imp') ? '?_imp=' . request()->query('_imp') : '') }}" id="u-password-form" novalidate>
+            <form method="POST" action="{{ route('account.password') . (request()->query('_imp') ? '?_imp=' . request()->query('_imp') : '') }}" id="ua-password-form" novalidate>
                 @csrf
                 <div class="form-2col">
                     <div class="f-group">
                         <label class="f-label">Current Password <span style="color:var(--red)">*</span></label>
-                        <input type="password" name="current_password" id="u-cur-pwd" class="f-inp" placeholder="Enter your current password" autocomplete="current-password">
-                        <div id="u-err-cur-pwd" class="ac-err" style="display:none"></div>
+                        <input type="password" name="current_password" id="ua-cur-pwd" class="f-inp" placeholder="Enter your current password" autocomplete="current-password">
+                        <div id="ua-err-cur-pwd" class="ac-err" style="display:none"></div>
                     </div>
                     <div></div>
                 </div>
                 <div class="form-2col">
                     <div class="f-group">
                         <label class="f-label">New Password <span style="color:var(--red)">*</span></label>
-                        <input type="password" name="password" id="u-new-pwd" class="f-inp" placeholder="Min. 8 characters" autocomplete="new-password">
-                        <div id="u-err-new-pwd" class="ac-err" style="display:none"></div>
+                        <input type="password" name="password" id="ua-new-pwd" class="f-inp" placeholder="Min. 8 characters" autocomplete="new-password">
+                        <div id="ua-err-new-pwd" class="ac-err" style="display:none"></div>
                     </div>
                     <div class="f-group">
                         <label class="f-label">Confirm Password <span style="color:var(--red)">*</span></label>
-                        <input type="password" name="password_confirmation" id="u-confirm-pwd" class="f-inp" placeholder="Repeat new password" autocomplete="new-password">
-                        <div id="u-err-confirm-pwd" class="ac-err" style="display:none"></div>
+                        <input type="password" name="password_confirmation" id="ua-confirm-pwd" class="f-inp" placeholder="Repeat new password" autocomplete="new-password">
+                        <div id="ua-err-confirm-pwd" class="ac-err" style="display:none"></div>
                     </div>
                 </div>
-                <button type="button" class="btn btn-primary btn-sm" onclick="uValidateAndSubmitPassword()">
+                <button type="button" class="btn btn-primary btn-sm" onclick="validateAndSubmitUaPassword()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
                     Save Password
                 </button>
@@ -908,14 +907,14 @@ var _uaEmailRx = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,24}$/;
 function _uaErr(fldId, errId, msg) {
     var fld = document.getElementById(fldId);
     var err = document.getElementById(errId);
-    if (fld) fld.classList.add('ua-invalid');
-    if (err) { err.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ' + msg; err.style.display = 'flex'; }
+    if (fld) fld.classList.add('ac-invalid');
+    if (err) { err.textContent = msg; err.style.display = 'block'; }
 }
 
 function _uaOk(fldId, errId) {
     var fld = document.getElementById(fldId);
     var err = document.getElementById(errId);
-    if (fld) fld.classList.remove('ua-invalid');
+    if (fld) fld.classList.remove('ac-invalid');
     if (err) err.style.display = 'none';
 }
 

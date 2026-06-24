@@ -167,23 +167,31 @@
     color: white; font-size: 18px; flex-shrink: 0;
 }
 .insight-slider-title h2 { margin: 0; font-size: 24px; font-weight: 600; color: #1a202c; }
-.insight-slider-content { color: #2d3748; font-size: 15px; line-height: 1.8; }
-.insight-slider-content ul, .insight-slider-content ol { padding-left: 20px; margin: 0; }
-.insight-slider-content li { margin: 8px 0; list-style-type: circle; }
-.insight-slider-content strong { color: #1559a6; font-weight: 600; }
-.insight-slider-content p { margin: 0 0 10px 0; }
+.insight-slider-content { color: #2d3748; font-size: 15px; line-height: 1.75; }
+.insight-slider-content ul, .insight-slider-content ol { padding-left: 22px; margin: 4px 0 8px; }
+.insight-slider-content li { margin: 5px 0; list-style-type: circle; }
+.insight-slider-content strong { color: #1a202c; font-weight: 700; }
+.insight-slider-content li strong { color: inherit; font-weight: normal; }
+.insight-slider-content p { margin: 0 0 8px 0; }
+/* Whole-paragraph headings: <p class="is-section-heading"><strong>Title</strong></p> */
+.insight-slider-content p.is-section-heading { margin: 14px 0 4px; }
+.insight-slider-content p.is-section-heading > strong { display: block; font-size: 15.5px; font-weight: 700; color: #1a202c; border-bottom: 2px solid #e8eef5; padding-bottom: 5px; }
+/* Plain-text subheadings before bullet lists */
+.insight-slider-content .insight-subheading { font-weight: 700; font-size: 15.5px; color: #1a202c; margin: 14px 0 4px; padding-bottom: 5px; border-bottom: 2px solid #e8eef5; }
 .insight-slider-content h3,
-.insight-slider-content h4 { color: #1559a6; margin-top: 10px; margin-bottom: 0; font-weight: 600; }
+.insight-slider-content h4 { color: #1559a6; margin: 14px 0 4px; font-weight: 700; font-size: 15.5px; }
+.insight-slider-content .table-responsive { overflow-x: auto; margin: 6px 0 10px; }
 .insight-slider-content table.insight-table {
     width: 100%; border-collapse: collapse; margin: 0;
-    box-shadow: 0 1px 3px rgba(0,0,0,.1); border-radius: 8px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08); border-radius: 8px; overflow: hidden;
 }
 .insight-slider-content table.insight-table th {
-    border: 1px solid #e2e8f0; padding: 12px; text-align: left;
-    font-weight: 600; color: #2d3748; background: #f7fafc;
+    border: 1px solid #e2e8f0; padding: 6px 10px; text-align: left;
+    font-weight: 600; font-size: 12.5px; color: #2d3748; background: #f7fafc;
+    letter-spacing: .04em; text-transform: uppercase; line-height: 1.4;
 }
 .insight-slider-content table.insight-table td {
-    border: 1px solid #e2e8f0; padding: 12px; color: #4a5568;
+    border: 1px solid #e2e8f0; padding: 6px 10px; font-size: 13px; color: #4a5568; line-height: 1.4;
 }
 .insight-slider-content table.insight-table tbody tr:nth-child(even) { background: #f9fafb; }
 
@@ -654,6 +662,8 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
         content = content.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
         content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         content = content.replace(/(?<!\*)\*([^*]+?)\*(?!\*)/g, '<em>$1</em>');
+        // Break inline bold labels ending with ':' (e.g. "Expected impact:") onto their own lines
+        content = content.replace(/(\S) +(<strong>[A-Za-z][^<]*:<\/strong>)/g, '$1\n\n$2');
 
         const lines = content.split('\n');
         let inList = false, listType = null, listItems = [], processed = [];
@@ -681,6 +691,30 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
             }
         });
         if (inList && listItems.length > 0) processed.push(`<${listType}>${listItems.join('')}</${listType}>`);
+
+        // Join standalone bold-label lines (e.g. "<strong>Expected impact:</strong>") with the next content line
+        for (let i = 0; i < processed.length - 1; i++) {
+            const c = (processed[i]||'').trim(), n = (processed[i+1]||'').trim();
+            if (/^<strong>[^<]+:<\/strong>$/.test(c) && n && n !== '' && !/^<(ul|ol|table|div|h[1-6]|hr)/i.test(n)) {
+                processed[i] = c + ' ' + n; processed.splice(i+1, 1); i--;
+            }
+        }
+        // Ensure each bold-label+content line starts a new paragraph
+        for (let i = 1; i < processed.length; i++) {
+            if (/^<strong>[^<]+:<\/strong>/.test((processed[i]||'').trim()) && (processed[i-1]||'') !== '') {
+                processed.splice(i, 0, ''); i++;
+            }
+        }
+
+        // Plain text lines immediately before a <ul>/<ol> become bold subheadings
+        for (let i = 0; i < processed.length - 1; i++) {
+            const curr = (processed[i] || '').trim();
+            const next = (processed[i+1] || '').trim();
+            if (curr && !/^<(ul|ol|table|div|h[1-6]|hr)/i.test(curr) && /^<(ul|ol)/i.test(next)) {
+                processed[i] = `<div class="insight-subheading">${curr}</div>`;
+            }
+        }
+
         content = processed.join('\n');
 
         const paragraphs = content.split(/\n\n+/);
@@ -690,6 +724,8 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
             if (!para) return;
             if (para.match(/^<(ul|ol|table|div|h[1-6])/i)) {
                 formatted += para + '\n';
+            } else if (/^<strong>[^<]+<\/strong>$/.test(para)) {
+                formatted += '<p class="is-section-heading">' + para + '</p>\n';
             } else {
                 formatted += '<p>' + para.replace(/\n/g, '<br>') + '</p>\n';
             }

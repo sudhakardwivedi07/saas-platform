@@ -686,13 +686,16 @@ class PartnerInsightsController extends AccountBaseController
         }
 
         // Convert logo to base64 so DOMPDF can embed it without HTTP requests
+        // Only JPEG/PNG/GIF are supported by DOMPDF; SVG/WebP cause "image not found" errors
         $logoBase64 = '';
         $branding   = $this->branding;
         if ($branding?->logo) {
             $logoPath = storage_path('app/public/' . $branding->logo);
             if (file_exists($logoPath)) {
-                $mime       = mime_content_type($logoPath);
-                $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                $mime = mime_content_type($logoPath);
+                if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
+                    $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                }
             }
         }
 
@@ -710,6 +713,7 @@ class PartnerInsightsController extends AccountBaseController
             'companyName' => $this->companyName,
             'logoBase64'  => $logoBase64,
             'reportDate'  => $report->created_at->format('M d, Y'),
+            'branding'    => $this->branding,
         ]);
 
         $base = Str::slug($report->report_name ?: 'Insight');
@@ -1154,6 +1158,8 @@ class PartnerInsightsController extends AccountBaseController
         $content = preg_replace('/^####\s+(.+)$/m', '<h4>$1</h4>', $content);
         $content = preg_replace('/\*\*(.*?)\*\*/s', '<strong>$1</strong>', $content);
         $content = preg_replace('/(?<!\*)\*([^*]+?)\*(?!\*)/s', '<em>$1</em>', $content);
+        // Break inline bold labels ending with ':' onto their own paragraphs
+        $content = preg_replace('/(\S) +(<strong>[A-Za-z][^<]*:<\/strong>)/', "$1\n\n$2", $content);
 
         $lines = explode("\n", $content);
         $inList = false; $listType = null; $listItems = []; $processed = [];
@@ -1167,8 +1173,13 @@ class PartnerInsightsController extends AccountBaseController
                 $processed[] = $line; continue;
             }
             if (preg_match('/^[\-\*\+]\s+(.+)$/', $trimmed, $m)) {
-                if ($inList && $listType !== 'ul') { $processed[] = "<{$listType}>" . implode('', $listItems) . "</{$listType}>"; $listItems = []; }
-                $inList = true; $listType = 'ul'; $listItems[] = "<li>{$m[1]}</li>";
+                if (str_ends_with(trim($m[1]), ':')) {
+                    if ($inList && $listItems) { $processed[] = "<{$listType}>" . implode('', $listItems) . "</{$listType}>"; $listItems = []; $inList = false; }
+                    $processed[] = '<p><strong style="color:inherit;">' . $m[1] . '</strong></p>';
+                } else {
+                    if ($inList && $listType !== 'ul') { $processed[] = "<{$listType}>" . implode('', $listItems) . "</{$listType}>"; $listItems = []; }
+                    $inList = true; $listType = 'ul'; $listItems[] = "<li>{$m[1]}</li>";
+                }
             } elseif (preg_match('/^\d+\.\s+(.+)$/', $trimmed, $m) && !preg_match('/^[A-Z\s:]+$/', $trimmed)) {
                 if ($inList && $listType !== 'ol') { $processed[] = "<{$listType}>" . implode('', $listItems) . "</{$listType}>"; $listItems = []; }
                 $inList = true; $listType = 'ol'; $listItems[] = "<li>{$m[1]}</li>";
@@ -1179,12 +1190,34 @@ class PartnerInsightsController extends AccountBaseController
         }
         if ($inList && $listItems) $processed[] = "<{$listType}>" . implode('', $listItems) . "</{$listType}>";
 
+        // Join standalone bold-label lines with their following content line
+        for ($i = 0; $i < count($processed) - 1; $i++) {
+            $c = trim($processed[$i]); $n = trim($processed[$i + 1]);
+            if (preg_match('/^<strong>[^<]+:<\/strong>$/', $c) && $n !== '' && !preg_match('/^<(ul|ol|table|div|h[1-6]|hr)/i', $n)) {
+                $processed[$i] = $c . ' ' . $n; array_splice($processed, $i + 1, 1); $i--;
+            }
+        }
+        // Insert paragraph separators before bold-label+content lines
+        for ($i = 1; $i < count($processed); $i++) {
+            if (preg_match('/^<strong>[^<]+:<\/strong>/', trim($processed[$i])) && $processed[$i - 1] !== '') {
+                array_splice($processed, $i, 0, ['']); $i++;
+            }
+        }
+        // Plain text lines immediately before a <ul>/<ol> become subheadings
+        for ($i = 0; $i < count($processed) - 1; $i++) {
+            $curr = trim($processed[$i]); $next = trim($processed[$i + 1]);
+            if ($curr && !preg_match('/^<(ul|ol|table|div|h[1-6]|hr)/i', $curr) && preg_match('/^<(ul|ol)/i', $next)) {
+                $processed[$i] = '<div class="insight-subheading">' . $curr . '</div>';
+            }
+        }
+
         $content = implode("\n", $processed);
         $out = '';
         foreach (preg_split('/\n\n+/', $content) as $para) {
             $para = trim($para);
             if (!$para) continue;
-            if (preg_match('/^<(ul|ol|table|h[1-6]|hr)/i', $para)) $out .= $para . "\n";
+            if (preg_match('/^<(ul|ol|table|div|h[1-6]|hr)/i', $para)) $out .= $para . "\n";
+            elseif (preg_match('/^<strong>[^<]+<\/strong>$/', $para)) $out .= '<p class="is-section-heading">' . $para . '</p>' . "\n";
             else $out .= '<p>' . preg_replace('/\n/', '<br>', $para) . '</p>' . "\n";
         }
         $out = preg_replace('/<p>\s*<\/p>/', '', $out);
@@ -1236,8 +1269,10 @@ class PartnerInsightsController extends AccountBaseController
         if ($this->branding?->logo) {
             $logoPath = storage_path('app/public/' . $this->branding->logo);
             if (file_exists($logoPath)) {
-                $mime       = mime_content_type($logoPath);
-                $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                $mime = mime_content_type($logoPath);
+                if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
+                    $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                }
             }
         }
 
@@ -1255,6 +1290,7 @@ class PartnerInsightsController extends AccountBaseController
             'companyName' => $this->companyName,
             'logoBase64'  => $logoBase64,
             'reportDate'  => $report->created_at->format('M d, Y'),
+            'branding'    => $this->branding,
         ]);
 
         $tempDir = storage_path('app/temp_pdfs');

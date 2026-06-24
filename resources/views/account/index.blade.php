@@ -1886,7 +1886,7 @@ function acErr(id, msg) {
     var el = document.getElementById(id);
     if (!el) return;
     el.textContent = msg || '';
-    el.style.display = msg ? 'flex' : 'none';
+    el.style.display = msg ? 'block' : 'none';
 }
 function acMark(id, invalid) {
     var el = document.getElementById(id);
@@ -2039,15 +2039,7 @@ function validateAndSubmitPassword() {
 .activity-dot-info    { background:var(--blue); }
 .activity-dot-warning { background:var(--orange); }
 .activity-dot-muted   { background:var(--text-3); }
-.ac-err {
-    font-size: 11.5px; color: var(--red); margin-top: 4px;
-    display: flex; align-items: center; gap: 4px;
-}
-.ac-err::before {
-    content: '';
-    display: inline-block; width: 12px; height: 12px; flex-shrink: 0;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' y1='8' x2='12' y2='12'/%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'/%3E%3C/svg%3E") center/contain no-repeat;
-}
+.ac-err { font-size: 11.5px; color: var(--red); margin-top: 4px; display: block; }
 .f-inp.ac-invalid { border-color: var(--red) !important; }
 </style>
 @endpush

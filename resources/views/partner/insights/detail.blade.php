@@ -457,6 +457,21 @@
             if (/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(td.textContent.trim())) td.style.textAlign = 'right';
         });
 
+        // Fix stray lone-dash paragraphs in pre-saved HTML → proper list items
+        document.querySelectorAll('.insight-slider-content p').forEach(function(p) {
+            if (p.textContent.trim() !== '-') return;
+            var next = p.nextElementSibling;
+            if (!next) { p.remove(); return; }
+            var prev = p.previousElementSibling;
+            var ul = (prev && prev.tagName === 'UL') ? prev : document.createElement('ul');
+            if (!prev || prev.tagName !== 'UL') p.parentNode.insertBefore(ul, p);
+            var li = document.createElement('li');
+            li.innerHTML = next.innerHTML;
+            ul.appendChild(li);
+            next.remove();
+            p.remove();
+        });
+
         goToSlide(0);
     }
 
@@ -926,11 +941,14 @@
     function formatContent(content) {
         if (!content) return '';
         content = content.replace(/^[\s\-_*]{3,}$/gm,'').replace(/^[\s═─=]{3,}$/gm,'').replace(/\n{3,}/g,'\n\n').trim();
+        // Merge standalone lone "-" marker lines with the following content line
+        content = content.replace(/^-[ \t]*\n(?=\S)/gm, '- ');
         content = convertMarkdownTable(content);
         content = content.replace(/^###\s+(.+)$/gm,'<h3>$1</h3>').replace(/^####\s+(.+)$/gm,'<h4>$1</h4>');
         content = content.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/(?<!\*)\*([^*]+?)\*(?!\*)/g,'<em>$1</em>');
         // Inline bold labels ending with ':' (e.g. "…paid. **Expected impact:**") — separate into own paragraph
-        content = content.replace(/(\S) +(<strong>[A-Za-z][^<]*:<\/strong>)/g,'$1\n\n$2');
+        // Exclude list markers (-, *, +) so "- **Label:**" list items are not broken
+        content = content.replace(/([^\n\-\*\+]) +(<strong>[A-Za-z][^<]*:<\/strong>)/g,'$1\n\n$2');
 
         const lines = content.split('\n');
         let inList=false, listType=null, listItems=[], processed=[];

@@ -1165,7 +1165,8 @@ class PartnerInsightsController extends AccountBaseController
         $content = preg_replace('/\*\*(.*?)\*\*/s', '<strong>$1</strong>', $content);
         $content = preg_replace('/(?<!\*)\*([^*]+?)\*(?!\*)/s', '<em>$1</em>', $content);
         // Break inline bold labels ending with ':' onto their own paragraphs
-        $content = preg_replace('/(\S) +(<strong>[A-Za-z][^<]*:<\/strong>)/', "$1\n\n$2", $content);
+        // Exclude list markers (-, *, +) so "- **Label:**" list items are not broken
+        $content = preg_replace('/([^\n\-\*\+]) +(<strong>[A-Za-z][^<]*:<\/strong>)/', "$1\n\n$2", $content);
 
         $lines = explode("\n", $content);
         $inList = false; $listType = null; $listItems = []; $processed = [];

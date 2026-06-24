@@ -272,7 +272,7 @@
                 </button>
                 <button id="rdBtnSave" class="rd-btn rd-btn-save" onclick="rdSaveEdits()">
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    <span id="rdBtnSaveLabel">Save Draft</span>
+                    <span id="rdBtnSaveLabel">{{ $report->isDraft() ? 'Save Draft' : 'Save' }}</span>
                 </button>
                 @if($report->isDraft())
                 <button id="rdBtnPublish" class="rd-btn rd-btn-publish" onclick="rdPublishInsight()">
@@ -646,6 +646,19 @@
     });
 
     window.rdSaveEdits = function () {
+        // Only save if the user actually typed or edited something (dirty flag set by input events)
+        if (!rdDirty) {
+            const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
+            Swal.fire({
+                icon: 'info',
+                title: 'No Changes',
+                text: 'No modifications were made to the report content.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: brandColor,
+            });
+            return;
+        }
+
         // Collect innerHTML so all formatting (bullets, bold, headings) is preserved exactly
         const sections = insightSections.map((sec, i) => {
             const contentEl = document.getElementById('sl-content-' + i);
@@ -655,6 +668,7 @@
             };
         });
 
+        const saveLabel = IS_DRAFT ? 'Save Draft' : 'Save';
         const btn = document.getElementById('rdBtnSave');
         btn.disabled = true;
         document.getElementById('rdBtnSaveLabel').textContent = 'Saving…';
@@ -667,7 +681,7 @@
         .then(r => r.json())
         .then(data => {
             btn.disabled = false;
-            document.getElementById('rdBtnSaveLabel').textContent = 'Save Draft';
+            document.getElementById('rdBtnSaveLabel').textContent = saveLabel;
             if (data.status === 'success') {
                 rdDirty = false; // reset so re-saving without further edits is blocked
                 const redirectUrl = data.redirect_url || null;
@@ -700,7 +714,7 @@
         })
         .catch(() => {
             btn.disabled = false;
-            document.getElementById('rdBtnSaveLabel').textContent = 'Save Draft';
+            document.getElementById('rdBtnSaveLabel').textContent = saveLabel;
             Swal.fire({ icon:'error', title:'Error', text:'Network error. Please try again.' });
         });
     };

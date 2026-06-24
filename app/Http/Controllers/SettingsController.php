@@ -14,6 +14,7 @@ use App\Models\CompanyPaymentGateway;
 use App\Models\ClientPackage;
 use Illuminate\Http\Request;
 use App\Models\Role;
+use App\Models\User;
 use Spatie\Permission\Models\Permission;
 
 class SettingsController extends AccountBaseController
@@ -46,6 +47,26 @@ class SettingsController extends AccountBaseController
             ->with(['users' => fn($q) => $q->orderBy('id')->limit(1)])
             ->orderBy('company_name')
             ->get();
+
+        $subIds = $this->companiesWithUsage->pluck('id')->toArray();
+        $this->clientsForLimits = User::whereIn('company_id', $subIds)
+            ->with([
+                'company',
+                'managedCompanies' => fn($q) => $q
+                    ->withoutGlobalScopes()
+                    ->whereIn('companies.id', $subIds),
+            ])
+            ->orderBy('name')
+            ->get();
+
+        // Admin's total insight budget from superadmin plan
+        $adminCompany = Company::withoutGlobalScopes()->find($companyId);
+        $adminPlan    = $adminCompany?->activePlan();
+        $this->adminInsightBudget = $adminPlan
+            ? (int) ($adminPlan->max_insights_per_month ?? $adminPlan->insights_per_month ?? 0)
+            : 0;
+        // Total already allocated across all client companies with a custom limit set
+        $this->totalAllocated = (int) $this->companiesWithUsage->sum('custom_insight_limit');
 
         // Roles & Permissions — count only users within this admin's company hierarchy
         $subCompanyIds = Company::withoutGlobalScopes()

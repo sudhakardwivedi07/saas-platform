@@ -901,21 +901,18 @@ if ($_n === 0) {
                 <button class="dr-clear-btn" onclick="event.stopPropagation();drClear('ph-dr')" title="Clear date filter">&#x2715;</button>
             </div>
             <div class="dr-menu" id="ph-dr-menu">
-                <div class="dr-list">
-                    <div class="dr-item" onclick="drPickPreset('ph-dr','today')">Today</div>
-                    <div class="dr-item" onclick="drPickPreset('ph-dr','yesterday')">Yesterday</div>
-                    <div class="dr-item" onclick="drPickPreset('ph-dr','last7')">Last 7 days</div>
-                    <div class="dr-item" onclick="drPickPreset('ph-dr','last30')">Last 30 days</div>
-                    <div class="dr-item" onclick="drPickPreset('ph-dr','thisMonth')">This month</div>
-                    <div class="dr-item" onclick="drPickPreset('ph-dr','lastMonth')">Last month</div>
-                    <div class="dr-item" onclick="drPickPreset('ph-dr','thisYear')">This year</div>
-                </div>
-                <div class="dr-custom-row">
-                    <input type="date" id="ph-dr-from" class="dr-inp">
-                    <span style="color:var(--text-3);font-size:12px">–</span>
-                    <input type="date" id="ph-dr-to" class="dr-inp">
-                    <button class="dr-apply-btn" onclick="drApplyCustom('ph-dr')">Apply</button>
-                </div>
+                <ul class="dr-list">
+                    <li class="dr-opt" onclick="drPickPreset('ph-dr','today',this)">Today</li>
+                    <li class="dr-opt" onclick="drPickPreset('ph-dr','last30',this)">Last 30 Days</li>
+                    <li class="dr-opt" onclick="drPickPreset('ph-dr','thisMonth',this)">This Month</li>
+                    <li class="dr-opt" onclick="drPickPreset('ph-dr','lastMonth',this)">Last Month</li>
+                    <li class="dr-opt" onclick="drPickPreset('ph-dr','last90',this)">Last 90 Days</li>
+                    <li class="dr-opt" onclick="drPickPreset('ph-dr','last6m',this)">Last 6 Months</li>
+                    <li class="dr-opt" onclick="drPickPreset('ph-dr','last1y',this)">Last 1 Year</li>
+                    <li class="dr-opt" onclick="drPickPreset('ph-dr','custom',this)">Custom Range</li>
+                </ul>
+                <input type="hidden" id="ph-dr-from">
+                <input type="hidden" id="ph-dr-to">
             </div>
         </div>
 

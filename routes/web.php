@@ -199,6 +199,7 @@ Route::middleware(['auth'])->group(function () {
         // Insight Limits
         Route::post('/insight-limits',                      [InsightLimitController::class, 'updateLimitSetup'])->name('insight-limits.update');
         Route::post('/insight-limits/{companyId}/custom',   [InsightLimitController::class, 'setCustomLimit'])->name('insight-limits.custom');
+        Route::post('/insight-limits/bulk',                 [InsightLimitController::class, 'setBulkLimits'])->name('insight-limits.bulk');
 
         // Firm Email Templates (partner portal settings — AJAX)
         Route::prefix('firm-email-templates')->name('firm-email-templates.')->group(function () {

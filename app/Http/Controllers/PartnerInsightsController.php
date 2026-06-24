@@ -166,10 +166,15 @@ class PartnerInsightsController extends AccountBaseController
 
         $companies = Company::withoutGlobalScopes()
             ->whereIn('id', $qbConnectedIds)
-            ->select('id', 'company_name', 'created_at')
-            ->orderByDesc('created_at')
+            ->select('id', 'company_name', 'custom_insight_limit', 'insights_used')
+            ->orderBy('company_name')
             ->get()
-            ->map(fn($c) => ['id' => $c->id, 'name' => $c->company_name]);
+            ->map(fn($c) => [
+                'id'                  => $c->id,
+                'name'                => $c->company_name,
+                'custom_insight_limit'=> $c->custom_insight_limit,  // null = not set by admin
+                'insights_used'       => (int) ($c->insights_used ?? 0),
+            ]);
 
         return response()->json(['status' => 'success', 'companies' => $companies]);
     }

@@ -14,6 +14,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -79,9 +80,36 @@ class ClientController extends AccountBaseController
 
         $companyId = company()?->id ?? auth()->user()->company_id;
 
-        // Companies created by this client admin
+        // Step 1: admin's own managed companies (primary + linked via user_companies)
+        $adminCompanyIds = collect([$companyId])
+            ->merge(
+                auth()->user()->managedCompanies()
+                    ->withoutGlobalScopes()
+                    ->pluck('companies.id')
+            )
+            ->unique()->filter()->values()->all();
+
+        // Step 2: direct client companies created by those admin companies
+        $directClientIds = Company::withoutGlobalScopes()
+            ->whereIn('created_by', $adminCompanyIds)
+            ->pluck('id');
+
+        // Step 3: users who belong to those direct client companies
+        $clientUserIds = User::withoutGlobalScopes()
+            ->whereIn('company_id', $directClientIds)
+            ->pluck('id');
+
+        // Step 4: all companies those client users are linked to via user_companies
+        $linkedCompanyIds = DB::table('user_companies')
+            ->whereIn('user_id', $clientUserIds)
+            ->pluck('company_id');
+
+        $allClientCompanyIds = $directClientIds
+            ->merge($linkedCompanyIds)
+            ->unique()->filter()->values()->all();
+
         $this->companies = Company::withoutGlobalScopes()
-            ->where('created_by', $companyId)
+            ->whereIn('id', $allClientCompanyIds)
             ->with([
                 'clientPackage',
                 'package',

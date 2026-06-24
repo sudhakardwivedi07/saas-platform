@@ -264,17 +264,9 @@ class PartnerInsightsController extends AccountBaseController
             ], 422);
         }
 
-        $company        = Company::withoutGlobalScopes()->find($companyId);
-        $companyLabel   = trim($company?->company_name ?? '');
-        $analysisNumber = Report::withTrashed()
-            ->where('company_id', $companyId)
-            ->where('user_id', $clientUser->id)
-            ->whereNull('parent_report_id')
-            ->count() + 1;
-
-        $generatedName = $companyLabel
-            ? $companyLabel . ' (Analysis ' . $analysisNumber . ')'
-            : 'Analysis ' . $analysisNumber;
+        $company       = Company::withoutGlobalScopes()->find($companyId);
+        $companyLabel  = trim($company?->company_name ?? '');
+        $generatedName = $companyLabel ?: 'Unnamed Company';
 
         $endDate   = $request->get('end_date',   Carbon::now()->format('Y-m-d'));
         $startDate = $request->get('start_date', Carbon::parse($endDate)->subMonths(11)->startOfMonth()->format('Y-m-d'));
@@ -662,7 +654,8 @@ class PartnerInsightsController extends AccountBaseController
 
         $sections = $this->getReportSections($report);
 
-        $this->pageTitle = 'Preview — ' . ($report->report_name ?: 'Insight');
+        $cleanName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name ?: 'Insight'));
+        $this->pageTitle = 'Preview — ' . $cleanName . ' - Insights Report';
         $this->report    = $report;
         $this->sections  = $sections;
 

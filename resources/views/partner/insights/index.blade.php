@@ -292,9 +292,10 @@
                         : ($isProcessing ? 'processing'
                         : ($isFailed ? 'failed'
                         : ($isReady ? $publishSt : 'processing')));
+                    $displayName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) . ' - Insights Report';
                 @endphp
                 <tr id="pi-row-{{ $report->id }}"
-                    data-search="{{ strtolower($report->report_name . ' ' . $clientName . ' ' . $companyName) }}"
+                    data-search="{{ strtolower($displayName . ' ' . $clientName . ' ' . $companyName) }}"
                     data-status="{{ $rowStatus }}"
                     data-company-id="{{ $report->company_id }}"
                     data-user-id="{{ $report->user_id }}"
@@ -305,15 +306,15 @@
                                 <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                             </span>
                             @if($isDeleted)
-                                <span class="pi-name-deleted">{{ $report->report_name }}</span>
+                                <span class="pi-name-deleted">{{ $displayName }}</span>
                             @elseif($isReady)
-                                <a href="{{ route('partner-insights.view', $report->encrypted_id) }}" class="pi-name-link">{{ $report->report_name }}</a>
+                                <a href="{{ route('partner-insights.view', $report->encrypted_id) }}" class="pi-name-link">{{ $displayName }}</a>
                             @else
-                                <span style="color:#1a202c;font-weight:500;">{{ $report->report_name }}</span>
+                                <span style="color:#1a202c;font-weight:500;">{{ $displayName }}</span>
                             @endif
                         </div>
                     </td>
-                    <td style="color:#64748b;" data-date="{{ $report->created_at->format('Y-m-d') }}" data-order="{{ $report->created_at->format('Y-m-d') }}">{{ $report->created_at->format(active_date_format()) }}</td>
+                    <td style="color:#64748b;" data-date="{{ $report->created_at->format('Y-m-d') }}" data-order="{{ $report->created_at->format('Y-m-d H:i:s') }}">{{ $report->created_at->format(active_date_format() . ', g:i A') }}</td>
                     <td style="color:#64748b;"><div class="cell-trunc-sm" title="{{ $clientName }}">{{ $clientName }}</div></td>
                     <td style="color:#64748b;"><div class="cell-trunc" title="{{ $companyName }}">{{ $companyName }}</div></td>
                     <td data-search="{{ $rowStatus }}">
@@ -366,7 +367,7 @@
                                                 Download
                                             </a>
                                             <div class="dm-divider"></div>
-                                            <a href="javascript:void(0)" class="dm-item dm-item--danger" onclick="piDelete({{ $report->id }}, {{ json_encode($report->report_name) }})">
+                                            <a href="javascript:void(0)" class="dm-item dm-item--danger" onclick="piDelete({{ $report->id }}, {{ json_encode($displayName) }})">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
                                                 Delete
                                             </a>
@@ -855,10 +856,11 @@
         tr.dataset.status    = 'processing';
         tr.dataset.companyId = companyId || '';
         tr.dataset.userId    = userId || '';
+        const rowDisplayName = name ? (name + ' - Insights Report') : 'Generating…';
         tr.innerHTML = `
             <td><div class="pi-name-cell">
                 <span class="pi-name-icon"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span>
-                <span style="font-weight:500;">${name || 'Generating…'}</span>
+                <span style="font-weight:500;">${rowDisplayName}</span>
             </div></td>
             <td style="color:#64748b;" data-date="${today}" data-order="${today}">Just now</td>
             <td style="color:#64748b;">${clientName || '—'}</td>
@@ -883,7 +885,9 @@
             const nameCell = row.querySelector('.pi-name-cell span[style]');
             if (nameCell) {
                 const a = document.createElement('a');
-                a.href = viewUrl; a.className = 'pi-name-link'; a.textContent = nameCell.textContent;
+                a.href = viewUrl; a.className = 'pi-name-link';
+                const rawName = nameCell.textContent.trim();
+                a.textContent = rawName.endsWith(' - Insights Report') ? rawName : rawName + ' - Insights Report';
                 nameCell.replaceWith(a);
             }
             const actions = row.querySelector('.pi-actions');

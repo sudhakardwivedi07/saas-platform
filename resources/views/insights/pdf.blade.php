@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <title>{{ $report->report_name ?? 'Insight' }}</title>
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
     @page { margin: 0; size: letter; }
     * { margin:0; padding:0; box-sizing:border-box; font-family:'DM Sans', Arial, Helvetica, sans-serif; }
     body { font-size:10pt; line-height:1.65; color:#374151; }

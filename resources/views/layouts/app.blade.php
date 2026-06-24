@@ -31,6 +31,7 @@
   --blue-light:#e8f2fb; --blue-pale:#f0f7ff;
   --orange:{{ $branding?->accent_color ?? '#f06b21' }};
   --orange-dark:#d05519; --orange-light:#fef3ec;
+  --secondary-color:{{ $branding?->secondary_color ?? '#64748b' }};
   --green:#10b981; --green-light:#ecfdf5;
   --red:#ef4444; --red-light:#fef2f2;
   --amber:#f59e0b; --amber-light:#fffbeb;

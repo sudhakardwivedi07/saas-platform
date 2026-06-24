@@ -83,7 +83,7 @@
 .insight-slider-content .insight-subheading { font-weight:700;font-size:15px;color:#1a202c;margin:14px 0 4px;padding-bottom:5px;border-bottom:2px solid #e8eef5; }
 .insight-slider-content h3,.insight-slider-content h4 { color:var(--blue);margin:14px 0 4px;font-weight:700;font-size:15px; }
 .insight-slider-content table.insight-table { width:100%;border-collapse:collapse;margin:6px 0 10px;box-shadow:0 1px 3px rgba(0,0,0,.08);border-radius:8px;overflow:hidden; }
-.insight-slider-content table.insight-table th { border:1px solid #e2e8f0;padding:6px 10px;font-weight:600;font-size:12.5px;color:#2d3748;background:#f7fafc;letter-spacing:.04em;text-transform:uppercase;line-height:1.4; }
+.insight-slider-content table.insight-table th { border:1px solid #e2e8f0;padding:6px 10px;font-weight:600;font-size:12.5px;color:var(--orange);background:#f7fafc;letter-spacing:.04em;text-transform:uppercase;line-height:1.4; }
 .insight-slider-content table.insight-table td { border:1px solid #e2e8f0;padding:6px 10px;font-size:13px;color:#4a5568;line-height:1.4; }
 .insight-slider-content table.insight-table tbody tr:nth-child(even) { background:#f9fafb; }
 .insight-slider-content .table-responsive { overflow-x:auto;margin:6px 0 10px; }
@@ -272,7 +272,7 @@
                 </button>
                 <button id="rdBtnSave" class="rd-btn rd-btn-save" onclick="rdSaveEdits()">
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    <span id="rdBtnSaveLabel">Save Draft</span>
+                    <span id="rdBtnSaveLabel">{{ $report->isDraft() ? 'Save Draft' : 'Save' }}</span>
                 </button>
                 @if($report->isDraft())
                 <button id="rdBtnPublish" class="rd-btn rd-btn-publish" onclick="rdPublishInsight()">
@@ -452,6 +452,10 @@
         const wrap = document.getElementById('insightSliderContent');
         wrap.innerHTML = html;
         wrap.style.display = '';
+
+        document.querySelectorAll('.insight-table td').forEach(function(td) {
+            if (/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(td.textContent.trim())) td.style.textAlign = 'right';
+        });
 
         goToSlide(0);
     }
@@ -646,6 +650,19 @@
     });
 
     window.rdSaveEdits = function () {
+        // Only save if the user actually typed or edited something (dirty flag set by input events)
+        if (!rdDirty) {
+            const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
+            Swal.fire({
+                icon: 'info',
+                title: 'No Changes',
+                text: 'No modifications were made to the report content.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: brandColor,
+            });
+            return;
+        }
+
         // Collect innerHTML so all formatting (bullets, bold, headings) is preserved exactly
         const sections = insightSections.map((sec, i) => {
             const contentEl = document.getElementById('sl-content-' + i);
@@ -655,6 +672,7 @@
             };
         });
 
+        const saveLabel = IS_DRAFT ? 'Save Draft' : 'Save';
         const btn = document.getElementById('rdBtnSave');
         btn.disabled = true;
         document.getElementById('rdBtnSaveLabel').textContent = 'Saving…';
@@ -667,7 +685,7 @@
         .then(r => r.json())
         .then(data => {
             btn.disabled = false;
-            document.getElementById('rdBtnSaveLabel').textContent = 'Save Draft';
+            document.getElementById('rdBtnSaveLabel').textContent = saveLabel;
             if (data.status === 'success') {
                 rdDirty = false; // reset so re-saving without further edits is blocked
                 const redirectUrl = data.redirect_url || null;
@@ -700,7 +718,7 @@
         })
         .catch(() => {
             btn.disabled = false;
-            document.getElementById('rdBtnSaveLabel').textContent = 'Save Draft';
+            document.getElementById('rdBtnSaveLabel').textContent = saveLabel;
             Swal.fire({ icon:'error', title:'Error', text:'Network error. Please try again.' });
         });
     };
@@ -975,7 +993,7 @@
             for (let i=2;i<lines.length;i++) {
                 const row = lines[i]; if (!row.trim()) continue;
                 const cells = row.split('|').map(c=>c.trim()).filter(c=>c); if (!cells.length) continue;
-                html += '<tr>'; cells.forEach(cell => html+=`<td>${cell}</td>`); html += '</tr>';
+                html += '<tr>'; cells.forEach(cell => html+=`<td style="text-align:${/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(cell)?'right':'left'};">${cell}</td>`); html += '</tr>';
             }
             return html+'</tbody></table></div>';
         });

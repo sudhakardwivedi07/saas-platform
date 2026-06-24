@@ -39,7 +39,7 @@
 .insight-slider-content p { margin:0 0 10px; }
 .insight-slider-content h3,.insight-slider-content h4 { color:#1559a6;margin-top:10px;margin-bottom:0;font-weight:600; }
 .insight-slider-content table.insight-table { width:100%;border-collapse:collapse;margin:0;box-shadow:0 1px 3px rgba(0,0,0,.1);border-radius:8px;overflow:hidden; }
-.insight-slider-content table.insight-table th { border:1px solid #e2e8f0;padding:12px;text-align:left;font-weight:600;color:#2d3748;background:#f7fafc; }
+.insight-slider-content table.insight-table th { border:1px solid #e2e8f0;padding:12px;text-align:left;font-weight:600;color:var(--orange);background:#f7fafc; }
 .insight-slider-content table.insight-table td { border:1px solid #e2e8f0;padding:12px;color:#4a5568; }
 .insight-slider-content table.insight-table tbody tr:nth-child(even) { background:#f9fafb; }
 .insight-slider-pagination { display:flex;justify-content:center;gap:8px;margin-top:24px; }
@@ -188,6 +188,11 @@
         window.insightSections = sections; window.currentSlide = 0;
         document.getElementById('insightAccordionContentShow').innerHTML = html;
         document.getElementById('insightAccordionContentShow').style.display = '';
+
+        document.querySelectorAll('.insight-table td').forEach(function(td) {
+            if (/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(td.textContent.trim())) td.style.textAlign = 'right';
+        });
+
         setTimeout(() => goToSlide(0), 100);
     }
 
@@ -298,7 +303,7 @@
                 const row = lines[i]; if (!row.trim()) continue;
                 const cells = row.split('|').map(c=>c.trim()).filter(c=>c); if (!cells.length) continue;
                 html += '<tr>';
-                cells.forEach(cell => { html += `<td style="text-align:${/^[\$0-9,.\-%\s]+$/.test(cell)?'right':'left'};">${cell}</td>`; });
+                cells.forEach(cell => { html += `<td style="text-align:${/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(cell)?'right':'left'};">${cell}</td>`; });
                 html += '</tr>';
             }
             return html+'</tbody></table></div>';

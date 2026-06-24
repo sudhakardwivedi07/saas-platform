@@ -604,6 +604,7 @@ class InsightsController extends AccountBaseController
             'sections'    => $sections,
             'report'      => $report,
             'companyName' => $this->companyName,
+            'preparedBy'  => user()?->name ?? $this->companyName,
             'logoBase64'  => $logoBase64,
             'reportDate'  => $report->created_at->format('M d, Y'),
             'branding'    => $this->branding,
@@ -752,7 +753,7 @@ class InsightsController extends AccountBaseController
         if (is_array($insightData) && !empty($insightData['sections'])) {
             return array_map(fn ($s) => [
                 'title'             => $s['title']  ?? '',
-                'formatted_content' => $s['html']   ?? $s['content'] ?? '',
+                'formatted_content' => $this->applyPdfAmountAlignment($s['html'] ?? $s['content'] ?? ''),
             ], $insightData['sections']);
         }
 
@@ -1037,11 +1038,26 @@ class InsightsController extends AccountBaseController
                 if (!trim($lines[$i])) continue;
                 $cells = array_filter(explode('|', $lines[$i]), fn($c) => trim($c) !== '');
                 $html .= '<tr>';
-                foreach ($cells as $cell) $html .= '<td>' . trim($cell) . '</td>';
+                foreach ($cells as $cell) {
+                    $v = trim($cell);
+                    $align = preg_match('/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/', $v) ? 'right' : 'left';
+                    $html .= '<td style="text-align:' . $align . ';">' . $v . '</td>';
+                }
                 $html .= '</tr>';
             }
             return $html . '</tbody></table>';
         }, $text);
+    }
+
+    private function applyPdfAmountAlignment(string $html): string
+    {
+        return preg_replace_callback('/<td([^>]*)>(.*?)<\/td>/is', function ($m) {
+            $text = trim(strip_tags($m[2]));
+            if (preg_match('/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/', $text)) {
+                return '<td' . $m[1] . ' style="text-align:right;">' . $m[2] . '</td>';
+            }
+            return $m[0];
+        }, $html);
     }
 
     // ── Share insight (send PDF via email) ────────────────────────────────────
@@ -1092,6 +1108,7 @@ class InsightsController extends AccountBaseController
             'sections'    => $sections,
             'report'      => $report,
             'companyName' => $this->companyName,
+            'preparedBy'  => user()?->name ?? $this->companyName,
             'logoBase64'  => $logoBase64,
             'reportDate'  => $report->created_at->format('M d, Y'),
             'branding'    => $this->branding,

@@ -83,7 +83,7 @@
 .insight-slider-content .insight-subheading { font-weight:700;font-size:15px;color:#1a202c;margin:14px 0 4px;padding-bottom:5px;border-bottom:2px solid #e8eef5; }
 .insight-slider-content h3,.insight-slider-content h4 { color:var(--blue);margin:14px 0 4px;font-weight:700;font-size:15px; }
 .insight-slider-content table.insight-table { width:100%;border-collapse:collapse;margin:6px 0 10px;box-shadow:0 1px 3px rgba(0,0,0,.08);border-radius:8px;overflow:hidden; }
-.insight-slider-content table.insight-table th { border:1px solid #e2e8f0;padding:6px 10px;font-weight:600;font-size:12.5px;color:#2d3748;background:#f7fafc;letter-spacing:.04em;text-transform:uppercase;line-height:1.4; }
+.insight-slider-content table.insight-table th { border:1px solid #e2e8f0;padding:6px 10px;font-weight:600;font-size:12.5px;color:var(--orange);background:#f7fafc;letter-spacing:.04em;text-transform:uppercase;line-height:1.4; }
 .insight-slider-content table.insight-table td { border:1px solid #e2e8f0;padding:6px 10px;font-size:13px;color:#4a5568;line-height:1.4; }
 .insight-slider-content table.insight-table tbody tr:nth-child(even) { background:#f9fafb; }
 .insight-slider-content .table-responsive { overflow-x:auto;margin:6px 0 10px; }
@@ -452,6 +452,10 @@
         const wrap = document.getElementById('insightSliderContent');
         wrap.innerHTML = html;
         wrap.style.display = '';
+
+        document.querySelectorAll('.insight-table td').forEach(function(td) {
+            if (/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(td.textContent.trim())) td.style.textAlign = 'right';
+        });
 
         goToSlide(0);
     }
@@ -989,7 +993,7 @@
             for (let i=2;i<lines.length;i++) {
                 const row = lines[i]; if (!row.trim()) continue;
                 const cells = row.split('|').map(c=>c.trim()).filter(c=>c); if (!cells.length) continue;
-                html += '<tr>'; cells.forEach(cell => html+=`<td>${cell}</td>`); html += '</tr>';
+                html += '<tr>'; cells.forEach(cell => html+=`<td style="text-align:${/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(cell)?'right':'left'};">${cell}</td>`); html += '</tr>';
             }
             return html+'</tbody></table></div>';
         });

@@ -187,13 +187,12 @@
 }
 .insight-slider-content table.insight-table th {
     border: 1px solid #e2e8f0; padding: 6px 10px; text-align: left;
-    font-weight: 600; font-size: 12.5px; color: #2d3748; background: #f7fafc;
+    font-weight: 600; font-size: 12.5px; color: var(--orange); background: #f7fafc;
     letter-spacing: .04em; text-transform: uppercase; line-height: 1.4;
 }
 .insight-slider-content table.insight-table td {
     border: 1px solid #e2e8f0; padding: 6px 10px; font-size: 13px; color: #4a5568; line-height: 1.4;
-}
-.insight-slider-content table.insight-table tbody tr:nth-child(even) { background: #f9fafb; }
+}.insight-slider-content table.insight-table tbody tr:nth-child(even) { background: #f9fafb; }
 
 /* ── Pagination dots ── */
 .insight-slider-pagination { display: flex; justify-content: center; gap: 8px; margin-top: 24px; }
@@ -527,6 +526,10 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
         document.getElementById('insightAccordionContentShow').innerHTML = html;
         document.getElementById('insightAccordionContentShow').style.display = '';
 
+        document.querySelectorAll('.insight-table td').forEach(function(td) {
+            if (/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(td.textContent.trim())) td.style.textAlign = 'right';
+        });
+
         setTimeout(() => goToSlide(0), 100);
     }
 
@@ -754,7 +757,7 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
                 if (!cells.length) continue;
                 html += '<tr>';
                 cells.forEach(cell => {
-                    const align = /^[\$0-9,.\-%\s]+$/.test(cell) ? 'right' : 'left';
+                    const align = /^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(cell) ? 'right' : 'left';
                     html += `<td style="text-align:${align};">${cell}</td>`;
                 });
                 html += '</tr>\n';

@@ -112,7 +112,7 @@
 }
 .ipv-section-content table th {
     border:1px solid #e2e8f0; padding:10px 12px;
-    font-weight:600; color:#2d3748; background:#f7fafc;
+    font-weight:600; color:var(--orange); background:#f7fafc;
     text-align:left;
 }
 .ipv-section-content table td {
@@ -183,9 +183,6 @@
                 @endif
                 <div>
                     <div class="ipv-firm-name">{{ $companyName }}</div>
-                    @if($appName && $appName !== $companyName)
-                        <div class="ipv-firm-sub">{{ $appName }}</div>
-                    @endif
                 </div>
             </div>
 
@@ -202,7 +199,7 @@
                 </div>
                 <div>
                     <div class="ipv-meta-label">PREPARED BY</div>
-                    <div class="ipv-meta-value">{{ $companyName }}</div>
+                    <div class="ipv-meta-value">{{ $authUser->name ?? $companyName }}</div>
                 </div>
                 <div>
                     <div class="ipv-meta-label">DATE</div>
@@ -244,4 +241,14 @@
 
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.ipv-section-content table td').forEach(function(td) {
+        if (/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(td.textContent.trim())) td.style.textAlign = 'right';
+    });
+});
+</script>
+@endpush
 @endsection

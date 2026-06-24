@@ -114,7 +114,7 @@
         </div>
         <div class="meta-row">
             <span class="meta-label">PREPARED BY</span>
-            <span class="meta-value">{{ $report->user?->name ?? $companyName }}</span>
+            <span class="meta-value">{{ $preparedBy }}</span>
         </div>
         <div class="meta-row">
             <span class="meta-label">REPORT DATE</span>

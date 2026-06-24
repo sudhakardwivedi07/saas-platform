@@ -53,6 +53,8 @@ class Company extends BaseModel
         'date_format',
         'time_format',
         'locale',
+        'custom_insight_limit',
+        'insight_limit_period',
     ];
 
     protected $casts = [

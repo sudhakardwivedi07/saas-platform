@@ -1018,163 +1018,282 @@ function etUpdateRow(t) {
 @if($_stabs['tab-insight-limits'])
 <div class="tab-panel {{ $_sfirst === 'tab-insight-limits' ? 'active' : '' }}" id="tab-insight-limits">
 
-    {{-- Sub-tab bar --}}
-    <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px">
-        <button type="button" class="il-subtab active" data-subtab="subtab-limit-setup"
-            style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;font-size:13px;font-weight:500;border:none;border-bottom:3px solid var(--orange);background:none;cursor:pointer;color:var(--orange);margin-bottom:-2px">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            Insight Limit Setup
-        </button>
-        <button type="button" class="il-subtab" data-subtab="subtab-company-overrides"
-            style="display:inline-flex;align-items:center;gap:7px;padding:10px 18px;font-size:13px;font-weight:500;border:none;border-bottom:3px solid transparent;background:none;cursor:pointer;color:var(--text-3);margin-bottom:-2px">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-            Company-wise Limit Overrides
-        </button>
-    </div>
+    @php
+        $ilAdminBudget    = (int) ($adminInsightBudget ?? 0);
+        $ilTotalAllocated = (int) ($totalAllocated ?? 0);
+        $ilBudgetLeft     = $ilAdminBudget > 0 ? max(0, $ilAdminBudget - $ilTotalAllocated) : null;
+    @endphp
 
-    {{-- Sub-tab 1: Insight Limit Setup --}}
-    <div id="subtab-limit-setup">
-        <div class="acc-card">
-            <div class="acc-section-title">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                Insights Limit
+    {{-- Client Insight Limits Table --}}
+    <div class="tc">
+        <div class="tc-head">
+            <div class="tc-filters">
+                <div class="srch-wrap">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" class="srch-inp" id="il-search" placeholder="Search clients…" autocomplete="off">
+                </div>
+                <select class="sel" id="il-status-filter" autocomplete="off">
+                    <option value="">All Statuses</option>
+                    <option value="Not Set">Not Set</option>
+                    <option value="Unused">Unused</option>
+                    <option value="Available">Available</option>
+                    <option value="Almost Full">Almost Full</option>
+                    <option value="Full">Full</option>
+                </select>
+                <button class="btn btn-danger" onclick="resetIlFilters()">Reset</button>
             </div>
-
-            <form id="insight-limit-form" onsubmit="submitInsightLimitForm(event)">
-                @csrf
-                <div class="il-grid">
-                    <div class="f-group" style="margin:0">
-                        <label class="f-label">Default Limit Per Client</label>
-                        <div style="display:flex;align-items:center;gap:8px">
-                            <input type="number" name="default_limit" id="il-default-limit" class="f-inp"
-                                value="{{ $insightSetting->default_limit ?? 50 }}"
-                                min="1" max="99999" style="max-width:110px">
-                            <span style="font-size:13px;color:var(--text-3);white-space:nowrap">insights</span>
-                        </div>
-                        <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">Applied to all companies unless overridden</div>
-                    </div>
-                    <div class="f-group" style="margin:0">
-                        <label class="f-label">Billing Period</label>
-                        <select name="billing_period" class="f-sel">
-                            <option value="monthly" {{ ($insightSetting->billing_period ?? 'monthly') === 'monthly' ? 'selected' : '' }}>Monthly</option>
-                            <option value="yearly"  {{ ($insightSetting->billing_period ?? '') === 'yearly' ? 'selected' : '' }}>Yearly</option>
-                        </select>
-                        <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">When the limit resets for each company</div>
-                    </div>
-                    <div class="f-group" style="margin:0">
-                        <label class="f-label">Overage Behaviour</label>
-                        <select name="overage_behaviour" class="f-sel">
-                            <option value="pause"         {{ ($insightSetting->overage_behaviour ?? 'pause') === 'pause' ? 'selected' : '' }}>Pause generation when limit is reached</option>
-                            <option value="allow_overage" {{ ($insightSetting->overage_behaviour ?? '') === 'allow_overage' ? 'selected' : '' }}>Allow overage and notify when limit is reached</option>
-                        </select>
-                        <div style="font-size:11.5px;color:var(--text-3);margin-top:5px">What happens when a company reaches its cap</div>
-                    </div>
+            <div style="display:flex;align-items:center;gap:12px">
+                @if($ilAdminBudget > 0)
+                <div style="display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:8px;padding:6px 14px;background:var(--bg-card)">
+                    <span style="font-size:12px;color:var(--text-3)">Total: <strong style="color:var(--text-1)">{{ number_format($ilAdminBudget) }}</strong></span>
+                    <span style="width:1px;height:14px;background:var(--border)"></span>
+                    <span style="font-size:12px;color:var(--text-3)">Allocated: <strong style="color:var(--text-1)">{{ number_format($ilTotalAllocated) }}</strong></span>
+                    <span style="width:1px;height:14px;background:var(--border)"></span>
+                    <span style="font-size:12px;color:var(--text-3)">Remaining: <strong style="color:{{ $ilBudgetLeft <= 0 ? '#dc2626' : '#16a34a' }}" id="il-budget-remaining-display">{{ number_format($ilBudgetLeft) }}</strong></span>
                 </div>
-                <div style="margin-top:24px">
-                    <button type="submit" class="btn btn-primary" id="il-submit">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                        Save
-                    </button>
-                </div>
-            </form>
+                @endif
+                <span class="badge b-gray" id="il-count-badge">{{ ($clientsForLimits ?? collect())->count() }} client{{ ($clientsForLimits ?? collect())->count() !== 1 ? 's' : '' }}</span>
+            </div>
         </div>
+
+        <table id="il-table" style="width:100%;border-collapse:collapse">
+            <thead>
+                <tr>
+                    <th>Client Name</th>
+                    <th style="text-align:center">Companies</th>
+                    <th style="text-align:center">Insights Used</th>
+                    <th style="text-align:center">Insights Remaining</th>
+                    <th style="text-align:center">Status</th>
+                    <th style="text-align:right;width:120px">Action</th>
+                    <th style="display:none">sort-name</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($clientsForLimits ?? collect() as $ilClient)
+                @php
+                    $_ilManaged    = $ilClient->managedCompanies ?? collect();
+                    $_ilPrimary    = $ilClient->company;
+                    $_ilAll        = collect($_ilPrimary ? [$_ilPrimary] : [])
+                                         ->merge($_ilManaged)->filter()->unique('id')->values();
+                    $ilTotalUsed   = (int) $_ilAll->sum('insights_used');
+                    $ilSetCompanies = $_ilAll->filter(fn($c) => $c->custom_insight_limit !== null);
+                    $ilTotalLimit  = (int) $ilSetCompanies->sum('custom_insight_limit');
+                    $ilHasLimit    = $ilSetCompanies->isNotEmpty();
+                    $ilRemaining   = $ilHasLimit ? max(0, $ilTotalLimit - $ilTotalUsed) : null;
+                    $ilPct         = ($ilHasLimit && $ilTotalLimit > 0) ? min(100, round($ilTotalUsed / $ilTotalLimit * 100)) : null;
+                    $ilStatus      = !$ilHasLimit ? 'Not Set'
+                                   : ($ilPct >= 100 ? 'Full'
+                                   : ($ilPct >= 70  ? 'Almost Full'
+                                   : ($ilPct > 0    ? 'Available'
+                                   :                  'Unused')));
+                    $ilStatusClr   = !$ilHasLimit ? '#9ca3af'
+                                   : ($ilPct >= 100 ? '#dc2626'
+                                   : ($ilPct >= 70  ? '#d97706'
+                                   : ($ilPct > 0    ? '#16a34a' : '#9ca3af')));
+                    $ilCompaniesJson = $_ilAll->map(fn($c) => [
+                        'id'     => $c->id,
+                        'name'   => $c->company_name,
+                        'limit'  => $c->custom_insight_limit,
+                        'period' => $c->insight_limit_period ?? 'monthly',
+                    ])->values()->toJson();
+                @endphp
+                <tr data-status="{{ $ilStatus }}">
+                    <td>
+                        <div style="font-size:13px;font-weight:600;color:var(--text-1)">{{ $ilClient->name }}</div>
+                        <div style="font-size:11.5px;color:var(--text-3);margin-top:2px">{{ $ilClient->email }}</div>
+                    </td>
+                    <td style="text-align:center;font-size:13px;color:var(--text-2)">{{ $_ilAll->count() }}</td>
+                    <td style="text-align:center;font-size:13px;color:var(--text-2)">{{ $ilTotalUsed }}</td>
+                    <td style="text-align:center;font-size:13px;color:var(--text-2)" data-order="{{ $ilHasLimit ? $ilRemaining : -1 }}">
+                        @if($ilHasLimit) {{ $ilRemaining }} @else <span style="color:#9ca3af">—</span> @endif
+                    </td>
+                    <td style="text-align:center" data-search="{{ $ilStatus }}">
+                        <span style="font-size:13px;font-weight:500;color:{{ $ilStatusClr }}">{{ $ilStatus }}</span>
+                    </td>
+                    <td style="text-align:right">
+                        <button type="button" class="btn btn-primary btn-sm"
+                            onclick="openSetLimitModal('{{ addslashes($ilClient->name) }}', {{ $ilCompaniesJson }})">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                            Set Limit
+                        </button>
+                    </td>
+                    <td style="display:none">{{ strtolower($ilClient->name) }}</td>
+                </tr>
+                @empty
+                <tr><td colspan="7" style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No clients yet. Add clients to set their insight limits.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
 
-    {{-- Sub-tab 2: Company-wise Limit Overrides --}}
-    <div id="subtab-company-overrides" style="display:none">
-        <div class="acc-card">
-            <div class="acc-section-title">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-                Custom Limit
-            </div>
-            <div style="font-size:12.5px;color:var(--text-3);margin-bottom:18px">Set a custom monthly insight limit for specific companies. Overrides the default limit.</div>
+</div>
 
-            @php $ilDefault = $insightSetting->default_limit ?? 50; @endphp
+{{-- Set Limit Modal --}}
+<div class="modal-overlay" id="modal-set-limit" onclick="if(event.target===this)closeSetLimitModal()">
+    <div class="modal-box" style="width:460px;max-height:85vh;display:flex;flex-direction:column">
+        <button class="modal-close" onclick="closeSetLimitModal()">&times;</button>
+        <div class="modal-title" style="margin-bottom:4px">Set Insight Limit</div>
+        <div style="font-size:13px;color:var(--text-3);margin-bottom:20px">Define company-wise insight limits for this client</div>
 
-            @if(($companiesWithUsage ?? collect())->isEmpty())
-            <div style="text-align:center;padding:56px 20px">
-                <div style="width:56px;height:56px;border-radius:14px;background:#eff6ff;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.6"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
-                </div>
-                <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:8px">Company-level overrides will appear here</div>
-                <div style="font-size:13px;color:var(--text-3);line-height:1.6;max-width:480px;margin:0 auto">
-                    Once you add clients and their companies, you can set custom insight limits for individual companies here. This is useful when specific clients need more or fewer insights than your default allocation.
-                </div>
-            </div>
-            @else
-            <div style="overflow-x:auto">
-                <table style="width:100%;border-collapse:collapse">
-                    <thead>
-                        <tr>
-                            <th style="text-align:left;padding:10px 12px;font-size:11.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">Company</th>
-                            <th style="text-align:left;padding:10px 12px;font-size:11.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">Client</th>
-                            <th style="text-align:center;padding:10px 12px;font-size:11.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">Default Limit</th>
-                            <th style="text-align:left;padding:10px 12px;font-size:11.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">Used This Month</th>
-                            <th style="text-align:right;padding:10px 12px;font-size:11.5px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border)">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($companiesWithUsage as $co)
-                        @php
-                            $coOwner        = $co->users->first();
-                            $coCustomLimit  = $co->custom_insight_limit;
-                            $coEffective    = $coCustomLimit ?? $ilDefault;
-                            $coUsed         = (int) ($co->insights_used ?? 0);
-                            $coPct          = $coEffective > 0 ? min(100, round($coUsed / $coEffective * 100)) : 0;
-                            $coBarColor     = $coPct >= 90 ? 'var(--red)' : ($coPct >= 70 ? '#f59e0b' : 'var(--blue)');
-                        @endphp
-                        <tr style="border-bottom:1px solid var(--border)">
-                            <td style="padding:12px;font-size:13px;font-weight:500;color:var(--text-1)">{{ $co->company_name }}</td>
-                            <td style="padding:12px;font-size:13px;color:var(--text-2)">{{ $coOwner?->name ?? '—' }}</td>
-                            <td style="padding:12px;font-size:13px;color:var(--text-2);text-align:center">{{ $ilDefault }}</td>
-                            <td style="padding:12px">
-                                <div style="display:flex;align-items:center;gap:10px">
-                                    <div style="flex:1;max-width:120px;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
-                                        <div style="width:{{ $coPct }}%;height:100%;background:{{ $coBarColor }};border-radius:3px;transition:width .3s"></div>
-                                    </div>
-                                    <span style="font-size:12.5px;color:var(--text-2);white-space:nowrap">{{ $coUsed }}/{{ $coEffective }}</span>
-                                </div>
-                            </td>
-                            <td style="padding:12px;text-align:right">
-                                <button type="button" class="btn btn-primary btn-sm"
-                                    onclick="openCustomLimitModal({{ $co->id }}, '{{ addslashes($co->company_name) }}', {{ $coCustomLimit ?? $ilDefault }})">
-                                    Set Custom Limit
-                                </button>
-                            </td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-            @endif
+        <div style="margin-bottom:16px">
+            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--text-2);margin-bottom:6px">Client Name</label>
+            <input type="text" id="sl-client-name" class="f-inp" readonly
+                style="background:var(--bg-2,#f5f6f8);color:var(--text-2);cursor:default;width:100%">
+        </div>
+
+        {{-- Budget warning shown when admin budget is configured --}}
+        @if($ilAdminBudget > 0)
+        <div id="sl-budget-bar" style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:8px;background:#f9fafb;border:1px solid var(--border);margin-bottom:14px;font-size:12.5px">
+            <span style="color:var(--text-3)">Total: <strong style="color:var(--text-1)">{{ number_format($ilAdminBudget) }}</strong></span>
+            <span id="sl-budget-info" style="color:var(--text-3)">Remaining after save: <strong id="sl-budget-after" style="color:var(--text-1)">—</strong></span>
+        </div>
+        @endif
+
+        <div style="margin-bottom:10px">
+            <label style="display:block;font-size:12.5px;font-weight:600;color:var(--text-2);margin-bottom:8px">Company-wise Limits</label>
+            <div id="sl-companies-list" style="overflow-y:auto;max-height:280px;border:1px solid var(--border);border-radius:8px;overflow:hidden"></div>
+        </div>
+
+        <div id="sl-budget-warning" style="display:none;padding:8px 12px;border-radius:8px;background:#fef2f2;border:1px solid #fecaca;font-size:12.5px;color:#dc2626;margin-top:8px"></div>
+
+        <div class="mf-foot" style="margin-top:16px">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="closeSetLimitModal()">Cancel</button>
+            <button type="button" class="btn btn-primary btn-sm" id="sl-save-btn" onclick="saveSetLimits()">Save Limit</button>
         </div>
     </div>
 </div>
 
-{{-- Set Custom Limit Modal --}}
-<div class="modal-overlay" id="modal-custom-limit" onclick="if(event.target===this)this.classList.remove('open')">
-    <div class="modal-box" style="width:420px">
-        <button class="modal-close" onclick="document.getElementById('modal-custom-limit').classList.remove('open')">&times;</button>
-        <div class="modal-title">Set Custom Limit</div>
-        <div class="modal-sub" id="custom-limit-subtitle"></div>
-        <div class="mf-field" style="margin-top:16px">
-            <label class="mf-label">Custom Monthly Insight Limit</label>
-            <div style="display:flex;align-items:center;gap:10px">
-                <input type="number" id="custom-limit-value" class="mf-inp" min="1" max="99999"
-                    style="max-width:130px;text-align:center;font-size:16px;font-weight:600">
-                <span style="font-size:13px;color:var(--text-3)">insights per month</span>
-            </div>
-            <div style="font-size:11.5px;color:var(--text-3);margin-top:6px;line-height:1.5">
-                This overrides the default limit set in Insight Limit Setup. Set to the default value to remove the override.
-            </div>
-        </div>
-        <input type="hidden" id="custom-limit-company-id">
-        <div class="mf-foot">
-            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('modal-custom-limit').classList.remove('open')">Cancel</button>
-            <button type="button" class="btn btn-primary btn-sm" id="custom-limit-save-btn" onclick="saveCustomLimit()">Save Limit</button>
-        </div>
-    </div>
-</div>
+<script>
+(function () {
+    var _slCompanies  = [];
+    var _slPrevAlloc  = 0; // allocated to other clients (not this one)
+    var _adminBudget  = {{ $ilAdminBudget > 0 ? $ilAdminBudget : 'null' }};
+    var _totalAlloc   = {{ $ilTotalAllocated }};
+
+    window.openSetLimitModal = function (clientName, companies) {
+        _slCompanies = companies;
+        document.getElementById('sl-client-name').value = clientName;
+
+        // Sum of limits for THIS client's companies before editing
+        var thisClientAlloc = companies.reduce(function (s, c) { return s + (c.limit !== null ? parseInt(c.limit, 10) || 0 : 0); }, 0);
+        _slPrevAlloc = _totalAlloc - thisClientAlloc;
+
+        var list = document.getElementById('sl-companies-list');
+        list.innerHTML = '';
+        companies.forEach(function (co, idx) {
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:12px 14px' + (idx > 0 ? ';border-top:1px solid var(--border)' : '');
+            row.innerHTML =
+                '<div style="flex:1;font-size:13px;font-weight:500;color:var(--text-1);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + escHtml(co.name) + '">' + escHtml(co.name) + '</div>' +
+                '<input type="number" data-co-id="' + co.id + '" class="f-inp sl-limit-inp" value="' + (co.limit !== null ? co.limit : '') + '" min="1" max="99999" placeholder="Enter limit" style="width:90px;text-align:center;flex-shrink:0">' +
+                '<select data-co-id="' + co.id + '" class="f-sel sl-period-sel" style="width:112px;flex-shrink:0">' +
+                    '<option value="monthly"' + (co.period === 'monthly' ? ' selected' : '') + '>Monthly</option>' +
+                    '<option value="weekly"'  + (co.period === 'weekly'  ? ' selected' : '') + '>Weekly</option>' +
+                '</select>';
+            list.appendChild(row);
+        });
+
+        // Live budget validation on any limit change
+        list.querySelectorAll('.sl-limit-inp').forEach(function (inp) {
+            inp.addEventListener('input', updateBudgetPreview);
+        });
+        updateBudgetPreview();
+
+        document.getElementById('modal-set-limit').classList.add('open');
+    };
+
+    function updateBudgetPreview() {
+        if (!_adminBudget) return;
+        var inputs = document.querySelectorAll('#sl-companies-list .sl-limit-inp');
+        var newAlloc = 0;
+        inputs.forEach(function (inp) { newAlloc += parseInt(inp.value, 10) || 0; });
+        var totalAfter = _slPrevAlloc + newAlloc;
+        var remaining  = _adminBudget - totalAfter;
+        var afterEl = document.getElementById('sl-budget-after');
+        var warnEl  = document.getElementById('sl-budget-warning');
+        if (afterEl) {
+            afterEl.textContent = remaining >= 0 ? remaining.toLocaleString() : '—';
+            afterEl.style.color = remaining < 0 ? '#dc2626' : 'var(--text-1)';
+        }
+        if (warnEl) {
+            if (remaining < 0) {
+                warnEl.style.display = 'block';
+                warnEl.textContent = 'Total allocation (' + totalAfter.toLocaleString() + ') exceeds your plan budget of ' + _adminBudget.toLocaleString() + '. Please reduce the limits.';
+            } else {
+                warnEl.style.display = 'none';
+            }
+        }
+    }
+
+    window.closeSetLimitModal = function () {
+        document.getElementById('modal-set-limit').classList.remove('open');
+    };
+
+    window.saveSetLimits = function () {
+        var btn = document.getElementById('sl-save-btn');
+        var inputs = document.querySelectorAll('#sl-companies-list .sl-limit-inp');
+
+        // Validate: every company must have a limit set
+        var missingLimit = false;
+        inputs.forEach(function (inp) {
+            var v = parseInt(inp.value, 10);
+            if (!v || v < 1) { missingLimit = true; inp.style.borderColor = 'var(--red,#ef4444)'; }
+            else inp.style.borderColor = '';
+        });
+        if (missingLimit) {
+            Swal.fire({ icon: 'warning', title: 'Limit Required', text: 'Please enter a limit (minimum 1) for every company.' });
+            return;
+        }
+
+        // Validate: total must not exceed admin budget
+        if (_adminBudget) {
+            var newAlloc = 0;
+            inputs.forEach(function (inp) { newAlloc += parseInt(inp.value, 10) || 0; });
+            if (_slPrevAlloc + newAlloc > _adminBudget) {
+                Swal.fire({ icon: 'error', title: 'Budget Exceeded', text: 'Total allocation exceeds your plan budget of ' + _adminBudget.toLocaleString() + ' insights. Please reduce the limits.' });
+                return;
+            }
+        }
+
+        var payload = [];
+        inputs.forEach(function (inp) {
+            var coId = inp.dataset.coId;
+            var sel  = document.querySelector('#sl-companies-list .sl-period-sel[data-co-id="' + coId + '"]');
+            payload.push({ company_id: parseInt(coId, 10), limit: parseInt(inp.value, 10), period: sel ? sel.value : 'monthly' });
+        });
+
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+
+        fetch('{{ route("settings.insight-limits.bulk") }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+            body: JSON.stringify({ companies: payload })
+        })
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+            btn.disabled = false;
+            btn.textContent = 'Save Limit';
+            if (d.error) {
+                Swal.fire({ icon: 'error', title: 'Error', text: d.message || 'Something went wrong.' });
+            } else {
+                closeSetLimitModal();
+                Swal.fire({ icon: 'success', title: 'Saved', text: d.message || 'Limits updated.', timer: 1800, showConfirmButton: false })
+                    .then(function () { location.reload(); });
+            }
+        })
+        .catch(function () {
+            btn.disabled = false;
+            btn.textContent = 'Save Limit';
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Network error. Please try again.' });
+        });
+    };
+
+    function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+})();
+</script>
 
 @endif {{-- /tab-insight-limits --}}
 
@@ -1550,6 +1669,39 @@ $(document).ready(function() {
         // Update count badge for empty state
         var badge = document.getElementById('plan-count-badge');
         if (badge) badge.textContent = '0 plans';
+    }
+
+    // Insight Limits DataTable
+    if ($('#il-table tbody tr td').length && !$('#il-table tbody tr td[colspan]').length) {
+        document.getElementById('il-search').value        = '';
+        document.getElementById('il-status-filter').value = '';
+
+        var ilTable = $('#il-table').DataTable({
+            paging: true, pageLength: 15, lengthChange: false,
+            searching: true, ordering: true, info: true, dom: '<"dt-tscroll"t><"dt-footer"ip>',
+            order: [[6, 'asc']],
+            columnDefs: [
+                { orderable: false, targets: [5] },
+                { visible: false,   targets: [6] },
+            ],
+            infoCallback: function(settings, start, end, max, total) {
+                return 'Showing ' + (total === 0 ? 0 : start) + '–' + end + ' of ' + total + ' ' + (total !== 1 ? 'clients' : 'client');
+            },
+            language: {
+                infoEmpty: 'No clients found', paginate: { previous: '‹', next: '›' },
+                emptyTable: '<div style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:13px">No clients found.</div>',
+            },
+            drawCallback: function() {
+                var info = this.api().page.info();
+                var badge = document.getElementById('il-count-badge');
+                if (badge) badge.textContent = info.recordsDisplay + ' client' + (info.recordsDisplay !== 1 ? 's' : '');
+            }
+        });
+
+        document.getElementById('il-search').addEventListener('keyup', function() { ilTable.search(this.value).draw(); });
+        document.getElementById('il-status-filter').addEventListener('change', function() {
+            ilTable.column(4).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+        });
     }
 
     // Roles DataTable
@@ -2015,116 +2167,12 @@ function submitSettingsForm(e, form, defaultMsg) {
 }
 
 
-// ── Insight Limits sub-tab switching ──────────────────────────────────────────
-document.querySelectorAll('.il-subtab').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        var target = this.dataset.subtab;
-        document.querySelectorAll('.il-subtab').forEach(function(b) {
-            b.style.color = 'var(--text-3)';
-            b.style.borderBottomColor = 'transparent';
-            b.style.fontWeight = '500';
-        });
-        this.style.color = 'var(--orange)';
-        this.style.borderBottomColor = 'var(--orange)';
-        this.style.fontWeight = '600';
-
-        document.querySelectorAll('#subtab-limit-setup, #subtab-company-overrides').forEach(function(p) {
-            p.style.display = 'none';
-        });
-        var panel = document.getElementById(target);
-        if (panel) panel.style.display = '';
-    });
-});
-
-// ── Insight Limit Setup form ──────────────────────────────────────────────────
-function submitInsightLimitForm(e) {
-    e.preventDefault();
-    var form = document.getElementById('insight-limit-form');
-    var btn  = document.getElementById('il-submit');
-    var origHtml = btn.innerHTML;
-
-    var limitVal = parseInt(document.getElementById('il-default-limit').value, 10);
-    if (!limitVal || limitVal < 1) {
-        Swal.fire({ icon: 'error', title: 'Invalid Limit', text: 'Please enter a valid limit (minimum 1).', confirmButtonColor: '#f06b21' });
-        return;
+function resetIlFilters() {
+    document.getElementById('il-search').value        = '';
+    document.getElementById('il-status-filter').value = '';
+    if (window.$ && $('#il-table').length) {
+        $('#il-table').DataTable().search('').columns().search('').draw();
     }
-
-    btn.disabled = true;
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0" stroke-dasharray="40" stroke-dashoffset="10"/></svg> Saving…';
-
-    fetch('{{ route("settings.insight-limits.update") }}', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        body: new FormData(form),
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(res) {
-        btn.disabled = false; btn.innerHTML = origHtml;
-        if (res.status === 'success') {
-            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
-            Swal.fire({ icon: 'success', text: res.message || 'Insight limit settings saved.', confirmButtonText: 'Ok', confirmButtonColor: btnColor });
-        } else {
-            Swal.fire({ icon: 'error', title: 'Error', text: res.message || 'Something went wrong.', confirmButtonColor: '#f06b21' });
-        }
-    })
-    .catch(function() {
-        btn.disabled = false; btn.innerHTML = origHtml;
-        Swal.fire({ icon: 'error', title: 'Request Failed', text: 'Could not save settings. Please try again.', confirmButtonColor: '#f06b21' });
-    });
-}
-
-// ── Custom Limit Modal ────────────────────────────────────────────────────────
-function openCustomLimitModal(companyId, companyName, currentLimit) {
-    document.getElementById('custom-limit-company-id').value = companyId;
-    document.getElementById('custom-limit-subtitle').textContent = 'Set a custom monthly insight limit for: ' + companyName;
-    document.getElementById('custom-limit-value').value = currentLimit || 50;
-    document.getElementById('modal-custom-limit').classList.add('open');
-    setTimeout(function() { document.getElementById('custom-limit-value').focus(); }, 80);
-}
-
-function saveCustomLimit() {
-    var companyId = document.getElementById('custom-limit-company-id').value;
-    var limitVal  = parseInt(document.getElementById('custom-limit-value').value, 10);
-    var btn       = document.getElementById('custom-limit-save-btn');
-
-    if (!limitVal || limitVal < 1) {
-        Swal.fire({ icon: 'error', title: 'Invalid Limit', text: 'Please enter a valid limit (minimum 1).', confirmButtonColor: '#f06b21' });
-        return;
-    }
-
-    btn.disabled = true;
-    var origHtml = btn.innerHTML;
-    btn.innerHTML = 'Saving…';
-
-    var csrf = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '{{ csrf_token() }}';
-    var url  = '{{ route("settings.insight-limits.custom", ":id") }}'.replace(':id', companyId);
-
-    fetch(url, {
-        method: 'POST',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': csrf,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-        },
-        body: JSON.stringify({ custom_limit: limitVal }),
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(res) {
-        btn.disabled = false; btn.innerHTML = origHtml;
-        document.getElementById('modal-custom-limit').classList.remove('open');
-        if (res.status === 'success') {
-            var btnColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b21';
-            Swal.fire({ icon: 'success', text: res.message || 'Custom limit saved.', confirmButtonText: 'Ok', confirmButtonColor: btnColor })
-                .then(function() { location.reload(); });
-        } else {
-            Swal.fire({ icon: 'error', title: 'Error', text: res.message || 'Could not save limit.', confirmButtonColor: '#f06b21' });
-        }
-    })
-    .catch(function() {
-        btn.disabled = false; btn.innerHTML = origHtml;
-        Swal.fire({ icon: 'error', title: 'Request Failed', text: 'Could not save limit. Please try again.', confirmButtonColor: '#f06b21' });
-    });
 }
 
 function resetPlanFilters() {

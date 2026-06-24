@@ -51,4 +51,57 @@ class InsightLimitController extends AccountBaseController
 
         return Reply::success('Custom limit updated for ' . $company->company_name . '.');
     }
+
+    public function setBulkLimits(Request $request)
+    {
+        abort_403(!auth()->user()->can('edit_settings'));
+
+        $request->validate([
+            'companies'                 => 'required|array|min:1',
+            'companies.*.company_id'    => 'required|integer',
+            'companies.*.limit'         => 'required|integer|min:1|max:99999',
+            'companies.*.period'        => 'required|in:monthly,weekly',
+        ]);
+
+        $adminId      = company()->id;
+        $adminCompany = Company::withoutGlobalScopes()->find($adminId);
+        $adminPlan    = $adminCompany?->activePlan();
+        $adminBudget  = $adminPlan
+            ? (int) ($adminPlan->max_insights_per_month ?? $adminPlan->insights_per_month ?? 0)
+            : 0;
+
+        $allClientCompanies = Company::withoutGlobalScopes()
+            ->where('created_by', $adminId)
+            ->get(['id', 'custom_insight_limit']);
+
+        $validIds = $allClientCompanies->pluck('id')->map(fn ($i) => (int) $i)->all();
+
+        // Build the incoming map: company_id => new limit
+        $incoming = collect($request->companies)
+            ->filter(fn ($item) => in_array((int) $item['company_id'], $validIds, true))
+            ->keyBy(fn ($item) => (int) $item['company_id']);
+
+        // Compute total allocation after this save
+        if ($adminBudget > 0) {
+            $totalAfterSave = $allClientCompanies->sum(function ($co) use ($incoming) {
+                $coId = (int) $co->id;
+                return $incoming->has($coId)
+                    ? (int) $incoming[$coId]['limit']
+                    : (int) ($co->custom_insight_limit ?? 0);
+            });
+
+            if ($totalAfterSave > $adminBudget) {
+                return Reply::error('Total allocation (' . $totalAfterSave . ') would exceed your plan budget of ' . $adminBudget . ' insights.');
+            }
+        }
+
+        foreach ($incoming as $coId => $item) {
+            Company::withoutGlobalScopes()->where('id', $coId)->update([
+                'custom_insight_limit' => (int) $item['limit'],
+                'insight_limit_period' => $item['period'],
+            ]);
+        }
+
+        return Reply::success('Insight limits saved.');
+    }
 }

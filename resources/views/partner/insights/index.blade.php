@@ -692,12 +692,16 @@
     window.piOnClientChange = function () {
         const clientId = document.getElementById('piClientSelect').value;
         const compSel  = document.getElementById('piCompanySelect');
+        const warnEl   = document.getElementById('pi-limit-warning');
         if (!clientId) {
             compSel.innerHTML = '<option value="">Choose a company…</option>';
             compSel.disabled  = true;
             document.getElementById('piBtnGenerate').disabled = true;
+            if (warnEl) warnEl.style.display = 'none';
             return;
         }
+        // Clear warning immediately while companies are loading
+        if (warnEl) warnEl.style.display = 'none';
         compSel.innerHTML = '<option value="">Loading companies…</option>';
         compSel.disabled  = true;
         fetch(`/partner-insights/clients/${clientId}/companies`, {
@@ -723,7 +727,11 @@
             }
             piUpdateGenerateBtn();
         })
-        .catch(() => { compSel.innerHTML = '<option value="">Failed to load companies</option>'; compSel.disabled = false; });
+        .catch(() => {
+            compSel.innerHTML = '<option value="">Failed to load companies</option>';
+            compSel.disabled = false;
+            piUpdateGenerateBtn();
+        });
     };
 
     window.piShowLimitModal = function () {

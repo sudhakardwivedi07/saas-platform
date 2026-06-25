@@ -40,8 +40,8 @@ class QuickBooksCSVExportService
 
         try {
             $files['balance_sheet']  = self::generateBalanceSheetCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
-            $files['ar_aging']       = self::generateARAgingCSV($connection, $baseUrl, $endDate, $basePath, $timestamp);
-            $files['ap_aging']       = self::generateAPAgingCSV($connection, $baseUrl, $endDate, $basePath, $timestamp);
+            $files['ar_aging']       = self::generateARAgingCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
+            $files['ap_aging']       = self::generateAPAgingCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
             $files['profit_loss']    = self::generateProfitLossCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
             $files['general_ledger'] = self::generateGeneralLedgerCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
             $files['cash_flow']      = self::generateCashFlowCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
@@ -102,12 +102,12 @@ class QuickBooksCSVExportService
     }
 
     protected static function generateARAgingCSV(
-        QuickBooksConnection $connection, string $baseUrl, string $endDate, string $basePath, string $timestamp
+        QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate, string $basePath, string $timestamp
     ): array {
         $filename = 'AR_Aging.csv';
         $filepath = "{$basePath}/{$filename}";
 
-        $arData = self::fetchARAgingData($connection, $baseUrl, $endDate);
+        $arData = self::fetchARAgingData($connection, $baseUrl, $startDate, $endDate);
 
         $handle = fopen($filepath, 'w');
         fputcsv($handle, ['Customer', 'Current', '1-30', '31-60', '61-90', '>90', 'Total']);
@@ -122,12 +122,12 @@ class QuickBooksCSVExportService
     }
 
     protected static function generateAPAgingCSV(
-        QuickBooksConnection $connection, string $baseUrl, string $endDate, string $basePath, string $timestamp
+        QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate, string $basePath, string $timestamp
     ): array {
         $filename = 'AP_Aging.csv';
         $filepath = "{$basePath}/{$filename}";
 
-        $apData = self::fetchAPAgingData($connection, $baseUrl, $endDate);
+        $apData = self::fetchAPAgingData($connection, $baseUrl, $startDate, $endDate);
 
         $handle = fopen($filepath, 'w');
         fputcsv($handle, ['Vendor', 'Current', '1-30', '31-60', '61-90', '>90', 'Total']);
@@ -211,32 +211,103 @@ class QuickBooksCSVExportService
 
     // ── QB API data fetchers ──────────────────────────────────────────────────
 
-    protected static function fetchARAgingData(QuickBooksConnection $connection, string $baseUrl, string $endDate): array
+    /**
+     * Fetch AR aging by querying Invoices within the selected date range (by TxnDate),
+     * then calculate aging buckets ourselves relative to $endDate.
+     * This ensures only period-relevant invoices appear, correctly distributed across buckets.
+     */
+    protected static function fetchARAgingData(QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate): array
     {
-        $url      = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/AgedReceivables?report_date={$endDate}";
-        $response = self::curlGet($url, $connection->access_token);
+        $endTs   = strtotime($endDate);
+        $result  = [];
+        $offset  = 1;
+        $perPage = 100;
 
-        if ($response['code'] !== 200 || empty($response['body'])) {
-            Log::warning('AR Aging API failed', ['code' => $response['code']]);
-            return [];
-        }
+        do {
+            $sql  = "SELECT * FROM Invoice WHERE TxnDate >= '{$startDate}' AND TxnDate <= '{$endDate}' STARTPOSITION {$offset} MAXRESULTS {$perPage}";
+            $url  = "{$baseUrl}/v3/company/{$connection->realm_id}/query?" . http_build_query(['query' => $sql]);
+            $resp = self::curlGet($url, $connection->access_token);
 
-        $data = json_decode($response['body'], true);
-        return isset($data['Rows']['Row']) ? self::parseAgingRows($data['Rows']['Row'], 'customer') : [];
+            if ($resp['code'] !== 200 || empty($resp['body'])) break;
+
+            $body     = json_decode($resp['body'], true);
+            $invoices = $body['QueryResponse']['Invoice'] ?? [];
+            $fetched  = count($invoices);
+
+            foreach ($invoices as $inv) {
+                $balance = round((float) ($inv['Balance'] ?? 0), 2);
+                if ($balance <= 0) continue;
+
+                $customer    = $inv['CustomerRef']['name'] ?? 'Unknown';
+                $dueDate     = $inv['DueDate'] ?? $inv['TxnDate'] ?? $endDate;
+                $daysOverdue = (int) floor(($endTs - strtotime($dueDate)) / 86400);
+
+                if (!isset($result[$customer])) {
+                    $result[$customer] = ['customer' => $customer, 'current' => 0.0, '1_30' => 0.0, '31_60' => 0.0, '61_90' => 0.0, 'over_90' => 0.0, 'total' => 0.0];
+                }
+
+                $result[$customer]['total'] += $balance;
+                if ($daysOverdue <= 0)      $result[$customer]['current'] += $balance;
+                elseif ($daysOverdue <= 30) $result[$customer]['1_30']    += $balance;
+                elseif ($daysOverdue <= 60) $result[$customer]['31_60']   += $balance;
+                elseif ($daysOverdue <= 90) $result[$customer]['61_90']   += $balance;
+                else                        $result[$customer]['over_90'] += $balance;
+            }
+
+            $offset += $fetched;
+        } while ($fetched === $perPage);
+
+        Log::info('AR Aging fetched via Invoice query', ['records' => count($result), 'range' => "{$startDate} to {$endDate}"]);
+        return array_values($result);
     }
 
-    protected static function fetchAPAgingData(QuickBooksConnection $connection, string $baseUrl, string $endDate): array
+    /**
+     * Fetch AP aging by querying Bills within the selected date range (by TxnDate),
+     * then calculate aging buckets ourselves relative to $endDate.
+     */
+    protected static function fetchAPAgingData(QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate): array
     {
-        $url      = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/AgedPayables?report_date={$endDate}";
-        $response = self::curlGet($url, $connection->access_token);
+        $endTs   = strtotime($endDate);
+        $result  = [];
+        $offset  = 1;
+        $perPage = 100;
 
-        if ($response['code'] !== 200 || empty($response['body'])) {
-            Log::warning('AP Aging API failed', ['code' => $response['code']]);
-            return [];
-        }
+        do {
+            $sql  = "SELECT * FROM Bill WHERE TxnDate >= '{$startDate}' AND TxnDate <= '{$endDate}' STARTPOSITION {$offset} MAXRESULTS {$perPage}";
+            $url  = "{$baseUrl}/v3/company/{$connection->realm_id}/query?" . http_build_query(['query' => $sql]);
+            $resp = self::curlGet($url, $connection->access_token);
 
-        $data = json_decode($response['body'], true);
-        return isset($data['Rows']['Row']) ? self::parseAgingRows($data['Rows']['Row'], 'vendor') : [];
+            if ($resp['code'] !== 200 || empty($resp['body'])) break;
+
+            $body    = json_decode($resp['body'], true);
+            $bills   = $body['QueryResponse']['Bill'] ?? [];
+            $fetched = count($bills);
+
+            foreach ($bills as $bill) {
+                $balance = round((float) ($bill['Balance'] ?? 0), 2);
+                if ($balance <= 0) continue;
+
+                $vendor      = $bill['VendorRef']['name'] ?? 'Unknown';
+                $dueDate     = $bill['DueDate'] ?? $bill['TxnDate'] ?? $endDate;
+                $daysOverdue = (int) floor(($endTs - strtotime($dueDate)) / 86400);
+
+                if (!isset($result[$vendor])) {
+                    $result[$vendor] = ['vendor' => $vendor, 'current' => 0.0, '1_30' => 0.0, '31_60' => 0.0, '61_90' => 0.0, 'over_90' => 0.0, 'total' => 0.0];
+                }
+
+                $result[$vendor]['total'] += $balance;
+                if ($daysOverdue <= 0)      $result[$vendor]['current'] += $balance;
+                elseif ($daysOverdue <= 30) $result[$vendor]['1_30']    += $balance;
+                elseif ($daysOverdue <= 60) $result[$vendor]['31_60']   += $balance;
+                elseif ($daysOverdue <= 90) $result[$vendor]['61_90']   += $balance;
+                else                        $result[$vendor]['over_90'] += $balance;
+            }
+
+            $offset += $fetched;
+        } while ($fetched === $perPage);
+
+        Log::info('AP Aging fetched via Bill query', ['records' => count($result), 'range' => "{$startDate} to {$endDate}"]);
+        return array_values($result);
     }
 
     /**
@@ -671,7 +742,7 @@ class QuickBooksCSVExportService
                     if (!isset($dataRow['ColData'])) continue;
                     $c       = $dataRow['ColData'];
                     $date    = $c[0]['value'] ?? '';
-                    if (empty($date)) continue;
+                    if (empty($date) || strtotime($date) === false) continue;
                     $glData[] = [
                         'date'            => $date,
                         'account'         => $c[5]['value'] ?? $currentAccount,

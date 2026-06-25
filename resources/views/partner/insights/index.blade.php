@@ -390,7 +390,7 @@
     <div class="pi-modal">
         <button class="pi-modal-close" onclick="piCloseGenerateModal()" title="Close">&times;</button>
         <h3>Generate New Insight</h3>
-        <p class="pi-modal-sub">Select a client and company to generate CFO financial insights</p>
+        <p class="pi-modal-sub">Select a client, company and reporting period to generate CFO financial insights</p>
 
         <label for="piClientSelect">Select Client <span style="color:#ef4444">*</span></label>
         <select id="piClientSelect" onchange="piOnClientChange()">
@@ -402,14 +402,27 @@
             <option value="">Choose a company…</option>
         </select>
 
-        <div style="display:flex;gap:12px;margin-top:14px;">
-            <div style="flex:1;">
-                <label for="piStartDate" style="display:block;font-size:13px;font-weight:500;margin-bottom:4px;">Start Date <span style="color:#ef4444">*</span></label>
-                <input type="date" id="piStartDate" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#374151;background:#fff;box-sizing:border-box;" />
-            </div>
-            <div style="flex:1;">
-                <label for="piEndDate" style="display:block;font-size:13px;font-weight:500;margin-bottom:4px;">End Date <span style="color:#ef4444">*</span></label>
-                <input type="date" id="piEndDate" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#374151;background:#fff;box-sizing:border-box;" />
+        <label for="piDateRangePreset" style="margin-top:14px;display:block;font-size:13px;font-weight:500;margin-bottom:4px;">Reporting Period <span style="color:#ef4444">*</span></label>
+        <select id="piDateRangePreset" onchange="piOnDateRangeChange()" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#374151;background:#fff url('data:image/svg+xml,%3Csvg width=\'10\' height=\'6\' viewBox=\'0 0 10 6\'%3E%3Cpath d=\'M1 1l4 4 4-4\' stroke=\'%2394a3b8\' stroke-width=\'1.5\' fill=\'none\' stroke-linecap=\'round\'/%3E%3C/svg%3E') no-repeat right 10px center;-webkit-appearance:none;appearance:none;box-sizing:border-box;">
+            <option value="last_month" selected>Last Month</option>
+            <option value="this_month">This Month</option>
+            <option value="current_quarter">This Quarter</option>
+            <option value="last_quarter">Last Quarter</option>
+            <option value="this_year">This Year (YTD)</option>
+            <option value="last_year">Last Year</option>
+            <option value="custom">Custom Date Range</option>
+        </select>
+
+        <div id="piCustomDateWrap" style="display:none;">
+            <div style="display:flex;gap:12px;margin-top:12px;">
+                <div style="flex:1;">
+                    <label for="piStartDate" style="display:block;font-size:13px;font-weight:500;margin-bottom:4px;">Start Date <span style="color:#ef4444">*</span></label>
+                    <input type="date" id="piStartDate" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#374151;background:#fff;box-sizing:border-box;" />
+                </div>
+                <div style="flex:1;">
+                    <label for="piEndDate" style="display:block;font-size:13px;font-weight:500;margin-bottom:4px;">End Date <span style="color:#ef4444">*</span></label>
+                    <input type="date" id="piEndDate" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#374151;background:#fff;box-sizing:border-box;" />
+                </div>
             </div>
         </div>
         <div id="pi-date-warning" style="display:none;padding:8px 12px;border-radius:8px;font-size:12.5px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;margin-top:8px;"></div>
@@ -601,24 +614,70 @@
     };
 
     // ── Generate Modal ────────────────────────────────────────────────────────
-    function piSetDefaultDates() {
-        const today = new Date();
-        const yyyy  = today.getFullYear();
-        const mm    = String(today.getMonth() + 1).padStart(2, '0');
-        const dd    = String(today.getDate()).padStart(2, '0');
-        const todayStr = `${yyyy}-${mm}-${dd}`;
-
-        // Default: 12 months ago (start of that month) → today
-        const startD = new Date(today.getFullYear(), today.getMonth() - 11, 1);
-        const sy = startD.getFullYear();
-        const sm = String(startD.getMonth() + 1).padStart(2, '0');
-        const startStr = `${sy}-${sm}-01`;
-
-        const endEl   = document.getElementById('piEndDate');
-        const startEl = document.getElementById('piStartDate');
-        if (endEl)   { endEl.value   = todayStr; endEl.max = todayStr; }
-        if (startEl) { startEl.value = startStr; startEl.max = todayStr; }
+    function piFmtDate(d) {
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
+
+    function piGetDateRange(preset) {
+        const now = new Date();
+        const y   = now.getFullYear();
+        const m   = now.getMonth(); // 0-indexed
+        const today = piFmtDate(now);
+
+        switch (preset) {
+            case 'this_week': {
+                const dow  = now.getDay(); // 0=Sun
+                const diff = (dow === 0) ? -6 : 1 - dow; // back to Monday
+                return { start: piFmtDate(new Date(y, m, now.getDate() + diff)), end: today };
+            }
+            case 'this_month':
+                return { start: piFmtDate(new Date(y, m, 1)), end: today };
+            case 'last_month':
+                return { start: piFmtDate(new Date(y, m - 1, 1)), end: piFmtDate(new Date(y, m, 0)) };
+            case 'current_quarter': {
+                const qm = Math.floor(m / 3) * 3;
+                return { start: piFmtDate(new Date(y, qm, 1)), end: today };
+            }
+            case 'last_quarter': {
+                const cq  = Math.floor(m / 3);
+                const lqs = (cq === 0) ? new Date(y - 1, 9, 1)  : new Date(y, (cq - 1) * 3, 1);
+                const lqe = (cq === 0) ? new Date(y - 1, 12, 0) : new Date(y, cq * 3, 0);
+                return { start: piFmtDate(lqs), end: piFmtDate(lqe) };
+            }
+            case 'this_year':
+                return { start: piFmtDate(new Date(y, 0, 1)), end: today };
+            case 'last_year':
+                return { start: piFmtDate(new Date(y - 1, 0, 1)), end: piFmtDate(new Date(y - 1, 11, 31)) };
+            default:
+                return { start: '', end: '' };
+        }
+    }
+
+    window.piOnDateRangeChange = function () {
+        const preset  = document.getElementById('piDateRangePreset').value;
+        const wrap    = document.getElementById('piCustomDateWrap');
+        const warnEl  = document.getElementById('pi-date-warning');
+        const isCustom = preset === 'custom';
+
+        wrap.style.display = isCustom ? 'block' : 'none';
+        if (warnEl) warnEl.style.display = 'none';
+
+        if (!isCustom) {
+            const { start, end } = piGetDateRange(preset);
+            const todayStr = piFmtDate(new Date());
+            const startEl  = document.getElementById('piStartDate');
+            const endEl    = document.getElementById('piEndDate');
+            if (startEl) { startEl.value = start; startEl.max = todayStr; }
+            if (endEl)   { endEl.value   = end;   endEl.max = todayStr; }
+        } else {
+            // Clear custom fields so user must pick deliberately
+            const todayStr = piFmtDate(new Date());
+            const startEl  = document.getElementById('piStartDate');
+            const endEl    = document.getElementById('piEndDate');
+            if (startEl) { startEl.value = ''; startEl.max = todayStr; }
+            if (endEl)   { endEl.value   = ''; endEl.max = todayStr; }
+        }
+    };
 
     window.piOpenGenerateModal = function () {
         document.getElementById('piGenerateModal').classList.add('open');
@@ -626,7 +685,9 @@
         const anyProcessing = !!document.querySelector('#pi-table tbody tr[data-status="processing"]');
         btn.disabled  = true;
         btn.innerHTML = anyProcessing ? SPIN_ICON + ' Generating...' : GEN_ICON + ' Generate Insight';
-        piSetDefaultDates();
+        // Default to "This Month" and compute its dates
+        const presetSel = document.getElementById('piDateRangePreset');
+        if (presetSel) { presetSel.value = 'last_month'; piOnDateRangeChange(); }
         piLoadClients();
     };
 
@@ -641,6 +702,11 @@
         if (warnEl) warnEl.style.display = 'none';
         const dateWarn = document.getElementById('pi-date-warning');
         if (dateWarn) dateWarn.style.display = 'none';
+        // Reset preset to default and hide custom inputs
+        const presetSel = document.getElementById('piDateRangePreset');
+        if (presetSel) { presetSel.value = 'last_month'; }
+        const wrap = document.getElementById('piCustomDateWrap');
+        if (wrap) wrap.style.display = 'none';
     };
 
     function piUpdateGenerateBtn() {
@@ -788,17 +854,25 @@
         const clientName  = document.getElementById('piClientSelect').options[document.getElementById('piClientSelect').selectedIndex]?.textContent?.split(' (')[0]?.trim() || '';
         if (!clientId || !companyId) return;
 
-        const startDate  = document.getElementById('piStartDate')?.value || '';
-        const endDate    = document.getElementById('piEndDate')?.value || '';
         const dateWarnEl = document.getElementById('pi-date-warning');
+        const preset = document.getElementById('piDateRangePreset')?.value || 'this_month';
+        let startDate, endDate;
 
-        if (!startDate || !endDate) {
-            if (dateWarnEl) { dateWarnEl.textContent = 'Please select both a start date and end date.'; dateWarnEl.style.display = 'block'; }
-            return;
-        }
-        if (startDate > endDate) {
-            if (dateWarnEl) { dateWarnEl.textContent = 'Start date must be before or equal to end date.'; dateWarnEl.style.display = 'block'; }
-            return;
+        if (preset === 'custom') {
+            startDate = document.getElementById('piStartDate')?.value || '';
+            endDate   = document.getElementById('piEndDate')?.value   || '';
+            if (!startDate || !endDate) {
+                if (dateWarnEl) { dateWarnEl.textContent = 'Please select both a start date and end date.'; dateWarnEl.style.display = 'block'; }
+                return;
+            }
+            if (startDate > endDate) {
+                if (dateWarnEl) { dateWarnEl.textContent = 'Start date must be before or equal to end date.'; dateWarnEl.style.display = 'block'; }
+                return;
+            }
+        } else {
+            const range = piGetDateRange(preset);
+            startDate = range.start;
+            endDate   = range.end;
         }
         if (dateWarnEl) dateWarnEl.style.display = 'none';
 

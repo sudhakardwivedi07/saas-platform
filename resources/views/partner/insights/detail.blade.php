@@ -83,7 +83,7 @@
 .insight-slider-content .insight-subheading { font-weight:700;font-size:15px;color:#1a202c;margin:14px 0 4px;padding-bottom:5px;border-bottom:2px solid #e8eef5; }
 .insight-slider-content h3,.insight-slider-content h4 { color:var(--blue);margin:14px 0 4px;font-weight:700;font-size:15px; }
 .insight-slider-content table.insight-table { width:100%;border-collapse:collapse;margin:6px 0 10px;box-shadow:0 1px 3px rgba(0,0,0,.08);border-radius:8px;overflow:hidden; }
-.insight-slider-content table.insight-table th { border:1px solid #e2e8f0;padding:6px 10px;font-weight:600;font-size:12.5px;color:#2d3748;background:#f7fafc;letter-spacing:.04em;text-transform:uppercase;line-height:1.4; }
+.insight-slider-content table.insight-table th { border:1px solid #e2e8f0;padding:6px 10px;font-weight:600;font-size:12.5px;color:var(--orange);background:#f7fafc;letter-spacing:.04em;text-transform:uppercase;line-height:1.4; }
 .insight-slider-content table.insight-table td { border:1px solid #e2e8f0;padding:6px 10px;font-size:13px;color:#4a5568;line-height:1.4; }
 .insight-slider-content table.insight-table tbody tr:nth-child(even) { background:#f9fafb; }
 .insight-slider-content .table-responsive { overflow-x:auto;margin:6px 0 10px; }
@@ -182,7 +182,6 @@
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
         Back to Insights
     </a>
-
     {{-- Edit mode toast --}}
     <div id="rdEditToast" class="rd-edit-toast">
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
@@ -192,11 +191,11 @@
     {{-- Header --}}
     <div class="rd-header">
         <div class="rd-header-left">
-            <h1>{{ $report->report_name }} · {{ $report->company?->company_name ?? '' }}</h1>
+            <h1>{{ trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) }} - Insight Report</h1>
             <div class="rd-meta">
                 <div class="rd-meta-item">
                     <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#94a3b8"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <span>{{ $report->created_at->format(active_date_format()) }}</span>
+                    <span>{{ $report->created_at->format(active_date_format() . ', g:i A') }}</span>
                 </div>
                 <div class="rd-meta-item">
                     <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#94a3b8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
@@ -272,7 +271,7 @@
                 </button>
                 <button id="rdBtnSave" class="rd-btn rd-btn-save" onclick="rdSaveEdits()">
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    <span id="rdBtnSaveLabel">Save Draft</span>
+                    <span id="rdBtnSaveLabel">{{ $report->isDraft() ? 'Save Draft' : 'Save' }}</span>
                 </button>
                 @if($report->isDraft())
                 <button id="rdBtnPublish" class="rd-btn rd-btn-publish" onclick="rdPublishInsight()">
@@ -452,6 +451,25 @@
         const wrap = document.getElementById('insightSliderContent');
         wrap.innerHTML = html;
         wrap.style.display = '';
+
+        document.querySelectorAll('.insight-table td').forEach(function(td) {
+            if (/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(td.textContent.trim())) td.style.textAlign = 'right';
+        });
+
+        // Fix stray lone-dash paragraphs in pre-saved HTML → proper list items
+        document.querySelectorAll('.insight-slider-content p').forEach(function(p) {
+            if (p.textContent.trim() !== '-') return;
+            var next = p.nextElementSibling;
+            if (!next) { p.remove(); return; }
+            var prev = p.previousElementSibling;
+            var ul = (prev && prev.tagName === 'UL') ? prev : document.createElement('ul');
+            if (!prev || prev.tagName !== 'UL') p.parentNode.insertBefore(ul, p);
+            var li = document.createElement('li');
+            li.innerHTML = next.innerHTML;
+            ul.appendChild(li);
+            next.remove();
+            p.remove();
+        });
 
         goToSlide(0);
     }
@@ -646,6 +664,19 @@
     });
 
     window.rdSaveEdits = function () {
+        // Only save if the user actually typed or edited something (dirty flag set by input events)
+        if (!rdDirty) {
+            const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
+            Swal.fire({
+                icon: 'info',
+                title: 'No Changes',
+                text: 'No modifications were made to the report content.',
+                confirmButtonText: 'OK',
+                confirmButtonColor: brandColor,
+            });
+            return;
+        }
+
         // Collect innerHTML so all formatting (bullets, bold, headings) is preserved exactly
         const sections = insightSections.map((sec, i) => {
             const contentEl = document.getElementById('sl-content-' + i);
@@ -655,6 +686,7 @@
             };
         });
 
+        const saveLabel = IS_DRAFT ? 'Save Draft' : 'Save';
         const btn = document.getElementById('rdBtnSave');
         btn.disabled = true;
         document.getElementById('rdBtnSaveLabel').textContent = 'Saving…';
@@ -667,7 +699,7 @@
         .then(r => r.json())
         .then(data => {
             btn.disabled = false;
-            document.getElementById('rdBtnSaveLabel').textContent = 'Save Draft';
+            document.getElementById('rdBtnSaveLabel').textContent = saveLabel;
             if (data.status === 'success') {
                 rdDirty = false; // reset so re-saving without further edits is blocked
                 const redirectUrl = data.redirect_url || null;
@@ -700,7 +732,7 @@
         })
         .catch(() => {
             btn.disabled = false;
-            document.getElementById('rdBtnSaveLabel').textContent = 'Save Draft';
+            document.getElementById('rdBtnSaveLabel').textContent = saveLabel;
             Swal.fire({ icon:'error', title:'Error', text:'Network error. Please try again.' });
         });
     };
@@ -908,11 +940,14 @@
     function formatContent(content) {
         if (!content) return '';
         content = content.replace(/^[\s\-_*]{3,}$/gm,'').replace(/^[\s═─=]{3,}$/gm,'').replace(/\n{3,}/g,'\n\n').trim();
+        // Merge standalone lone "-" marker lines with the following content line
+        content = content.replace(/^-[ \t]*\n(?=\S)/gm, '- ');
         content = convertMarkdownTable(content);
         content = content.replace(/^###\s+(.+)$/gm,'<h3>$1</h3>').replace(/^####\s+(.+)$/gm,'<h4>$1</h4>');
         content = content.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/(?<!\*)\*([^*]+?)\*(?!\*)/g,'<em>$1</em>');
         // Inline bold labels ending with ':' (e.g. "…paid. **Expected impact:**") — separate into own paragraph
-        content = content.replace(/(\S) +(<strong>[A-Za-z][^<]*:<\/strong>)/g,'$1\n\n$2');
+        // Exclude list markers (-, *, +) so "- **Label:**" list items are not broken
+        content = content.replace(/([^\n\-\*\+]) +(<strong>[A-Za-z][^<]*:<\/strong>)/g,'$1\n\n$2');
 
         const lines = content.split('\n');
         let inList=false, listType=null, listItems=[], processed=[];
@@ -975,7 +1010,7 @@
             for (let i=2;i<lines.length;i++) {
                 const row = lines[i]; if (!row.trim()) continue;
                 const cells = row.split('|').map(c=>c.trim()).filter(c=>c); if (!cells.length) continue;
-                html += '<tr>'; cells.forEach(cell => html+=`<td>${cell}</td>`); html += '</tr>';
+                html += '<tr>'; cells.forEach(cell => html+=`<td style="text-align:${/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(cell)?'right':'left'};">${cell}</td>`); html += '</tr>';
             }
             return html+'</tbody></table></div>';
         });

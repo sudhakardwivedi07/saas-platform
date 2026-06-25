@@ -87,7 +87,7 @@ class InsightsController extends AccountBaseController
             })
             ->orderByDesc('created_at')
             ->get()
-            ->groupBy(fn($r) => $r->report_name . '||' . $r->company_id)
+            ->groupBy(fn($r) => $r->parent_report_id ?? $r->id)
             ->map(fn($group) => $group->sortByDesc('version')->first())
             ->values();
 
@@ -192,13 +192,10 @@ class InsightsController extends AccountBaseController
             }
         }
 
-        // Build "Company Name (Analysis N)" report name
-        $reportCompany   = Company::withoutGlobalScopes()->find($reportCompanyId);
-        $companyLabel    = trim($reportCompany?->company_name ?? '');
-        $analysisNumber  = Report::withTrashed()->where('company_id', $reportCompanyId)->whereNull('parent_report_id')->count() + 1;
-        $generatedName   = $companyLabel
-            ? $companyLabel . ' (Analysis ' . $analysisNumber . ')'
-            : 'Analysis ' . $analysisNumber;
+        // Store company name as report name
+        $reportCompany = Company::withoutGlobalScopes()->find($reportCompanyId);
+        $companyLabel  = trim($reportCompany?->company_name ?? '');
+        $generatedName = $companyLabel ?: 'Unnamed Company';
 
         $endDate   = $request->get('end_date',   Carbon::now()->format('Y-m-d'));
         $startDate = $request->get('start_date', Carbon::parse($endDate)->subMonths(11)->startOfMonth()->format('Y-m-d'));
@@ -547,7 +544,8 @@ class InsightsController extends AccountBaseController
 
         $sections = $this->getReportSections($report);
 
-        $this->pageTitle = 'Preview — ' . ($report->report_name ?: 'Insight');
+        $cleanName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name ?: 'Insight'));
+        $this->pageTitle = 'Preview — ' . $cleanName . ' - Insight Report';
         $this->report    = $report;
         $this->sections  = $sections;
 
@@ -604,6 +602,7 @@ class InsightsController extends AccountBaseController
             'sections'    => $sections,
             'report'      => $report,
             'companyName' => $this->companyName,
+            'preparedBy'  => user()?->name ?? $this->companyName,
             'logoBase64'  => $logoBase64,
             'reportDate'  => $report->created_at->format('M d, Y'),
             'branding'    => $this->branding,
@@ -752,7 +751,7 @@ class InsightsController extends AccountBaseController
         if (is_array($insightData) && !empty($insightData['sections'])) {
             return array_map(fn ($s) => [
                 'title'             => $s['title']  ?? '',
-                'formatted_content' => $s['html']   ?? $s['content'] ?? '',
+                'formatted_content' => $this->applyPdfAmountAlignment($s['html'] ?? $s['content'] ?? ''),
             ], $insightData['sections']);
         }
 
@@ -960,7 +959,8 @@ class InsightsController extends AccountBaseController
         $content = preg_replace('/\*\*(.*?)\*\*/s', '<strong>$1</strong>', $content);
         $content = preg_replace('/(?<!\*)\*([^*]+?)\*(?!\*)/s', '<em>$1</em>', $content);
         // Break inline bold labels ending with ':' onto their own paragraphs
-        $content = preg_replace('/(\S) +(<strong>[A-Za-z][^<]*:<\/strong>)/', "$1\n\n$2", $content);
+        // Exclude list markers (-, *, +) so "- **Label:**" list items are not broken
+        $content = preg_replace('/([^\n\-\*\+]) +(<strong>[A-Za-z][^<]*:<\/strong>)/', "$1\n\n$2", $content);
 
         $lines = explode("\n", $content);
         $inList = false; $listType = null; $listItems = []; $processed = [];
@@ -1037,11 +1037,26 @@ class InsightsController extends AccountBaseController
                 if (!trim($lines[$i])) continue;
                 $cells = array_filter(explode('|', $lines[$i]), fn($c) => trim($c) !== '');
                 $html .= '<tr>';
-                foreach ($cells as $cell) $html .= '<td>' . trim($cell) . '</td>';
+                foreach ($cells as $cell) {
+                    $v = trim($cell);
+                    $align = preg_match('/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/', $v) ? 'right' : 'left';
+                    $html .= '<td style="text-align:' . $align . ';">' . $v . '</td>';
+                }
                 $html .= '</tr>';
             }
             return $html . '</tbody></table>';
         }, $text);
+    }
+
+    private function applyPdfAmountAlignment(string $html): string
+    {
+        return preg_replace_callback('/<td([^>]*)>(.*?)<\/td>/is', function ($m) {
+            $text = trim(strip_tags($m[2]));
+            if (preg_match('/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/', $text)) {
+                return '<td' . $m[1] . ' style="text-align:right;">' . $m[2] . '</td>';
+            }
+            return $m[0];
+        }, $html);
     }
 
     // ── Share insight (send PDF via email) ────────────────────────────────────
@@ -1092,6 +1107,7 @@ class InsightsController extends AccountBaseController
             'sections'    => $sections,
             'report'      => $report,
             'companyName' => $this->companyName,
+            'preparedBy'  => user()?->name ?? $this->companyName,
             'logoBase64'  => $logoBase64,
             'reportDate'  => $report->created_at->format('M d, Y'),
             'branding'    => $this->branding,

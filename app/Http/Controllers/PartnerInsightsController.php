@@ -48,7 +48,7 @@ class PartnerInsightsController extends AccountBaseController
             ->where('is_firm_report', false)
             ->orderByDesc('created_at')
             ->get()
-            ->groupBy(fn($r) => $r->report_name . '||' . $r->company_id)
+            ->groupBy(fn($r) => $r->parent_report_id ?? $r->id)
             ->map(fn($group) => $group->sortByDesc('version')->first())
             ->values();
 
@@ -166,10 +166,15 @@ class PartnerInsightsController extends AccountBaseController
 
         $companies = Company::withoutGlobalScopes()
             ->whereIn('id', $qbConnectedIds)
-            ->select('id', 'company_name', 'created_at')
-            ->orderByDesc('created_at')
+            ->select('id', 'company_name', 'custom_insight_limit', 'insights_used')
+            ->orderBy('company_name')
             ->get()
-            ->map(fn($c) => ['id' => $c->id, 'name' => $c->company_name]);
+            ->map(fn($c) => [
+                'id'                  => $c->id,
+                'name'                => $c->company_name,
+                'custom_insight_limit'=> $c->custom_insight_limit,  // null = not set by admin
+                'insights_used'       => (int) ($c->insights_used ?? 0),
+            ]);
 
         return response()->json(['status' => 'success', 'companies' => $companies]);
     }
@@ -259,17 +264,9 @@ class PartnerInsightsController extends AccountBaseController
             ], 422);
         }
 
-        $company        = Company::withoutGlobalScopes()->find($companyId);
-        $companyLabel   = trim($company?->company_name ?? '');
-        $analysisNumber = Report::withTrashed()
-            ->where('company_id', $companyId)
-            ->where('user_id', $clientUser->id)
-            ->whereNull('parent_report_id')
-            ->count() + 1;
-
-        $generatedName = $companyLabel
-            ? $companyLabel . ' (Analysis ' . $analysisNumber . ')'
-            : 'Analysis ' . $analysisNumber;
+        $company       = Company::withoutGlobalScopes()->find($companyId);
+        $companyLabel  = trim($company?->company_name ?? '');
+        $generatedName = $companyLabel ?: 'Unnamed Company';
 
         $endDate   = $request->get('end_date',   Carbon::now()->format('Y-m-d'));
         $startDate = $request->get('start_date', Carbon::parse($endDate)->subMonths(11)->startOfMonth()->format('Y-m-d'));
@@ -657,7 +654,8 @@ class PartnerInsightsController extends AccountBaseController
 
         $sections = $this->getReportSections($report);
 
-        $this->pageTitle = 'Preview — ' . ($report->report_name ?: 'Insight');
+        $cleanName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name ?: 'Insight'));
+        $this->pageTitle = 'Preview — ' . $cleanName . ' - Insight Report';
         $this->report    = $report;
         $this->sections  = $sections;
 
@@ -711,6 +709,7 @@ class PartnerInsightsController extends AccountBaseController
             'sections'    => $sections,
             'report'      => $report,
             'companyName' => $this->companyName,
+            'preparedBy'  => user()?->name ?? $this->companyName,
             'logoBase64'  => $logoBase64,
             'reportDate'  => $report->created_at->format('M d, Y'),
             'branding'    => $this->branding,
@@ -731,7 +730,7 @@ class PartnerInsightsController extends AccountBaseController
         if (is_array($insightData) && !empty($insightData['sections'])) {
             return array_map(fn ($s) => [
                 'title'             => $s['title']   ?? '',
-                'formatted_content' => $s['html']    ?? $s['content'] ?? '',
+                'formatted_content' => $this->applyPdfAmountAlignment($s['html'] ?? $s['content'] ?? ''),
             ], $insightData['sections']);
         }
 
@@ -786,7 +785,7 @@ class PartnerInsightsController extends AccountBaseController
 
         $reports = $query->orderByDesc('created_at')
             ->get()
-            ->groupBy(fn($r) => $r->report_name . '||' . $r->company_id)
+            ->groupBy(fn($r) => $r->parent_report_id ?? $r->id)
             ->map(fn($group) => $group->sortByDesc('version')->first())
             ->values();
 
@@ -1159,7 +1158,8 @@ class PartnerInsightsController extends AccountBaseController
         $content = preg_replace('/\*\*(.*?)\*\*/s', '<strong>$1</strong>', $content);
         $content = preg_replace('/(?<!\*)\*([^*]+?)\*(?!\*)/s', '<em>$1</em>', $content);
         // Break inline bold labels ending with ':' onto their own paragraphs
-        $content = preg_replace('/(\S) +(<strong>[A-Za-z][^<]*:<\/strong>)/', "$1\n\n$2", $content);
+        // Exclude list markers (-, *, +) so "- **Label:**" list items are not broken
+        $content = preg_replace('/([^\n\-\*\+]) +(<strong>[A-Za-z][^<]*:<\/strong>)/', "$1\n\n$2", $content);
 
         $lines = explode("\n", $content);
         $inList = false; $listType = null; $listItems = []; $processed = [];
@@ -1238,11 +1238,26 @@ class PartnerInsightsController extends AccountBaseController
                 if (!trim($lines[$i])) continue;
                 $cells = array_filter(explode('|', $lines[$i]), fn($c) => trim($c) !== '');
                 $html .= '<tr>';
-                foreach ($cells as $cell) $html .= '<td>' . trim($cell) . '</td>';
+                foreach ($cells as $cell) {
+                    $v = trim($cell);
+                    $align = preg_match('/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/', $v) ? 'right' : 'left';
+                    $html .= '<td style="text-align:' . $align . ';">' . $v . '</td>';
+                }
                 $html .= '</tr>';
             }
             return $html . '</tbody></table>';
         }, $text);
+    }
+
+    private function applyPdfAmountAlignment(string $html): string
+    {
+        return preg_replace_callback('/<td([^>]*)>(.*?)<\/td>/is', function ($m) {
+            $text = trim(strip_tags($m[2]));
+            if (preg_match('/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/', $text)) {
+                return '<td' . $m[1] . ' style="text-align:right;">' . $m[2] . '</td>';
+            }
+            return $m[0];
+        }, $html);
     }
 
     // ── Share insight (send PDF to client via email) ──────────────────────────
@@ -1288,6 +1303,7 @@ class PartnerInsightsController extends AccountBaseController
             'sections'    => $sections,
             'report'      => $report,
             'companyName' => $this->companyName,
+            'preparedBy'  => user()?->name ?? $this->companyName,
             'logoBase64'  => $logoBase64,
             'reportDate'  => $report->created_at->format('M d, Y'),
             'branding'    => $this->branding,

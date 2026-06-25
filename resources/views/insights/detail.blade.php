@@ -187,13 +187,12 @@
 }
 .insight-slider-content table.insight-table th {
     border: 1px solid #e2e8f0; padding: 6px 10px; text-align: left;
-    font-weight: 600; font-size: 12.5px; color: #2d3748; background: #f7fafc;
+    font-weight: 600; font-size: 12.5px; color: var(--orange); background: #f7fafc;
     letter-spacing: .04em; text-transform: uppercase; line-height: 1.4;
 }
 .insight-slider-content table.insight-table td {
     border: 1px solid #e2e8f0; padding: 6px 10px; font-size: 13px; color: #4a5568; line-height: 1.4;
-}
-.insight-slider-content table.insight-table tbody tr:nth-child(even) { background: #f9fafb; }
+}.insight-slider-content table.insight-table tbody tr:nth-child(even) { background: #f9fafb; }
 
 /* ── Pagination dots ── */
 .insight-slider-pagination { display: flex; justify-content: center; gap: 8px; margin-top: 24px; }
@@ -259,11 +258,11 @@
     {{-- ── Report Header ──────────────────────────────────────────────────── --}}
     <div class="report-detail-header">
         <div>
-            <h1>{{ $report->report_name }}</h1>
+            <h1>{{ trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) }} - Insight Report</h1>
             <div class="report-meta">
                 <div class="report-meta-item">
                     <i class="fas fa-calendar-alt"></i>
-                    <span>{{ $report->created_at->format(active_date_format()) }}</span>
+                    <span>{{ $report->created_at->format(active_date_format() . ', g:i A') }}</span>
                 </div>
                 <div class="report-meta-item">
                     <i class="fas fa-chart-bar"></i>
@@ -527,6 +526,25 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
         document.getElementById('insightAccordionContentShow').innerHTML = html;
         document.getElementById('insightAccordionContentShow').style.display = '';
 
+        document.querySelectorAll('.insight-table td').forEach(function(td) {
+            if (/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(td.textContent.trim())) td.style.textAlign = 'right';
+        });
+
+        // Fix stray lone-dash paragraphs in pre-saved HTML → proper list items
+        document.querySelectorAll('.insight-slider-content p').forEach(function(p) {
+            if (p.textContent.trim() !== '-') return;
+            var next = p.nextElementSibling;
+            if (!next) { p.remove(); return; }
+            var prev = p.previousElementSibling;
+            var ul = (prev && prev.tagName === 'UL') ? prev : document.createElement('ul');
+            if (!prev || prev.tagName !== 'UL') p.parentNode.insertBefore(ul, p);
+            var li = document.createElement('li');
+            li.innerHTML = next.innerHTML;
+            ul.appendChild(li);
+            next.remove();
+            p.remove();
+        });
+
         setTimeout(() => goToSlide(0), 100);
     }
 
@@ -657,13 +675,17 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
             .replace(/\n{3,}/g, '\n\n')
             .trim();
 
+        // Merge standalone lone "-" marker lines with the following content line
+        content = content.replace(/^-[ \t]*\n(?=\S)/gm, '- ');
+
         content = convertMarkdownTable(content);
         content = content.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
         content = content.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
         content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
         content = content.replace(/(?<!\*)\*([^*]+?)\*(?!\*)/g, '<em>$1</em>');
         // Break inline bold labels ending with ':' (e.g. "Expected impact:") onto their own lines
-        content = content.replace(/(\S) +(<strong>[A-Za-z][^<]*:<\/strong>)/g, '$1\n\n$2');
+        // Exclude list markers (-, *, +) so "- **Label:**" list items are not broken
+        content = content.replace(/([^\n\-\*\+]) +(<strong>[A-Za-z][^<]*:<\/strong>)/g, '$1\n\n$2');
 
         const lines = content.split('\n');
         let inList = false, listType = null, listItems = [], processed = [];
@@ -754,7 +776,7 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
                 if (!cells.length) continue;
                 html += '<tr>';
                 cells.forEach(cell => {
-                    const align = /^[\$0-9,.\-%\s]+$/.test(cell) ? 'right' : 'left';
+                    const align = /^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(cell) ? 'right' : 'left';
                     html += `<td style="text-align:${align};">${cell}</td>`;
                 });
                 html += '</tr>\n';

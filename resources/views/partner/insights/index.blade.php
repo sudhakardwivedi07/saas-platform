@@ -115,8 +115,8 @@
 .pi-modal select { width:100%;height:42px;padding:0 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13.5px;font-family:inherit;color:#1a202c;background:#fff;outline:none;cursor:pointer;transition:border-color .2s;margin-bottom:16px; }
 .pi-modal select:focus { border-color:var(--orange); }
 .pi-modal select:disabled { background:#f8fafc;color:#9ca3af;cursor:not-allowed; }
-.pi-modal-note { background:var(--blue-pale);border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--blue);margin-bottom:22px;line-height:1.5; }
-.pi-modal-actions { display:flex;gap:10px; }
+.pi-modal-note { background:var(--blue-pale);border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--blue);margin-bottom:0;line-height:1.5; }
+.pi-modal-actions { display:flex;gap:10px;margin-top:20px; }
 .pi-modal-btn-generate { flex:1;background:var(--orange);color:#fff;border:none;padding:12px 20px;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px; }
 .pi-modal-btn-generate:hover { background:var(--orange-dark); }
 .pi-modal-btn-generate:disabled { opacity:.6;cursor:not-allowed; }
@@ -292,9 +292,10 @@
                         : ($isProcessing ? 'processing'
                         : ($isFailed ? 'failed'
                         : ($isReady ? $publishSt : 'processing')));
+                    $displayName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) . ' - Insight Report';
                 @endphp
                 <tr id="pi-row-{{ $report->id }}"
-                    data-search="{{ strtolower($report->report_name . ' ' . $clientName . ' ' . $companyName) }}"
+                    data-search="{{ strtolower($displayName . ' ' . $clientName . ' ' . $companyName) }}"
                     data-status="{{ $rowStatus }}"
                     data-company-id="{{ $report->company_id }}"
                     data-user-id="{{ $report->user_id }}"
@@ -305,15 +306,15 @@
                                 <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                             </span>
                             @if($isDeleted)
-                                <span class="pi-name-deleted">{{ $report->report_name }}</span>
+                                <span class="pi-name-deleted">{{ $displayName }}</span>
                             @elseif($isReady)
-                                <a href="{{ route('partner-insights.view', $report->encrypted_id) }}" class="pi-name-link">{{ $report->report_name }}</a>
+                                <a href="{{ route('partner-insights.view', $report->encrypted_id) }}" class="pi-name-link">{{ $displayName }}</a>
                             @else
-                                <span style="color:#1a202c;font-weight:500;">{{ $report->report_name }}</span>
+                                <span style="color:#1a202c;font-weight:500;">{{ $displayName }}</span>
                             @endif
                         </div>
                     </td>
-                    <td style="color:#64748b;" data-date="{{ $report->created_at->format('Y-m-d') }}" data-order="{{ $report->created_at->format('Y-m-d') }}">{{ $report->created_at->format(active_date_format()) }}</td>
+                    <td style="color:#64748b;" data-date="{{ $report->created_at->format('Y-m-d') }}" data-order="{{ $report->created_at->format('Y-m-d H:i:s') }}">{{ $report->created_at->format(active_date_format() . ', g:i A') }}</td>
                     <td style="color:#64748b;"><div class="cell-trunc-sm" title="{{ $clientName }}">{{ $clientName }}</div></td>
                     <td style="color:#64748b;"><div class="cell-trunc" title="{{ $companyName }}">{{ $companyName }}</div></td>
                     <td data-search="{{ $rowStatus }}">
@@ -366,7 +367,7 @@
                                                 Download
                                             </a>
                                             <div class="dm-divider"></div>
-                                            <a href="javascript:void(0)" class="dm-item dm-item--danger" onclick="piDelete({{ $report->id }}, {{ json_encode($report->report_name) }})">
+                                            <a href="javascript:void(0)" class="dm-item dm-item--danger" onclick="piDelete({{ $report->id }}, {{ json_encode($displayName) }})">
                                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
                                                 Delete
                                             </a>
@@ -404,6 +405,8 @@
         <div class="pi-modal-note">
             Only companies with a connected accounting tool are listed. Connect more companies from the <strong>Connections</strong> page.
         </div>
+
+        <div id="pi-limit-warning" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.5;margin-top:12px"></div>
 
         <div class="pi-modal-actions">
             <button class="pi-modal-btn-cancel" onclick="piCloseGenerateModal()">Cancel</button>
@@ -602,15 +605,55 @@
         document.getElementById('piCompanySelect').disabled  = true;
         const btn = document.getElementById('piBtnGenerate');
         btn.disabled = true; btn.innerHTML = GEN_ICON + ' Generate Insight';
+        const warnEl = document.getElementById('pi-limit-warning');
+        if (warnEl) warnEl.style.display = 'none';
     };
 
     function piUpdateGenerateBtn() {
         const clientId  = document.getElementById('piClientSelect').value;
         const companyId = document.getElementById('piCompanySelect').value;
-        const btn = document.getElementById('piBtnGenerate');
+        const btn       = document.getElementById('piBtnGenerate');
+        const warnEl    = document.getElementById('pi-limit-warning');
+
         if (!clientId || !companyId) {
-            btn.disabled = true; btn.innerHTML = GEN_ICON + ' Generate Insight'; return;
+            btn.disabled = true;
+            btn.innerHTML = GEN_ICON + ' Generate Insight';
+            if (warnEl) warnEl.style.display = 'none';
+            return;
         }
+
+        // Read limit data from selected option
+        const selOpt = document.getElementById('piCompanySelect').selectedOptions[0];
+        const limitAttr = selOpt ? selOpt.getAttribute('data-limit') : '';
+        const usedAttr  = selOpt ? parseInt(selOpt.getAttribute('data-used') || '0', 10) : 0;
+        const limitSet  = limitAttr !== '' && limitAttr !== null;
+        const limit     = limitSet ? parseInt(limitAttr, 10) : 0;
+
+        // Check: limit not set
+        if (!limitSet) {
+            btn.disabled = true;
+            btn.innerHTML = GEN_ICON + ' Generate Insight';
+            if (warnEl) {
+                warnEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.5;margin-top:12px;background:#fffbeb;border:1px solid #fde68a;color:#92400e';
+                warnEl.innerHTML = '<strong>No insight limit set for this company.</strong> Please set a limit before generating insights. <a href="{{ route("settings.index") }}#tab-insight-limits" style="color:#d97706;font-weight:600;text-decoration:underline">Go to Insight Limits settings</a>.';
+            }
+            return;
+        }
+
+        // Check: limit exhausted
+        if (usedAttr >= limit) {
+            btn.disabled = true;
+            btn.innerHTML = GEN_ICON + ' Generate Insight';
+            if (warnEl) {
+                warnEl.style.cssText = 'display:block;padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.5;margin-top:12px;background:#fef2f2;border:1px solid #fecaca;color:#991b1b';
+                warnEl.innerHTML = '<strong>Insight limit reached.</strong> This company has used <strong>' + usedAttr + '/' + limit + '</strong> insights. Please update the limit to generate more. <a href="{{ route("settings.index") }}#tab-insight-limits" style="color:#dc2626;font-weight:600;text-decoration:underline">Update limit</a>.';
+            }
+            return;
+        }
+
+        // All good — clear warning
+        if (warnEl) warnEl.style.display = 'none';
+
         const alreadyRunning = !!document.querySelector(`#pi-table tbody tr[data-company-id="${companyId}"][data-status="processing"]`);
         btn.disabled  = alreadyRunning;
         btn.innerHTML = alreadyRunning ? SPIN_ICON + ' Generating...' : GEN_ICON + ' Generate Insight';
@@ -650,12 +693,16 @@
     window.piOnClientChange = function () {
         const clientId = document.getElementById('piClientSelect').value;
         const compSel  = document.getElementById('piCompanySelect');
+        const warnEl   = document.getElementById('pi-limit-warning');
         if (!clientId) {
             compSel.innerHTML = '<option value="">Choose a company…</option>';
             compSel.disabled  = true;
             document.getElementById('piBtnGenerate').disabled = true;
+            if (warnEl) warnEl.style.display = 'none';
             return;
         }
+        // Clear warning immediately while companies are loading
+        if (warnEl) warnEl.style.display = 'none';
         compSel.innerHTML = '<option value="">Loading companies…</option>';
         compSel.disabled  = true;
         fetch(`/partner-insights/clients/${clientId}/companies`, {
@@ -671,6 +718,8 @@
                     opt.value = c.id;
                     opt.textContent = c.name.length > 50 ? c.name.substring(0, 47) + '…' : c.name;
                     opt.setAttribute('data-full-name', c.name);
+                    opt.setAttribute('data-limit', c.custom_insight_limit !== null ? c.custom_insight_limit : '');
+                    opt.setAttribute('data-used',  c.insights_used ?? 0);
                     compSel.appendChild(opt);
                 });
                 if (data.companies.length === 1) compSel.value = data.companies[0].id;
@@ -679,7 +728,11 @@
             }
             piUpdateGenerateBtn();
         })
-        .catch(() => { compSel.innerHTML = '<option value="">Failed to load companies</option>'; compSel.disabled = false; });
+        .catch(() => {
+            compSel.innerHTML = '<option value="">Failed to load companies</option>';
+            compSel.disabled = false;
+            piUpdateGenerateBtn();
+        });
     };
 
     window.piShowLimitModal = function () {
@@ -700,6 +753,43 @@
         const companyName = document.getElementById('piCompanySelect').options[document.getElementById('piCompanySelect').selectedIndex]?.textContent?.trim() || '';
         const clientName  = document.getElementById('piClientSelect').options[document.getElementById('piClientSelect').selectedIndex]?.textContent?.split(' (')[0]?.trim() || '';
         if (!clientId || !companyId) return;
+
+        // Guard: check insight limit before calling the server
+        const selOpt    = document.getElementById('piCompanySelect').selectedOptions[0];
+        const limitAttr = selOpt ? selOpt.getAttribute('data-limit') : '';
+        const usedAttr  = selOpt ? parseInt(selOpt.getAttribute('data-used') || '0', 10) : 0;
+        const limitSet  = limitAttr !== '' && limitAttr !== null;
+        const limit     = limitSet ? parseInt(limitAttr, 10) : 0;
+
+        if (!limitSet) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Insight Limit Not Set',
+                html: '<p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0">This company does not have an insight limit set. Please set a limit before generating insights.</p>',
+                confirmButtonText: 'Set Limit',
+                showCancelButton: true,
+                cancelButtonText: 'Close',
+                confirmButtonColor: '#f06b25',
+            }).then(result => {
+                if (result.isConfirmed) window.location.href = '{{ route("settings.index") }}#tab-insight-limits';
+            });
+            return;
+        }
+
+        if (usedAttr >= limit) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Insight Limit Exceeded',
+                html: '<p style="color:#6b7280;font-size:14px;line-height:1.6;margin:0">This company has used <strong>' + usedAttr + '</strong> of <strong>' + limit + '</strong> insights. Please update the limit to continue generating insights.</p>',
+                confirmButtonText: 'Update Limit',
+                showCancelButton: true,
+                cancelButtonText: 'Close',
+                confirmButtonColor: '#f06b25',
+            }).then(result => {
+                if (result.isConfirmed) window.location.href = '{{ route("settings.index") }}#tab-insight-limits';
+            });
+            return;
+        }
         const hdrBtn   = document.getElementById('piHeaderGenerateBtn');
         const exportBtn = document.getElementById('piExportBtn');
         if (hdrBtn)    { hdrBtn.disabled = true; hdrBtn.innerHTML = HDR_SPIN + ' Generating...'; }
@@ -766,10 +856,11 @@
         tr.dataset.status    = 'processing';
         tr.dataset.companyId = companyId || '';
         tr.dataset.userId    = userId || '';
+        const rowDisplayName = name ? (name + ' - Insight Report') : 'Generating…';
         tr.innerHTML = `
             <td><div class="pi-name-cell">
                 <span class="pi-name-icon"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span>
-                <span style="font-weight:500;">${name || 'Generating…'}</span>
+                <span style="font-weight:500;">${rowDisplayName}</span>
             </div></td>
             <td style="color:#64748b;" data-date="${today}" data-order="${today}">Just now</td>
             <td style="color:#64748b;">${clientName || '—'}</td>
@@ -794,7 +885,9 @@
             const nameCell = row.querySelector('.pi-name-cell span[style]');
             if (nameCell) {
                 const a = document.createElement('a');
-                a.href = viewUrl; a.className = 'pi-name-link'; a.textContent = nameCell.textContent;
+                a.href = viewUrl; a.className = 'pi-name-link';
+                const rawName = nameCell.textContent.trim();
+                a.textContent = rawName.endsWith(' - Insight Report') ? rawName : rawName + ' - Insight Report';
                 nameCell.replaceWith(a);
             }
             const actions = row.querySelector('.pi-actions');

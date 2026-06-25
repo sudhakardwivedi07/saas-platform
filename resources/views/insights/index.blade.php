@@ -520,9 +520,10 @@
                             : (in_array(strtolower($report->status), ['uploading','analyzing']) ? 'processing'
                             : ($report->isReady() ? ($report->publish_status ?? 'draft')
                             : strtolower($report->status)));
+                        $displayName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) . ' - Insight Report';
                     @endphp
                     <tr id="insight-row-{{ $report->id }}"
-                        data-search="{{ strtolower($report->report_name) }}"
+                        data-search="{{ strtolower($displayName) }}"
                         data-status="{{ $rowStatus }}"
                         style="{{ $isDeleted ? 'opacity:0.7;' : '' }}">
                         <td>
@@ -533,16 +534,16 @@
                                     </svg>
                                 </span>
                                 @if($isDeleted)
-                                    <span style="color:#9ca3af;font-weight:500;">{{ $report->report_name }}</span>
+                                    <span style="color:#9ca3af;font-weight:500;">{{ $displayName }}</span>
                                 @else
                                     <a href="{{ !$report->isProcessing() ? route('insights.view', $report->encrypted_id) : '#' }}"
                                        style="color:#1a6aa8;text-decoration:none;font-weight:500;{{ $report->isProcessing() ? 'pointer-events:none;color:#1a202c;' : '' }}">
-                                        {{ $report->report_name }}
+                                        {{ $displayName }}
                                     </a>
                                 @endif
                             </div>
                         </td>
-                        <td style="color:#64748b;">{{ $report->created_at->format(active_date_format()) }}</td>
+                        <td style="color:#64748b;">{{ $report->created_at->format(active_date_format() . ', g:i A') }}</td>
                         <td style="color:#64748b;">{{ $report->formatted_file_size }}</td>
                         <td>
                             @if($isDeleted)
@@ -932,7 +933,7 @@
     }
 
     function prependPlaceholderRow(id, reportName) {
-        const displayName = reportName || 'Generating…';
+        const displayName = reportName ? (reportName + ' - Insight Report') : 'Generating…';
         const tr = document.createElement('tr');
         tr.id = 'insight-row-' + id;
         tr.dataset.search = displayName.toLowerCase();
@@ -991,7 +992,8 @@
             const a = document.createElement('a');
             a.href = viewUrl;
             a.style.cssText = 'color:#1a6aa8;text-decoration:none;font-weight:500;';
-            a.textContent = nameLink.textContent;
+            const rawName = nameLink.textContent.trim();
+            a.textContent = rawName.endsWith(' - Insight Report') ? rawName : rawName + ' - Insight Report';
             nameLink.replaceWith(a);
         }
         if (window.insightsDT) window.insightsDT.row(row).invalidate().draw(false);

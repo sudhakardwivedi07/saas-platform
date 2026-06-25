@@ -63,7 +63,7 @@
     .section-content .insight-subheading { font-weight:700; font-size:11pt; color:#1a202c; margin:8px 0 2px; page-break-after:avoid; }
 
     .section-content table { width:100%; border-collapse:collapse; margin:12px 0; font-size:9pt; page-break-inside:avoid; page-break-before:avoid; }
-    .section-content table th { padding:8px 10px; font-weight:700; color:#fff; background:#1d3557; text-align:left; border:none; }
+    .section-content table th { padding:8px 10px; font-weight:700; color:{{ $branding?->accent_color ?? '#f06b21' }}; background:#f7fafc; text-align:left; border:1px solid #e2e8f0; }
     .section-content table td { padding:6px 10px; color:#374151; border-bottom:1px solid #e8edf4; word-wrap:break-word; }
     .section-content table tbody tr:nth-child(even) { background:#f7f9fc; }
     hr { margin:10px 0; border:none; border-top:1px solid #e2e8f0; }
@@ -114,7 +114,7 @@
         </div>
         <div class="meta-row">
             <span class="meta-label">PREPARED BY</span>
-            <span class="meta-value">{{ $companyName }}</span>
+            <span class="meta-value">{{ $preparedBy }}</span>
         </div>
         <div class="meta-row">
             <span class="meta-label">REPORT DATE</span>

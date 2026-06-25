@@ -577,15 +577,39 @@ class InsightsController extends AccountBaseController
         }
 
         // Convert logo to base64 so DOMPDF can embed it without HTTP requests
-        // Only JPEG/PNG/GIF are supported by DOMPDF; SVG/WebP cause "image not found" errors
         $logoBase64 = '';
         $branding   = $this->branding;
         if ($branding?->logo) {
-            $logoPath = storage_path('app/public/' . $branding->logo);
+            $logoPath = Storage::disk('public')->path($branding->logo);
             if (file_exists($logoPath)) {
                 $mime = mime_content_type($logoPath);
                 if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
                     $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                } elseif ($mime === 'image/webp') {
+                    if (function_exists('imagecreatefromwebp')) {
+                        $img = @imagecreatefromwebp($logoPath);
+                        if ($img) {
+                            ob_start(); imagepng($img); $pngData = ob_get_clean(); imagedestroy($img);
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($pngData);
+                        }
+                    } elseif (class_exists('Imagick')) {
+                        try {
+                            $im = new \Imagick($logoPath); $im->setImageFormat('png');
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($im->getImageBlob());
+                        } catch (\Exception $e) {}
+                    }
+                } elseif ($mime === 'image/svg+xml') {
+                    if (class_exists('Imagick')) {
+                        try {
+                            $im = new \Imagick(); $im->setBackgroundColor('none');
+                            $im->readImageBlob(file_get_contents($logoPath));
+                            $im->setImageFormat('png');
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($im->getImageBlob());
+                        } catch (\Exception $e) {}
+                    }
+                    if (!$logoBase64) {
+                        $logoBase64 = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath));
+                    }
                 }
             }
         }
@@ -1050,13 +1074,43 @@ class InsightsController extends AccountBaseController
 
     private function applyPdfAmountAlignment(string $html): string
     {
-        return preg_replace_callback('/<td([^>]*)>(.*?)<\/td>/is', function ($m) {
-            $text = trim(strip_tags($m[2]));
-            if (preg_match('/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/', $text)) {
-                return '<td' . $m[1] . ' style="text-align:right;">' . $m[2] . '</td>';
-            }
-            return $m[0];
+        if (empty($html)) return $html;
+        // Empty td cells → &nbsp; so rows don't look visually incomplete
+        $html = preg_replace('/<td([^>]*)>\s*<\/td>/i', '<td$1>&nbsp;</td>', $html) ?? $html;
+        // Two-pass per-table: detect numeric column indices, then right-align td + th
+        $result = preg_replace_callback('/<table\b[^>]*>.*?<\/table>/is', function ($tm) {
+            $tbl = $tm[0]; $numCols = [];
+            preg_replace_callback('/<tr\b[^>]*>(.*?)<\/tr>/is', function ($rm) use (&$numCols) {
+                $c = 0;
+                preg_replace_callback('/<td\b[^>]*>(.*?)<\/td>/is', function ($cm) use (&$c, &$numCols) {
+                    if (preg_match('/^\s*\(?[\$£€]?[+\-]?[\d][\d,\.]*[%KMBkmb]?\)?\s*$/', trim(strip_tags($cm[1])))) { $numCols[$c] = true; }
+                    $c++; return $cm[0];
+                }, $rm[1]);
+                return $rm[0];
+            }, $tbl);
+            if (empty($numCols)) return $tbl;
+            $tbl = preg_replace_callback('/<tr\b([^>]*)>(.*?)<\/tr>/is', function ($rm) use ($numCols) {
+                $inner = $rm[2]; $c = 0;
+                $inner = preg_replace_callback('/<td\b([^>]*)>(.*?)<\/td>/is', function ($cm) use (&$c, $numCols) {
+                    $a = rtrim($cm[1]);
+                    if (isset($numCols[$c]) && !preg_match('/\balign\s*=/i', $a)) { $a .= ' align="right"'; }
+                    $c++; return '<td' . $a . '>' . $cm[2] . '</td>';
+                }, $inner) ?? $inner;
+                $c2 = 0;
+                $inner = preg_replace_callback('/<th\b([^>]*)>(.*?)<\/th>/is', function ($cm) use (&$c2, $numCols) {
+                    $a = rtrim($cm[1]);
+                    if (isset($numCols[$c2])) {
+                        if (preg_match('/\bclass\s*=\s*"([^"]*)"/i', $a, $clm)) { $a = str_replace($clm[0], 'class="'.$clm[1].' num"', $a); }
+                        elseif (!preg_match('/\bclass\s*=/i', $a)) { $a .= ' class="num"'; }
+                        if (!preg_match('/\balign\s*=/i', $a)) { $a .= ' align="right"'; }
+                    }
+                    $c2++; return '<th' . $a . '>' . $cm[2] . '</th>';
+                }, $inner) ?? $inner;
+                return '<tr' . $rm[1] . '>' . $inner . '</tr>';
+            }, $tbl) ?? $tbl;
+            return $tbl;
         }, $html);
+        return $result ?? $html;
     }
 
     // ── Share insight (send PDF via email) ────────────────────────────────────
@@ -1086,11 +1140,36 @@ class InsightsController extends AccountBaseController
 
         $logoBase64 = '';
         if ($this->branding?->logo) {
-            $logoPath = storage_path('app/public/' . $this->branding->logo);
+            $logoPath = Storage::disk('public')->path($this->branding->logo);
             if (file_exists($logoPath)) {
                 $mime = mime_content_type($logoPath);
                 if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
                     $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                } elseif ($mime === 'image/webp') {
+                    if (function_exists('imagecreatefromwebp')) {
+                        $img = @imagecreatefromwebp($logoPath);
+                        if ($img) {
+                            ob_start(); imagepng($img); $pngData = ob_get_clean(); imagedestroy($img);
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($pngData);
+                        }
+                    } elseif (class_exists('Imagick')) {
+                        try {
+                            $im = new \Imagick($logoPath); $im->setImageFormat('png');
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($im->getImageBlob());
+                        } catch (\Exception $e) {}
+                    }
+                } elseif ($mime === 'image/svg+xml') {
+                    if (class_exists('Imagick')) {
+                        try {
+                            $im = new \Imagick(); $im->setBackgroundColor('none');
+                            $im->readImageBlob(file_get_contents($logoPath));
+                            $im->setImageFormat('png');
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($im->getImageBlob());
+                        } catch (\Exception $e) {}
+                    }
+                    if (!$logoBase64) {
+                        $logoBase64 = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath));
+                    }
                 }
             }
         }

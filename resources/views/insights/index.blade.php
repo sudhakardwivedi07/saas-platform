@@ -360,6 +360,8 @@
 
 @section('content')
 
+<p style="font-size:13px;color:var(--text-3);margin-bottom:14px">Select a client and company to generate insights.</p>
+
 @if(!empty($isAdminView))
 @php $adminViewUser = $viewingAsUser ?? auth()->user(); @endphp
 <div style="display:flex;align-items:center;gap:12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 16px;margin-bottom:18px;font-size:13px;color:#1d4ed8">
@@ -400,7 +402,7 @@
     @php $hasReports = $reports->isNotEmpty(); @endphp
     @if($companies->count() > 1)
     <div class="company-selector-wrap" style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:13px;font-weight:600;color:#64748b;white-space:nowrap;">Company:</span>
+        <span style="font-size:13px;font-weight:600;color:#64748b;white-space:nowrap;">Company:<span class="help-tip" data-tip="Select a company with an active connection.">i</span></span>
         <div class="bar-select-wrap">
             <select class="bar-select" onchange="switchCompany(this.value)">
                 @foreach($companies as $co)

@@ -16,6 +16,7 @@
             <div class="card">
                 <div class="card-header"><h3>Logo & Images</h3></div>
                 <div class="card-body grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    @php $logoTips = ['logo' => 'Upload your company logo.']; @endphp
                     @foreach([
                         ['logo',             'Primary Logo',          'Shown in the sidebar and emails. Recommended: 200×60px PNG'],
                         ['dark_logo',        'Dark Mode Logo',        'Used when dark mode is enabled. Same dimensions as primary logo.'],
@@ -23,7 +24,7 @@
                         ['login_background', 'Login Background',     'Shown behind the login form. Recommended: 1920×1080px'],
                     ] as [$field, $label, $hint])
                     <div class="form-group">
-                        <label class="form-label">{{ $label }}</label>
+                        <label class="form-label">{{ $label }}@isset($logoTips[$field])<span class="help-tip" data-tip="{{ $logoTips[$field] }}">i</span>@endisset</label>
                         <div class="border-2 border-dashed border-gray-200 rounded-xl p-4 text-center hover:border-blue-400 transition cursor-pointer"
                              onclick="document.getElementById('{{ $field }}-input').click()">
                             @if($branding?->{$field})
@@ -48,13 +49,14 @@
                 <div class="card-header"><h3>Brand Colours</h3></div>
                 <div class="card-body">
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        @php $colorTips = ['primary_color' => 'Select your brand color.']; @endphp
                         @foreach([
                             ['primary_color',   'Primary',   'Main brand colour — buttons, links, sidebar'],
                             ['secondary_color', 'Secondary', 'Supporting colour — headers, borders'],
                             ['accent_color',    'Accent',    'Highlight colour — hover states, badges'],
                         ] as [$field, $label, $hint])
                         <div class="form-group">
-                            <label class="form-label">{{ $label }}</label>
+                            <label class="form-label">{{ $label }}@isset($colorTips[$field])<span class="help-tip" data-tip="{{ $colorTips[$field] }}">i</span>@endisset</label>
                             <div class="flex items-center gap-3">
                                 <div class="color-swatch">
                                     <input type="color" name="{{ $field }}"
@@ -100,7 +102,7 @@
                 <div class="card-header"><h3>Login Page</h3></div>
                 <div class="card-body grid grid-cols-1 gap-4">
                     <div class="form-group">
-                        <label class="form-label">Heading</label>
+                        <label class="form-label">Heading <span class="help-tip" data-tip="Main title displayed on login page.">i</span></label>
                         <input type="text" name="login_heading" class="form-control"
                                value="{{ $branding?->login_heading ?? '' }}"
                                placeholder="Welcome back">

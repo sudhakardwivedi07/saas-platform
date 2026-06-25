@@ -210,7 +210,7 @@
     <div class="modal-box" style="width:500px">
         <button class="modal-close" onclick="closeAddUserModal()">&times;</button>
         <div class="modal-title">Add User</div>
-        <div class="modal-sub">Invite a team member to access your platform</div>
+        <div class="modal-sub">Invite a team member and assign access.</div>
 
         @if($errors->any())
         <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 13px;margin-bottom:14px">
@@ -224,17 +224,17 @@
             @csrf
             <div class="form-2col">
                 <div class="mf-field" style="margin:0">
-                    <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
+                    <label class="mf-label">Full Name <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Enter the user's full name.">i</span></label>
                     <input type="text" name="name" id="au-name" class="mf-inp" placeholder="e.g. Priya Sharma" value="{{ old('name') }}" maxlength="100">
                     <div id="err-au-name" class="au-err"></div>
                 </div>
                 <div class="mf-field" style="margin:0">
-                    <label class="mf-label">Email Address <span style="color:var(--red)">*</span></label>
+                    <label class="mf-label">Email Address <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Enter the user's email address.">i</span></label>
                     <input type="text" name="email" id="au-email" class="mf-inp" placeholder="priya@rightfocuscfo.com" value="{{ old('email') }}" maxlength="100" autocomplete="off">
                     <div id="err-au-email" class="au-err"></div>
                 </div>
                 <div class="mf-field" style="margin:0">
-                    <label class="mf-label">Role <span style="color:var(--red)">*</span></label>
+                    <label class="mf-label">Role <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Select a role to define access.">i</span></label>
                     <select name="role" id="au-role" class="mf-sel" style="height:40px">
                         <option value="">Select Role</option>
                         @foreach($roles as $role)
@@ -246,13 +246,13 @@
                     <div id="err-au-role" class="au-err"></div>
                 </div>
                 <div class="mf-field" style="margin:0">
-                    <label class="mf-label">Job Title</label>
+                    <label class="mf-label">Job Title<span class="help-tip" data-tip="Enter the user's job title (optional).">i</span></label>
                     <input type="text" name="job_title" id="au-job-title" class="mf-inp" placeholder="e.g. Financial Analyst" value="{{ old('job_title') }}" maxlength="100">
                     <div id="err-au-job-title" class="au-err"></div>
                 </div>
             </div>
             <div class="mf-field">
-                <label class="mf-label">Password <span style="color:var(--red)">*</span></label>
+                <label class="mf-label">Password <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Set a secure password or auto-generate.">i</span></label>
                 <div style="position:relative;display:flex;align-items:center">
                     <input type="password" name="password" id="add-pwd" class="mf-inp" placeholder="Min. 8 characters" style="padding-right:88px" maxlength="20" autocomplete="new-password">
                     <button type="button" title="Show/hide" onclick="togglePwd('add-pwd','add-eye')" style="position:absolute;right:44px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:4px;color:var(--text-3);display:flex">

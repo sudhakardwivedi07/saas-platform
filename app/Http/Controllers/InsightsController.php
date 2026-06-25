@@ -579,15 +579,39 @@ class InsightsController extends AccountBaseController
         }
 
         // Convert logo to base64 so DOMPDF can embed it without HTTP requests
-        // Only JPEG/PNG/GIF are supported by DOMPDF; SVG/WebP cause "image not found" errors
         $logoBase64 = '';
         $branding   = $this->branding;
         if ($branding?->logo) {
-            $logoPath = storage_path('app/public/' . $branding->logo);
+            $logoPath = Storage::disk('public')->path($branding->logo);
             if (file_exists($logoPath)) {
                 $mime = mime_content_type($logoPath);
                 if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
                     $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                } elseif ($mime === 'image/webp') {
+                    if (function_exists('imagecreatefromwebp')) {
+                        $img = @imagecreatefromwebp($logoPath);
+                        if ($img) {
+                            ob_start(); imagepng($img); $pngData = ob_get_clean(); imagedestroy($img);
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($pngData);
+                        }
+                    } elseif (class_exists('Imagick')) {
+                        try {
+                            $im = new \Imagick($logoPath); $im->setImageFormat('png');
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($im->getImageBlob());
+                        } catch (\Exception $e) {}
+                    }
+                } elseif ($mime === 'image/svg+xml') {
+                    if (class_exists('Imagick')) {
+                        try {
+                            $im = new \Imagick(); $im->setBackgroundColor('none');
+                            $im->readImageBlob(file_get_contents($logoPath));
+                            $im->setImageFormat('png');
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($im->getImageBlob());
+                        } catch (\Exception $e) {}
+                    }
+                    if (!$logoBase64) {
+                        $logoBase64 = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath));
+                    }
                 }
             }
         }
@@ -1087,11 +1111,36 @@ class InsightsController extends AccountBaseController
 
         $logoBase64 = '';
         if ($this->branding?->logo) {
-            $logoPath = storage_path('app/public/' . $this->branding->logo);
+            $logoPath = Storage::disk('public')->path($this->branding->logo);
             if (file_exists($logoPath)) {
                 $mime = mime_content_type($logoPath);
                 if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
                     $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                } elseif ($mime === 'image/webp') {
+                    if (function_exists('imagecreatefromwebp')) {
+                        $img = @imagecreatefromwebp($logoPath);
+                        if ($img) {
+                            ob_start(); imagepng($img); $pngData = ob_get_clean(); imagedestroy($img);
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($pngData);
+                        }
+                    } elseif (class_exists('Imagick')) {
+                        try {
+                            $im = new \Imagick($logoPath); $im->setImageFormat('png');
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($im->getImageBlob());
+                        } catch (\Exception $e) {}
+                    }
+                } elseif ($mime === 'image/svg+xml') {
+                    if (class_exists('Imagick')) {
+                        try {
+                            $im = new \Imagick(); $im->setBackgroundColor('none');
+                            $im->readImageBlob(file_get_contents($logoPath));
+                            $im->setImageFormat('png');
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($im->getImageBlob());
+                        } catch (\Exception $e) {}
+                    }
+                    if (!$logoBase64) {
+                        $logoBase64 = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath));
+                    }
                 }
             }
         }

@@ -4,16 +4,17 @@
 <meta charset="utf-8">
 <title>{{ $report->report_name ?? 'Insight' }}</title>
 <style>
-    @page { margin: 0; size: letter; }
+    @page { margin: 50px 0 0; size: letter; }
     * { margin:0; padding:0; box-sizing:border-box; font-family:'DM Sans', Arial, Helvetica, sans-serif; }
     body { font-size:10pt; line-height:1.65; color:#374151; }
     em, i { font-style:italic; }
     strong, b { font-weight:700; }
     .page { padding:0 60px 80px; }
+    .ph { height:70px; font-size:1px; line-height:1; color:transparent; page-break-after:avoid; }
     .page + .page { page-break-before:always; }
 
     /* ── Cover page ─────────────────────────────────────────────── */
-    .cover-page { padding:56px 64px; }
+    .cover-page { padding:14px 64px 20px; }
     .firm-header { display:block; margin-bottom:32px; padding-bottom:20px; border-bottom:2px solid #1d3557; }
     .firm-logo { max-height:48px; max-width:150px; }
     .firm-logo-icon {
@@ -77,11 +78,14 @@
     }
     .footer-left  { font-size:8pt; color:#9ca3af; }
 
-    /* ── Running page header (in-flow — inside each section page) ── */
-    .pdf-run-header { padding-top:12px; margin-bottom:18px; }
-    .prh-right { text-align:right; font-size:8.5pt; color:#9ca3af; margin-bottom:6px; }
+    /* ── Running page header (fixed — in the @page top margin area) ── */
+    .pdf-running-header {
+        position:fixed; top:0; left:0; right:0; height:42px;
+        padding:10px 60px 6px; background:#fff;
+        border-bottom:1px solid #c8d4e0;
+    }
+    .prh-right { text-align:right; font-size:8.5pt; color:#9ca3af; }
     .prh-right strong { color:#1d3557; font-weight:600; }
-    .prh-line { border-top:1px solid #c8d4e0; }
 
     /* ── Cover meta stack (vertical) ─────────────────────────────── */
     .meta-stack { border-top:2px solid #1d3557; margin-top:20px; padding-top:4px; }
@@ -126,10 +130,7 @@
 {{-- ── Table of Contents page ──────────────────────────────────── --}}
 @if(count($sections) > 0)
 <div class="page">
-    <div class="pdf-run-header">
-        <div class="prh-right">CFO Insights Report &nbsp;|&nbsp; <strong>{{ $report->company?->company_name ?? '' }}</strong></div>
-        <div class="prh-line"></div>
-    </div>
+    <div class="ph">&nbsp;</div>
     <div class="toc-section-label">CONTENTS</div>
     <div class="toc-heading">Table of Contents</div>
     @foreach($sections as $i => $section)
@@ -145,17 +146,26 @@
 {{-- ── Section pages ────────────────────────────────────────────── --}}
 @foreach($sections as $i => $section)
 <div class="page">
-    <div class="pdf-run-header">
-        <div class="prh-right">CFO Insights Report &nbsp;|&nbsp; <strong>{{ $report->company?->company_name ?? '' }}</strong></div>
-        <div class="prh-line"></div>
-    </div>
+    <div class="ph">&nbsp;</div>
     <div class="section-title">{{ $section['title'] }}</div>
     <div class="section-sep"></div>
     <div class="section-content">
-        {!! $section['formatted_content'] ?? e($section['content'] ?? '') !!}
+        @php
+            $sc = $section['formatted_content'] ?? e($section['content'] ?? '');
+            // Step 1: inject spacer before each table
+            $sc = preg_replace('/(<table[\s>])/i', '<div class="ph">&nbsp;</div>$1', $sc);
+            // Step 2: for <p>label</p> immediately before a spacer+table, move spacer before the <p>
+            $sc = preg_replace('/(<p\b[^>]*>(?:(?!<\/p>).)*?<\/p>)\s*<div class="ph">&nbsp;<\/div>(<table[\s>])/is', '<div class="ph">&nbsp;</div>$1$2', $sc);
+        @endphp
+        {!! $sc !!}
     </div>
 </div>
 @endforeach
+
+{{-- ── Fixed running header (every page including overflow) ──────── --}}
+<div class="pdf-running-header">
+    <div class="prh-right">CFO Insights Report &nbsp;|&nbsp; <strong>{{ $report->company?->company_name ?? '' }}</strong></div>
+</div>
 
 {{-- ── Fixed footer (every page) ───────────────────────────────── --}}
 <div class="page-footer">

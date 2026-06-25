@@ -17,6 +17,7 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
@@ -489,11 +490,37 @@ class AuthController extends Controller
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user, $password) {
                 $user->forceFill(['password' => Hash::make($password)])->save();
+
                 try {
                     EventLog::record('account_password_changed', 'Password reset via email link', [
                         'email' => $user->email,
                     ]);
                 } catch (\Throwable $e) {}
+
+                // Send password-changed confirmation email
+                try {
+                    $company   = $user->company;
+                    $appName   = $company?->app_name ?? global_setting()?->global_app_name ?? config('app.name');
+                    $firmEmail = $company?->company_email ?? config('mail.from.address');
+                    $firstName = explode(' ', trim($user->name))[0];
+                    $tz        = $company?->timezone ?: config('app.timezone', 'UTC');
+                    $now       = now()->setTimezone($tz);
+                    $changedAt = $now->format('F j, Y') . ' at ' . $now->format('g:i A') . ' ' . $now->format('T');
+
+                    app(EmailService::class)->send(
+                        toEmail:      $user->email,
+                        templateSlug: 'password_changed',
+                        placeholders: [
+                            '{{first_name}}' => $firstName,
+                            '{{app_name}}'   => $appName,
+                            '{{firm_email}}' => $firmEmail,
+                            '{{changed_at}}' => $changedAt,
+                        ],
+                        companyId: $company?->id
+                    );
+                } catch (\Throwable $e) {
+                    Log::warning('Password-changed confirmation email failed: ' . $e->getMessage());
+                }
             }
         );
 

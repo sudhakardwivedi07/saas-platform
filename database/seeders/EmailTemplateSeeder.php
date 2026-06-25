@@ -38,6 +38,17 @@ class EmailTemplateSeeder extends Seeder
 <p>Regards,<br>{{app_name}}</p>',
             ],
             [
+                'slug'    => 'password_changed',
+                'name'    => 'Password Changed Confirmation',
+                'subject' => 'Your Password Has Been Changed — {{app_name}}',
+                'body'    => '
+<p>Hi {{first_name}},</p>
+<p>This is a confirmation that your password was successfully changed on {{changed_at}}.</p>
+<p>If you made this change, no further action is required.</p>
+<p>If you did not make this change, please contact our support team immediately at <a href="mailto:{{firm_email}}">{{firm_email}}</a> so we can protect your account.</p>
+<p>Regards,<br>{{app_name}}</p>',
+            ],
+            [
                 'slug'    => 'payment_success',
                 'name'    => 'Payment Successful',
                 'subject' => 'Payment Confirmed — {{app_name}}',

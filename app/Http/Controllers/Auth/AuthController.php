@@ -497,7 +497,7 @@ class AuthController extends Controller
         );
 
         return $status === Password::PASSWORD_RESET
-            ? redirect()->route('login')->with('success', 'Password reset successfully.')
+            ? back()->with('password_reset_success', true)
             : back()->withErrors(['email' => __($status)]);
     }
 

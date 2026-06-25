@@ -87,7 +87,7 @@ class InsightsController extends AccountBaseController
             })
             ->orderByDesc('created_at')
             ->get()
-            ->groupBy(fn($r) => $r->report_name . '||' . $r->company_id)
+            ->groupBy(fn($r) => $r->parent_report_id ?? $r->id)
             ->map(fn($group) => $group->sortByDesc('version')->first())
             ->values();
 
@@ -192,13 +192,10 @@ class InsightsController extends AccountBaseController
             }
         }
 
-        // Build "Company Name (Analysis N)" report name
-        $reportCompany   = Company::withoutGlobalScopes()->find($reportCompanyId);
-        $companyLabel    = trim($reportCompany?->company_name ?? '');
-        $analysisNumber  = Report::withTrashed()->where('company_id', $reportCompanyId)->whereNull('parent_report_id')->count() + 1;
-        $generatedName   = $companyLabel
-            ? $companyLabel . ' (Analysis ' . $analysisNumber . ')'
-            : 'Analysis ' . $analysisNumber;
+        // Store company name as report name
+        $reportCompany = Company::withoutGlobalScopes()->find($reportCompanyId);
+        $companyLabel  = trim($reportCompany?->company_name ?? '');
+        $generatedName = $companyLabel ?: 'Unnamed Company';
 
         $endDate   = $request->get('end_date',   Carbon::now()->format('Y-m-d'));
         $startDate = $request->get('start_date', Carbon::parse($endDate)->subMonths(11)->startOfMonth()->format('Y-m-d'));
@@ -547,7 +544,8 @@ class InsightsController extends AccountBaseController
 
         $sections = $this->getReportSections($report);
 
-        $this->pageTitle = 'Preview — ' . ($report->report_name ?: 'Insight');
+        $cleanName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name ?: 'Insight'));
+        $this->pageTitle = 'Preview — ' . $cleanName . ' - Insights Report';
         $this->report    = $report;
         $this->sections  = $sections;
 

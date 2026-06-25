@@ -520,7 +520,7 @@
                             : (in_array(strtolower($report->status), ['uploading','analyzing']) ? 'processing'
                             : ($report->isReady() ? ($report->publish_status ?? 'draft')
                             : strtolower($report->status)));
-                        $displayName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) . ' - Insights Report';
+                        $displayName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) . ' - Insight Report';
                     @endphp
                     <tr id="insight-row-{{ $report->id }}"
                         data-search="{{ strtolower($displayName) }}"
@@ -933,7 +933,7 @@
     }
 
     function prependPlaceholderRow(id, reportName) {
-        const displayName = reportName ? (reportName + ' - Insights Report') : 'Generating…';
+        const displayName = reportName ? (reportName + ' - Insight Report') : 'Generating…';
         const tr = document.createElement('tr');
         tr.id = 'insight-row-' + id;
         tr.dataset.search = displayName.toLowerCase();
@@ -993,7 +993,7 @@
             a.href = viewUrl;
             a.style.cssText = 'color:#1a6aa8;text-decoration:none;font-weight:500;';
             const rawName = nameLink.textContent.trim();
-            a.textContent = rawName.endsWith(' - Insights Report') ? rawName : rawName + ' - Insights Report';
+            a.textContent = rawName.endsWith(' - Insight Report') ? rawName : rawName + ' - Insight Report';
             nameLink.replaceWith(a);
         }
         if (window.insightsDT) window.insightsDT.row(row).invalidate().draw(false);

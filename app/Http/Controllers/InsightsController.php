@@ -120,6 +120,11 @@ class InsightsController extends AccountBaseController
 
     public function generate(Request $request)
     {
+        $request->validate([
+            'start_date' => 'nullable|date|before_or_equal:today',
+            'end_date'   => 'nullable|date|before_or_equal:today|after_or_equal:start_date',
+        ]);
+
         $user      = auth()->user();
         $companyId = $user->company_id;
 
@@ -223,13 +228,15 @@ class InsightsController extends AccountBaseController
             DB::beginTransaction();
             try {
                 $report = Report::create([
-                    'user_id'         => $user->id,
-                    'company_id'      => $reportCompanyId,
-                    'report_name'     => $generatedName,
-                    'upload_date'     => now()->toDateString(),
-                    'total_file_size' => 0,
-                    'status'          => 'Uploading',
-                    'publish_status'  => 'draft',
+                    'user_id'           => $user->id,
+                    'company_id'        => $reportCompanyId,
+                    'report_name'       => $generatedName,
+                    'upload_date'       => now()->toDateString(),
+                    'report_start_date' => $startDate,
+                    'report_end_date'   => $endDate,
+                    'total_file_size'   => 0,
+                    'status'            => 'Uploading',
+                    'publish_status'    => 'draft',
                 ]);
 
                 $totalSize = 0;

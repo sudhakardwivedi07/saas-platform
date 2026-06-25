@@ -402,7 +402,19 @@
             <option value="">Choose a company…</option>
         </select>
 
-        <div class="pi-modal-note">
+        <div style="display:flex;gap:12px;margin-top:14px;">
+            <div style="flex:1;">
+                <label for="piStartDate" style="display:block;font-size:13px;font-weight:500;margin-bottom:4px;">Start Date <span style="color:#ef4444">*</span></label>
+                <input type="date" id="piStartDate" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#374151;background:#fff;box-sizing:border-box;" />
+            </div>
+            <div style="flex:1;">
+                <label for="piEndDate" style="display:block;font-size:13px;font-weight:500;margin-bottom:4px;">End Date <span style="color:#ef4444">*</span></label>
+                <input type="date" id="piEndDate" style="width:100%;padding:8px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#374151;background:#fff;box-sizing:border-box;" />
+            </div>
+        </div>
+        <div id="pi-date-warning" style="display:none;padding:8px 12px;border-radius:8px;font-size:12.5px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;margin-top:8px;"></div>
+
+        <div class="pi-modal-note" style="margin-top:12px;">
             Only companies with a connected accounting tool are listed. Connect more companies from the <strong>Connections</strong> page.
         </div>
 
@@ -589,12 +601,32 @@
     };
 
     // ── Generate Modal ────────────────────────────────────────────────────────
+    function piSetDefaultDates() {
+        const today = new Date();
+        const yyyy  = today.getFullYear();
+        const mm    = String(today.getMonth() + 1).padStart(2, '0');
+        const dd    = String(today.getDate()).padStart(2, '0');
+        const todayStr = `${yyyy}-${mm}-${dd}`;
+
+        // Default: 12 months ago (start of that month) → today
+        const startD = new Date(today.getFullYear(), today.getMonth() - 11, 1);
+        const sy = startD.getFullYear();
+        const sm = String(startD.getMonth() + 1).padStart(2, '0');
+        const startStr = `${sy}-${sm}-01`;
+
+        const endEl   = document.getElementById('piEndDate');
+        const startEl = document.getElementById('piStartDate');
+        if (endEl)   { endEl.value   = todayStr; endEl.max = todayStr; }
+        if (startEl) { startEl.value = startStr; startEl.max = todayStr; }
+    }
+
     window.piOpenGenerateModal = function () {
         document.getElementById('piGenerateModal').classList.add('open');
         const btn = document.getElementById('piBtnGenerate');
         const anyProcessing = !!document.querySelector('#pi-table tbody tr[data-status="processing"]');
         btn.disabled  = true;
         btn.innerHTML = anyProcessing ? SPIN_ICON + ' Generating...' : GEN_ICON + ' Generate Insight';
+        piSetDefaultDates();
         piLoadClients();
     };
 
@@ -607,6 +639,8 @@
         btn.disabled = true; btn.innerHTML = GEN_ICON + ' Generate Insight';
         const warnEl = document.getElementById('pi-limit-warning');
         if (warnEl) warnEl.style.display = 'none';
+        const dateWarn = document.getElementById('pi-date-warning');
+        if (dateWarn) dateWarn.style.display = 'none';
     };
 
     function piUpdateGenerateBtn() {
@@ -754,6 +788,20 @@
         const clientName  = document.getElementById('piClientSelect').options[document.getElementById('piClientSelect').selectedIndex]?.textContent?.split(' (')[0]?.trim() || '';
         if (!clientId || !companyId) return;
 
+        const startDate  = document.getElementById('piStartDate')?.value || '';
+        const endDate    = document.getElementById('piEndDate')?.value || '';
+        const dateWarnEl = document.getElementById('pi-date-warning');
+
+        if (!startDate || !endDate) {
+            if (dateWarnEl) { dateWarnEl.textContent = 'Please select both a start date and end date.'; dateWarnEl.style.display = 'block'; }
+            return;
+        }
+        if (startDate > endDate) {
+            if (dateWarnEl) { dateWarnEl.textContent = 'Start date must be before or equal to end date.'; dateWarnEl.style.display = 'block'; }
+            return;
+        }
+        if (dateWarnEl) dateWarnEl.style.display = 'none';
+
         // Guard: check insight limit before calling the server
         const selOpt    = document.getElementById('piCompanySelect').selectedOptions[0];
         const limitAttr = selOpt ? selOpt.getAttribute('data-limit') : '';
@@ -805,7 +853,7 @@
         fetch('{{ route("partner-insights.generate") }}', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
-            body:    JSON.stringify({ company_id: parseInt(companyId) }),
+            body:    JSON.stringify({ company_id: parseInt(companyId), start_date: startDate, end_date: endDate }),
         })
         .then(r => r.json())
         .then(data => {

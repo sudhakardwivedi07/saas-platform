@@ -40,8 +40,8 @@ class QuickBooksCSVExportService
 
         try {
             $files['balance_sheet']  = self::generateBalanceSheetCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
-            $files['ar_aging']       = self::generateARAgingCSV($connection, $baseUrl, $basePath, $timestamp);
-            $files['ap_aging']       = self::generateAPAgingCSV($connection, $baseUrl, $basePath, $timestamp);
+            $files['ar_aging']       = self::generateARAgingCSV($connection, $baseUrl, $endDate, $basePath, $timestamp);
+            $files['ap_aging']       = self::generateAPAgingCSV($connection, $baseUrl, $endDate, $basePath, $timestamp);
             $files['profit_loss']    = self::generateProfitLossCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
             $files['general_ledger'] = self::generateGeneralLedgerCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
             $files['cash_flow']      = self::generateCashFlowCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
@@ -102,12 +102,12 @@ class QuickBooksCSVExportService
     }
 
     protected static function generateARAgingCSV(
-        QuickBooksConnection $connection, string $baseUrl, string $basePath, string $timestamp
+        QuickBooksConnection $connection, string $baseUrl, string $endDate, string $basePath, string $timestamp
     ): array {
         $filename = 'AR_Aging.csv';
         $filepath = "{$basePath}/{$filename}";
 
-        $arData = self::fetchARAgingData($connection, $baseUrl);
+        $arData = self::fetchARAgingData($connection, $baseUrl, $endDate);
 
         $handle = fopen($filepath, 'w');
         fputcsv($handle, ['Customer', 'Current', '1-30', '31-60', '61-90', '>90', 'Total']);
@@ -122,12 +122,12 @@ class QuickBooksCSVExportService
     }
 
     protected static function generateAPAgingCSV(
-        QuickBooksConnection $connection, string $baseUrl, string $basePath, string $timestamp
+        QuickBooksConnection $connection, string $baseUrl, string $endDate, string $basePath, string $timestamp
     ): array {
         $filename = 'AP_Aging.csv';
         $filepath = "{$basePath}/{$filename}";
 
-        $apData = self::fetchAPAgingData($connection, $baseUrl);
+        $apData = self::fetchAPAgingData($connection, $baseUrl, $endDate);
 
         $handle = fopen($filepath, 'w');
         fputcsv($handle, ['Vendor', 'Current', '1-30', '31-60', '61-90', '>90', 'Total']);
@@ -211,9 +211,9 @@ class QuickBooksCSVExportService
 
     // ── QB API data fetchers ──────────────────────────────────────────────────
 
-    protected static function fetchARAgingData(QuickBooksConnection $connection, string $baseUrl): array
+    protected static function fetchARAgingData(QuickBooksConnection $connection, string $baseUrl, string $endDate): array
     {
-        $url      = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/AgedReceivables?report_date=" . date('Y-m-d');
+        $url      = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/AgedReceivables?report_date={$endDate}";
         $response = self::curlGet($url, $connection->access_token);
 
         if ($response['code'] !== 200 || empty($response['body'])) {
@@ -225,9 +225,9 @@ class QuickBooksCSVExportService
         return isset($data['Rows']['Row']) ? self::parseAgingRows($data['Rows']['Row'], 'customer') : [];
     }
 
-    protected static function fetchAPAgingData(QuickBooksConnection $connection, string $baseUrl): array
+    protected static function fetchAPAgingData(QuickBooksConnection $connection, string $baseUrl, string $endDate): array
     {
-        $url      = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/AgedPayables?report_date=" . date('Y-m-d');
+        $url      = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/AgedPayables?report_date={$endDate}";
         $response = self::curlGet($url, $connection->access_token);
 
         if ($response['code'] !== 200 || empty($response['body'])) {

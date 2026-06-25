@@ -20,6 +20,8 @@ class Report extends BaseModel
         'is_firm_report',
         'report_name',
         'upload_date',
+        'report_start_date',
+        'report_end_date',
         'total_file_size',
         'status',
         'publish_status',
@@ -31,10 +33,12 @@ class Report extends BaseModel
     ];
 
     protected $casts = [
-        'upload_date'       => 'date',
-        'total_file_size'   => 'integer',
-        'insight_json_data' => 'array',
-        'is_firm_report'    => 'boolean',
+        'upload_date'        => 'date',
+        'report_start_date'  => 'date',
+        'report_end_date'    => 'date',
+        'total_file_size'    => 'integer',
+        'insight_json_data'  => 'array',
+        'is_firm_report'     => 'boolean',
     ];
 
     public function user(): BelongsTo

@@ -26,14 +26,16 @@ class EmailTemplateSeeder extends Seeder
             [
                 'slug'    => 'password_reset',
                 'name'    => 'Password Reset',
-                'subject' => 'Reset Your {{app_name}} Password',
+                'subject' => 'Password Reset Request — {{app_name}}',
                 'body'    => '
-<h2>Password Reset Request</h2>
-<p>Hi {{name}},</p>
-<p>We received a request to reset the password for your account.</p>
-<p><a href="{{reset_url}}" style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;font-weight:600;">Reset Password</a></p>
-<p>This link expires in 60 minutes. If you did not request this, ignore this email.</p>
-<p>— The {{app_name}} Team</p>',
+<p>Hi {{first_name}},</p>
+<p>We received a request to reset your password. Click the button below to set a new password. This link is valid for 5 minutes and can only be used once.</p>
+<p style="text-align:center;margin:28px 0;">
+  <a href="{{reset_url}}" style="background:#2563eb;color:#fff;padding:14px 32px;border-radius:6px;text-decoration:none;display:inline-block;font-weight:600;font-size:15px;">Reset My Password</a>
+</p>
+<p>If you did not request a password reset, please ignore this email — your account remains secure, and no changes have been made.</p>
+<p style="color:#64748b;font-size:13px;">For security, never share this link with anyone. Our team will never ask for your password.</p>
+<p>Regards,<br>{{app_name}}</p>',
             ],
             [
                 'slug'    => 'payment_success',

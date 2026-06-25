@@ -433,31 +433,32 @@ class AuthController extends Controller
 
         // Use the company's own SMTP if configured; EmailService falls back to the
         // SuperAdmin global SMTP automatically when no company-specific setting exists.
+        $firstName = explode(' ', trim($user->name))[0];
+
         $sent = app(EmailService::class)->send(
             toEmail:      $user->email,
             templateSlug: 'password_reset',
             placeholders: [
-                '{{name}}'       => $user->name,
-                '{{app_name}}'   => $appName,
-                '{{reset_url}}'  => $resetUrl,
+                '{{name}}'        => $user->name,
+                '{{first_name}}'  => $firstName,
+                '{{app_name}}'    => $appName,
+                '{{reset_url}}'   => $resetUrl,
             ],
             companyId: $company?->id
         );
 
         if (!$sent) {
-            // Template not found or first attempt failed.
-            // Send an inline HTML email via the same DB-configured SMTP so
-            // SendGrid credentials are applied even without a DB template.
-            $body = '<h2>Password Reset Request</h2>'
-                  . '<p>Hi ' . e($user->name) . ',</p>'
-                  . '<p>We received a request to reset your <strong>' . e($appName) . '</strong> password.</p>'
-                  . '<p><a href="' . e($resetUrl) . '" style="background:#2563eb;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;font-weight:600;">Reset Password</a></p>'
-                  . '<p>This link expires in 60 minutes. If you did not request this, you can safely ignore this email.</p>'
-                  . '<p>— The ' . e($appName) . ' Team</p>';
+            // Template not found or first attempt failed — send inline HTML via DB-configured SMTP.
+            $body = '<p>Hi ' . e($firstName) . ',</p>'
+                  . '<p>We received a request to reset your password. Click the button below to set a new password. This link is valid for 5 minutes and can only be used once.</p>'
+                  . '<p style="text-align:center;margin:28px 0;"><a href="' . e($resetUrl) . '" style="background:#2563eb;color:#fff;padding:14px 32px;border-radius:6px;text-decoration:none;display:inline-block;font-weight:600;font-size:15px;">Reset My Password</a></p>'
+                  . '<p>If you did not request a password reset, please ignore this email — your account remains secure, and no changes have been made.</p>'
+                  . '<p style="color:#64748b;font-size:13px;">For security, never share this link with anyone. Our team will never ask for your password.</p>'
+                  . '<p>Regards,<br>' . e($appName) . '</p>';
 
             $sent = app(EmailService::class)->sendHtml(
                 toEmail:   $user->email,
-                subject:   'Reset Your ' . $appName . ' Password',
+                subject:   'Password Reset Request — ' . $appName,
                 htmlBody:  $body,
                 companyId: $company?->id,
                 appName:   $appName,

@@ -1076,17 +1076,40 @@ class InsightsController extends AccountBaseController
     private function applyPdfAmountAlignment(string $html): string
     {
         if (empty($html)) return $html;
-        $result = preg_replace_callback('/<td([^>]*)>(.*?)<\/td>/is', function ($m) {
-            $text = trim(strip_tags($m[2]));
-            // Matches: $15,200.00 | $-399.00 | -$399.00 | 97.3% | 0.80 | (3,300.00) | ($15,200.00)
-            if (preg_match('/^\s*\(?[\$£€]?[+\-]?[\d][\d,\.]*[%KMBkmb]?\)?\s*$/', $text)) {
-                $attrs = rtrim($m[1]);
-                if (!preg_match('/\balign\s*=/i', $attrs)) {
-                    $attrs .= ' align="right"';
-                }
-                return '<td' . $attrs . '>' . $m[2] . '</td>';
-            }
-            return $m[0];
+        // Empty td cells → &nbsp; so rows don't look visually incomplete
+        $html = preg_replace('/<td([^>]*)>\s*<\/td>/i', '<td$1>&nbsp;</td>', $html) ?? $html;
+        // Two-pass per-table: detect numeric column indices, then right-align td + th
+        $result = preg_replace_callback('/<table\b[^>]*>.*?<\/table>/is', function ($tm) {
+            $tbl = $tm[0]; $numCols = [];
+            preg_replace_callback('/<tr\b[^>]*>(.*?)<\/tr>/is', function ($rm) use (&$numCols) {
+                $c = 0;
+                preg_replace_callback('/<td\b[^>]*>(.*?)<\/td>/is', function ($cm) use (&$c, &$numCols) {
+                    if (preg_match('/^\s*\(?[\$£€]?[+\-]?[\d][\d,\.]*[%KMBkmb]?\)?\s*$/', trim(strip_tags($cm[1])))) { $numCols[$c] = true; }
+                    $c++; return $cm[0];
+                }, $rm[1]);
+                return $rm[0];
+            }, $tbl);
+            if (empty($numCols)) return $tbl;
+            $tbl = preg_replace_callback('/<tr\b([^>]*)>(.*?)<\/tr>/is', function ($rm) use ($numCols) {
+                $inner = $rm[2]; $c = 0;
+                $inner = preg_replace_callback('/<td\b([^>]*)>(.*?)<\/td>/is', function ($cm) use (&$c, $numCols) {
+                    $a = rtrim($cm[1]);
+                    if (isset($numCols[$c]) && !preg_match('/\balign\s*=/i', $a)) { $a .= ' align="right"'; }
+                    $c++; return '<td' . $a . '>' . $cm[2] . '</td>';
+                }, $inner) ?? $inner;
+                $c2 = 0;
+                $inner = preg_replace_callback('/<th\b([^>]*)>(.*?)<\/th>/is', function ($cm) use (&$c2, $numCols) {
+                    $a = rtrim($cm[1]);
+                    if (isset($numCols[$c2])) {
+                        if (preg_match('/\bclass\s*=\s*"([^"]*)"/i', $a, $clm)) { $a = str_replace($clm[0], 'class="'.$clm[1].' num"', $a); }
+                        elseif (!preg_match('/\bclass\s*=/i', $a)) { $a .= ' class="num"'; }
+                        if (!preg_match('/\balign\s*=/i', $a)) { $a .= ' align="right"'; }
+                    }
+                    $c2++; return '<th' . $a . '>' . $cm[2] . '</th>';
+                }, $inner) ?? $inner;
+                return '<tr' . $rm[1] . '>' . $inner . '</tr>';
+            }, $tbl) ?? $tbl;
+            return $tbl;
         }, $html);
         return $result ?? $html;
     }

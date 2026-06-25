@@ -74,6 +74,9 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
 .login-error{background:#fff5f5;border:1px solid #fecaca;border-radius:8px;padding:9px 12px;font-size:12.5px;color:#ef4444;margin-bottom:16px}
 .login-field{margin-bottom:16px}
 .login-field label{display:block;font-size:12.5px;font-weight:600;color:#374151;margin-bottom:6px;letter-spacing:.02em}
+.help-tip{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#e2e8f0;color:#64748b;font-size:8.5px;font-weight:700;font-style:italic;cursor:default;margin-left:4px;vertical-align:middle;position:relative;flex-shrink:0;line-height:1;font-family:Georgia,serif}
+.help-tip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;font-size:11px;font-weight:400;line-height:1.45;padding:5px 9px;border-radius:6px;width:max-content;max-width:220px;white-space:normal;pointer-events:none;opacity:0;transition:opacity .15s;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.help-tip:hover::after{opacity:1}
 .login-field input{width:100%;height:44px;border:1.5px solid #e2e8f0;border-radius:10px;padding:0 14px;font-size:14px;font-family:inherit;color:#1a202c;outline:none;transition:border-color .14s,box-shadow .14s;background:#fff}
 .login-field input:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,106,168,.12)}
 .login-field input.is-error{border-color:#ef4444}
@@ -128,7 +131,7 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
         @csrf
  
         <div class="login-field">
-<label for="email">Email Address</label>
+<label for="email">Email Address <span class="help-tip" data-tip="Enter your registered email address.">i</span></label>
 <input type="email" id="email" name="email"
                    value="{{ old('email') }}"
                    placeholder="you@yourfirm.com"
@@ -138,7 +141,7 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
 </div>
  
         <div class="login-field">
-            <label for="password">Password</label>
+            <label for="password">Password <span class="help-tip" data-tip="Enter your password.">i</span></label>
             <div class="pw-wrap">
                 <input type="password" id="password" name="password"
                        placeholder="Enter your password"

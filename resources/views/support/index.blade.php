@@ -96,7 +96,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
 <div class="ph">
     <div class="ph-left">
         <h1>Support</h1>
-        <p>Manage and track your support tickets</p>
+        <p>Submit and track support requests.</p>
     </div>
     <div class="ph-actions">
         <button class="btn btn-primary" id="btnNewTicket">
@@ -473,13 +473,13 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
         <form method="POST" action="{{ route('support.store') }}" enctype="multipart/form-data" id="new-ticket-form" novalidate>
             @csrf
             <div class="mf-field">
-                <label class="mf-label" for="ticket-subject">Subject <span style="color:var(--red)">*</span></label>
+                <label class="mf-label" for="ticket-subject">Subject <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Enter a brief summary of the issue.">i</span></label>
                 <input type="text" id="ticket-subject" name="subject" class="mf-inp"
                        placeholder="e.g. Insight generation failed, QuickBooks sync issue, KPI values incorrect" value="{{ old('subject') }}" maxlength="100">
                 <div id="err-tk-subject" class="tk-err"></div>
             </div>
             <div class="mf-field">
-                <label class="mf-label">Priority <span style="color:var(--red)">*</span></label>
+                <label class="mf-label">Priority <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Select the urgency level.">i</span></label>
                 <div style="display:flex;gap:8px;margin-top:4px">
                     @foreach(['low'=>'Low','medium'=>'Medium','high'=>'High'] as $v => $l)
                     <button type="button" class="btn btn-sm priority-toggle" data-value="{{ $v }}"
@@ -490,7 +490,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
                 <div id="err-tk-priority" class="tk-err"></div>
             </div>
             <div class="mf-field">
-                <label class="mf-label" for="ticket-message">Description <span style="color:var(--red)">*</span></label>
+                <label class="mf-label" for="ticket-message">Description <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Provide details about the issue.">i</span></label>
                 <textarea id="ticket-message" name="message" class="mf-textarea" rows="5"
                           placeholder="Provide as much detail as possible..." maxlength="500">{{ old('message') }}</textarea>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px;min-height:16px">
@@ -500,7 +500,7 @@ div.dataTables_paginate .paginate_button.disabled{color:var(--text-3)!important;
             </div>
             <div class="mf-field">
                 <label class="mf-label">
-                    Attachment <span style="color:var(--text-3);font-weight:400">(optional)</span>
+                    Attachment <span style="color:var(--text-3);font-weight:400">(optional)</span><span class="help-tip" data-tip="Upload supporting files (optional).">i</span>
                 </label>
                 <input type="file" id="ticket-attachment" name="attachment"
                        accept=".jpg,.jpeg,.png,.pdf,.zip"

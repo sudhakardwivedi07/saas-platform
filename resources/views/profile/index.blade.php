@@ -39,13 +39,13 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div class="form-group col-span-2 sm:col-span-2">
-                        <label class="form-label">Full Name <span>*</span></label>
+                        <label class="form-label">Full Name <span>*</span> <span class="help-tip" data-tip="Enter your full name.">i</span></label>
                         <input type="text" name="name" class="form-control"
                                value="{{ old('name', $profileUser->name) }}" required>
                     </div>
 
                     <div class="form-group col-span-2">
-                        <label class="form-label">Email Address</label>
+                        <label class="form-label">Email Address <span class="help-tip" data-tip="Used for login and notifications.">i</span></label>
                         <input type="email" class="form-control" value="{{ $profileUser->email }}"
                                readonly style="opacity:.6" title="Email cannot be changed here">
                     </div>

@@ -58,6 +58,9 @@
 }
 body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;justify-content:center;{{ $bodyBg }}}
 .login-card{background:var(--card-bg);border-radius:20px;padding:44px 44px 38px;width:420px;max-width:calc(100vw - 32px);box-shadow:0 24px 80px rgba(0,0,0,.22)}
+.help-tip{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:#e2e8f0;color:#64748b;font-size:8.5px;font-weight:700;font-style:italic;cursor:default;margin-left:4px;vertical-align:middle;position:relative;flex-shrink:0;line-height:1;font-family:Georgia,serif}
+.help-tip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;font-size:11px;font-weight:400;line-height:1.45;padding:5px 9px;border-radius:6px;width:max-content;max-width:220px;white-space:normal;pointer-events:none;opacity:0;transition:opacity .15s;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.help-tip:hover::after{opacity:1}
 .login-logo-zone{text-align:center;margin-bottom:28px}
 .login-logo-img{max-height:52px;max-width:200px;object-fit:contain;display:block;margin:0 auto}
 .login-logo-placeholder{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;min-width:180px;border:2px dashed #e2e8f0;border-radius:11px;padding:0 20px;color:#9ca3af;font-size:13px;font-weight:500;background:#fafbff}
@@ -95,7 +98,7 @@ body{font-family:var(--font);min-height:100vh;display:flex;align-items:center;ju
     </div>
 
     {{-- ── Heading ─────────────────────────────────────────────────────────── --}}
-    <div class="login-title">{{ $heading }}</div>
+    <div class="login-title">{{ $heading }} <span class="help-tip" data-tip="Title shown on reset password page.">i</span></div>
     <div class="login-sub">{{ $subheading }}</div>
 
     @if(session('error'))

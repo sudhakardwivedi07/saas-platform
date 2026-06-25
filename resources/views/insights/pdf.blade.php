@@ -12,7 +12,7 @@
     .page { padding:0 60px 88px; }
     /* .ph = page-top heading spacer (70px); .pts = pre-table spacer (50px) */
     .ph  { height:70px; font-size:1px; line-height:1; color:transparent; page-break-after:avoid; }
-    .pts { height:50px; font-size:1px; line-height:1; color:transparent; page-break-after:avoid; }
+    .pts { height:20px; font-size:1px; line-height:1; color:transparent; page-break-after:avoid; }
     .page + .page { page-break-before:always; }
 
     /* ── Cover page ─────────────────────────────────────────────── */
@@ -75,12 +75,13 @@
     .section-content table th { padding:9px 12px; font-weight:700; color:{{ $branding?->accent_color ?? '#f06b21' }}; background:#f7fafc; text-align:left; border:1px solid #e2e8f0; border-bottom:2px solid #dde4ec; }
     .section-content table td { padding:7px 12px; color:#374151; border-bottom:1px solid #e8edf4; word-wrap:break-word; }
     .section-content table td.num { text-align:right !important; }
+    .section-content table th.num { text-align:right !important; }
     .section-content table tbody tr:nth-child(even) { background:#f7f9fc; }
     hr { margin:10px 0; border:none; border-top:1px solid #e2e8f0; }
 
     /* ── Footer ──────────────────────────────────────────────────── */
-    .page-footer {
-        position:fixed; bottom:0; left:0; right:0;
+    .page-footer {      
+        position:fixed; bottom:0; left:0; right:0;  
         padding:5px 60px 6px; background:#fff;
         border-top:1px solid #e8ecf0;
     }
@@ -100,8 +101,7 @@
     .prh-right strong { color:#1d3557; font-weight:600; }
 
     /* ── Cover meta stack (vertical) ─────────────────────────────── */
-    .cover-spacer { height:160px; }
-    .meta-stack { border-top:2px solid #1d3557; margin-top:0; padding-top:4px; }
+    .meta-stack { border-top:2px solid #1d3557; margin-top:24px; padding-top:4px; }
     .meta-row { padding:10px 0 2px; border-bottom:1px solid #f1f5f9; display:block; }
     .meta-row:last-child { border-bottom:none; }
 </style>
@@ -122,8 +122,6 @@
 
     <div class="analysis-label">INSIGHTS ANALYSIS</div>
     <div class="company-name">{{ $report->company?->company_name ?? '' }}</div>
-    <!-- <div class="orange-bar"></div>
-    <div class="cover-spacer"></div> -->
 
     <div class="meta-stack">
         <div class="meta-row">
@@ -165,28 +163,46 @@
     <div class="section-content">
         @php
             $sc = $section['formatted_content'] ?? e($section['content'] ?? '');
-            // Step 1: inject pre-table spacer (.pts = 50px, smaller than page-top .ph = 70px)
-            $sc = preg_replace('/(<table[\s>])/i', '<div class="pts">&nbsp;</div>$1', $sc);
-            // Step 2: if <p>label</p> immediately precedes a spacer+table, move spacer before the <p>
-            $sc = preg_replace('/(<p\b[^>]*>(?:(?!<\/p>).)*?<\/p>)\s*<div class="pts">&nbsp;<\/div>(<table[\s>])/is', '<div class="pts">&nbsp;</div>$1$2', $sc);
-            // Step 3: add align="right" + class="num" to purely numeric cells
-            // align= HTML attribute is the most reliable alignment mechanism in DOMPDF
-            $aligned = preg_replace_callback(
-                '/(<td)([^>]*)>([ \t\r\n]*)(\$?[+\-]?[\d,\.]+[%KMBkmb]?)([ \t\r\n]*)<\/td>/i',
-                function($m) {
-                    $attrs = $m[2];
-                    if (preg_match('/\bclass\s*=\s*"([^"]*)"/i', $attrs, $cm)) {
-                        $attrs = str_replace($cm[0], 'class="' . $cm[1] . ' num"', $attrs);
-                    } else {
-                        $attrs .= ' class="num"';
-                    }
-                    if (!preg_match('/\balign\s*=/i', $attrs)) {
-                        $attrs .= ' align="right"';
-                    }
-                    return $m[1] . $attrs . '>' . $m[3] . $m[4] . $m[5] . '</td>';
-                },
-                $sc
-            );
+            // Step 1: inject pre-table spacer
+            $sc = preg_replace('/(<table[\s>])/i', '<div class="pts">&nbsp;</div>$1', $sc) ?? $sc;
+            // Step 2: move spacer before <p>label</p> that precedes spacer+table
+            $sc = preg_replace('/(<p\b[^>]*>(?:(?!<\/p>).)*?<\/p>)\s*<div class="pts">&nbsp;<\/div>(<table[\s>])/is', '<div class="pts">&nbsp;</div>$1$2', $sc) ?? $sc;
+            // Step 3: empty td cells → &nbsp; so rows don't look visually incomplete
+            $sc = preg_replace('/<td([^>]*)>\s*<\/td>/i', '<td$1>&nbsp;</td>', $sc) ?? $sc;
+            // Step 4: two-pass table alignment
+            // Pass A detects which column indices are numeric; Pass B right-aligns td + th for those columns
+            $aligned = preg_replace_callback('/<table\b[^>]*>.*?<\/table>/is', function($tm) {
+                $tbl = $tm[0]; $numCols = [];
+                preg_replace_callback('/<tr\b[^>]*>(.*?)<\/tr>/is', function($rm) use (&$numCols) {
+                    $c = 0;
+                    preg_replace_callback('/<td\b[^>]*>(.*?)<\/td>/is', function($cm) use (&$c, &$numCols) {
+                        if (preg_match('/^\s*\(?[\$£€]?[+\-]?[\d][\d,\.]*[%KMBkmb]?\)?\s*$/', trim(strip_tags($cm[1])))) { $numCols[$c] = true; }
+                        $c++; return $cm[0];
+                    }, $rm[1]);
+                    return $rm[0];
+                }, $tbl);
+                if (empty($numCols)) return $tbl;
+                $tbl = preg_replace_callback('/<tr\b([^>]*)>(.*?)<\/tr>/is', function($rm) use ($numCols) {
+                    $inner = $rm[2]; $c = 0;
+                    $inner = preg_replace_callback('/<td\b([^>]*)>(.*?)<\/td>/is', function($cm) use (&$c, $numCols) {
+                        $a = rtrim($cm[1]);
+                        if (isset($numCols[$c]) && !preg_match('/\balign\s*=/i', $a)) { $a .= ' align="right"'; }
+                        $c++; return '<td' . $a . '>' . $cm[2] . '</td>';
+                    }, $inner) ?? $inner;
+                    $c2 = 0;
+                    $inner = preg_replace_callback('/<th\b([^>]*)>(.*?)<\/th>/is', function($cm) use (&$c2, $numCols) {
+                        $a = rtrim($cm[1]);
+                        if (isset($numCols[$c2])) {
+                            if (preg_match('/\bclass\s*=\s*"([^"]*)"/i', $a, $clm)) { $a = str_replace($clm[0], 'class="'.$clm[1].' num"', $a); }
+                            elseif (!preg_match('/\bclass\s*=/i', $a)) { $a .= ' class="num"'; }
+                            if (!preg_match('/\balign\s*=/i', $a)) { $a .= ' align="right"'; }
+                        }
+                        $c2++; return '<th' . $a . '>' . $cm[2] . '</th>';
+                    }, $inner) ?? $inner;
+                    return '<tr' . $rm[1] . '>' . $inner . '</tr>';
+                }, $tbl) ?? $tbl;
+                return $tbl;
+            }, $sc);
             if ($aligned !== null) { $sc = $aligned; }
         @endphp
         {!! $sc !!}

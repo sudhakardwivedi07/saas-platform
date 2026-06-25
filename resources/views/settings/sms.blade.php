@@ -7,7 +7,7 @@
 <form id="sms-form" data-ajax-form method="POST" action="{{ route('settings.sms.update') }}">
     @csrf
     <div class="card">
-        <div class="card-header"><h3>SMS Provider Configuration</h3></div>
+        <div class="card-header"><h3>SMS Provider Configuration <span class="help-tip" data-tip="Configure SMS settings for notifications.">i</span></h3></div>
         <div class="card-body space-y-5">
 
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800 flex gap-3">

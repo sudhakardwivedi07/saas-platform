@@ -18,7 +18,7 @@
                 Add Client
             </button>
             @else
-            <button type="button" class="btn btn-primary" onclick="openAddClientModal()">
+            <button type="button" class="btn btn-primary" onclick="openAddClientModal()" data-tip="Add a new client and assign companies for insight generation.">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Add Client
             </button>
@@ -458,7 +458,7 @@
     <div class="modal-box" style="width:900px;max-width: 92vw;">
         <button class="modal-close" onclick="resetAddClientForm();document.getElementById('modal-add-client').classList.remove('open')">&times;</button>
         <div class="modal-title">Add New Client</div>
-        <div class="modal-sub">Invite a new client to your partner portal</div>
+        <div class="modal-sub">Add a new client and assign companies for insight generation.</div>
 
         {{-- Tab Toggle --}}
         <div style="display:grid;grid-template-columns:1fr 1fr;background:var(--bg);border-radius:10px;padding:4px;margin-bottom:20px;gap:0">
@@ -489,30 +489,30 @@
                 @csrf
                 <div style="display:grid;grid-template-columns:1fr 1fr;column-gap:14px;row-gap:10px;align-items:start">
                     <div class="mf-field" style="margin:0">
-                        <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Full Name <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Enter the client's full name.">i</span></label>
                         <input type="text" name="name" id="ac-name" class="mf-inp"
                             placeholder="e.g. Sarah Chen" value="{{ old('name') }}" maxlength="100">
                         <div id="err-name" class="ac-err"></div>
                     </div>
                     <div class="mf-field" style="margin:0">
-                        <label class="mf-label">Email ID <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Email ID <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Enter a valid email address.">i</span></label>
                         <input type="text" name="email" id="ac-email" class="mf-inp"
                             placeholder="sarah@chen.com" value="{{ old('email') }}"
                             autocomplete="off" maxlength="100">
                         <div id="err-email" class="ac-err"></div>
                     </div>
                     <div class="mf-field" style="margin:0">
-                        <label class="mf-label">Phone Number <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Phone Number <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Enter a 10-digit contact number.">i</span></label>
                         <input type="tel" name="phone" id="ac-phone" class="mf-inp" placeholder="10-digit number" value="{{ old('phone') }}" maxlength="10">
                         <div id="err-phone" class="ac-err"></div>
                     </div>
                     <div class="mf-field" style="margin:0">
-                        <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Company Name <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Enter the client's company name.">i</span></label>
                         <input type="text" name="company_name" id="ac-company" class="mf-inp" placeholder="e.g. TechCorp Inc." value="{{ old('company_name') }}" maxlength="100">
                         <div id="err-company" class="ac-err"></div>
                     </div>
                     <div class="mf-field" style="margin:0">
-                        <label class="mf-label">Industry Type</label>
+                        <label class="mf-label">Industry Type<span class="help-tip" data-tip="Select the client's industry.">i</span></label>
                         <select name="industry_type" id="ac-industry" class="mf-sel" style="height:40px">
                             <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select Industry Type</option>
                             @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
@@ -522,7 +522,7 @@
                         <div id="err-industry" class="ac-err"></div>
                     </div>
                     <div class="mf-field" style="margin:0">
-                        <label class="mf-label">Entity Type</label>
+                        <label class="mf-label">Entity Type<span class="help-tip" data-tip="Select the company's legal structure.">i</span></label>
                         <select name="entity_type" class="mf-sel" style="height:40px">
                             <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select Entity Type</option>
                             @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)
@@ -615,7 +615,7 @@
     <div class="modal-box" style="width:640px;max-height:90vh;overflow-y:auto;padding-bottom:0">
         <button class="modal-close" onclick="closeAddCompanyModal()">&times;</button>
         <div class="modal-title">Add New Company</div>
-        <div class="modal-sub">Enter the details for the new company you want to add.</div>
+        <div class="modal-sub">Add a company and assign it to a client.</div>
         @if($errors->any() && old('_form_source') === 'add_company')
         <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:10px 13px;margin:12px 0">
             @foreach($errors->all() as $error)
@@ -654,19 +654,19 @@
                 {{-- New admin panel --}}
                 <div id="modal-panel-admin-new">
                     <div class="mf-field">
-                        <label class="mf-label">Full Name <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Full Name <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Enter the client's full name.">i</span></label>
                         <input type="text" name="admin_name" id="modal-co-admin-name" class="mf-inp"
                                placeholder="Jane Smith" value="{{ old('admin_name') }}" maxlength="100">
                         <div id="modal-err-co-admin-name" class="co-err"></div>
                     </div>
                     <div class="mf-field">
-                        <label class="mf-label">Email ID <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Email ID <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Enter a valid email address.">i</span></label>
                         <input type="email" name="admin_email" id="modal-co-admin-email" class="mf-inp"
                                placeholder="jane@acme.com" value="{{ old('admin_email') }}" maxlength="100">
                         <div id="modal-err-co-admin-email" class="co-err"></div>
                     </div>
                     <div class="mf-field">
-                        <label class="mf-label">Phone Number <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Phone Number <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Enter a 10-digit contact number.">i</span></label>
                         <input type="text" name="admin_phone" id="modal-co-admin-phone" class="mf-inp"
                                placeholder="10-digit number" value="{{ old('admin_phone') }}" maxlength="10" inputmode="numeric">
                         <div id="modal-err-co-admin-phone" class="co-err"></div>
@@ -682,7 +682,7 @@
                     </div>
                     @else
                     <div class="mf-field">
-                        <label class="mf-label">Select Client <span style="color:var(--red)">*</span></label>
+                        <label class="mf-label">Select Client <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Choose the client for this company.">i</span></label>
                         <select name="existing_client_id" id="modal-existing-client-id" class="mf-sel" style="height:38px"
                                 onchange="modalOnExistingClientChange(this)">
                             <option value="">Select client</option>
@@ -709,14 +709,14 @@
                     Company Information
                 </div>
                 <div class="mf-field">
-                    <label class="mf-label">Company Name <span style="color:var(--red)">*</span></label>
+                    <label class="mf-label">Company Name <span style="color:var(--red)">*</span><span class="help-tip" data-tip="Enter the company name.">i</span></label>
                     <input type="text" name="company_name" id="modal-company-name" class="mf-inp"
                            placeholder="Acme Inc." value="{{ old('company_name') }}" maxlength="100">
                     <div id="modal-err-co-name" class="co-err"></div>
                 </div>
                 <div class="form-2col">
                     <div class="mf-field">
-                        <label class="mf-label">Industry Type</label>
+                        <label class="mf-label">Industry Type<span class="help-tip" data-tip="Select the company's industry.">i</span></label>
                         <select name="industry_type" id="modal-co-industry" class="mf-sel" style="height:38px">
                             <option value="" {{ old('industry_type') ? '' : 'selected' }}>Select Industry Type</option>
                             @foreach(['Technology','Healthcare','Finance','Manufacturing','Retail','Real Estate','Construction','Transportation','Energy','Agriculture','Education','Consulting','Legal Services','Entertainment','Automotive','Other'] as $ind)
@@ -726,7 +726,7 @@
                         <div id="modal-err-co-industry" class="co-err"></div>
                     </div>
                     <div class="mf-field">
-                        <label class="mf-label">Entity Type</label>
+                        <label class="mf-label">Entity Type<span class="help-tip" data-tip="Select the entity type.">i</span></label>
                         <select name="entity_type" id="modal-co-entity" class="mf-sel" style="height:38px">
                             <option value="" {{ old('entity_type') ? '' : 'selected' }}>Select Entity Type</option>
                             @foreach(['LLC','C-Corporation','S-Corporation','Sole Proprietorship','Partnership','LLP','Non-Profit','Trust','Other'] as $ent)

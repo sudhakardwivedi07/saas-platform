@@ -87,7 +87,7 @@ class InsightsController extends AccountBaseController
             })
             ->orderByDesc('created_at')
             ->get()
-            ->groupBy(fn($r) => $r->report_name . '||' . $r->company_id)
+            ->groupBy(fn($r) => $r->parent_report_id ?? $r->id)
             ->map(fn($group) => $group->sortByDesc('version')->first())
             ->values();
 

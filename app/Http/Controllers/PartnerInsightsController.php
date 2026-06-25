@@ -1281,13 +1281,20 @@ class PartnerInsightsController extends AccountBaseController
 
     private function applyPdfAmountAlignment(string $html): string
     {
-        return preg_replace_callback('/<td([^>]*)>(.*?)<\/td>/is', function ($m) {
+        if (empty($html)) return $html;
+        $result = preg_replace_callback('/<td([^>]*)>(.*?)<\/td>/is', function ($m) {
             $text = trim(strip_tags($m[2]));
-            if (preg_match('/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/', $text)) {
-                return '<td' . $m[1] . ' style="text-align:right;">' . $m[2] . '</td>';
+            // Matches: $15,200.00 | $-399.00 | -$399.00 | 97.3% | 0.80 | (3,300.00) | ($15,200.00)
+            if (preg_match('/^\s*\(?[\$£€]?[+\-]?[\d][\d,\.]*[%KMBkmb]?\)?\s*$/', $text)) {
+                $attrs = rtrim($m[1]);
+                if (!preg_match('/\balign\s*=/i', $attrs)) {
+                    $attrs .= ' align="right"';
+                }
+                return '<td' . $attrs . '>' . $m[2] . '</td>';
             }
             return $m[0];
         }, $html);
+        return $result ?? $html;
     }
 
     // ── Share insight (send PDF to client via email) ──────────────────────────

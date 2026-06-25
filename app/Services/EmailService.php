@@ -240,6 +240,65 @@ HTML;
 
         if (!$setting) return;
 
+        $this->applySmtpSetting($setting);
+    }
+
+    /**
+     * Configure Laravel's mailer at runtime for per-tenant SMTP.
+     *
+     * Resolution order:
+     *   1. Company-specific SMTP (company_id = $companyId)
+     *   2. Parent firm's SMTP — for client companies whose created_by points to a firm
+     *   3. Global SuperAdmin SMTP (company_id IS NULL)
+     */
+    private function configureMailer(?int $companyId): void
+    {
+        $setting = $this->resolveSmtpSetting($companyId);
+
+        if (!$setting) return;
+
+        $this->applySmtpSetting($setting);
+    }
+
+    /**
+     * Walk the company hierarchy to find the best active SMTP setting.
+     */
+    private function resolveSmtpSetting(?int $companyId): ?\App\Models\EmailSmtpSetting
+    {
+        if ($companyId) {
+            // Direct company SMTP
+            $setting = \App\Models\EmailSmtpSetting::where('company_id', $companyId)
+                ->where('is_active', true)
+                ->first();
+            if ($setting) return $setting;
+
+            // Walk up to parent firm for client companies.
+            // Client companies have created_by = firm's company_id (an integer that is a valid company).
+            // Firm companies have created_by = superadmin user_id (not a company id).
+            $company = \App\Models\Company::find($companyId);
+            if ($company && $company->created_by) {
+                $parentExists = \App\Models\Company::where('id', $company->created_by)->exists();
+                if ($parentExists) {
+                    $setting = \App\Models\EmailSmtpSetting::where('company_id', $company->created_by)
+                        ->where('is_active', true)
+                        ->first();
+                    if ($setting) return $setting;
+                }
+            }
+        }
+
+        // Global SuperAdmin SMTP fallback
+        return \App\Models\EmailSmtpSetting::whereNull('company_id')
+            ->where('is_active', true)
+            ->first();
+    }
+
+    /**
+     * Apply an SMTP setting to Laravel's runtime mail config.
+     * Handles smtp driver and sendgrid (via SMTP relay).
+     */
+    private function applySmtpSetting(\App\Models\EmailSmtpSetting $setting): void
+    {
         if ($setting->driver === 'smtp') {
             Config::set('mail.default', 'smtp');
             Config::set('mail.mailers.smtp', [
@@ -251,39 +310,17 @@ HTML;
                 'password'   => $setting->password,
             ]);
             app('mail.manager')->purge('smtp');
-        }
-
-        if ($setting->from_email) {
-            Config::set('mail.from.address', $setting->from_email);
-            Config::set('mail.from.name', $setting->from_name ?? config('app.name'));
-        }
-    }
-
-    /**
-     * Configure Laravel's mailer at runtime for per-tenant SMTP.
-     */
-    private function configureMailer(?int $companyId): void
-    {
-        $setting = \App\Models\EmailSmtpSetting::where(function ($q) use ($companyId) {
-            $q->where('company_id', $companyId)->orWhereNull('company_id');
-        })
-        ->where('is_active', true)
-        ->orderByRaw('company_id IS NULL ASC')
-        ->first();
-
-        if (!$setting) return;
-
-        if ($setting->driver === 'smtp') {
+        } elseif ($setting->driver === 'sendgrid' && $setting->api_key) {
+            // SendGrid via SMTP relay — username is always the literal string "apikey"
             Config::set('mail.default', 'smtp');
             Config::set('mail.mailers.smtp', [
                 'transport'  => 'smtp',
-                'host'       => $setting->host,
-                'port'       => $setting->port,
-                'encryption' => $setting->encryption === 'none' ? null : $setting->encryption,
-                'username'   => $setting->username,
-                'password'   => $setting->password,
+                'host'       => 'smtp.sendgrid.net',
+                'port'       => 587,
+                'encryption' => 'tls',
+                'username'   => 'apikey',
+                'password'   => $setting->api_key,
             ]);
-            // Purge the cached mailer so the next Mail::html() call uses the new credentials.
             app('mail.manager')->purge('smtp');
         }
 

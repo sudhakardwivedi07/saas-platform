@@ -545,7 +545,7 @@ class InsightsController extends AccountBaseController
         $sections = $this->getReportSections($report);
 
         $cleanName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name ?: 'Insight'));
-        $this->pageTitle = 'Preview — ' . $cleanName . ' - Insights Report';
+        $this->pageTitle = 'Preview — ' . $cleanName . ' - Insight Report';
         $this->report    = $report;
         $this->sections  = $sections;
 

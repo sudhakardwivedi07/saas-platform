@@ -292,7 +292,7 @@
                         : ($isProcessing ? 'processing'
                         : ($isFailed ? 'failed'
                         : ($isReady ? $publishSt : 'processing')));
-                    $displayName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) . ' - Insights Report';
+                    $displayName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) . ' - Insight Report';
                 @endphp
                 <tr id="pi-row-{{ $report->id }}"
                     data-search="{{ strtolower($displayName . ' ' . $clientName . ' ' . $companyName) }}"
@@ -904,7 +904,7 @@
         tr.dataset.status    = 'processing';
         tr.dataset.companyId = companyId || '';
         tr.dataset.userId    = userId || '';
-        const rowDisplayName = name ? (name + ' - Insights Report') : 'Generating…';
+        const rowDisplayName = name ? (name + ' - Insight Report') : 'Generating…';
         tr.innerHTML = `
             <td><div class="pi-name-cell">
                 <span class="pi-name-icon"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></span>
@@ -935,7 +935,7 @@
                 const a = document.createElement('a');
                 a.href = viewUrl; a.className = 'pi-name-link';
                 const rawName = nameCell.textContent.trim();
-                a.textContent = rawName.endsWith(' - Insights Report') ? rawName : rawName + ' - Insights Report';
+                a.textContent = rawName.endsWith(' - Insight Report') ? rawName : rawName + ' - Insight Report';
                 nameCell.replaceWith(a);
             }
             const actions = row.querySelector('.pi-actions');

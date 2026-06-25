@@ -258,7 +258,7 @@
     {{-- ── Report Header ──────────────────────────────────────────────────── --}}
     <div class="report-detail-header">
         <div>
-            <h1>{{ trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) }} - Insights Report</h1>
+            <h1>{{ trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) }} - Insight Report</h1>
             <div class="report-meta">
                 <div class="report-meta-item">
                     <i class="fas fa-calendar-alt"></i>

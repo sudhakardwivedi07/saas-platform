@@ -44,6 +44,11 @@
 .rd-publish-badge { padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:6px; }
 .rd-publish-badge.draft     { background:#fef3c7;color:#92400e; }
 .rd-publish-badge.published { background:#d1fae5;color:#065f46; }
+.rd-period-badge { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap; }
+.rd-period-month   { background:#eff6ff;color:#2563eb; }
+.rd-period-quarter { background:#f3e8ff;color:#7c3aed; }
+.rd-period-annual  { background:#fefce8;color:#92400e; }
+.rd-period-range   { background:#f0fdf4;color:#166534; }
 
 /* ── Edit mode toast ─────────────────────────────────────────── */
 .rd-edit-toast { position:fixed;top:80px;right:24px;background:#10b981;color:#fff;padding:10px 18px;border-radius:8px;font-size:13.5px;font-weight:500;display:none;align-items:center;gap:8px;z-index:9000;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:toastIn .3s ease; }
@@ -189,6 +194,17 @@
     </div>
 
     {{-- Header --}}
+    @php
+        $rdPStart = $report->report_start_date;
+        $rdPEnd   = $report->report_end_date;
+        if ($rdPStart && $rdPEnd) {
+            $rdMonths = ($rdPEnd->year - $rdPStart->year) * 12 + ($rdPEnd->month - $rdPStart->month) + 1;
+            if ($rdMonths >= 12)      { $rdPeriodLabel = $rdPEnd->format('Y') . ' (Annual)'; $rdPeriodType = 'annual'; }
+            elseif ($rdMonths === 3)  { $rdPeriodLabel = 'Q' . (int)ceil($rdPStart->month / 3) . ' ' . $rdPStart->format('Y'); $rdPeriodType = 'quarter'; }
+            elseif ($rdMonths === 1)  { $rdPeriodLabel = $rdPStart->format('M Y'); $rdPeriodType = 'month'; }
+            else                     { $rdPeriodLabel = $rdPStart->format('M Y') . ' – ' . $rdPEnd->format('M Y'); $rdPeriodType = 'range'; }
+        } else { $rdPeriodLabel = null; $rdPeriodType = 'none'; }
+    @endphp
     <div class="rd-header">
         <div class="rd-header-left">
             <h1>{{ trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) }} - Insight Report</h1>
@@ -197,6 +213,12 @@
                     <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#94a3b8"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     <span>{{ $report->created_at->format(active_date_format() . ', g:i A') }}</span>
                 </div>
+                @if($rdPeriodLabel)
+                <div class="rd-meta-item">
+                    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#94a3b8"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/><circle cx="12" cy="16" r="2" fill="currentColor" stroke="none"/></svg>
+                    <span class="rd-period-badge rd-period-{{ $rdPeriodType }}">{{ $rdPeriodLabel }}</span>
+                </div>
+                @endif
                 <div class="rd-meta-item">
                     <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:#94a3b8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
                     <span>{{ $report->formatted_file_size }}</span>

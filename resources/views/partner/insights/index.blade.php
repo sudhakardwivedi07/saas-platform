@@ -306,10 +306,10 @@
                     $pEnd   = $report->report_end_date;
                     if ($pStart && $pEnd) {
                         $monthsSpanned = ($pEnd->year - $pStart->year) * 12 + ($pEnd->month - $pStart->month) + 1;
-                        if ($monthsSpanned >= 12) {
-                            $periodLabel = $pEnd->format('Y') . ' (Annual)';
+                        if ($pStart->month === 1 && $pEnd->month === 12 && $pStart->year === $pEnd->year) {
+                            $periodLabel = $pStart->format('Y') . ' (Annual)';
                             $periodType  = 'annual';
-                        } elseif ($monthsSpanned === 3) {
+                        } elseif ($monthsSpanned === 3 && in_array($pStart->month, [1, 4, 7, 10])) {
                             $periodLabel = 'Q' . (int) ceil($pStart->month / 3) . ' ' . $pStart->format('Y');
                             $periodType  = 'quarter';
                         } elseif ($monthsSpanned === 1) {

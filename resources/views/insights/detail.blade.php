@@ -179,7 +179,7 @@
 /* Plain-text subheadings before bullet lists */
 .insight-slider-content .insight-subheading { font-weight: 700; font-size: 15.5px; color: #1a202c; margin: 14px 0 4px; padding-bottom: 5px; border-bottom: 2px solid #e8eef5; }
 .insight-slider-content h3,
-.insight-slider-content h4 { color: #1559a6; margin: 14px 0 4px; font-weight: 700; font-size: 15.5px; }
+.insight-slider-content h4 { color: var(--blue); margin: 14px 0 4px; font-weight: 700; font-size: 15.5px; }
 .insight-slider-content .table-responsive { overflow-x: auto; margin: 6px 0 10px; }
 .insight-slider-content table.insight-table {
     width: 100%; border-collapse: collapse; margin: 0;
@@ -526,8 +526,17 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
         document.getElementById('insightAccordionContentShow').innerHTML = html;
         document.getElementById('insightAccordionContentShow').style.display = '';
 
-        document.querySelectorAll('.insight-table td').forEach(function(td) {
-            if (/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(td.textContent.trim())) td.style.textAlign = 'right';
+        document.querySelectorAll('.insight-table').forEach(function(table) {
+            var rightCols = new Set();
+            table.querySelectorAll('tbody td').forEach(function(td) {
+                if (/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(td.textContent.trim())) {
+                    td.style.textAlign = 'right';
+                    rightCols.add(td.cellIndex);
+                }
+            });
+            table.querySelectorAll('thead th').forEach(function(th) {
+                if (rightCols.has(th.cellIndex)) th.style.textAlign = 'right';
+            });
         });
 
         // Fix stray lone-dash paragraphs in pre-saved HTML → proper list items
@@ -765,9 +774,14 @@ const IMP_PARAM = '{{ isset($__imp) ? "?_imp=" . $__imp["token"] : "" }}';
         return text.replace(/(\|.+\|\n\|[\s\-\|:]+\|\n(?:\|.+\|\n?)+)/g, match => {
             const lines = match.trim().split('\n');
             if (lines.length < 2) return match;
-            let html = '<div class="table-responsive"><table class="insight-table">\n<thead><tr>';
             const headerCells = lines[0].split('|').map(c => c.trim()).filter(c => c);
-            headerCells.forEach(c => html += `<th>${c}</th>`);
+            const colAligns = new Array(headerCells.length).fill('left');
+            for (let i = 2; i < lines.length; i++) {
+                const cells = lines[i].split('|').map(c => c.trim()).filter(c => c);
+                cells.forEach((cell, ci) => { if (ci < colAligns.length && /^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(cell)) colAligns[ci] = 'right'; });
+            }
+            let html = '<div class="table-responsive"><table class="insight-table">\n<thead><tr>';
+            headerCells.forEach((c, ci) => html += `<th style="text-align:${colAligns[ci]};">${c}</th>`);
             html += '</tr></thead>\n<tbody>';
             for (let i = 2; i < lines.length; i++) {
                 const row = lines[i];

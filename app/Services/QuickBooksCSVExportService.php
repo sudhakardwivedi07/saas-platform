@@ -953,14 +953,25 @@ class QuickBooksCSVExportService
             self::extractCashFlowValues($reportData['Rows']['Row'], $monthlyData, $monthLabels);
         }
 
+        // Seed the running total with QB's beginning-of-period cash (first month's beginning_cash)
+        // if QB returned it; otherwise start from 0.
+        $prevCash = 0;
+        foreach ($monthlyData as $firstRow) {
+            if (!empty($firstRow['beginning_cash'])) {
+                $prevCash = $firstRow['beginning_cash'];
+            }
+            break;
+        }
+
+        // Accumulate ending cash as a running total month-over-month.
+        // QB's multi-month CashFlow report does not supply a beginning_cash per-column,
+        // so we cannot derive each month's ending cash independently — the running total is correct.
         foreach ($monthlyData as &$row) {
             if ($row['net_change'] == 0) {
                 $row['net_change'] = $row['operating'] + $row['investing'] + $row['financing'];
             }
-            // Use QB-provided ending cash if returned; otherwise derive from beginning + net change.
-            if ($row['ending_cash'] == 0) {
-                $row['ending_cash'] = ($row['beginning_cash'] ?? 0) + $row['net_change'];
-            }
+            $row['ending_cash'] = $prevCash + $row['net_change'];
+            $prevCash           = $row['ending_cash'];
         }
         unset($row);
 

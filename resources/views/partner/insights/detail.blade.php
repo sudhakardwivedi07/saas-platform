@@ -192,7 +192,6 @@
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
         Edit mode on — use the toolbar to format selected text.
     </div>
-
     {{-- Header --}}
     @php
         $rdPStart = $report->report_start_date;

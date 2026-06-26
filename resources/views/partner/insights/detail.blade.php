@@ -199,8 +199,8 @@
         $rdPEnd   = $report->report_end_date;
         if ($rdPStart && $rdPEnd) {
             $rdMonths = ($rdPEnd->year - $rdPStart->year) * 12 + ($rdPEnd->month - $rdPStart->month) + 1;
-            if ($rdMonths >= 12)      { $rdPeriodLabel = $rdPEnd->format('Y') . ' (Annual)'; $rdPeriodType = 'annual'; }
-            elseif ($rdMonths === 3)  { $rdPeriodLabel = 'Q' . (int)ceil($rdPStart->month / 3) . ' ' . $rdPStart->format('Y'); $rdPeriodType = 'quarter'; }
+            if ($rdPStart->month === 1 && $rdPEnd->month === 12 && $rdPStart->year === $rdPEnd->year) { $rdPeriodLabel = $rdPStart->format('Y') . ' (Annual)'; $rdPeriodType = 'annual'; }
+            elseif ($rdMonths === 3 && in_array($rdPStart->month, [1, 4, 7, 10]))  { $rdPeriodLabel = 'Q' . (int)ceil($rdPStart->month / 3) . ' ' . $rdPStart->format('Y'); $rdPeriodType = 'quarter'; }
             elseif ($rdMonths === 1)  { $rdPeriodLabel = $rdPStart->format('M Y'); $rdPeriodType = 'month'; }
             else                     { $rdPeriodLabel = $rdPStart->format('M Y') . ' – ' . $rdPEnd->format('M Y'); $rdPeriodType = 'range'; }
         } else { $rdPeriodLabel = null; $rdPeriodType = 'none'; }

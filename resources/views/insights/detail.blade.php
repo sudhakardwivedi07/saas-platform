@@ -266,8 +266,8 @@
         $ciPEnd   = $report->report_end_date;
         if ($ciPStart && $ciPEnd) {
             $ciMonths = ($ciPEnd->year - $ciPStart->year) * 12 + ($ciPEnd->month - $ciPStart->month) + 1;
-            if ($ciMonths >= 12)      { $ciPeriodLabel = $ciPEnd->format('Y') . ' (Annual)'; $ciPeriodType = 'annual'; }
-            elseif ($ciMonths === 3)  { $ciPeriodLabel = 'Q' . (int)ceil($ciPStart->month / 3) . ' ' . $ciPStart->format('Y'); $ciPeriodType = 'quarter'; }
+            if ($ciPStart->month === 1 && $ciPEnd->month === 12 && $ciPStart->year === $ciPEnd->year) { $ciPeriodLabel = $ciPStart->format('Y') . ' (Annual)'; $ciPeriodType = 'annual'; }
+            elseif ($ciMonths === 3 && in_array($ciPStart->month, [1, 4, 7, 10]))  { $ciPeriodLabel = 'Q' . (int)ceil($ciPStart->month / 3) . ' ' . $ciPStart->format('Y'); $ciPeriodType = 'quarter'; }
             elseif ($ciMonths === 1)  { $ciPeriodLabel = $ciPStart->format('M Y'); $ciPeriodType = 'month'; }
             else                     { $ciPeriodLabel = $ciPStart->format('M Y') . ' – ' . $ciPEnd->format('M Y'); $ciPeriodType = 'range'; }
         } else { $ciPeriodLabel = null; $ciPeriodType = 'none'; }

@@ -836,7 +836,7 @@ function etUpdateRow(t) {
     <div class="acc-card">
         <div class="acc-section-title">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:6px"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-            QuickBooks Integration Settings
+            QuickBooks Integration Settings <span class="help-tip" data-tip="Connect your QuickBooks account.">i</span>
         </div>
 
         <form id="qb-settings-form" onsubmit="submitQbSettings(event)">
@@ -1064,7 +1064,7 @@ function etUpdateRow(t) {
                     <th style="text-align:center">Insights Used</th>
                     <th style="text-align:center">Insights Remaining</th>
                     <th style="text-align:center">Status</th>
-                    <th style="text-align:right;width:120px">Action</th>
+                    <th style="text-align:right;width:120px">Action <span class="help-tip" data-tip="Set company-wise insight limits.">i</span></th>
                     <th style="display:none">sort-name</th>
                 </tr>
             </thead>

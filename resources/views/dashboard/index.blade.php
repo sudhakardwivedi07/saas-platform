@@ -510,13 +510,13 @@
             Last updated: {{ now()->format(active_date_format() . ' · g:i A') }}
         </span>
         @if($modalClients->isNotEmpty())
-        <button class="btn btn-primary btn-sm" onclick="openViewClientModal()" style="display:inline-flex;align-items:center;gap:6px">
+        <button class="btn btn-primary btn-sm" onclick="openViewClientModal()" style="display:inline-flex;align-items:center;gap:6px" data-tip="View the platform from the client's perspective.">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
             View as Client
         </button>
         @endif
         @if($canAddClient)
-        <a href="{{ route('clients.index') }}?add=1" class="btn btn-primary btn-sm">
+        <a href="{{ route('clients.index') }}?add=1" class="btn btn-primary btn-sm" data-tip="Add a new client and assign companies for insight generation.">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Add Client
         </a>

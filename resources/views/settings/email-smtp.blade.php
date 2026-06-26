@@ -8,7 +8,7 @@
     @csrf
     <div class="card">
         <div class="card-header">
-            <h3>Outgoing Email Configuration</h3>
+            <h3>Outgoing Email Configuration <span class="help-tip" data-tip="Enter SMTP details to enable email sending.">i</span></h3>
             <p class="text-xs text-gray-400">Overrides platform defaults for emails sent from your account.</p>
         </div>
         <div class="card-body space-y-5">

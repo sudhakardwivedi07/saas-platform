@@ -474,6 +474,11 @@ div.dataTables_wrapper .dt-footer div.dataTables_paginate{float:none!important;p
     .swal-toast-popup .swal2-title { font-size: 13.5px !important; font-weight: 500 !important; margin: 0 !important; padding: 0 !important; }
     .swal-toast-popup .swal2-icon { width: 22px !important; height: 22px !important; margin: 0 8px 0 0 !important; border-width: 2px !important; }
     .swal-toast-popup .swal2-icon .swal2-icon-content { font-size: 13px !important; }
+    /* ── Help Tips ─────────────────────────────────────── */
+    .help-tip{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#e2e8f0;color:#64748b;font-size:9.5px;font-weight:700;font-style:italic;cursor:default;margin-left:5px;vertical-align:middle;position:relative;flex-shrink:0;line-height:1;font-family:Georgia,serif;letter-spacing:-.3px}
+    .help-tip::after,.btn[data-tip]::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;font-size:11.5px;font-weight:400;line-height:1.45;padding:6px 10px;border-radius:6px;width:max-content;max-width:240px;white-space:normal;pointer-events:none;opacity:0;transition:opacity .15s;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.2);font-style:normal;font-family:inherit}
+    .help-tip:hover::after,.btn[data-tip]:hover::after{opacity:1}
+    .btn[data-tip]{position:relative;overflow:visible}
     </style>
 </head>
 <body>

@@ -245,8 +245,17 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.ipv-section-content table td').forEach(function(td) {
-        if (/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(td.textContent.trim())) td.style.textAlign = 'right';
+    document.querySelectorAll('.ipv-section-content table').forEach(function(table) {
+        var rightCols = new Set();
+        table.querySelectorAll('tbody td').forEach(function(td) {
+            if (/^\s*[\$£€]?[\d,]+(\.\d+)?\s*(%|[a-zA-Z]*)\s*$/.test(td.textContent.trim())) {
+                td.style.textAlign = 'right';
+                rightCols.add(td.cellIndex);
+            }
+        });
+        table.querySelectorAll('thead th').forEach(function(th) {
+            if (rightCols.has(th.cellIndex)) th.style.textAlign = 'right';
+        });
     });
 });
 </script>

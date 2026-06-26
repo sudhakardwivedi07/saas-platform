@@ -9,6 +9,7 @@ use App\Models\EmailSmtpSetting;
 use App\Models\EmailTemplate;
 use App\Models\EventLog;
 use App\Models\CompanyQuickbooksSetting;
+use App\Models\CompareReport;
 use App\Models\QuickBooksConnection;
 use App\Models\Report;
 use App\Models\ReportAttachment;
@@ -74,6 +75,12 @@ class PartnerInsightsController extends AccountBaseController
             ? round($cycleUsed / $clientCount, 2)
             : 0;
         $this->limitReached      = $monthlyLimit > 0 && $cycleUsed >= $monthlyLimit;
+
+        // Load comparison reports for the Comparisons tab
+        $this->compareReports = CompareReport::with(['company', 'user'])
+            ->whereIn('company_id', $subCompanyIds)
+            ->orderByDesc('created_at')
+            ->get();
 
         return view('partner.insights.index', $this->data);
     }
@@ -946,6 +953,474 @@ class PartnerInsightsController extends AccountBaseController
         $report->delete();
 
         return response()->json(['status' => 'success', 'message' => 'Insight deleted.']);
+    }
+
+    // ── AJAX: ready reports for a specific company (for Compare modal) ────────
+
+    public function getCompanyReports(int $companyId)
+    {
+        if (!$this->allClientCompanyIds()->contains($companyId)) {
+            abort(403);
+        }
+
+        $reports = Report::where('company_id', $companyId)
+            ->where('is_firm_report', false)
+            ->whereNull('parent_report_id')
+            ->where('status', 'Analyzed')
+            ->whereNotNull('insight_json_data')
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn($r) => [
+                'id'     => $r->id,
+                'name'   => trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $r->report_name)) . ' - Insight Report',
+                'period' => $r->created_at->format('M j, Y'),
+            ]);
+
+        return response()->json(['status' => 'success', 'reports' => $reports]);
+    }
+
+    // ── Compare Insights ──────────────────────────────────────────────────────
+
+    public function storeComparison(Request $request)
+    {
+        $request->validate([
+            'company_id'  => 'required|integer|exists:companies,id',
+            'report_id_a' => 'required|integer|exists:reports,id',
+            'report_id_b' => 'required|integer|different:report_id_a|exists:reports,id',
+        ]);
+
+        $companyId = (int) $request->company_id;
+        if (!$this->allClientCompanyIds()->contains($companyId)) {
+            abort(403);
+        }
+
+        $reportA = Report::where('id', $request->report_id_a)
+            ->where('company_id', $companyId)
+            ->where('status', 'Analyzed')
+            ->firstOrFail();
+
+        $reportB = Report::where('id', $request->report_id_b)
+            ->where('company_id', $companyId)
+            ->where('status', 'Analyzed')
+            ->firstOrFail();
+
+        $kpisA = $this->extractKpis($reportA);
+        $kpisB = $this->extractKpis($reportB);
+
+        $periodA = $reportA->created_at->format('Y-m-d');
+        $periodB = $reportB->created_at->format('Y-m-d');
+
+        $payload = [
+            'periods' => [
+                array_merge(['period' => $periodA], $kpisA),
+                array_merge(['period' => $periodB], $kpisB),
+            ],
+        ];
+
+        $comparisonResult = null;
+        $status = 'completed';
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::timeout(60)
+                ->post(env('REPORT_COMPARATOR_URL'), $payload);
+
+            if ($response->successful()) {
+                $comparisonResult = $response->json();
+            } else {
+                Log::warning('Comparison API error: ' . $response->status() . ' ' . $response->body());
+                $status = 'failed';
+            }
+        } catch (\Throwable $e) {
+            Log::error('Comparison API exception: ' . $e->getMessage());
+            $status = 'failed';
+        }
+
+        $compare = CompareReport::create([
+            'user_id'           => auth()->id(),
+            'company_id'        => $companyId,
+            'report_id_a'       => $reportA->id,
+            'report_id_b'       => $reportB->id,
+            'period_a'          => $reportA->created_at->format('M j, Y'),
+            'period_b'          => $reportB->created_at->format('M j, Y'),
+            'kpi_data_a'        => $kpisA,
+            'kpi_data_b'        => $kpisB,
+            'comparison_result' => $comparisonResult,
+            'status'            => $status,
+        ]);
+
+        $company     = $reportA->company;
+        $companyName = $company?->company_name ?? '—';
+        $clientName  = $reportA->user?->name ?? '—';
+
+        return response()->json([
+            'status'         => 'success',
+            'compare_id'     => $compare->id,
+            'encrypted_id'   => $compare->encrypted_id,
+            'company_name'   => $companyName,
+            'client_name'    => $clientName,
+            'period_a'       => $compare->period_a,
+            'period_b'       => $compare->period_b,
+            'compare_status' => $status,
+            'created_at'     => $compare->created_at->format(active_date_format() . ', g:i A'),
+        ]);
+    }
+
+    // ── View Comparison Report ────────────────────────────────────────────────
+
+    public function viewComparison(string $encryptedId)
+    {
+        $id = CompareReport::decryptId($encryptedId);
+        if (!$id) abort(404);
+
+        $subCompanyIds = $this->allClientCompanyIds();
+
+        $this->compareReport = CompareReport::with(['company', 'user', 'reportA', 'reportB'])
+            ->whereIn('company_id', $subCompanyIds)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $firmId = company()->id;
+        $this->canShareInsight =
+            EmailTemplate::where('company_id', $firmId)
+                         ->where('slug', 'share_insight_with_client')
+                         ->where('is_active', true)
+                         ->exists()
+            &&
+            EmailSmtpSetting::where('company_id', $firmId)
+                             ->where('is_active', true)
+                             ->exists();
+
+        $this->pageTitle = 'Comparison Report';
+
+        return view('partner.insights.compare-view', $this->data);
+    }
+
+    // ── Get Comparison Data (AJAX) ────────────────────────────────────────────
+
+    public function getComparisonData(string $encryptedId)
+    {
+        $id = CompareReport::decryptId($encryptedId);
+        if (!$id) abort(404);
+
+        $subCompanyIds = $this->allClientCompanyIds();
+
+        $compare = CompareReport::whereIn('company_id', $subCompanyIds)
+            ->where('id', $id)
+            ->first();
+
+        if (!$compare) {
+            return response()->json(['status' => 'error', 'message' => 'Comparison not found.'], 404);
+        }
+
+        if (empty($compare->comparison_result)) {
+            return response()->json(['status' => 'error', 'message' => 'No comparison data available yet.'], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data'   => $compare->comparison_result,
+        ]);
+    }
+
+    // ── Delete Comparison ─────────────────────────────────────────────────────
+
+    public function destroyComparison(int $id)
+    {
+        $subCompanyIds = $this->allClientCompanyIds();
+
+        $compare = CompareReport::whereIn('company_id', $subCompanyIds)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        $compare->delete();
+
+        return response()->json(['status' => 'success', 'message' => 'Comparison deleted.']);
+    }
+
+    // ── Preview Comparison (HTML preview page) ────────────────────────────────
+
+    public function previewCompare(string $encryptedId)
+    {
+        $id = CompareReport::decryptId($encryptedId);
+        if (!$id) abort(404);
+
+        $subCompanyIds = $this->allClientCompanyIds();
+        $cr = CompareReport::with(['company', 'user'])
+            ->whereIn('company_id', $subCompanyIds)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        if (empty($cr->comparison_result)) {
+            abort(404, 'No comparison data available.');
+        }
+
+        $sections    = $this->getCompareSections($cr);
+        $companyName = $cr->company?->company_name ?? '—';
+        $crTitle     = $companyName . ' — ' . $cr->period_a . ' vs ' . $cr->period_b;
+
+        $this->pageTitle    = 'Preview — ' . $crTitle;
+        $this->compareReport = $cr;
+        $this->sections     = $sections;
+        $this->crTitle      = $crTitle;
+
+        return view('partner.insights.compare-preview', $this->data);
+    }
+
+    // ── Export Comparison PDF ─────────────────────────────────────────────────
+
+    public function exportCompare(string $encryptedId)
+    {
+        $id = CompareReport::decryptId($encryptedId);
+        if (!$id) abort(404);
+
+        $subCompanyIds = $this->allClientCompanyIds();
+        $cr = CompareReport::with(['company', 'user'])
+            ->whereIn('company_id', $subCompanyIds)
+            ->where('id', $id)
+            ->firstOrFail();
+
+        if (empty($cr->comparison_result)) {
+            abort(404, 'No comparison data available.');
+        }
+
+        $sections = $this->getCompareSections($cr);
+        if (empty($sections)) {
+            abort(404, 'No report content found.');
+        }
+
+        $logoBase64 = '';
+        $branding   = $this->branding;
+        if ($branding?->logo) {
+            $logoPath = Storage::disk('public')->path($branding->logo);
+            if (file_exists($logoPath)) {
+                $mime = mime_content_type($logoPath);
+                if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
+                    $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                } elseif ($mime === 'image/webp') {
+                    if (function_exists('imagecreatefromwebp')) {
+                        $img = @imagecreatefromwebp($logoPath);
+                        if ($img) {
+                            ob_start(); imagepng($img); $pngData = ob_get_clean(); imagedestroy($img);
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($pngData);
+                        }
+                    } elseif (class_exists('Imagick')) {
+                        try {
+                            $im = new \Imagick($logoPath); $im->setImageFormat('png');
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($im->getImageBlob());
+                        } catch (\Exception $e) {}
+                    }
+                } elseif ($mime === 'image/svg+xml') {
+                    if (class_exists('Imagick')) {
+                        try {
+                            $im = new \Imagick(); $im->setBackgroundColor('none');
+                            $im->readImageBlob(file_get_contents($logoPath));
+                            $im->setImageFormat('png');
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($im->getImageBlob());
+                        } catch (\Exception $e) {}
+                    }
+                    if (!$logoBase64) {
+                        $logoBase64 = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath));
+                    }
+                }
+            }
+        }
+
+        $companyName = $cr->company?->company_name ?? '—';
+        $crTitle     = $companyName . ' — ' . $cr->period_a . ' vs ' . $cr->period_b;
+
+        $pdf = app('dompdf.wrapper');
+        $pdf->setOption('enable_php', true);
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isRemoteEnabled', true);
+        $pdf->setOption('defaultFont', 'Arial');
+        $pdf->setOption('fontHeightRatio', 1.1);
+        $pdf->setOption('show_warnings', false);
+
+        $pdf->loadView('partner.insights.compare-pdf', [
+            'sections'    => $sections,
+            'compare'     => $cr,
+            'crTitle'     => $crTitle,
+            'companyName' => $this->companyName,
+            'preparedBy'  => user()?->name ?? $this->companyName,
+            'logoBase64'  => $logoBase64,
+            'reportDate'  => $cr->created_at->format('M d, Y'),
+            'branding'    => $this->branding,
+        ]);
+
+        return $pdf->download(Str::slug($crTitle ?: 'Comparison') . '.pdf');
+    }
+
+    // ── Share Comparison (send PDF via email) ─────────────────────────────────
+
+    public function shareComparison(Request $request, string $encryptedId): \Illuminate\Http\JsonResponse
+    {
+        $request->validate(['recipient_email' => 'required|email']);
+
+        $id = CompareReport::decryptId($encryptedId);
+        if (!$id) abort(404);
+
+        $subCompanyIds = $this->allClientCompanyIds();
+        $cr = CompareReport::with(['company', 'user'])
+            ->whereIn('company_id', $subCompanyIds)
+            ->where('id', $id)
+            ->where('status', 'completed')
+            ->firstOrFail();
+
+        $sections = $this->getCompareSections($cr);
+        if (empty($sections)) {
+            return response()->json(['status' => 'error', 'message' => 'No report content found.'], 422);
+        }
+
+        $logoBase64 = '';
+        if ($this->branding?->logo) {
+            $logoPath = Storage::disk('public')->path($this->branding->logo);
+            if (file_exists($logoPath)) {
+                $mime = mime_content_type($logoPath);
+                if (in_array($mime, ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'])) {
+                    $logoBase64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logoPath));
+                } elseif ($mime === 'image/webp') {
+                    if (function_exists('imagecreatefromwebp')) {
+                        $img = @imagecreatefromwebp($logoPath);
+                        if ($img) {
+                            ob_start(); imagepng($img); $pngData = ob_get_clean(); imagedestroy($img);
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($pngData);
+                        }
+                    } elseif (class_exists('Imagick')) {
+                        try {
+                            $im = new \Imagick($logoPath); $im->setImageFormat('png');
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($im->getImageBlob());
+                        } catch (\Exception $e) {}
+                    }
+                } elseif ($mime === 'image/svg+xml') {
+                    if (class_exists('Imagick')) {
+                        try {
+                            $im = new \Imagick(); $im->setBackgroundColor('none');
+                            $im->readImageBlob(file_get_contents($logoPath));
+                            $im->setImageFormat('png');
+                            $logoBase64 = 'data:image/png;base64,' . base64_encode($im->getImageBlob());
+                        } catch (\Exception $e) {}
+                    }
+                    if (!$logoBase64) {
+                        $logoBase64 = 'data:image/svg+xml;base64,' . base64_encode(file_get_contents($logoPath));
+                    }
+                }
+            }
+        }
+
+        $companyName = $cr->company?->company_name ?? '—';
+        $crTitle     = $companyName . ' — ' . $cr->period_a . ' vs ' . $cr->period_b;
+
+        $pdf = app('dompdf.wrapper');
+        $pdf->setOption('enable_php', true);
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isRemoteEnabled', true);
+        $pdf->setOption('defaultFont', 'Arial');
+        $pdf->setOption('fontHeightRatio', 1.1);
+        $pdf->setOption('show_warnings', false);
+
+        $pdf->loadView('partner.insights.compare-pdf', [
+            'sections'    => $sections,
+            'compare'     => $cr,
+            'crTitle'     => $crTitle,
+            'companyName' => $this->companyName,
+            'preparedBy'  => user()?->name ?? $this->companyName,
+            'logoBase64'  => $logoBase64,
+            'reportDate'  => $cr->created_at->format('M d, Y'),
+            'branding'    => $this->branding,
+        ]);
+
+        $tempDir  = storage_path('app/temp_pdfs');
+        if (!is_dir($tempDir)) mkdir($tempDir, 0755, true);
+        $tempPath = $tempDir . '/' . Str::slug($crTitle ?: 'comparison') . '-' . uniqid() . '.pdf';
+        file_put_contents($tempPath, $pdf->output());
+
+        $clientUser      = $cr->company?->users->first();
+        $clientFirstName = $clientUser ? explode(' ', trim($clientUser->name))[0] : ($companyName);
+
+        app(\App\Services\EmailService::class)->sendFromFirm(
+            firmId:         auth()->user()->company_id,
+            toEmail:        $request->recipient_email,
+            templateSlug:   'share_insight_with_client',
+            placeholders:   [
+                '{{client_name}}'       => $clientFirstName,
+                '{{insight_title}}'     => $crTitle,
+                '{{company_name}}'      => $companyName,
+                '{{client_first_name}}' => $clientFirstName,
+                '{{generated_date}}'    => $cr->created_at->format('M d, Y'),
+                '{{cfo_name}}'          => auth()->user()->name,
+                '{{partner_name}}'      => $this->companyName,
+                '{{firm_name}}'         => $this->companyName,
+                '{{portal_url}}'        => company()?->domainUrlFor('login') ?? url('/login'),
+            ],
+            attachmentPath: $tempPath,
+        );
+
+        return response()->json(['status' => 'success', 'message' => 'Comparison shared successfully.']);
+    }
+
+    // ── Get sections from a CompareReport ─────────────────────────────────────
+
+    private function getCompareSections(CompareReport $cr): array
+    {
+        $data = $cr->comparison_result;
+        if (empty($data)) return [];
+
+        if (is_array($data) && !empty($data['sections'])) {
+            return array_map(fn($s) => [
+                'title'             => $s['title']   ?? '',
+                'formatted_content' => $this->applyPdfAmountAlignment($s['html'] ?? $s['content'] ?? ''),
+            ], $data['sections']);
+        }
+
+        $reportText = '';
+        if (is_string($data)) {
+            $reportText = $data;
+        } elseif (is_array($data)) {
+            if (isset($data['report'])) {
+                $reportText = $data['report'];
+            } else {
+                $longest = '';
+                foreach ($data as $value) {
+                    if (is_string($value) && strlen($value) > strlen($longest)) $longest = $value;
+                }
+                $reportText = $longest;
+            }
+        }
+
+        if (empty($reportText)) return [];
+
+        $sections = $this->parseInsightSectionsForPdf($reportText);
+        foreach ($sections as &$section) {
+            $section['formatted_content'] = $this->formatContentForPdf($section['content']);
+        }
+        return $sections;
+    }
+
+    // ── Extract 12 KPIs from a report's financial_summary ─────────────────────
+
+    private function extractKpis(Report $report): array
+    {
+        $fs  = $report->insight_json_data['financial_summary'] ?? [];
+        $met = $report->insight_json_data['metrics']          ?? [];
+
+        return [
+            'revenue'                => $fs['revenue_annual']                                    ?? null,
+            'net_income'             => $fs['net_income_annual']                                 ?? null,
+            'gross_margin_pct'       => $fs['gross_margin_pct']                                  ?? null,
+            'net_margin_pct'         => $fs['net_margin_pct']                                    ?? null,
+            'current_ratio'          => $fs['current_ratio']                                     ?? null,
+            'quick_ratio'            => $fs['quick_ratio']                                       ?? null,
+            'cash_balance'           => $fs['cash_balance']                                      ?? null,
+            'ar_total'               => $fs['ar_total']                                          ?? null,
+            'ar_overdue'             => $fs['ar_overdue']                                        ?? null,
+            'dso_days'               => $fs['dso_days']                                          ?? null,
+            'ap_total'               => $fs['ap_total']                                          ?? null,
+            'dpo_days'               => $fs['dpo_days']                                          ?? null,
+            'cash_runway_days'       => $fs['cash_runway_days']  ?? $met['cash_runway_days']     ?? null,
+            'working_capital'        => $fs['working_capital']   ?? $met['working_capital']      ?? null,
+            'owners_equity'          => $fs['owners_equity']     ?? $met['owners_equity']        ?? null,
+            'top3_concentration_pct' => $fs['top3_concentration_pct'] ?? $met['top3_concentration_pct'] ?? null,
+        ];
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

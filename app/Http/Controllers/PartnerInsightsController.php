@@ -185,6 +185,8 @@ class PartnerInsightsController extends AccountBaseController
     {
         $request->validate([
             'company_id' => 'required|integer|exists:companies,id',
+            'start_date' => 'nullable|date|before_or_equal:today',
+            'end_date'   => 'nullable|date|before_or_equal:today|after_or_equal:start_date',
         ]);
 
         $companyId = (int) $request->company_id;
@@ -292,14 +294,16 @@ class PartnerInsightsController extends AccountBaseController
             DB::beginTransaction();
             try {
                 $report = Report::create([
-                    'user_id'        => $clientUser->id,
-                    'company_id'     => $companyId,
-                    'is_firm_report' => false,
-                    'publish_status' => 'draft',
-                    'report_name'    => $generatedName,
-                    'upload_date'    => now()->toDateString(),
-                    'total_file_size'=> 0,
-                    'status'         => 'Uploading',
+                    'user_id'           => $clientUser->id,
+                    'company_id'        => $companyId,
+                    'is_firm_report'    => false,
+                    'publish_status'    => 'draft',
+                    'report_name'       => $generatedName,
+                    'upload_date'       => now()->toDateString(),
+                    'report_start_date' => $startDate,
+                    'report_end_date'   => $endDate,
+                    'total_file_size'   => 0,
+                    'status'            => 'Uploading',
                 ]);
 
                 $totalSize = 0;

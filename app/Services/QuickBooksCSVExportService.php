@@ -40,8 +40,8 @@ class QuickBooksCSVExportService
 
         try {
             $files['balance_sheet']  = self::generateBalanceSheetCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
-            $files['ar_aging']       = self::generateARAgingCSV($connection, $baseUrl, $basePath, $timestamp);
-            $files['ap_aging']       = self::generateAPAgingCSV($connection, $baseUrl, $basePath, $timestamp);
+            $files['ar_aging']       = self::generateARAgingCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
+            $files['ap_aging']       = self::generateAPAgingCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
             $files['profit_loss']    = self::generateProfitLossCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
             $files['general_ledger'] = self::generateGeneralLedgerCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
             $files['cash_flow']      = self::generateCashFlowCSV($connection, $baseUrl, $startDate, $endDate, $basePath, $timestamp);
@@ -102,12 +102,12 @@ class QuickBooksCSVExportService
     }
 
     protected static function generateARAgingCSV(
-        QuickBooksConnection $connection, string $baseUrl, string $basePath, string $timestamp
+        QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate, string $basePath, string $timestamp
     ): array {
         $filename = 'AR_Aging.csv';
         $filepath = "{$basePath}/{$filename}";
 
-        $arData = self::fetchARAgingData($connection, $baseUrl);
+        $arData = self::fetchARAgingData($connection, $baseUrl, $startDate, $endDate);
 
         $handle = fopen($filepath, 'w');
         fputcsv($handle, ['Customer', 'Current', '1-30', '31-60', '61-90', '>90', 'Total']);
@@ -122,12 +122,12 @@ class QuickBooksCSVExportService
     }
 
     protected static function generateAPAgingCSV(
-        QuickBooksConnection $connection, string $baseUrl, string $basePath, string $timestamp
+        QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate, string $basePath, string $timestamp
     ): array {
         $filename = 'AP_Aging.csv';
         $filepath = "{$basePath}/{$filename}";
 
-        $apData = self::fetchAPAgingData($connection, $baseUrl);
+        $apData = self::fetchAPAgingData($connection, $baseUrl, $startDate, $endDate);
 
         $handle = fopen($filepath, 'w');
         fputcsv($handle, ['Vendor', 'Current', '1-30', '31-60', '61-90', '>90', 'Total']);
@@ -211,32 +211,167 @@ class QuickBooksCSVExportService
 
     // ── QB API data fetchers ──────────────────────────────────────────────────
 
-    protected static function fetchARAgingData(QuickBooksConnection $connection, string $baseUrl): array
+    /**
+     * Fetch AR aging by querying Invoices within the selected date range (by TxnDate),
+     * then calculate aging buckets ourselves relative to $endDate.
+     * This ensures only period-relevant invoices appear, correctly distributed across buckets.
+     */
+    protected static function fetchARAgingData(QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate): array
     {
-        $url      = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/AgedReceivables?report_date=" . date('Y-m-d');
-        $response = self::curlGet($url, $connection->access_token);
+        $endTs   = strtotime($endDate);
+        $result  = [];
+        $offset  = 1;
+        $perPage = 100;
 
-        if ($response['code'] !== 200 || empty($response['body'])) {
-            Log::warning('AR Aging API failed', ['code' => $response['code']]);
-            return [];
+        do {
+            $sql  = "SELECT * FROM Invoice WHERE TxnDate >= '{$startDate}' AND TxnDate <= '{$endDate}' STARTPOSITION {$offset} MAXRESULTS {$perPage}";
+            $url  = "{$baseUrl}/v3/company/{$connection->realm_id}/query?" . http_build_query(['query' => $sql]);
+            $resp = self::curlGet($url, $connection->access_token);
+
+            if ($resp['code'] !== 200 || empty($resp['body'])) break;
+
+            $body     = json_decode($resp['body'], true);
+            $invoices = $body['QueryResponse']['Invoice'] ?? [];
+            $fetched  = count($invoices);
+
+            foreach ($invoices as $inv) {
+                $customer = $inv['CustomerRef']['name'] ?? 'Unknown';
+
+                // Always register the customer so they appear even if fully paid
+                if (!isset($result[$customer])) {
+                    $result[$customer] = ['customer' => $customer, 'current' => 0.0, '1_30' => 0.0, '31_60' => 0.0, '61_90' => 0.0, 'over_90' => 0.0, 'total' => 0.0];
+                }
+
+                $balance = round((float) ($inv['Balance'] ?? 0), 2);
+                if ($balance <= 0) continue; // registered but nothing to add to buckets
+
+                $dueDate     = $inv['DueDate'] ?? $inv['TxnDate'] ?? $endDate;
+                $daysOverdue = (int) floor(($endTs - strtotime($dueDate)) / 86400);
+
+                $result[$customer]['total'] += $balance;
+                if ($daysOverdue <= 0)      $result[$customer]['current'] += $balance;
+                elseif ($daysOverdue <= 30) $result[$customer]['1_30']    += $balance;
+                elseif ($daysOverdue <= 60) $result[$customer]['31_60']   += $balance;
+                elseif ($daysOverdue <= 90) $result[$customer]['61_90']   += $balance;
+                else                        $result[$customer]['over_90'] += $balance;
+            }
+
+            $offset += $fetched;
+        } while ($fetched === $perPage);
+
+        // Fallback: no invoices in the selected period → use AgedReceivables report as-of endDate
+        if (empty($result)) {
+            Log::info('AR Aging: no invoices in range, falling back to AgedReceivables report', ['range' => "{$startDate} to {$endDate}"]);
+            return self::fetchARAgingFromReport($connection, $baseUrl, $startDate, $endDate);
         }
 
-        $data = json_decode($response['body'], true);
-        return isset($data['Rows']['Row']) ? self::parseAgingRows($data['Rows']['Row'], 'customer') : [];
+        Log::info('AR Aging fetched via Invoice query', ['records' => count($result), 'range' => "{$startDate} to {$endDate}"]);
+        return array_values($result);
     }
 
-    protected static function fetchAPAgingData(QuickBooksConnection $connection, string $baseUrl): array
+    protected static function fetchARAgingFromReport(QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate): array
     {
-        $url      = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/AgedPayables?report_date=" . date('Y-m-d');
-        $response = self::curlGet($url, $connection->access_token);
+        $url  = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/AgedReceivables?report_date={$endDate}";
+        $resp = self::curlGet($url, $connection->access_token);
+        if ($resp['code'] !== 200 || empty($resp['body'])) return [];
+        $data = json_decode($resp['body'], true);
+        $rows = isset($data['Rows']['Row']) ? self::parseAgingRows($data['Rows']['Row'], 'customer') : [];
+        return self::applyPeriodConstraint($rows, $startDate, $endDate);
+    }
 
-        if ($response['code'] !== 200 || empty($response['body'])) {
-            Log::warning('AP Aging API failed', ['code' => $response['code']]);
-            return [];
+    /**
+     * Fetch AP aging by querying Bills within the selected date range (by TxnDate),
+     * then calculate aging buckets ourselves relative to $endDate.
+     * Falls back to AgedPayables report if no bills exist in the period.
+     */
+    protected static function fetchAPAgingData(QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate): array
+    {
+        $endTs   = strtotime($endDate);
+        $result  = [];
+        $offset  = 1;
+        $perPage = 100;
+
+        do {
+            $sql  = "SELECT * FROM Bill WHERE TxnDate >= '{$startDate}' AND TxnDate <= '{$endDate}' STARTPOSITION {$offset} MAXRESULTS {$perPage}";
+            $url  = "{$baseUrl}/v3/company/{$connection->realm_id}/query?" . http_build_query(['query' => $sql]);
+            $resp = self::curlGet($url, $connection->access_token);
+
+            if ($resp['code'] !== 200 || empty($resp['body'])) break;
+
+            $body    = json_decode($resp['body'], true);
+            $bills   = $body['QueryResponse']['Bill'] ?? [];
+            $fetched = count($bills);
+
+            foreach ($bills as $bill) {
+                $vendor = $bill['VendorRef']['name'] ?? 'Unknown';
+
+                // Always register the vendor so they appear even if fully paid
+                if (!isset($result[$vendor])) {
+                    $result[$vendor] = ['vendor' => $vendor, 'current' => 0.0, '1_30' => 0.0, '31_60' => 0.0, '61_90' => 0.0, 'over_90' => 0.0, 'total' => 0.0];
+                }
+
+                $balance = round((float) ($bill['Balance'] ?? 0), 2);
+                if ($balance <= 0) continue; // registered but nothing to add to buckets
+
+                $dueDate     = $bill['DueDate'] ?? $bill['TxnDate'] ?? $endDate;
+                $daysOverdue = (int) floor(($endTs - strtotime($dueDate)) / 86400);
+
+                $result[$vendor]['total'] += $balance;
+                if ($daysOverdue <= 0)      $result[$vendor]['current'] += $balance;
+                elseif ($daysOverdue <= 30) $result[$vendor]['1_30']    += $balance;
+                elseif ($daysOverdue <= 60) $result[$vendor]['31_60']   += $balance;
+                elseif ($daysOverdue <= 90) $result[$vendor]['61_90']   += $balance;
+                else                        $result[$vendor]['over_90'] += $balance;
+            }
+
+            $offset += $fetched;
+        } while ($fetched === $perPage);
+
+        // Fallback: no bills in the selected period → use AgedPayables report as-of endDate
+        if (empty($result)) {
+            Log::info('AP Aging: no bills in range, falling back to AgedPayables report', ['range' => "{$startDate} to {$endDate}"]);
+            return self::fetchAPAgingFromReport($connection, $baseUrl, $startDate, $endDate);
         }
 
-        $data = json_decode($response['body'], true);
-        return isset($data['Rows']['Row']) ? self::parseAgingRows($data['Rows']['Row'], 'vendor') : [];
+        Log::info('AP Aging fetched via Bill query', ['records' => count($result), 'range' => "{$startDate} to {$endDate}"]);
+        return array_values($result);
+    }
+
+    protected static function fetchAPAgingFromReport(QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate): array
+    {
+        $url  = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/AgedPayables?report_date={$endDate}";
+        $resp = self::curlGet($url, $connection->access_token);
+        if ($resp['code'] !== 200 || empty($resp['body'])) return [];
+        $data = json_decode($resp['body'], true);
+        $rows = isset($data['Rows']['Row']) ? self::parseAgingRows($data['Rows']['Row'], 'vendor') : [];
+        return self::applyPeriodConstraint($rows, $startDate, $endDate);
+    }
+
+    /**
+     * Zero out aging buckets whose minimum day threshold exceeds the selected period length.
+     *
+     * Example: "This Quarter" = 86 days → ">90" bucket is impossible for period-specific
+     * transactions, so zero it out. Recalculate total from remaining bucket values.
+     */
+    protected static function applyPeriodConstraint(array $rows, string $startDate, string $endDate): array
+    {
+        $periodDays = (int) floor((strtotime($endDate) - strtotime($startDate)) / 86400);
+
+        foreach ($rows as &$row) {
+            if ($periodDays < 91) { $row['over_90'] = 0.0; }
+            if ($periodDays < 61) { $row['61_90']   = 0.0; }
+            if ($periodDays < 31) { $row['31_60']   = 0.0; }
+            if ($periodDays < 1)  { $row['1_30']    = 0.0; }
+
+            $row['total'] = round(
+                ($row['current'] ?? 0.0) + ($row['1_30'] ?? 0.0) + ($row['31_60'] ?? 0.0) +
+                ($row['61_90'] ?? 0.0)   + ($row['over_90'] ?? 0.0),
+                2
+            );
+        }
+        unset($row);
+
+        return $rows;
     }
 
     /**
@@ -363,30 +498,7 @@ class QuickBooksCSVExportService
 
             // Drill into expense sub-accounts — only for expense sections
             if (($group === 'Expenses' || $group === 'OtherExpenses' || $group === 'OtherExpense') && isset($row['Rows']['Row'])) {
-                foreach ($row['Rows']['Row'] as $sub) {
-                    $name   = strtolower($sub['ColData'][0]['value'] ?? $sub['Header']['ColData'][0]['value'] ?? '');
-                    $subVal = 0;
-                    if (isset($sub['ColData'][1]['value'])) {
-                        $subVal = abs($parseVal($sub['ColData'][1]['value']));
-                    } elseif (isset($sub['Summary']['ColData'])) {
-                        foreach ($sub['Summary']['ColData'] as $sc) {
-                            $sv = str_replace(',', '', $sc['value'] ?? '');
-                            if (is_numeric($sv)) { $subVal = abs((float) $sv); break; }
-                        }
-                    }
-
-                    if (str_contains($name, 'payroll') || str_contains($name, 'salary') || str_contains($name, 'wages')) {
-                        $data['payroll'] += $subVal;
-                    } elseif (str_contains($name, 'market') || str_contains($name, 'advertis')) {
-                        $data['marketing'] += $subVal;
-                    } elseif ($name === 'rent or lease' || $name === 'rent/lease' || $name === 'rent' || $name === 'lease') {
-                        $data['rent'] += $subVal;
-                    } elseif (str_contains($name, 'software') || str_contains($name, 'subscription') || str_contains($name, 'saas')) {
-                        $data['software'] += $subVal;
-                    } elseif (str_contains($name, 'miscellaneous') || $name === 'misc' || str_contains($name, 'other misc')) {
-                        $data['misc'] += $subVal;
-                    }
-                }
+                self::parsePLExpenses($row['Rows']['Row'], $data, $parseVal);
             }
         }
 
@@ -401,12 +513,59 @@ class QuickBooksCSVExportService
         return $data;
     }
 
+    /**
+     * Recursively categorise P&L expense rows into named buckets.
+     * Only leaf nodes (no child rows) contribute values — parent section totals are
+     * skipped to avoid double-counting when accounts are nested multiple levels deep.
+     */
+    protected static function parsePLExpenses(array $rows, array &$data, callable $parseVal): void
+    {
+        foreach ($rows as $sub) {
+            // Section node — recurse into children and skip the section total itself.
+            if (isset($sub['Rows']['Row'])) {
+                self::parsePLExpenses($sub['Rows']['Row'], $data, $parseVal);
+                continue;
+            }
+
+            // Leaf node — extract its value.
+            $name   = strtolower($sub['ColData'][0]['value'] ?? $sub['Header']['ColData'][0]['value'] ?? '');
+            $subVal = 0;
+
+            if (isset($sub['ColData'][1]['value'])) {
+                $subVal = abs($parseVal($sub['ColData'][1]['value']));
+            } elseif (isset($sub['Summary']['ColData'])) {
+                foreach ($sub['Summary']['ColData'] as $sc) {
+                    $sv = str_replace(',', '', $sc['value'] ?? '');
+                    if (is_numeric($sv)) { $subVal = abs((float) $sv); break; }
+                }
+            }
+
+            if ($subVal <= 0) continue;
+
+            if (str_contains($name, 'payroll') || str_contains($name, 'salary') || str_contains($name, 'wages')) {
+                $data['payroll'] += $subVal;
+            } elseif (str_contains($name, 'market') || str_contains($name, 'advertis')) {
+                $data['marketing'] += $subVal;
+            } elseif (str_contains($name, 'rent') || str_contains($name, 'lease')) {
+                $data['rent'] += $subVal;
+            } elseif (str_contains($name, 'software') || str_contains($name, 'subscription') || str_contains($name, 'saas')) {
+                $data['software'] += $subVal;
+            } elseif (str_contains($name, 'miscellaneous') || $name === 'misc' || str_contains($name, 'other misc')) {
+                $data['misc'] += $subVal;
+            }
+        }
+    }
+
     protected static function fetchMonthlyBalanceSheetData(
         QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate
     ): array {
+        // QB omits a month column when end_date falls mid-month — extend to end-of-month so all
+        // months within the selected period are included (QB won't have future-dated transactions).
+        $apiEndDate = Carbon::parse($endDate)->endOfMonth()->format('Y-m-d');
+
         // Try multi-month report first (summarize_column_by=Month)
         $url  = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/BalanceSheet"
-              . "?start_date={$startDate}&end_date={$endDate}&summarize_column_by=Month&accounting_method=Accrual";
+              . "?start_date={$startDate}&end_date={$apiEndDate}&summarize_column_by=Month&accounting_method=Accrual";
         $resp = self::curlGet($url, $connection->access_token);
 
         if ($resp['code'] === 200 && !empty($resp['body'])) {
@@ -638,25 +797,76 @@ class QuickBooksCSVExportService
     protected static function fetchGeneralLedgerData(
         QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate
     ): array {
+        // QB GeneralLedger uses debit_amt / credit_amt (not debit_amount / credit_amount).
+        // Requesting the wrong names causes QB to silently drop those columns, shifting
+        // subsequent indices and returning 0 for all debit/credit values.
         $url  = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/GeneralLedger"
               . "?start_date={$startDate}&end_date={$endDate}"
-              . "&columns=tx_date,txn_type,doc_num,name,memo,account,debit_amount,credit_amount,dept_name"
+              . "&columns=tx_date,txn_type,doc_num,name,memo,account,debit_amt,credit_amt,dept_name"
               . "&sort_order=ascend";
         $resp = self::curlGet($url, $connection->access_token);
 
         if ($resp['code'] !== 200 || empty($resp['body'])) {
             Log::warning('General Ledger API failed', ['code' => $resp['code']]);
-            return [];
+            return self::emptyGLFallback($startDate, $endDate);
         }
 
         $data = json_decode($resp['body'], true);
-        return isset($data['Rows']['Row']) ? self::parseGLRows($data['Rows']['Row']) : [];
+
+        // Build ColType → index map from the response so parsing is column-order-independent.
+        $colMap = [];
+        foreach (($data['Columns']['Column'] ?? []) as $i => $col) {
+            $type = strtolower($col['ColType'] ?? '');
+            if ($type !== '') $colMap[$type] = $i;
+        }
+
+        $glData = isset($data['Rows']['Row']) ? self::parseGLRows($data['Rows']['Row'], $colMap) : [];
+
+        if (empty($glData)) {
+            Log::info('General Ledger: no transactions in range, using empty fallback', ['range' => "{$startDate} to {$endDate}"]);
+            return self::emptyGLFallback($startDate, $endDate);
+        }
+
+        return $glData;
     }
 
-    protected static function parseGLRows(array $rows): array
+    protected static function emptyGLFallback(string $startDate, string $endDate): array
+    {
+        $data = [];
+        $cur  = Carbon::parse($startDate)->startOfMonth();
+        $end  = Carbon::parse($endDate);
+
+        while ($cur->lte($end)) {
+            $data[] = [
+                'date'            => $cur->format('Y-m-d'),
+                'account'         => '',
+                'description'     => '',
+                'debit'           => 0,
+                'credit'          => 0,
+                'vendor_customer' => '',
+                'dept'            => '',
+            ];
+            $cur->addMonth();
+        }
+
+        return $data;
+    }
+
+    protected static function parseGLRows(array $rows, array $colMap = []): array
     {
         $glData         = [];
         $currentAccount = '';
+
+        // Resolve column positions from the API-provided map; fall back to hardcoded defaults.
+        $dateIdx   = $colMap['tx_date']      ?? 0;
+        $typeIdx   = $colMap['txn_type']     ?? 1;
+        $docIdx    = $colMap['doc_num']      ?? 2;
+        $nameIdx   = $colMap['name']         ?? 3;
+        $memoIdx   = $colMap['memo']         ?? 4;
+        $acctIdx   = $colMap['account_name'] ?? $colMap['account'] ?? 5;
+        $debitIdx  = $colMap['debit_amt']    ?? $colMap['debit_amount'] ?? 6;
+        $creditIdx = $colMap['credit_amt']   ?? $colMap['credit_amount'] ?? 7;
+        $deptIdx   = $colMap['dept_name']    ?? $colMap['dept'] ?? 8;
 
         foreach ($rows as $row) {
             if (isset($row['Header']['ColData'])) {
@@ -669,33 +879,33 @@ class QuickBooksCSVExportService
             if (isset($row['Rows']['Row'])) {
                 foreach ($row['Rows']['Row'] as $dataRow) {
                     if (!isset($dataRow['ColData'])) continue;
-                    $c       = $dataRow['ColData'];
-                    $date    = $c[0]['value'] ?? '';
-                    if (empty($date)) continue;
+                    $c    = $dataRow['ColData'];
+                    $date = $c[$dateIdx]['value'] ?? '';
+                    if (empty($date) || strtotime($date) === false) continue;
                     $glData[] = [
                         'date'            => $date,
-                        'account'         => $c[5]['value'] ?? $currentAccount,
-                        'description'     => trim(($c[1]['value'] ?? '') . ' ' . ($c[2]['value'] ?? '') . ' - ' . ($c[4]['value'] ?? '')),
-                        'debit'           => (float) ($c[6]['value'] ?? 0),
-                        'credit'          => (float) ($c[7]['value'] ?? 0),
-                        'vendor_customer' => $c[3]['value'] ?? '',
-                        'dept'            => $c[8]['value'] ?? '',
+                        'account'         => $c[$acctIdx]['value'] ?? $currentAccount,
+                        'description'     => trim(($c[$typeIdx]['value'] ?? '') . ' ' . ($c[$docIdx]['value'] ?? '') . ' - ' . ($c[$memoIdx]['value'] ?? '')),
+                        'debit'           => (float) ($c[$debitIdx]['value'] ?? 0),
+                        'credit'          => (float) ($c[$creditIdx]['value'] ?? 0),
+                        'vendor_customer' => $c[$nameIdx]['value'] ?? '',
+                        'dept'            => $c[$deptIdx]['value'] ?? '',
                     ];
                 }
             }
 
             if (isset($row['ColData']) && !isset($row['Rows'])) {
                 $c    = $row['ColData'];
-                $date = $c[0]['value'] ?? '';
+                $date = $c[$dateIdx]['value'] ?? '';
                 if (!empty($date) && strtotime($date) !== false) {
                     $glData[] = [
                         'date'            => $date,
-                        'account'         => $c[5]['value'] ?? $currentAccount,
-                        'description'     => trim(($c[1]['value'] ?? '') . ' ' . ($c[4]['value'] ?? '')),
-                        'debit'           => (float) ($c[6]['value'] ?? 0),
-                        'credit'          => (float) ($c[7]['value'] ?? 0),
-                        'vendor_customer' => $c[3]['value'] ?? '',
-                        'dept'            => $c[8]['value'] ?? '',
+                        'account'         => $c[$acctIdx]['value'] ?? $currentAccount,
+                        'description'     => trim(($c[$typeIdx]['value'] ?? '') . ' ' . ($c[$memoIdx]['value'] ?? '')),
+                        'debit'           => (float) ($c[$debitIdx]['value'] ?? 0),
+                        'credit'          => (float) ($c[$creditIdx]['value'] ?? 0),
+                        'vendor_customer' => $c[$nameIdx]['value'] ?? '',
+                        'dept'            => $c[$deptIdx]['value'] ?? '',
                     ];
                 }
             }
@@ -708,8 +918,10 @@ class QuickBooksCSVExportService
         QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate
     ): array {
         $connection->refresh();
+        // QB omits a month column when end_date falls mid-month — extend to end-of-month.
+        $apiEndDate = Carbon::parse($endDate)->endOfMonth()->format('Y-m-d');
         $url  = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/CashFlow"
-              . "?start_date={$startDate}&end_date={$endDate}&summarize_column_by=Month";
+              . "?start_date={$startDate}&end_date={$apiEndDate}&summarize_column_by=Month";
         $resp = self::curlGet($url, $connection->access_token);
 
         if ($resp['code'] !== 200 || empty($resp['body'])) {
@@ -730,22 +942,27 @@ class QuickBooksCSVExportService
 
         $monthlyData = [];
         foreach ($monthLabels as $idx => $label) {
-            $monthlyData[$idx] = ['month' => $label, 'net_income' => 0, 'operating' => 0,
-                'investing' => 0, 'financing' => 0, 'net_change' => 0, 'ending_cash' => 0];
+            $monthlyData[$idx] = [
+                'month' => $label, 'net_income' => 0, 'operating' => 0,
+                'investing' => 0, 'financing' => 0, 'net_change' => 0,
+                'beginning_cash' => 0, 'ending_cash' => 0,
+            ];
         }
 
         if (isset($reportData['Rows']['Row'])) {
             self::extractCashFlowValues($reportData['Rows']['Row'], $monthlyData, $monthLabels);
         }
 
-        $prevCash = 0;
         foreach ($monthlyData as &$row) {
             if ($row['net_change'] == 0) {
                 $row['net_change'] = $row['operating'] + $row['investing'] + $row['financing'];
             }
-            $row['ending_cash'] = $prevCash + $row['net_change'];
-            $prevCash           = $row['ending_cash'];
+            // Use QB-provided ending cash if returned; otherwise derive from beginning + net change.
+            if ($row['ending_cash'] == 0) {
+                $row['ending_cash'] = ($row['beginning_cash'] ?? 0) + $row['net_change'];
+            }
         }
+        unset($row);
 
         return array_values($monthlyData);
     }
@@ -789,7 +1006,7 @@ class QuickBooksCSVExportService
 
                     if (str_contains($colLabel, 'net income') && !str_contains($colLabel, 'adjust')) {
                         $monthlyData[$idx]['net_income'] = $val;
-                    } elseif (str_contains($colLabel, 'net cash increase') || str_contains($colLabel, 'net cash decrease')) {
+                    } elseif (str_contains($colLabel, 'net cash increase') || str_contains($colLabel, 'net cash decrease') || str_contains($colLabel, 'net change in cash')) {
                         $monthlyData[$idx]['net_change'] = $val;
                     } elseif (str_contains($colLabel, 'net cash provided by operating') || str_contains($colLabel, 'net cash used in operating')) {
                         $monthlyData[$idx]['operating'] = $val;
@@ -797,6 +1014,10 @@ class QuickBooksCSVExportService
                         $monthlyData[$idx]['investing'] = $val;
                     } elseif (str_contains($colLabel, 'net cash provided by financing') || str_contains($colLabel, 'net cash used in financing')) {
                         $monthlyData[$idx]['financing'] = $val;
+                    } elseif (str_contains($colLabel, 'cash') && str_contains($colLabel, 'beginning')) {
+                        $monthlyData[$idx]['beginning_cash'] = $val;
+                    } elseif (str_contains($colLabel, 'cash') && (str_contains($colLabel, 'end of') || str_contains($colLabel, 'ending'))) {
+                        $monthlyData[$idx]['ending_cash'] = $val;
                     }
                 }
             }

@@ -189,11 +189,17 @@
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.reports-table th:nth-child(1), .reports-table td:nth-child(1) { width: 36%; }
-.reports-table th:nth-child(2), .reports-table td:nth-child(2) { width: 16%; }
-.reports-table th:nth-child(3), .reports-table td:nth-child(3) { width: 12%; }
-.reports-table th:nth-child(4), .reports-table td:nth-child(4) { width: 14%; }
-.reports-table th:nth-child(5), .reports-table td:nth-child(5) { width: 60px; white-space: nowrap; }
+.reports-table th:nth-child(1), .reports-table td:nth-child(1) { width: 30%; }
+.reports-table th:nth-child(2), .reports-table td:nth-child(2) { width: 14%; }
+.reports-table th:nth-child(3), .reports-table td:nth-child(3) { width: 13%; }
+.reports-table th:nth-child(4), .reports-table td:nth-child(4) { width: 10%; }
+.reports-table th:nth-child(5), .reports-table td:nth-child(5) { width: 13%; }
+.reports-table th:nth-child(6), .reports-table td:nth-child(6) { width: 60px; white-space: nowrap; }
+.ins-period-badge { display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;letter-spacing:.01em; }
+.ins-period-month   { background:#eff6ff;color:#2563eb; }
+.ins-period-quarter { background:#f3e8ff;color:#7c3aed; }
+.ins-period-annual  { background:#fefce8;color:#92400e; }
+.ins-period-range   { background:#f0fdf4;color:#166534; }
 .reports-table tr:last-child td { border-bottom: none; }
 .reports-table tr:hover td { background: #f8fafc; }
 .insight-name-cell { display: flex; align-items: center; gap: 10px; overflow: hidden; min-width: 0; }
@@ -508,6 +514,7 @@
                     <tr>
                         <th>Insight Name</th>
                         <th>Generated</th>
+                        <th>Period</th>
                         <th>Size</th>
                         <th>Status</th>
                         <th style="width:60px">Action</th>
@@ -523,6 +530,28 @@
                             : ($report->isReady() ? ($report->publish_status ?? 'draft')
                             : strtolower($report->status)));
                         $displayName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) . ' - Insight Report';
+
+                        $pStart = $report->report_start_date;
+                        $pEnd   = $report->report_end_date;
+                        if ($pStart && $pEnd) {
+                            $monthsSpanned = ($pEnd->year - $pStart->year) * 12 + ($pEnd->month - $pStart->month) + 1;
+                            if ($pStart->month === 1 && $pEnd->month === 12 && $pStart->year === $pEnd->year) {
+                                $periodLabel = $pStart->format('Y') . ' (Annual)';
+                                $periodType  = 'annual';
+                            } elseif ($monthsSpanned === 3 && in_array($pStart->month, [1, 4, 7, 10])) {
+                                $periodLabel = 'Q' . (int) ceil($pStart->month / 3) . ' ' . $pStart->format('Y');
+                                $periodType  = 'quarter';
+                            } elseif ($monthsSpanned === 1) {
+                                $periodLabel = $pStart->format('M Y');
+                                $periodType  = 'month';
+                            } else {
+                                $periodLabel = $pStart->format('M Y') . ' – ' . $pEnd->format('M Y');
+                                $periodType  = 'range';
+                            }
+                        } else {
+                            $periodLabel = null;
+                            $periodType  = 'none';
+                        }
                     @endphp
                     <tr id="insight-row-{{ $report->id }}"
                         data-search="{{ strtolower($displayName) }}"
@@ -546,6 +575,13 @@
                             </div>
                         </td>
                         <td style="color:#64748b;">{{ $report->created_at->format(active_date_format() . ', g:i A') }}</td>
+                        <td>
+                            @if($periodLabel)
+                                <span class="ins-period-badge ins-period-{{ $periodType }}">{{ $periodLabel }}</span>
+                            @else
+                                <span style="color:#94a3b8;">—</span>
+                            @endif
+                        </td>
                         <td style="color:#64748b;">{{ $report->formatted_file_size }}</td>
                         <td>
                             @if($isDeleted)
@@ -952,6 +988,7 @@
                 </div>
             </td>
             <td style="color:#64748b;">Just now</td>
+            <td><span style="color:#94a3b8;">—</span></td>
             <td style="color:#64748b;">—</td>
             <td><span class="badge info" id="status-badge-${id}">Analyzing</span></td>
             <td>
@@ -1228,10 +1265,10 @@
                             nameCell.replaceWith(span);
                         }
                         // Status badge
-                        var statusTd = row.cells[3];
+                        var statusTd = row.cells[4];
                         if (statusTd) statusTd.innerHTML = '<span class="badge danger">Deleted</span>';
                         // Actions
-                        var actionsTd = row.cells[4];
+                        var actionsTd = row.cells[5];
                         if (actionsTd) actionsTd.innerHTML = '<span style="font-size:13px;color:#9ca3af;font-style:italic;">No actions available</span>';
                     }
                     Swal.fire({ icon: 'success', title: 'Deleted', text: 'Insight deleted successfully.', timer: 2000, showConfirmButton: false });
@@ -1265,7 +1302,7 @@ $(document).ready(function () {
         autoWidth:    false,
         dom:          't<"dt-footer"ip>',
         order:        [[1, 'desc']],
-        columnDefs:   [{ orderable: false, targets: [4] }],
+        columnDefs:   [{ orderable: false, targets: [5] }],
         language: {
             paginate:   { previous: '‹', next: '›' },
             emptyTable: '<div style="text-align:center;padding:32px 16px;color:#9ca3af;font-size:13px">No insights found</div>',

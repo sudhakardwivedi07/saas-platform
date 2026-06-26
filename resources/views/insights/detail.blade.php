@@ -225,6 +225,11 @@
 .ci-vi-badge { padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600; }
 .ci-vi-badge.draft { background:#fef3c7;color:#92400e; }
 .ci-vi-badge.published { background:#d1fae5;color:#065f46; }
+.ci-period-badge { display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap; }
+.ci-period-month   { background:#eff6ff;color:#2563eb; }
+.ci-period-quarter { background:#f3e8ff;color:#7c3aed; }
+.ci-period-annual  { background:#fefce8;color:#92400e; }
+.ci-period-range   { background:#f0fdf4;color:#166634; }
 .ci-vi-date { font-size:11.5px;color:#94a3b8; }
 
 /* ── Responsive ── */
@@ -256,6 +261,17 @@
     </a>
 
     {{-- ── Report Header ──────────────────────────────────────────────────── --}}
+    @php
+        $ciPStart = $report->report_start_date;
+        $ciPEnd   = $report->report_end_date;
+        if ($ciPStart && $ciPEnd) {
+            $ciMonths = ($ciPEnd->year - $ciPStart->year) * 12 + ($ciPEnd->month - $ciPStart->month) + 1;
+            if ($ciPStart->month === 1 && $ciPEnd->month === 12 && $ciPStart->year === $ciPEnd->year) { $ciPeriodLabel = $ciPStart->format('Y') . ' (Annual)'; $ciPeriodType = 'annual'; }
+            elseif ($ciMonths === 3 && in_array($ciPStart->month, [1, 4, 7, 10]))  { $ciPeriodLabel = 'Q' . (int)ceil($ciPStart->month / 3) . ' ' . $ciPStart->format('Y'); $ciPeriodType = 'quarter'; }
+            elseif ($ciMonths === 1)  { $ciPeriodLabel = $ciPStart->format('M Y'); $ciPeriodType = 'month'; }
+            else                     { $ciPeriodLabel = $ciPStart->format('M Y') . ' – ' . $ciPEnd->format('M Y'); $ciPeriodType = 'range'; }
+        } else { $ciPeriodLabel = null; $ciPeriodType = 'none'; }
+    @endphp
     <div class="report-detail-header">
         <div>
             <h1>{{ trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) }} - Insight Report</h1>
@@ -264,6 +280,12 @@
                     <i class="fas fa-calendar-alt"></i>
                     <span>{{ $report->created_at->format(active_date_format() . ', g:i A') }}</span>
                 </div>
+                @if($ciPeriodLabel)
+                <div class="report-meta-item">
+                    <i class="fas fa-calendar-week" style="color:#94a3b8;font-size:13px;"></i>
+                    <span class="ci-period-badge ci-period-{{ $ciPeriodType }}">{{ $ciPeriodLabel }}</span>
+                </div>
+                @endif
                 <div class="report-meta-item">
                     <i class="fas fa-chart-bar"></i>
                     <span>{{ $report->formatted_file_size }}</span>

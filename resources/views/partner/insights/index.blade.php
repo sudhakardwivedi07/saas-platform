@@ -10,25 +10,25 @@
 .pi-page-header-actions { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
 
 /* ── Stats Cards ─────────────────────────────────── */
-.pi-stats-row { display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px; }
-.pi-stat-card { background:#fff;border-radius:12px;padding:20px 22px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid transparent; }
+.pi-stats-row { display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px; }
+.pi-stat-card { background:#fff;border-radius:10px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,0,0,.06);border-left:4px solid transparent; }
 .pi-stat-card.total  { border-left-color:var(--blue); }
 .pi-stat-card.used   { border-left-color:#10b981; }
 .pi-stat-card.remain { border-left-color:var(--orange); }
 .pi-stat-card.avg    { border-left-color:var(--blue); }
-.pi-stat-top { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px; }
-.pi-stat-label { font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em; }
+.pi-stat-top { display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px; }
+.pi-stat-label { font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em; }
 .pi-stat-label.total  { color:#64748b; }
 .pi-stat-label.used   { color:#10b981; }
 .pi-stat-label.remain { color:var(--orange); }
 .pi-stat-label.avg    { color:#64748b; }
-.pi-stat-value { font-size:34px;font-weight:700;line-height:1;margin-bottom:6px; }
+.pi-stat-value { font-size:26px;font-weight:700;line-height:1;margin-bottom:4px; }
 .pi-stat-value.total  { color:#1a202c; }
 .pi-stat-value.used   { color:#10b981; }
 .pi-stat-value.remain { color:var(--orange); }
 .pi-stat-value.avg    { color:#1a202c; }
-.pi-stat-sub { font-size:12px;color:#94a3b8; }
-.pi-stat-icon { width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.pi-stat-sub { font-size:11px;color:#94a3b8; }
+.pi-stat-icon { width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
 .pi-stat-icon.total  { background:var(--blue-light); color:var(--blue); }
 .pi-stat-icon.used   { background:#ecfdf5; color:#10b981; }
 .pi-stat-icon.remain { background:var(--orange-light); color:var(--orange); }
@@ -41,6 +41,12 @@
 .pi-tab-btn:hover:not(.active) { color:#1a202c; }
 .pi-tab-panel { display:none; }
 .pi-tab-panel.active { display:block; }
+/* ── Period Badges ───────────────────────────────── */
+.pi-period-badge { display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;letter-spacing:.01em; }
+.pi-period-month   { background:#eff6ff;color:#2563eb; }
+.pi-period-quarter { background:#f3e8ff;color:#7c3aed; }
+.pi-period-annual  { background:#fefce8;color:#92400e; }
+.pi-period-range   { background:#f0fdf4;color:#166534; }
 
 /* ── Toolbar ─────────────────────────────────────── */
 .pi-toolbar { background:#fff;border-radius:12px;padding:14px 20px;box-shadow:0 2px 8px rgba(0,0,0,.06);margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap; }
@@ -300,61 +306,71 @@
         <button class="btn btn-danger" onclick="piReset()">Reset</button>
     </div>
 
-    {{-- Table --}}
-    <div class="pi-table-card">
-        <div class="table-responsive">
-            <table class="pi-table" id="pi-table">
-                <thead>
-                    <tr>
-                        <th>Insight Report</th>
-                        <th>Generated</th>
-                        <th>Client Name</th>
-                        <th>Company Name</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="piTableBody">
-                    @foreach($reports as $report)
-                    @php
-                        $isDeleted   = $report->trashed() || strtolower($report->status) === 'deleted';
-                        $isProcessing= $report->isProcessing();
-                        $isFailed    = strtolower($report->status) === 'failed';
-                        $isReady     = $report->isReady();
-                        $publishSt   = $report->publish_status ?? 'draft';
-                        $clientName  = $report->user?->name ?? '—';
-                        $companyName = $report->company?->company_name ?? '—';
+{{-- Table --}}
+<div class="pi-table-card">
+    <div class="table-responsive">
+        <table class="pi-table" id="pi-table">
+            <thead>
+                <tr>
+                    <th>Insight Report</th>
+                    <th>Generated</th>
+                    <th>Period</th>
+                    <th>Client Name</th>
+                    <th>Company Name</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="piTableBody">
+                @foreach($reports as $report)
+                @php
+                    $isDeleted   = $report->trashed() || strtolower($report->status) === 'deleted';
+                    $isProcessing= $report->isProcessing();
+                    $isFailed    = strtolower($report->status) === 'failed';
+                    $isReady     = $report->isReady();
+                    $publishSt   = $report->publish_status ?? 'draft';
+                    $clientName  = $report->user?->name ?? '—';
+                    $companyName = $report->company?->company_name ?? '—';
 
-                        $rowStatus = $isDeleted ? 'deleted'
-                            : ($isProcessing ? 'processing'
-                            : ($isFailed ? 'failed'
-                            : ($isReady ? $publishSt : 'processing')));
-                        $displayName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) . ' - Insight Report';
-                    @endphp
-                    <tr id="pi-row-{{ $report->id }}"
-                        data-search="{{ strtolower($displayName . ' ' . $clientName . ' ' . $companyName) }}"
-                        data-status="{{ $rowStatus }}"
-                        data-company-id="{{ $report->company_id }}"
-                        data-user-id="{{ $report->user_id }}"
-                        style="{{ $isDeleted ? 'opacity:0.65;' : '' }}">
-                        <td>
-                            <div class="pi-name-cell">
-                                <span class="pi-name-icon">
-                                    <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                </span>
-                                @if($isDeleted)
-                                    <span class="pi-name-deleted">{{ $displayName }}</span>
-                                @elseif($isReady)
-                                    <a href="{{ route('partner-insights.view', $report->encrypted_id) }}" class="pi-name-link">{{ $displayName }}</a>
-                                @else
-                                    <span style="color:#1a202c;font-weight:500;">{{ $displayName }}</span>
-                                @endif
-                            </div>
-                        </td>
-                        <td style="color:#64748b;" data-date="{{ $report->created_at->format('Y-m-d') }}" data-order="{{ $report->created_at->format('Y-m-d H:i:s') }}">{{ $report->created_at->format(active_date_format() . ', g:i A') }}</td>
-                        <td style="color:#64748b;"><div class="cell-trunc-sm" title="{{ $clientName }}">{{ $clientName }}</div></td>
-                        <td style="color:#64748b;"><div class="cell-trunc" title="{{ $companyName }}">{{ $companyName }}</div></td>
-                        <td data-search="{{ $rowStatus }}">
+                    $rowStatus = $isDeleted ? 'deleted'
+                        : ($isProcessing ? 'processing'
+                        : ($isFailed ? 'failed'
+                        : ($isReady ? $publishSt : 'processing')));
+                    $displayName = trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $report->report_name)) . ' - Insight Report';
+
+                    $pStart = $report->report_start_date;
+                    $pEnd   = $report->report_end_date;
+                    if ($pStart && $pEnd) {
+                        $monthsSpanned = ($pEnd->year - $pStart->year) * 12 + ($pEnd->month - $pStart->month) + 1;
+                        if ($pStart->month === 1 && $pEnd->month === 12 && $pStart->year === $pEnd->year) {
+                            $periodLabel = $pStart->format('Y') . ' (Annual)';
+                            $periodType  = 'annual';
+                        } elseif ($monthsSpanned === 3 && in_array($pStart->month, [1, 4, 7, 10])) {
+                            $periodLabel = 'Q' . (int) ceil($pStart->month / 3) . ' ' . $pStart->format('Y');
+                            $periodType  = 'quarter';
+                        } elseif ($monthsSpanned === 1) {
+                            $periodLabel = $pStart->format('M Y');
+                            $periodType  = 'month';
+                        } else {
+                            $periodLabel = $pStart->format('M Y') . ' – ' . $pEnd->format('M Y');
+                            $periodType  = 'range';
+                        }
+                    } else {
+                        $periodLabel = null;
+                        $periodType  = 'none';
+                    }
+                @endphp
+                <tr id="pi-row-{{ $report->id }}"
+                    data-search="{{ strtolower($displayName . ' ' . $clientName . ' ' . $companyName) }}"
+                    data-status="{{ $rowStatus }}"
+                    data-company-id="{{ $report->company_id }}"
+                    data-user-id="{{ $report->user_id }}"
+                    style="{{ $isDeleted ? 'opacity:0.65;' : '' }}">
+                    <td>
+                        <div class="pi-name-cell">
+                            <span class="pi-name-icon">
+                                <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </span>
                             @if($isDeleted)
                                 <span class="badge badge-deleted">Deleted</span>
                             @elseif($isProcessing)
@@ -505,6 +521,28 @@
                                 <span class="badge badge-completed">Ready</span>
                             @elseif($cr->status === 'failed')
                                 <span class="badge badge-failed">Failed</span>
+                        </div>
+                    </td>
+                    <td style="color:#64748b;" data-date="{{ $report->created_at->format('Y-m-d') }}" data-order="{{ $report->created_at->format('Y-m-d H:i:s') }}">{{ $report->created_at->format(active_date_format() . ', g:i A') }}</td>
+                    <td>
+                        @if($periodLabel)
+                            <span class="pi-period-badge pi-period-{{ $periodType }}">{{ $periodLabel }}</span>
+                        @else
+                            <span style="color:#94a3b8;">—</span>
+                        @endif
+                    </td>
+                    <td style="color:#64748b;"><div class="cell-trunc-sm" title="{{ $clientName }}">{{ $clientName }}</div></td>
+                    <td style="color:#64748b;"><div class="cell-trunc" title="{{ $companyName }}">{{ $companyName }}</div></td>
+                    <td data-search="{{ $rowStatus }}">
+                        @if($isDeleted)
+                            <span class="badge badge-deleted">Deleted</span>
+                        @elseif($isProcessing)
+                            <span class="badge badge-processing" id="pi-badge-{{ $report->id }}">Processing</span>
+                        @elseif($isFailed)
+                            <span class="badge badge-failed">Failed</span>
+                        @elseif($isReady)
+                            @if($publishSt === 'published')
+                                <span class="badge badge-published">Published</span>
                             @else
                                 <span class="badge badge-pending">Pending</span>
                             @endif
@@ -787,8 +825,9 @@
             table.search(this.value).draw();
         });
 
+        // Wire status filter — col 5 (Status), search by data-search value
         document.getElementById('piStatusFilter').addEventListener('change', function () {
-            table.column(4).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
+            table.column(5).search(this.value ? '^' + this.value + '$' : '', true, false, true).draw();
         });
 
         piSyncHeaderBtn();
@@ -808,7 +847,7 @@
         const q  = (document.getElementById('piSearch')?.value ?? '').trim();
         const st = (document.getElementById('piStatusFilter')?.value ?? '');
         table.search(q);
-        table.column(4).search(st ? '^' + st + '$' : '', true, false, true);
+        table.column(5).search(st ? '^' + st + '$' : '', true, false, true);
         table.draw();
     };
 
@@ -1161,6 +1200,8 @@
     }
 
     // ── Prepend new row ───────────────────────────────────────────────────────
+    // ── Prepend new row into DataTable ────────────────────────────────────────
+    // Columns: Insight Report | Generated | Period | Client | Company | Status | Action
     function prependRow(id, name, clientName, companyName, companyId, userId) {
         if (!table) return;
         const today = new Date().toISOString().slice(0, 10);
@@ -1176,6 +1217,7 @@
                 <span style="font-weight:500;">${rowDisplayName}</span>
             </div></td>
             <td style="color:#64748b;" data-date="${today}" data-order="${today}">Just now</td>
+            <td><span style="color:#94a3b8;">—</span></td>
             <td style="color:#64748b;">${clientName || '—'}</td>
             <td style="color:#64748b;">${companyName || '—'}</td>
             <td data-search="processing"><span class="badge badge-processing" id="pi-badge-${id}">Processing</span></td>
@@ -1192,7 +1234,8 @@
             const badge = document.getElementById('pi-badge-' + id);
             if (badge) { badge.className = 'badge badge-draft'; badge.textContent = 'Draft'; }
             row.dataset.status = 'draft';
-            if (row.cells[4]) row.cells[4].setAttribute('data-search', 'draft');
+            if (row.cells[5]) row.cells[5].setAttribute('data-search', 'draft');
+
             const nameCell = row.querySelector('.pi-name-cell span[style]');
             if (nameCell) {
                 const a = document.createElement('a');
@@ -1215,7 +1258,8 @@
         }
         piUpdateGenerateBtn();
         piSyncHeaderBtn();
-        const compName = row?.cells[3]?.textContent?.trim() || '';
+
+        const compName = row?.cells[4]?.textContent?.trim() || '';
         Swal.fire({
             title: 'Insight Generated!',
             html:  `<p style="color:#6b7280;font-size:14px;line-height:1.6">Your CFO level Financial Insight is ready${compName ? ` for <strong>"${compName}"</strong>` : ''}.</p>`,
@@ -1231,7 +1275,7 @@
         const badge = document.getElementById('pi-badge-' + id);
         if (badge) { badge.className = 'badge badge-failed'; badge.textContent = 'Failed'; }
         row.dataset.status = 'failed';
-        if (row.cells[4]) row.cells[4].setAttribute('data-search', 'failed');
+        if (row.cells[5]) row.cells[5].setAttribute('data-search', 'failed');
         const vb = row.querySelector('.pi-btn-view');
         if (vb) { vb.textContent = 'Failed'; vb.style.background = '#9ca3af'; }
         if (table) table.row(row).invalidate().draw(false);

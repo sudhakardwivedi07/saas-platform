@@ -62,7 +62,7 @@
 .ipv-orange-bar    { height:3px; width:56px; background:var(--orange,#f06b25); border-radius:2px; margin-bottom:24px; }
 
 .ipv-meta-grid {
-    display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;
+    display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:20px;
     padding-top:16px; border-top:1px solid #f1f5f9;
 }
 .ipv-meta-label { font-size:9px; font-weight:700; letter-spacing:1.2px; color:#9ca3af; text-transform:uppercase; margin-bottom:5px; }
@@ -200,6 +200,30 @@
                 <div>
                     <div class="ipv-meta-label">PREPARED BY</div>
                     <div class="ipv-meta-value">{{ $authUser->name ?? $companyName }}</div>
+                </div>
+                <div>
+                    <div class="ipv-meta-label">REPORT PERIOD</div>
+                    <div class="ipv-meta-value">
+                        @php
+                            $pvPStart = $report->report_start_date ? \Carbon\Carbon::parse($report->report_start_date) : null;
+                            $pvPEnd   = $report->report_end_date   ? \Carbon\Carbon::parse($report->report_end_date)   : null;
+                            if ($pvPStart && $pvPEnd) {
+                                $pvMonths = ($pvPEnd->year - $pvPStart->year) * 12 + ($pvPEnd->month - $pvPStart->month) + 1;
+                                if ($pvPStart->month === 1 && $pvPEnd->month === 12 && $pvPStart->year === $pvPEnd->year) {
+                                    $pvPeriodLabel = $pvPStart->format('Y') . ' (Annual)';
+                                } elseif ($pvMonths === 3 && in_array($pvPStart->month, [1, 4, 7, 10])) {
+                                    $pvPeriodLabel = 'Q' . (int) ceil($pvPStart->month / 3) . ' ' . $pvPStart->format('Y');
+                                } elseif ($pvMonths === 1) {
+                                    $pvPeriodLabel = $pvPStart->format('M Y');
+                                } else {
+                                    $pvPeriodLabel = $pvPStart->format('M Y') . ' – ' . $pvPEnd->format('M Y');
+                                }
+                            } else {
+                                $pvPeriodLabel = '—';
+                            }
+                        @endphp
+                        {{ $pvPeriodLabel }}
+                    </div>
                 </div>
                 <div>
                     <div class="ipv-meta-label">DATE</div>

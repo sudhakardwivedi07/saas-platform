@@ -132,6 +132,30 @@
             <span class="meta-label">PREPARED BY</span>
             <span class="meta-value">{{ $preparedBy }}</span>
         </div>
+        @php
+            $pdfPStart = $report->report_start_date ? \Carbon\Carbon::parse($report->report_start_date) : null;
+            $pdfPEnd   = $report->report_end_date   ? \Carbon\Carbon::parse($report->report_end_date)   : null;
+            if ($pdfPStart && $pdfPEnd) {
+                $pdfMonths = ($pdfPEnd->year - $pdfPStart->year) * 12 + ($pdfPEnd->month - $pdfPStart->month) + 1;
+                if ($pdfPStart->month === 1 && $pdfPEnd->month === 12 && $pdfPStart->year === $pdfPEnd->year) {
+                    $pdfPeriodLabel = $pdfPStart->format('Y') . ' (Annual)';
+                } elseif ($pdfMonths === 3 && in_array($pdfPStart->month, [1, 4, 7, 10])) {
+                    $pdfPeriodLabel = 'Q' . (int) ceil($pdfPStart->month / 3) . ' ' . $pdfPStart->format('Y');
+                } elseif ($pdfMonths === 1) {
+                    $pdfPeriodLabel = $pdfPStart->format('M Y');
+                } else {
+                    $pdfPeriodLabel = $pdfPStart->format('M Y') . ' – ' . $pdfPEnd->format('M Y');
+                }
+            } else {
+                $pdfPeriodLabel = null;
+            }
+        @endphp
+        @if($pdfPeriodLabel)
+        <div class="meta-row">
+            <span class="meta-label">REPORT PERIOD</span>
+            <span class="meta-value">{{ $pdfPeriodLabel }}</span>
+        </div>
+        @endif
         <div class="meta-row">
             <span class="meta-label">REPORT DATE</span>
             <span class="meta-value">{{ $reportDate }}</span>

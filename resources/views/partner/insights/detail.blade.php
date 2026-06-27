@@ -254,6 +254,26 @@
 
         @if($report->insight_json_data)
         <div class="rd-header-actions">
+            {{-- Primary CTAs: Edit Insight, Save Draft, Publish Insight --}}
+            <div class="rd-header-actions-group">
+                <button id="rdBtnEdit" class="rd-btn rd-btn-edit" onclick="rdToggleEdit()">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span id="rdBtnEditLabel">Edit Insight</span>
+                </button>
+                <button id="rdBtnSave" class="rd-btn rd-btn-save" onclick="rdSaveEdits()">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    <span id="rdBtnSaveLabel">{{ $report->isDraft() ? 'Save Draft' : 'Save' }}</span>
+                </button>
+                @if($report->isDraft())
+                <button id="rdBtnPublish" class="rd-btn rd-btn-publish" onclick="rdPublishInsight()">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span id="rdBtnPublishLabel">Publish Insight</span>
+                </button>
+                @endif
+            </div>
+
+            <div class="rd-header-actions-divider"></div>
+
             {{-- Action CTAs: ••• dot menu --}}
             <div class="rd-header-actions-group">
                 <div class="dm-wrap">
@@ -280,26 +300,6 @@
                         @endif
                     </div>
                 </div>
-            </div>
-
-            <div class="rd-header-actions-divider"></div>
-
-            {{-- Primary CTAs: Edit Insight, Save Draft, Publish Insight --}}
-            <div class="rd-header-actions-group">
-                <button id="rdBtnEdit" class="rd-btn rd-btn-edit" onclick="rdToggleEdit()">
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                    <span id="rdBtnEditLabel">Edit Insight</span>
-                </button>
-                <button id="rdBtnSave" class="rd-btn rd-btn-save" onclick="rdSaveEdits()">
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                    <span id="rdBtnSaveLabel">{{ $report->isDraft() ? 'Save Draft' : 'Save' }}</span>
-                </button>
-                @if($report->isDraft())
-                <button id="rdBtnPublish" class="rd-btn rd-btn-publish" onclick="rdPublishInsight()">
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    <span id="rdBtnPublishLabel">Publish Insight</span>
-                </button>
-                @endif
             </div>
         </div>
         @endif

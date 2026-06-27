@@ -29,6 +29,8 @@
 
 /* ── Header actions ── */
 .report-header-actions { display:flex;align-items:center;gap:10px;flex-wrap:wrap; }
+.ci-header-actions-group { display:flex;align-items:center;gap:8px; }
+.ci-header-actions-divider { width:1px;height:24px;background:#e2e8f0;flex-shrink:0;margin:0 2px; }
 
 /* ── Edit / Save btns ── */
 .rd-btn { height:40px;padding:0 18px;border-radius:7px;font-size:13.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;border:none;transition:all .2s;white-space:nowrap; }
@@ -41,6 +43,8 @@
 .rd-btn-outline:hover { background:#eff6ff;text-decoration:none; }
 .rd-btn-share { background:#16a34a;color:#fff;border:1.5px solid #16a34a; }
 .rd-btn-share:hover { background:#15803d;border-color:#15803d;color:#fff;text-decoration:none; }
+.rd-btn-more { background:#fff;color:#374151;border:1.5px solid #e2e8f0;padding:0 12px; }
+.rd-btn-more:hover { background:#f8fafc;color:#1a202c; }
 .rd-btn:disabled { opacity:.6;cursor:not-allowed; }
 
 /* ── Edit mode content area ── */
@@ -77,26 +81,6 @@
 }
 .ci-tb-select:focus { border-color:#0788be; }
 
-/* ── Export PDF btn ── */
-.export-pdf-btn {
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--orange);
-    border-radius: 5px;
-    text-decoration: none;
-    white-space: nowrap;
-    flex-shrink: 0;
-    box-shadow: 0 5px 10px 0 rgba(0,0,0,.15);
-    transition: all .3s ease;
-}
-.export-pdf-btn:hover { filter: brightness(.85); color: white; text-decoration: none; transform: translateY(-1px); }
 
 /* ── Back btn ── */
 .btn-back {
@@ -205,7 +189,7 @@
 
 /* ── Print/PDF ── */
 @media print {
-    .btn-back, .export-pdf-btn, .insight-slider-nav, .insight-slider-pagination { display: none !important; }
+    .btn-back, .insight-slider-nav, .insight-slider-pagination { display: none !important; }
     .insight-slider-slide { display: block !important; page-break-after: always; }
     .insight-slider-card { box-shadow: none; border: 1px solid #e2e8f0; }
 }
@@ -236,7 +220,7 @@
 @media(max-width:860px) {
     .report-detail-header { flex-direction:column; gap:16px; }
     .report-header-actions { width:100%; flex-wrap:wrap; }
-    .export-pdf-btn, .rd-btn { flex:1; justify-content:center; }
+    .rd-btn { flex:1; justify-content:center; }
     .insight-slider-card { padding:20px 18px; }
 }
 @media(max-width:640px) {
@@ -318,43 +302,48 @@
         </div>
         @if($report->insight_json_data)
         <div class="report-header-actions">
-            <a href="{{ route('insights.preview', $report->id) }}{{ isset($__imp) ? '?_imp='.$__imp['token'] : '' }}" class="rd-btn rd-btn-outline" id="ciBtnPdfPreview">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                <span>Preview</span>
-            </a>
-            <button id="ciBtnEdit" class="rd-btn rd-btn-edit" onclick="ciToggleEdit()">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                <span id="ciBtnEditLabel">Edit Insight</span>
-            </button>
-            <button id="ciBtnSave" class="rd-btn rd-btn-save" onclick="ciSaveEdits()">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
-                <span id="ciBtnSaveLabel">Save</span>
-            </button>
-            <a href="{{ route('insights.export-pdf', $report->id) }}{{ isset($__imp) ? '?_imp='.$__imp['token'] : '' }}"
-               class="export-pdf-btn"
-           id="exportPdfBtn"
-           onclick="
-               var btn = this;
-               btn.querySelector('span').textContent = 'Generating PDF';
-               btn.querySelector('i').className = 'fas fa-spinner fa-spin';
-               btn.style.pointerEvents = 'none';
-               btn.style.opacity = '0.85';
-               setTimeout(function(){
-                   btn.querySelector('span').textContent = 'Export to PDF';
-                   btn.querySelector('i').className = 'fas fa-file-pdf';
-                   btn.style.pointerEvents = '';
-                   btn.style.opacity = '';
-               }, 8000);
-           ">
-            <span>Export to PDF</span>
-            <i class="fas fa-file-pdf"></i>
-        </a>
-            @if(($report->publish_status ?? 'draft') === 'published' && !empty($canShareInsight))
-            <a href="javascript:void(0)" class="rd-btn rd-btn-share" id="ciBtnShare" onclick="ciShareInsight()">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-                <span>Share</span>
-            </a>
-            @endif
+            {{-- Primary CTAs: Edit Insight, Save --}}
+            <div class="ci-header-actions-group">
+                <button id="ciBtnEdit" class="rd-btn rd-btn-edit" onclick="ciToggleEdit()">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    <span id="ciBtnEditLabel">Edit Insight</span>
+                </button>
+                <button id="ciBtnSave" class="rd-btn rd-btn-save" onclick="ciSaveEdits()">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    <span id="ciBtnSaveLabel">Save</span>
+                </button>
+            </div>
+
+            <div class="ci-header-actions-divider"></div>
+
+            {{-- ••• dot menu: Preview, Export to PDF, Share --}}
+            <div class="ci-header-actions-group">
+                <div class="dm-wrap">
+                    <button class="rd-btn rd-btn-more" data-menu="ci-more-menu" title="Actions">
+                        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                    </button>
+                    <div class="dm-popup" id="ci-more-menu">
+                        <a href="{{ route('insights.preview', $report->id) }}{{ isset($__imp) ? '?_imp='.$__imp['token'] : '' }}" class="dm-item" id="ciBtnPdfPreview">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            Preview
+                        </a>
+                        <div class="dm-divider"></div>
+                        <a href="{{ route('insights.export-pdf', $report->id) }}{{ isset($__imp) ? '?_imp='.$__imp['token'] : '' }}"
+                           class="dm-item" id="exportPdfBtn"
+                           onclick="var el=this;el.textContent='Generating…';el.style.pointerEvents='none';setTimeout(function(){el.innerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\'><path d=\'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z\'/></svg> Export to PDF';el.style.pointerEvents='';},8000);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            Export to PDF
+                        </a>
+                        @if(($report->publish_status ?? 'draft') === 'published' && !empty($canShareInsight))
+                        <div class="dm-divider"></div>
+                        <a href="javascript:void(0)" class="dm-item" id="ciBtnShare" onclick="ciShareInsight()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                            Share
+                        </a>
+                        @endif
+                    </div>
+                </div>
+            </div>
         </div>
         @endif
     </div>

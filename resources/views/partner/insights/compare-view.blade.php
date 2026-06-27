@@ -23,6 +23,12 @@
 .rd-publish-badge.failed    { background:#fee2e2;color:#991b1b; }
 .rd-publish-badge.pending   { background:#fef3c7;color:#92400e; }
 
+/* ── Header actions ──────────────────────────────────────────── */
+.rd-header-actions { display:flex;align-items:center;gap:10px; }
+.rd-btn { height:40px;padding:0 18px;border-radius:7px;font-size:13.5px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:8px;text-decoration:none;border:none;transition:all .2s;white-space:nowrap; }
+.rd-btn-more { background:#fff;color:#374151;border:1.5px solid #e2e8f0;padding:0 12px; }
+.rd-btn-more:hover { background:#f8fafc;color:#1a202c; }
+
 /* ── Slider ──────────────────────────────────────────────────── */
 .insight-slider-container { position:relative; background:#f5f7fa; border-radius:12px; padding:20px; }
 .insight-slider-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding:0 2px; position:relative; z-index:2; }
@@ -126,6 +132,35 @@ $badgeLabel  = match($cr->status) { 'completed' => 'Ready', 'failed' => 'Failed'
                 </div>
             </div>
         </div>
+
+        @if($cr->status === 'completed' && !empty($cr->comparison_result))
+        <div class="rd-header-actions">
+            <div class="dm-wrap">
+                <button class="rd-btn rd-btn-more" data-menu="cr-more-menu" title="Actions">
+                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+                </button>
+                <div class="dm-popup" id="cr-more-menu">
+                    <a href="{{ route('partner-insights.compare.preview', $cr->encrypted_id) }}" class="dm-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        Preview
+                    </a>
+                    <div class="dm-divider"></div>
+                    <a href="{{ route('partner-insights.compare.export-pdf', $cr->encrypted_id) }}" class="dm-item"
+                       onclick="var el=this;el.textContent='Generating…';el.style.pointerEvents='none';setTimeout(function(){el.innerHTML='<svg viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\'><path d=\'M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z\'/></svg> Export to PDF';el.style.pointerEvents='';},8000);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                        Export to PDF
+                    </a>
+                    @if(!empty($canShareInsight))
+                    <div class="dm-divider"></div>
+                    <a href="javascript:void(0)" class="dm-item" onclick="crShareInsight()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                        Share
+                    </a>
+                    @endif
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 
     {{-- Slider container — same structure as detail.blade.php --}}
@@ -141,6 +176,71 @@ $badgeLabel  = match($cr->status) { 'completed' => 'Ready', 'failed' => 'Failed'
 @endsection
 
 @push('scripts')
+<script>
+// ── Share ─────────────────────────────────────────────────────────────────────
+(function(){
+    const CSRF         = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+    const SHARE_URL    = '/partner-insights/compare/{{ $cr->encrypted_id }}/share';
+    const CLIENT_EMAIL = '{{ addslashes($cr->company?->users->first()?->email ?? $cr->company?->company_email ?? '') }}';
+
+    window.crShareInsight = function () {
+        const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--orange').trim() || '#f06b25';
+
+        if (!CLIENT_EMAIL) {
+            Swal.fire({ icon: 'error', title: 'No Client Email', text: 'No email address is configured for this client.', confirmButtonColor: brandColor });
+            return;
+        }
+
+        Swal.fire({
+            html: `
+                <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
+                    <div style="width:70px;height:70px;background:#fef2f2;border-radius:50%;border:2px solid #fca5a5;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+                        <svg width="30" height="30" fill="none" viewBox="0 0 24 24" stroke="#ef4444" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="#ef4444" stroke="none"/></svg>
+                    </div>
+                    <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Share Comparison</h2>
+                    <p style="font-size:14px;color:#64748b;margin:0;">Send this comparison report to the client via email?</p>
+                </div>`,
+            showCancelButton: true,
+            cancelButtonText: 'Cancel',
+            confirmButtonText: 'Confirm',
+            confirmButtonColor: brandColor,
+            showLoaderOnConfirm: true,
+            preConfirm: () => {
+                return fetch(SHARE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' },
+                    body: JSON.stringify({ recipient_email: CLIENT_EMAIL }),
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status !== 'success') {
+                        Swal.showValidationMessage(data.message || 'Failed to send email.');
+                    }
+                    return data;
+                })
+                .catch(() => Swal.showValidationMessage('Network error. Please try again.'));
+            },
+            allowOutsideClick: () => !Swal.isLoading(),
+        }).then(result => {
+            if (result.isConfirmed && result.value?.status === 'success') {
+                Swal.fire({
+                    html: `
+                        <div style="display:flex;flex-direction:column;align-items:center;padding:10px 0 6px;">
+                            <div style="width:70px;height:70px;background:#ecfdf5;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:18px;">
+                                <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#10b981" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+                            </div>
+                            <h2 style="font-size:20px;font-weight:700;color:#1a202c;margin:0 0 8px;">Shared Successfully</h2>
+                            <p style="font-size:14px;color:#64748b;margin:0;">Comparison shared successfully via email.</p>
+                        </div>`,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Got it',
+                    confirmButtonColor: brandColor,
+                });
+            }
+        });
+    };
+}());
+</script>
 <script>
 (function(){
     if (!document.getElementById('insightLoader')) return;

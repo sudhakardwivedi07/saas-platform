@@ -290,10 +290,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/clients',                     [PartnerInsightsController::class, 'getClients'])->name('clients');
         Route::get('/clients/{clientId}/companies',[PartnerInsightsController::class, 'getCompanies'])->name('companies');
         Route::get('/companies/{companyId}/reports',[PartnerInsightsController::class, 'getCompanyReports'])->name('company-reports');
-        Route::post('/compare',                         [PartnerInsightsController::class, 'storeComparison'])->name('compare.store');
-        Route::get('/compare/{encryptedId}/view',       [PartnerInsightsController::class, 'viewComparison'])->name('compare.view');
-        Route::get('/compare/{encryptedId}/data',       [PartnerInsightsController::class, 'getComparisonData'])->name('compare.data');
-        Route::delete('/compare/{id}',                  [PartnerInsightsController::class, 'destroyComparison'])->name('compare.destroy');
+        Route::post('/compare',                              [PartnerInsightsController::class, 'storeComparison'])->name('compare.store');
+        Route::get('/compare/{encryptedId}/view',            [PartnerInsightsController::class, 'viewComparison'])->name('compare.view');
+        Route::get('/compare/{encryptedId}/data',            [PartnerInsightsController::class, 'getComparisonData'])->name('compare.data');
+        Route::get('/compare/{encryptedId}/preview',         [PartnerInsightsController::class, 'previewCompare'])->name('compare.preview');
+        Route::get('/compare/{encryptedId}/export-pdf',      [PartnerInsightsController::class, 'exportCompare'])->name('compare.export-pdf');
+        Route::post('/compare/{encryptedId}/share',          [PartnerInsightsController::class, 'shareComparison'])->name('compare.share');
+        Route::delete('/compare/{id}',                       [PartnerInsightsController::class, 'destroyComparison'])->name('compare.destroy');
         Route::get('/status/{id}',                 [PartnerInsightsController::class, 'checkStatus'])->name('status');
         Route::get('/{encryptedId}/view',          [PartnerInsightsController::class, 'view'])->name('view');
         Route::get('/{id}/data',                   [PartnerInsightsController::class, 'getData'])->name('data');

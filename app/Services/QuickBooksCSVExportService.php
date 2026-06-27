@@ -517,20 +517,33 @@ class QuickBooksCSVExportService
      * Recursively categorise P&L expense rows into named buckets.
      * Only leaf nodes (no child rows) contribute values — parent section totals are
      * skipped to avoid double-counting when accounts are nested multiple levels deep.
+     *
+     * $parentCategory is the category resolved from the nearest ancestor section that
+     * matched a known name (e.g. "Rent or Lease" → 'rent').  Leaf nodes that do not
+     * match any category themselves inherit the parent's, so custom sub-account names
+     * like "Facilities Cost" under a "Rent or Lease" section still count as rent.
      */
-    protected static function parsePLExpenses(array $rows, array &$data, callable $parseVal): void
-    {
+    protected static function parsePLExpenses(
+        array $rows, array &$data, callable $parseVal, string $parentCategory = ''
+    ): void {
         foreach ($rows as $sub) {
-            // Section node — recurse into children and skip the section total itself.
+            $name = strtolower(
+                $sub['Header']['ColData'][0]['value'] ??
+                $sub['ColData'][0]['value'] ??
+                ''
+            );
+
+            // The effective category is the node's own match; fall back to the inherited one.
+            $category = self::detectPLExpenseCategory($name) ?: $parentCategory;
+
+            // Section node — recurse, passing the resolved category as inherited context.
             if (isset($sub['Rows']['Row'])) {
-                self::parsePLExpenses($sub['Rows']['Row'], $data, $parseVal);
+                self::parsePLExpenses($sub['Rows']['Row'], $data, $parseVal, $category);
                 continue;
             }
 
             // Leaf node — extract its value.
-            $name   = strtolower($sub['ColData'][0]['value'] ?? $sub['Header']['ColData'][0]['value'] ?? '');
             $subVal = 0;
-
             if (isset($sub['ColData'][1]['value'])) {
                 $subVal = abs($parseVal($sub['ColData'][1]['value']));
             } elseif (isset($sub['Summary']['ColData'])) {
@@ -540,20 +553,31 @@ class QuickBooksCSVExportService
                 }
             }
 
-            if ($subVal <= 0) continue;
+            if ($subVal <= 0 || $category === '') continue;
 
-            if (str_contains($name, 'payroll') || str_contains($name, 'salary') || str_contains($name, 'wages')) {
-                $data['payroll'] += $subVal;
-            } elseif (str_contains($name, 'market') || str_contains($name, 'advertis')) {
-                $data['marketing'] += $subVal;
-            } elseif (str_contains($name, 'rent') || str_contains($name, 'lease')) {
-                $data['rent'] += $subVal;
-            } elseif (str_contains($name, 'software') || str_contains($name, 'subscription') || str_contains($name, 'saas')) {
-                $data['software'] += $subVal;
-            } elseif (str_contains($name, 'miscellaneous') || $name === 'misc' || str_contains($name, 'other misc')) {
-                $data['misc'] += $subVal;
-            }
+            $data[$category] += $subVal;
         }
+    }
+
+    /** Map a lowercase account name to its P&L bucket, or '' if unrecognised. */
+    private static function detectPLExpenseCategory(string $name): string
+    {
+        if (str_contains($name, 'payroll') || str_contains($name, 'salary') || str_contains($name, 'wages')) {
+            return 'payroll';
+        }
+        if (str_contains($name, 'market') || str_contains($name, 'advertis')) {
+            return 'marketing';
+        }
+        if (str_contains($name, 'rent') || str_contains($name, 'lease')) {
+            return 'rent';
+        }
+        if (str_contains($name, 'software') || str_contains($name, 'subscription') || str_contains($name, 'saas')) {
+            return 'software';
+        }
+        if (str_contains($name, 'miscellaneous') || $name === 'misc' || str_contains($name, 'other misc')) {
+            return 'misc';
+        }
+        return '';
     }
 
     protected static function fetchMonthlyBalanceSheetData(
@@ -813,11 +837,17 @@ class QuickBooksCSVExportService
 
         $data = json_decode($resp['body'], true);
 
-        // Build ColType → index map from the response so parsing is column-order-independent.
+        // Build a column-name → index map from the API response so parsing is
+        // column-order-independent.  QB uses the generic ColType 'Money' for BOTH debit and
+        // credit columns, which would make them collide in a type-only map.  We therefore index
+        // by ColType first, then overwrite with ColTitle (lowercase) so that the stable titles
+        // "Debit" and "Credit" produce distinct keys 'debit' and 'credit' in the map.
         $colMap = [];
         foreach (($data['Columns']['Column'] ?? []) as $i => $col) {
-            $type = strtolower($col['ColType'] ?? '');
-            if ($type !== '') $colMap[$type] = $i;
+            $type  = strtolower($col['ColType']  ?? '');
+            $title = strtolower(trim($col['ColTitle'] ?? ''));
+            if ($type  !== '') $colMap[$type]  = $i;   // generic type (may collide, e.g. 'money')
+            if ($title !== '') $colMap[$title] = $i;   // specific title overwrites, e.g. 'debit','credit'
         }
 
         $glData = isset($data['Rows']['Row']) ? self::parseGLRows($data['Rows']['Row'], $colMap) : [];
@@ -858,15 +888,17 @@ class QuickBooksCSVExportService
         $currentAccount = '';
 
         // Resolve column positions from the API-provided map; fall back to hardcoded defaults.
-        $dateIdx   = $colMap['tx_date']      ?? 0;
+        // 'debit' / 'credit' are the lowercased ColTitle keys added in fetchGeneralLedgerData —
+        // these are reliable across QB company configurations where ColType is generic 'Money'.
+        $dateIdx   = $colMap['tx_date']      ?? $colMap['date']    ?? 0;
         $typeIdx   = $colMap['txn_type']     ?? 1;
         $docIdx    = $colMap['doc_num']      ?? 2;
-        $nameIdx   = $colMap['name']         ?? 3;
+        $nameIdx   = $colMap['name']         ?? $colMap['entity']  ?? 3;
         $memoIdx   = $colMap['memo']         ?? 4;
         $acctIdx   = $colMap['account_name'] ?? $colMap['account'] ?? 5;
-        $debitIdx  = $colMap['debit_amt']    ?? $colMap['debit_amount'] ?? 6;
-        $creditIdx = $colMap['credit_amt']   ?? $colMap['credit_amount'] ?? 7;
-        $deptIdx   = $colMap['dept_name']    ?? $colMap['dept'] ?? 8;
+        $debitIdx  = $colMap['debit_amt']    ?? $colMap['debit']   ?? $colMap['debit_amount']  ?? 6;
+        $creditIdx = $colMap['credit_amt']   ?? $colMap['credit']  ?? $colMap['credit_amount'] ?? 7;
+        $deptIdx   = $colMap['dept_name']    ?? $colMap['dept/class'] ?? $colMap['dept']       ?? 8;
 
         foreach ($rows as $row) {
             if (isset($row['Header']['ColData'])) {

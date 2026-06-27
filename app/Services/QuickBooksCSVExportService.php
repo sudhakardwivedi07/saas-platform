@@ -218,6 +218,7 @@ class QuickBooksCSVExportService
      */
     protected static function fetchARAgingData(QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate): array
     {
+        $connection->refresh();
         $endTs   = strtotime($endDate);
         $result  = [];
         $offset  = 1;
@@ -286,6 +287,7 @@ class QuickBooksCSVExportService
      */
     protected static function fetchAPAgingData(QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate): array
     {
+        $connection->refresh();
         $endTs   = strtotime($endDate);
         $result  = [];
         $offset  = 1;
@@ -409,6 +411,7 @@ class QuickBooksCSVExportService
     protected static function fetchMonthlyPLData(
         QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate
     ): array {
+        $connection->refresh();
         $start        = Carbon::parse($startDate);
         $end          = Carbon::parse($endDate);
         $currentMonth = $start->copy()->startOfMonth();
@@ -515,37 +518,34 @@ class QuickBooksCSVExportService
 
     /**
      * Recursively categorise P&L expense rows into named buckets.
-     * Only leaf nodes (no child rows) contribute values — parent section totals are
-     * skipped to avoid double-counting when accounts are nested multiple levels deep.
-     *
-     * $parentCategory is the category resolved from the nearest ancestor section that
-     * matched a known name (e.g. "Rent or Lease" → 'rent').  Leaf nodes that do not
-     * match any category themselves inherit the parent's, so custom sub-account names
-     * like "Facilities Cost" under a "Rent or Lease" section still count as rent.
+     * Only LEAF nodes (nodes with no child rows) contribute values.
+     * Parent section totals are always skipped to avoid double-counting.
+     * Each leaf is categorised solely by its own account name — parent
+     * section names are intentionally NOT inherited, because a leaf living
+     * under e.g. "Rent or Lease" may be a miscellaneous fee, not actual rent.
      */
-    protected static function parsePLExpenses(
-        array $rows, array &$data, callable $parseVal, string $parentCategory = ''
-    ): void {
+    protected static function parsePLExpenses(array $rows, array &$data, callable $parseVal): void
+    {
         foreach ($rows as $sub) {
-            $name = strtolower(
-                $sub['Header']['ColData'][0]['value'] ??
-                $sub['ColData'][0]['value'] ??
-                ''
-            );
-
-            // The effective category is the node's own match; fall back to the inherited one.
-            $category = self::detectPLExpenseCategory($name) ?: $parentCategory;
-
-            // Section node — recurse, passing the resolved category as inherited context.
+            // Section node — recurse into children, ignore the section total.
             if (isset($sub['Rows']['Row'])) {
-                self::parsePLExpenses($sub['Rows']['Row'], $data, $parseVal, $category);
+                self::parsePLExpenses($sub['Rows']['Row'], $data, $parseVal);
                 continue;
             }
 
-            // Leaf node — extract its value.
+            // Leaf node — read its account name and value.
+            $name = strtolower(
+                $sub['ColData'][0]['value'] ??
+                $sub['Header']['ColData'][0]['value'] ??
+                ''
+            );
+
             $subVal = 0;
-            if (isset($sub['ColData'][1]['value'])) {
-                $subVal = abs($parseVal($sub['ColData'][1]['value']));
+            $rawColVal = str_replace(',', '', $sub['ColData'][1]['value'] ?? '');
+            if (isset($sub['ColData'][1]) && is_numeric($rawColVal)) {
+                // Only use ColData[1] when it is genuinely numeric; a non-numeric
+                // value (e.g. empty string, "N/A") must not block the Summary fallback.
+                $subVal = abs((float) $rawColVal);
             } elseif (isset($sub['Summary']['ColData'])) {
                 foreach ($sub['Summary']['ColData'] as $sc) {
                     $sv = str_replace(',', '', $sc['value'] ?? '');
@@ -553,7 +553,10 @@ class QuickBooksCSVExportService
                 }
             }
 
-            if ($subVal <= 0 || $category === '') continue;
+            if ($subVal <= 0) continue;
+
+            $category = self::detectPLExpenseCategory($name);
+            if ($category === '') continue;
 
             $data[$category] += $subVal;
         }
@@ -574,7 +577,7 @@ class QuickBooksCSVExportService
         if (str_contains($name, 'software') || str_contains($name, 'subscription') || str_contains($name, 'saas')) {
             return 'software';
         }
-        if (str_contains($name, 'miscellaneous') || $name === 'misc' || str_contains($name, 'other misc')) {
+        if (str_contains($name, 'misc')) {
             return 'misc';
         }
         return '';
@@ -583,6 +586,7 @@ class QuickBooksCSVExportService
     protected static function fetchMonthlyBalanceSheetData(
         QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate
     ): array {
+        $connection->refresh();
         // QB omits a month column when end_date falls mid-month — extend to end-of-month so all
         // months within the selected period are included (QB won't have future-dated transactions).
         $apiEndDate = Carbon::parse($endDate)->endOfMonth()->format('Y-m-d');
@@ -821,6 +825,7 @@ class QuickBooksCSVExportService
     protected static function fetchGeneralLedgerData(
         QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate
     ): array {
+        $connection->refresh();
         // QB GeneralLedger uses debit_amt / credit_amt (not debit_amount / credit_amount).
         // Requesting the wrong names causes QB to silently drop those columns, shifting
         // subsequent indices and returning 0 for all debit/credit values.
@@ -916,8 +921,11 @@ class QuickBooksCSVExportService
                     if (empty($date) || strtotime($date) === false) continue;
                     $glData[] = [
                         'date'            => $date,
-                        'account'         => $c[$acctIdx]['value'] ?? $currentAccount,
-                        'description'     => trim(($c[$typeIdx]['value'] ?? '') . ' ' . ($c[$docIdx]['value'] ?? '') . ' - ' . ($c[$memoIdx]['value'] ?? '')),
+                        'account'         => !empty($c[$acctIdx]['value'] ?? '') ? $c[$acctIdx]['value'] : $currentAccount,
+                        'description'     => implode(' - ', array_filter([
+                                                trim(($c[$typeIdx]['value'] ?? '') . ' ' . ($c[$docIdx]['value'] ?? '')),
+                                                trim($c[$memoIdx]['value'] ?? ''),
+                                            ], static fn($v) => $v !== '')),
                         'debit'           => (float) ($c[$debitIdx]['value'] ?? 0),
                         'credit'          => (float) ($c[$creditIdx]['value'] ?? 0),
                         'vendor_customer' => $c[$nameIdx]['value'] ?? '',
@@ -932,8 +940,11 @@ class QuickBooksCSVExportService
                 if (!empty($date) && strtotime($date) !== false) {
                     $glData[] = [
                         'date'            => $date,
-                        'account'         => $c[$acctIdx]['value'] ?? $currentAccount,
-                        'description'     => trim(($c[$typeIdx]['value'] ?? '') . ' ' . ($c[$memoIdx]['value'] ?? '')),
+                        'account'         => !empty($c[$acctIdx]['value'] ?? '') ? $c[$acctIdx]['value'] : $currentAccount,
+                        'description'     => implode(' - ', array_filter([
+                                                trim($c[$typeIdx]['value'] ?? ''),
+                                                trim($c[$memoIdx]['value'] ?? ''),
+                                            ], static fn($v) => $v !== '')),
                         'debit'           => (float) ($c[$debitIdx]['value'] ?? 0),
                         'credit'          => (float) ($c[$creditIdx]['value'] ?? 0),
                         'vendor_customer' => $c[$nameIdx]['value'] ?? '',

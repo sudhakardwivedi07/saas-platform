@@ -98,10 +98,14 @@ class PartnerInsightsController extends AccountBaseController
         $this->limitReached      = $monthlyLimit > 0 && $cycleUsed >= $monthlyLimit;
 
         // Load comparison reports for the Comparisons tab
-        $this->compareReports = CompareReport::with(['company', 'user'])
+        $this->compareReports = CompareReport::with(['company', 'user', 'reportA', 'reportB'])
             ->whereIn('company_id', $subCompanyIds)
             ->orderByDesc('created_at')
-            ->get();
+            ->get()
+            ->each(function ($cr) {
+                $cr->period_a = $this->computePeriodLabel($cr->reportA, $cr->period_a);
+                $cr->period_b = $this->computePeriodLabel($cr->reportB, $cr->period_b);
+            });
 
         return view('partner.insights.index', $this->data);
     }
@@ -1001,7 +1005,7 @@ class PartnerInsightsController extends AccountBaseController
             ->map(fn($r) => [
                 'id'     => $r->id,
                 'name'   => trim(preg_replace('/\s*\(Analysis\s+\d+\)\s*$/i', '', $r->report_name)) . ' - Insight Report',
-                'period' => $r->created_at->format('M j, Y'),
+                'period' => $this->computePeriodLabel($r),
             ]);
 
         return response()->json(['status' => 'success', 'reports' => $reports]);
@@ -1068,8 +1072,8 @@ class PartnerInsightsController extends AccountBaseController
             'company_id'        => $companyId,
             'report_id_a'       => $reportA->id,
             'report_id_b'       => $reportB->id,
-            'period_a'          => $reportA->created_at->format('M j, Y'),
-            'period_b'          => $reportB->created_at->format('M j, Y'),
+            'period_a'          => $this->computePeriodLabel($reportA),
+            'period_b'          => $this->computePeriodLabel($reportB),
             'kpi_data_a'        => $kpisA,
             'kpi_data_b'        => $kpisB,
             'comparison_result' => $comparisonResult,
@@ -1106,6 +1110,9 @@ class PartnerInsightsController extends AccountBaseController
             ->whereIn('company_id', $subCompanyIds)
             ->where('id', $id)
             ->firstOrFail();
+
+        $this->compareReport->period_a = $this->computePeriodLabel($this->compareReport->reportA, $this->compareReport->period_a);
+        $this->compareReport->period_b = $this->computePeriodLabel($this->compareReport->reportB, $this->compareReport->period_b);
 
         $firmId = company()->id;
         $this->canShareInsight =
@@ -1173,7 +1180,7 @@ class PartnerInsightsController extends AccountBaseController
         if (!$id) abort(404);
 
         $subCompanyIds = $this->allClientCompanyIds();
-        $cr = CompareReport::with(['company', 'user'])
+        $cr = CompareReport::with(['company', 'user', 'reportA', 'reportB'])
             ->whereIn('company_id', $subCompanyIds)
             ->where('id', $id)
             ->firstOrFail();
@@ -1181,6 +1188,9 @@ class PartnerInsightsController extends AccountBaseController
         if (empty($cr->comparison_result)) {
             abort(404, 'No comparison data available.');
         }
+
+        $cr->period_a = $this->computePeriodLabel($cr->reportA, $cr->period_a);
+        $cr->period_b = $this->computePeriodLabel($cr->reportB, $cr->period_b);
 
         $sections    = $this->getCompareSections($cr);
         $companyName = $cr->company?->company_name ?? '—';
@@ -1202,7 +1212,7 @@ class PartnerInsightsController extends AccountBaseController
         if (!$id) abort(404);
 
         $subCompanyIds = $this->allClientCompanyIds();
-        $cr = CompareReport::with(['company', 'user'])
+        $cr = CompareReport::with(['company', 'user', 'reportA', 'reportB'])
             ->whereIn('company_id', $subCompanyIds)
             ->where('id', $id)
             ->firstOrFail();
@@ -1210,6 +1220,9 @@ class PartnerInsightsController extends AccountBaseController
         if (empty($cr->comparison_result)) {
             abort(404, 'No comparison data available.');
         }
+
+        $cr->period_a = $this->computePeriodLabel($cr->reportA, $cr->period_a);
+        $cr->period_b = $this->computePeriodLabel($cr->reportB, $cr->period_b);
 
         $sections = $this->getCompareSections($cr);
         if (empty($sections)) {
@@ -1288,11 +1301,14 @@ class PartnerInsightsController extends AccountBaseController
         if (!$id) abort(404);
 
         $subCompanyIds = $this->allClientCompanyIds();
-        $cr = CompareReport::with(['company', 'user'])
+        $cr = CompareReport::with(['company', 'user', 'reportA', 'reportB'])
             ->whereIn('company_id', $subCompanyIds)
             ->where('id', $id)
             ->where('status', 'completed')
             ->firstOrFail();
+
+        $cr->period_a = $this->computePeriodLabel($cr->reportA, $cr->period_a);
+        $cr->period_b = $this->computePeriodLabel($cr->reportB, $cr->period_b);
 
         $sections = $this->getCompareSections($cr);
         if (empty($sections)) {
@@ -1425,6 +1441,31 @@ class PartnerInsightsController extends AccountBaseController
     }
 
     // ── Extract 12 KPIs from a report's financial_summary ─────────────────────
+
+    private function computePeriodLabel(?Report $report, string $fallback = ''): string
+    {
+        if (!$report) return $fallback;
+
+        $pStart = $report->report_start_date;
+        $pEnd   = $report->report_end_date;
+
+        if (!$pStart || !$pEnd) {
+            return $report->created_at->format('M Y');
+        }
+
+        $monthsSpanned = ($pEnd->year - $pStart->year) * 12 + ($pEnd->month - $pStart->month) + 1;
+
+        if ($pStart->month === 1 && $pEnd->month === 12 && $pStart->year === $pEnd->year) {
+            return $pStart->format('Y') . ' (Annual)';
+        }
+        if ($monthsSpanned === 3 && in_array($pStart->month, [1, 4, 7, 10])) {
+            return 'Q' . (int) ceil($pStart->month / 3) . ' ' . $pStart->format('Y');
+        }
+        if ($monthsSpanned === 1) {
+            return $pStart->format('M Y');
+        }
+        return $pStart->format('M Y') . ' – ' . $pEnd->format('M Y');
+    }
 
     private function extractKpis(Report $report): array
     {

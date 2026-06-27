@@ -91,6 +91,27 @@ class InsightsController extends AccountBaseController
             ->map(fn($group) => $group->sortByDesc('version')->first())
             ->values();
 
+        // Backfill missing date ranges from root records (published versions were spawned without them)
+        $missingDateIds = $this->reports
+            ->filter(fn($r) => !$r->report_start_date && $r->parent_report_id)
+            ->pluck('parent_report_id')
+            ->unique();
+
+        if ($missingDateIds->isNotEmpty()) {
+            $roots = Report::withTrashed()
+                ->whereIn('id', $missingDateIds)
+                ->get(['id', 'report_start_date', 'report_end_date'])
+                ->keyBy('id');
+
+            $this->reports->each(function ($report) use ($roots) {
+                if (!$report->report_start_date && $report->parent_report_id) {
+                    $root = $roots->get($report->parent_report_id);
+                    $report->report_start_date = $root?->report_start_date;
+                    $report->report_end_date   = $root?->report_end_date;
+                }
+            });
+        }
+
         // Monthly usage for limit enforcement (same scope as the reports list above)
         $this->monthlyUsed  = $this->countMonthlyInsights($user->id, (int) $selectedCompanyId, (int) $user->company_id);
         $this->monthlyLimit = $this->resolveMonthlyLimit($companyId);
@@ -363,6 +384,13 @@ class InsightsController extends AccountBaseController
                 }
             })
             ->firstOrFail();
+
+        // Backfill missing date range from root record for older published versions
+        if (!$this->report->report_start_date && $this->report->parent_report_id) {
+            $root = Report::withTrashed()->find($this->report->parent_report_id, ['id', 'report_start_date', 'report_end_date']);
+            $this->report->report_start_date = $root?->report_start_date;
+            $this->report->report_end_date   = $root?->report_end_date;
+        }
 
         // Firm is the parent of the client's sub-company
         $firmId = company()->created_by ?? company()->id;
@@ -751,6 +779,8 @@ class InsightsController extends AccountBaseController
             'is_firm_report'    => $source->is_firm_report,
             'report_name'       => $source->report_name,
             'upload_date'       => $source->upload_date ?? now()->toDateString(),
+            'report_start_date' => $source->report_start_date,
+            'report_end_date'   => $source->report_end_date,
             'total_file_size'   => $source->total_file_size,
             'status'            => 'Analyzed',
             'publish_status'    => $source->publish_status,

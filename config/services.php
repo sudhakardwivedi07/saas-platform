@@ -43,4 +43,8 @@ return [
         'dashboard_test_url'   => env('STRIPE_DASHBOARD_TEST_URL'),
     ],
 
+    'report_comparator' => [
+        'url' => env('REPORT_COMPARATOR_URL'),
+    ],
+
 ];

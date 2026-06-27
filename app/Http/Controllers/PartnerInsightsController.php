@@ -1022,7 +1022,7 @@ class PartnerInsightsController extends AccountBaseController
 
         try {
             $response = \Illuminate\Support\Facades\Http::timeout(60)
-                ->post(env('REPORT_COMPARATOR_URL'), $payload);
+                ->post(config('services.report_comparator.url'), $payload);
 
             if ($response->successful()) {
                 $comparisonResult = $response->json();

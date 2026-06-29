@@ -61,15 +61,17 @@ $_bcPage  = $_bcMap[$_cfirst][1] ?? '';
 {{-- Left Sidebar --}}
 <nav class="stg-sidebar" id="stgSidebar">
     <div class="stg-sidebar-head">
-        <div class="stg-search-wrap">
-            <svg class="stg-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" class="stg-search" id="stgSearch" placeholder="Search settings…" oninput="stgFilterSidebar(this.value)">
-        </div>
+        <div class="stg-nav-section-label">Settings</div>
         <button class="stg-collapse-btn" onclick="toggleStgSidebar()" title="Collapse sidebar">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
     </div>
-    <div class="stg-nav-section-label">Settings</div>
+    <div class="stg-search-row">
+        <div class="stg-search-wrap">
+            <svg class="stg-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="stg-search" id="stgSearch" placeholder="Search settings…" oninput="stgFilterSidebar(this.value)">
+        </div>
+    </div>
 
     {{-- GROUP: PROFILE & ACCOUNT --}}
     @if(!empty($_atabs['tab-profile']) || !empty($_atabs['tab-subscription']))
@@ -2418,22 +2420,24 @@ function etUpdateRow(t) {
 <style>
 /* ── Settings sidebar layout ──────────────────────────────────────── */
 .stg-layout{display:flex;align-items:flex-start;gap:0;min-height:calc(100vh - 60px)}
-.stg-sidebar{width:240px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);min-height:calc(100vh - 60px);padding:16px 0 24px;position:sticky;top:60px;overflow-y:auto;transition:width .22s ease}
+.stg-sidebar{width:240px;flex-shrink:0;background:#fff;border-right:1px solid var(--border);min-height:calc(100vh - 60px);padding:0 0 24px;position:sticky;top:60px;overflow-y:auto;transition:width .22s ease}
 .stg-sidebar.collapsed{width:52px}
 .stg-sidebar.collapsed .stg-group-label,
 .stg-sidebar.collapsed .stg-item span,
 .stg-sidebar.collapsed .stg-badge,
 .stg-sidebar.collapsed .stg-search-wrap{display:none}
 .stg-sidebar.collapsed .stg-item{justify-content:center;padding:9px 0}
-.stg-sidebar-head{display:flex;align-items:center;gap:8px;padding:0 12px 12px;border-bottom:1px solid var(--border);margin-bottom:8px}
-.stg-search-wrap{position:relative;flex:1}
+.stg-sidebar-head{display:flex;align-items:center;gap:8px;padding:6px 12px 8px;border-bottom:none;margin-bottom:0}
+.stg-search-wrap{position:relative;width:100%}
 .stg-search-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%);color:var(--text-3);pointer-events:none}
 .stg-search{width:100%;height:30px;border:1.5px solid var(--border);border-radius:7px;padding:0 8px 0 26px;font-size:12.5px;color:var(--text-1);background:#fafbff;outline:none;transition:border-color .15s}
 .stg-search:focus{border-color:var(--blue);background:#fff}
 .stg-collapse-btn{flex-shrink:0;width:26px;height:26px;border:1.5px solid var(--border);border-radius:7px;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-3);transition:background .15s,color .15s}
 .stg-collapse-btn:hover{background:var(--bg);color:var(--text-1)}
-.stg-nav-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);padding:10px 16px 6px;white-space:nowrap}
+.stg-nav-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);white-space:nowrap;flex:1}
 .stg-sidebar.collapsed .stg-nav-section-label{display:none}
+.stg-search-row{padding:0 12px 10px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.stg-sidebar.collapsed .stg-search-row{display:none}
 .stg-group{margin-bottom:4px;padding:0 8px}
 .stg-group-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);padding:8px 8px 4px;white-space:nowrap}
 .stg-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border:none;background:transparent;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text-2);text-align:left;transition:background .13s,color .13s;position:relative;white-space:nowrap}

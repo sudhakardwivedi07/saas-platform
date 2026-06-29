@@ -72,11 +72,6 @@ $_bcPage  = $_bcMap[$_cfirst][1] ?? '';
             <input type="text" class="stg-search" id="stgSearch" placeholder="Search settings…" oninput="stgFilterSidebar(this.value)">
         </div>
     </div>
-        <button class="stg-collapse-btn" onclick="toggleStgSidebar()" title="Collapse sidebar">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-        </button>
-    </div>
-    <div class="stg-nav-section-label">Settings</div>
 
     {{-- GROUP: PROFILE & ACCOUNT --}}
     @if(!empty($_atabs['tab-profile']) || !empty($_atabs['tab-subscription']))

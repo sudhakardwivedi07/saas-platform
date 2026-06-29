@@ -1240,6 +1240,23 @@ class InsightsController extends AccountBaseController
         $clientFirstName = explode(' ', trim($authUser->name))[0];
         $firmId          = company()->created_by ?? company()->id;
 
+        $rpStart = $report->report_start_date ? \Carbon\Carbon::parse($report->report_start_date) : null;
+        $rpEnd   = $report->report_end_date   ? \Carbon\Carbon::parse($report->report_end_date)   : null;
+        if ($rpStart && $rpEnd) {
+            $rpMonths = ($rpEnd->year - $rpStart->year) * 12 + ($rpEnd->month - $rpStart->month) + 1;
+            if ($rpStart->month === 1 && $rpEnd->month === 12 && $rpStart->year === $rpEnd->year) {
+                $reportPeriodLabel = $rpStart->format('Y') . ' (Annual)';
+            } elseif ($rpMonths === 3 && in_array($rpStart->month, [1, 4, 7, 10])) {
+                $reportPeriodLabel = 'Q' . (int) ceil($rpStart->month / 3) . ' ' . $rpStart->format('Y');
+            } elseif ($rpMonths === 1) {
+                $reportPeriodLabel = $rpStart->format('M Y');
+            } else {
+                $reportPeriodLabel = $rpStart->format('M Y') . ' – ' . $rpEnd->format('M Y');
+            }
+        } else {
+            $reportPeriodLabel = '';
+        }
+
         app(\App\Services\EmailService::class)->sendFromFirm(
             firmId:         $firmId,
             toEmail:        $request->recipient_email,
@@ -1254,6 +1271,7 @@ class InsightsController extends AccountBaseController
                 '{{partner_name}}'      => $this->companyName,
                 '{{firm_name}}'         => $this->companyName,
                 '{{portal_url}}'        => company()?->domainUrlFor('login') ?? url('/login'),
+                '{{report_period}}'     => $reportPeriodLabel,
             ],
             attachmentPath: $tempPath,
         );

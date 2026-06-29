@@ -12,6 +12,9 @@ use App\Models\EmailTemplate;
 use App\Models\SmsSetting;
 use App\Models\CompanyPaymentGateway;
 use App\Models\ClientPackage;
+use App\Models\EventLog;
+use App\Models\SuperAdmin\Package;
+use App\Models\SuperAdmin\Subscription;
 use Illuminate\Http\Request;
 use App\Models\Role;
 use App\Models\User;
@@ -103,7 +106,83 @@ class SettingsController extends AccountBaseController
             };
         });
 
+        // ── Account tab data (merged from AccountController) ──────────────────
+        $this->authUser = auth()->user();
+
+        $this->activities = EventLog::query()
+            ->where('company_id', company()?->id)
+            ->with('user:id,name,email')
+            ->latest('created_at')
+            ->get();
+
+        $this->eventTypes = EventLog::query()
+            ->where('company_id', company()?->id)
+            ->distinct()
+            ->orderBy('event_type')
+            ->pluck('event_type');
+
+        $this->subscription = company()?->subscription;
+        $this->packages     = Package::active()->orderBy('sort')->get();
+
+        $this->payments = \App\Models\Payment::where('company_id', $companyId)
+            ->with('subscription.package')
+            ->orderByDesc('paid_at')
+            ->get();
+
+        $this->syncPaymentMethodIfMissing($this->subscription);
+
+        $subCompanies = Company::withoutGlobalScopes()
+            ->where('created_by', $companyId)
+            ->with(['clientPackage', 'package', 'quickbooksConnections',
+                    'users' => fn($q) => $q->orderBy('id')->limit(1)])
+            ->get();
+        $this->subCompanies = $subCompanies;
+
+        $maxInsights = $this->subscription?->package?->max_documents ?? 0;
+        $this->totalInsightsUsed      = $subCompanies->sum('insights_used');
+        $this->totalInsightsRemaining = $maxInsights > 0
+            ? max(0, $maxInsights - $this->totalInsightsUsed)
+            : 0;
+
+        $quotaFull = $subCompanies->filter(fn($c) => $c->clientPackage && $c->clientPackage->max_documents > 0 && $c->insights_used >= $c->clientPackage->max_documents)->count();
+        $inactive  = $subCompanies->where('status', 'inactive')->count();
+        $noQB      = $subCompanies->filter(fn($c) => $c->quickbooksConnections->where('is_active', true)->isEmpty())->count();
+
+        $this->companiesAtRisk = $subCompanies->filter(fn($c) =>
+            $c->status === 'inactive' ||
+            $c->quickbooksConnections->where('is_active', true)->isEmpty() ||
+            ($c->clientPackage && $c->clientPackage->max_documents > 0 && $c->insights_used >= $c->clientPackage->max_documents)
+        )->count();
+        $this->atRiskContext = collect([
+            $quotaFull ? $quotaFull . ' quota full' : null,
+            $inactive  ? $inactive  . ' inactive'   : null,
+            $noQB      ? $noQB      . ' no QB'       : null,
+        ])->filter()->implode(' · ');
+        $this->uniqueClients = $subCompanies->map(fn($c) => $c->users->first()?->id)->filter()->unique()->count();
+
         return view('settings.index', $this->data);
+    }
+
+    private function syncPaymentMethodIfMissing(?Subscription $sub): void
+    {
+        if (!$sub || $sub->pm_last4 || !$sub->stripe_id) {
+            return;
+        }
+        try {
+            \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+            $stripeSub = \Stripe\Subscription::retrieve($sub->stripe_id);
+            $pmId      = $stripeSub->default_payment_method ?? null;
+            if (!$pmId) return;
+            $pm = \Stripe\PaymentMethod::retrieve($pmId);
+            $sub->update([
+                'pm_last4'     => $pm->card?->last4,
+                'pm_exp_month' => $pm->card?->exp_month,
+                'pm_exp_year'  => $pm->card?->exp_year,
+                'pm_brand'     => $pm->card?->brand,
+            ]);
+        } catch (\Throwable $e) {
+            // silent — don't break the page if Stripe is unavailable
+        }
     }
 
     public function updateLoginPage(Request $request)

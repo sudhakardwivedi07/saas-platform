@@ -26,6 +26,11 @@ class AccountController extends AccountBaseController
 
     public function index()
     {
+        // Admin/manager users are served by the unified Settings page
+        if (auth()->user()->hasAnyRole(['admin', 'manager'])) {
+            return redirect()->route('settings.index');
+        }
+
         if (!auth()->user()->hasAnyRole(['admin', 'manager'])) {
             $company  = company();
             $parentId = $company->created_by;

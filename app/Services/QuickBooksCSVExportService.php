@@ -218,6 +218,7 @@ class QuickBooksCSVExportService
      */
     protected static function fetchARAgingData(QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate): array
     {
+        $connection->refresh();
         $endTs   = strtotime($endDate);
         $result  = [];
         $offset  = 1;
@@ -286,6 +287,7 @@ class QuickBooksCSVExportService
      */
     protected static function fetchAPAgingData(QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate): array
     {
+        $connection->refresh();
         $endTs   = strtotime($endDate);
         $result  = [];
         $offset  = 1;
@@ -409,6 +411,7 @@ class QuickBooksCSVExportService
     protected static function fetchMonthlyPLData(
         QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate
     ): array {
+        $connection->refresh();
         $start        = Carbon::parse($startDate);
         $end          = Carbon::parse($endDate);
         $currentMonth = $start->copy()->startOfMonth();
@@ -515,37 +518,34 @@ class QuickBooksCSVExportService
 
     /**
      * Recursively categorise P&L expense rows into named buckets.
-     * Only leaf nodes (no child rows) contribute values — parent section totals are
-     * skipped to avoid double-counting when accounts are nested multiple levels deep.
-     *
-     * $parentCategory is the category resolved from the nearest ancestor section that
-     * matched a known name (e.g. "Rent or Lease" → 'rent').  Leaf nodes that do not
-     * match any category themselves inherit the parent's, so custom sub-account names
-     * like "Facilities Cost" under a "Rent or Lease" section still count as rent.
+     * Only LEAF nodes (nodes with no child rows) contribute values.
+     * Parent section totals are always skipped to avoid double-counting.
+     * Each leaf is categorised solely by its own account name — parent
+     * section names are intentionally NOT inherited, because a leaf living
+     * under e.g. "Rent or Lease" may be a miscellaneous fee, not actual rent.
      */
-    protected static function parsePLExpenses(
-        array $rows, array &$data, callable $parseVal, string $parentCategory = ''
-    ): void {
+    protected static function parsePLExpenses(array $rows, array &$data, callable $parseVal): void
+    {
         foreach ($rows as $sub) {
-            $name = strtolower(
-                $sub['Header']['ColData'][0]['value'] ??
-                $sub['ColData'][0]['value'] ??
-                ''
-            );
-
-            // The effective category is the node's own match; fall back to the inherited one.
-            $category = self::detectPLExpenseCategory($name) ?: $parentCategory;
-
-            // Section node — recurse, passing the resolved category as inherited context.
+            // Section node — recurse into children, ignore the section total.
             if (isset($sub['Rows']['Row'])) {
-                self::parsePLExpenses($sub['Rows']['Row'], $data, $parseVal, $category);
+                self::parsePLExpenses($sub['Rows']['Row'], $data, $parseVal);
                 continue;
             }
 
-            // Leaf node — extract its value.
+            // Leaf node — read its account name and value.
+            $name = strtolower(
+                $sub['ColData'][0]['value'] ??
+                $sub['Header']['ColData'][0]['value'] ??
+                ''
+            );
+
             $subVal = 0;
-            if (isset($sub['ColData'][1]['value'])) {
-                $subVal = abs($parseVal($sub['ColData'][1]['value']));
+            $rawColVal = str_replace(',', '', $sub['ColData'][1]['value'] ?? '');
+            if (isset($sub['ColData'][1]) && is_numeric($rawColVal)) {
+                // Only use ColData[1] when it is genuinely numeric; a non-numeric
+                // value (e.g. empty string, "N/A") must not block the Summary fallback.
+                $subVal = abs((float) $rawColVal);
             } elseif (isset($sub['Summary']['ColData'])) {
                 foreach ($sub['Summary']['ColData'] as $sc) {
                     $sv = str_replace(',', '', $sc['value'] ?? '');
@@ -553,7 +553,10 @@ class QuickBooksCSVExportService
                 }
             }
 
-            if ($subVal <= 0 || $category === '') continue;
+            if ($subVal <= 0) continue;
+
+            $category = self::detectPLExpenseCategory($name);
+            if ($category === '') continue;
 
             $data[$category] += $subVal;
         }
@@ -574,7 +577,7 @@ class QuickBooksCSVExportService
         if (str_contains($name, 'software') || str_contains($name, 'subscription') || str_contains($name, 'saas')) {
             return 'software';
         }
-        if (str_contains($name, 'miscellaneous') || $name === 'misc' || str_contains($name, 'other misc')) {
+        if (str_contains($name, 'misc')) {
             return 'misc';
         }
         return '';
@@ -583,6 +586,7 @@ class QuickBooksCSVExportService
     protected static function fetchMonthlyBalanceSheetData(
         QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate
     ): array {
+        $connection->refresh();
         // QB omits a month column when end_date falls mid-month — extend to end-of-month so all
         // months within the selected period are included (QB won't have future-dated transactions).
         $apiEndDate = Carbon::parse($endDate)->endOfMonth()->format('Y-m-d');
@@ -821,12 +825,17 @@ class QuickBooksCSVExportService
     protected static function fetchGeneralLedgerData(
         QuickBooksConnection $connection, string $baseUrl, string $startDate, string $endDate
     ): array {
+        $connection->refresh();
         // QB GeneralLedger uses debit_amt / credit_amt (not debit_amount / credit_amount).
         // Requesting the wrong names causes QB to silently drop those columns, shifting
         // subsequent indices and returning 0 for all debit/credit values.
+        // 'account' is NOT a valid QB GL data-row column — the account name comes from
+        // the section-header hierarchy in the response, not from a per-row column.
+        // Including it causes QB to drop or mis-order columns, which shifts the
+        // debit/credit indices and produces money values in the Account field.
         $url  = "{$baseUrl}/v3/company/{$connection->realm_id}/reports/GeneralLedger"
               . "?start_date={$startDate}&end_date={$endDate}"
-              . "&columns=tx_date,txn_type,doc_num,name,memo,account,debit_amt,credit_amt,dept_name"
+              . "&columns=tx_date,txn_type,doc_num,name,memo,debit_amt,credit_amt,dept_name"
               . "&sort_order=ascend";
         $resp = self::curlGet($url, $connection->access_token);
 
@@ -882,65 +891,79 @@ class QuickBooksCSVExportService
         return $data;
     }
 
-    protected static function parseGLRows(array $rows, array $colMap = []): array
+    protected static function parseGLRows(array $rows, array $colMap = [], string $parentAccount = ''): array
     {
-        $glData         = [];
-        $currentAccount = '';
+        $glData = [];
 
-        // Resolve column positions from the API-provided map; fall back to hardcoded defaults.
-        // 'debit' / 'credit' are the lowercased ColTitle keys added in fetchGeneralLedgerData —
-        // these are reliable across QB company configurations where ColType is generic 'Money'.
-        $dateIdx   = $colMap['tx_date']      ?? $colMap['date']    ?? 0;
+        // Resolve column positions from the ColTitle-keyed map built in fetchGeneralLedgerData.
+        // After removing 'account' from the QB request, the columns are:
+        //   tx_date(0) txn_type(1) doc_num(2) name(3) memo(4) debit_amt(5) credit_amt(6) dept_name(7)
+        // Defaults match that layout but the ColTitle keys ('debit','credit') are always preferred.
+        // $acctIdx is intentionally null — QB GL does NOT expose the parent account as a per-row
+        // data column; it lives in the Section Header. Using a numeric fallback here caused QB to
+        // return the credit-amount column as the account name.
+        $dateIdx   = $colMap['tx_date']      ?? $colMap['date']       ?? 0;
         $typeIdx   = $colMap['txn_type']     ?? 1;
         $docIdx    = $colMap['doc_num']      ?? 2;
-        $nameIdx   = $colMap['name']         ?? $colMap['entity']  ?? 3;
+        $nameIdx   = $colMap['name']         ?? $colMap['entity']     ?? 3;
         $memoIdx   = $colMap['memo']         ?? 4;
-        $acctIdx   = $colMap['account_name'] ?? $colMap['account'] ?? 5;
-        $debitIdx  = $colMap['debit_amt']    ?? $colMap['debit']   ?? $colMap['debit_amount']  ?? 6;
-        $creditIdx = $colMap['credit_amt']   ?? $colMap['credit']  ?? $colMap['credit_amount'] ?? 7;
-        $deptIdx   = $colMap['dept_name']    ?? $colMap['dept/class'] ?? $colMap['dept']       ?? 8;
+        $acctIdx   = $colMap['account_name'] ?? $colMap['account']    ?? null;
+        $debitIdx  = $colMap['debit_amt']    ?? $colMap['debit']      ?? $colMap['debit_amount']  ?? 5;
+        $creditIdx = $colMap['credit_amt']   ?? $colMap['credit']     ?? $colMap['credit_amount'] ?? 6;
+        $deptIdx   = $colMap['dept_name']    ?? $colMap['dept/class'] ?? $colMap['dept']          ?? 7;
+
+        $currentAccount = $parentAccount;
 
         foreach ($rows as $row) {
+            // Capture the account name from the section header (first non-empty, non-money value).
             if (isset($row['Header']['ColData'])) {
                 foreach ($row['Header']['ColData'] as $col) {
-                    $v = $col['value'] ?? '';
-                    if (!empty($v) && !is_numeric($v)) { $currentAccount = $v; break; }
+                    $v = trim($col['value'] ?? '');
+                    // Reject pure-numeric or money-formatted strings (e.g. "300.00") so that
+                    // sub-total rows don't overwrite the real account name.
+                    if ($v !== '' && !is_numeric(str_replace([',', '.'], '', $v))) {
+                        $currentAccount = $v;
+                        break;
+                    }
                 }
             }
 
+            // Section node — recurse so any nesting depth is handled and $currentAccount
+            // propagates correctly into sub-sections (e.g. Assets > Current Assets > Checking).
             if (isset($row['Rows']['Row'])) {
-                foreach ($row['Rows']['Row'] as $dataRow) {
-                    if (!isset($dataRow['ColData'])) continue;
-                    $c    = $dataRow['ColData'];
-                    $date = $c[$dateIdx]['value'] ?? '';
-                    if (empty($date) || strtotime($date) === false) continue;
-                    $glData[] = [
-                        'date'            => $date,
-                        'account'         => $c[$acctIdx]['value'] ?? $currentAccount,
-                        'description'     => trim(($c[$typeIdx]['value'] ?? '') . ' ' . ($c[$docIdx]['value'] ?? '') . ' - ' . ($c[$memoIdx]['value'] ?? '')),
-                        'debit'           => (float) ($c[$debitIdx]['value'] ?? 0),
-                        'credit'          => (float) ($c[$creditIdx]['value'] ?? 0),
-                        'vendor_customer' => $c[$nameIdx]['value'] ?? '',
-                        'dept'            => $c[$deptIdx]['value'] ?? '',
-                    ];
+                $nested = self::parseGLRows($row['Rows']['Row'], $colMap, $currentAccount);
+                foreach ($nested as $n) {
+                    $glData[] = $n;
                 }
+                continue;
             }
 
-            if (isset($row['ColData']) && !isset($row['Rows'])) {
-                $c    = $row['ColData'];
-                $date = $c[$dateIdx]['value'] ?? '';
-                if (!empty($date) && strtotime($date) !== false) {
-                    $glData[] = [
-                        'date'            => $date,
-                        'account'         => $c[$acctIdx]['value'] ?? $currentAccount,
-                        'description'     => trim(($c[$typeIdx]['value'] ?? '') . ' ' . ($c[$memoIdx]['value'] ?? '')),
-                        'debit'           => (float) ($c[$debitIdx]['value'] ?? 0),
-                        'credit'          => (float) ($c[$creditIdx]['value'] ?? 0),
-                        'vendor_customer' => $c[$nameIdx]['value'] ?? '',
-                        'dept'            => $c[$deptIdx]['value'] ?? '',
-                    ];
-                }
-            }
+            // Leaf data row — extract the transaction.
+            if (!isset($row['ColData'])) continue;
+            $c    = $row['ColData'];
+            $date = trim($c[$dateIdx]['value'] ?? '');
+            if ($date === '' || strtotime($date) === false) continue;
+
+            // Account: only use the explicit column value when it is a real account name
+            // (non-empty AND not a money/numeric string). Otherwise fall back to the
+            // section-header account name captured above.
+            $rawAcct = ($acctIdx !== null) ? trim($c[$acctIdx]['value'] ?? '') : '';
+            $account = ($rawAcct !== '' && !is_numeric(str_replace([',', '.'], '', $rawAcct)))
+                ? $rawAcct
+                : $currentAccount;
+
+            $glData[] = [
+                'date'            => $date,
+                'account'         => $account,
+                'description'     => implode(' - ', array_filter([
+                                        trim(($c[$typeIdx]['value'] ?? '') . ' ' . ($c[$docIdx]['value'] ?? '')),
+                                        trim($c[$memoIdx]['value'] ?? ''),
+                                    ], static fn($v) => $v !== '')),
+                'debit'           => (float) ($c[$debitIdx]['value'] ?? 0),
+                'credit'          => (float) ($c[$creditIdx]['value'] ?? 0),
+                'vendor_customer' => $c[$nameIdx]['value'] ?? '',
+                'dept'            => $c[$deptIdx]['value'] ?? '',
+            ];
         }
 
         return $glData;

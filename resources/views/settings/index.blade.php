@@ -72,7 +72,7 @@ $_bcPage  = $_bcMap[$_cfirst][1] ?? '';
             <input type="text" class="stg-search" id="stgSearch" placeholder="Search settings…" oninput="stgFilterSidebar(this.value)">
         </div>
     </div>
-
+ 
     {{-- GROUP: PROFILE & ACCOUNT --}}
     @if(!empty($_atabs['tab-profile']) || !empty($_atabs['tab-subscription']))
     <div class="stg-group">

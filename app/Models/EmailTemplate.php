@@ -29,14 +29,14 @@ class EmailTemplate extends BaseModel
                 'slug'          => 'partner_user_welcome_email',
                 'trigger_event' => 'Partner User Welcome Email',
                 'subject'       => "You've been invited to {{company_name}}'s portal",
-                'body'          => "Hi {{client_name}},\n\nYou have been invited to access {{company_name}}'s client portal.\n\nPortal URL: {{portal_url}}\n\nPlease log in using your registered email address.\n\nBest regards,\n{{partner_name}}",
+                'body'          => "<p>Hi {{first_name}},</p>\n\n<p>You've been invited to access {{company_name}}'s portal. Your account has been created and is ready to use. You can sign in using the details below.</p>\n<p><strong>Role:</strong> {{role}}</p>\n\n<p><strong>Your login details:</strong></p>\n<ul>\n  <li><strong>Portal:</strong> <a href=\"{{portal_url}}\">{{portal_url}}</a></li>\n  <li><strong>Email:</strong> {{email}}</li>\n  <li><strong>Temporary Password:</strong> {{password}}</li>\n</ul>\n\n<p>Best regards,<br>\n{{company_name}}</p>",
             ],
             [
                 'name'          => 'Share Insight with Client',
                 'slug'          => 'share_insight_with_client',
                 'trigger_event' => 'Share Insight with Client',
-                'subject'       => 'Financial Insight Report — {{company_name}} | {{portal_name}}',
-                'body'          => "Hi {{client_name}},\n\nPlease find your latest financial insight report from {{company_name}}.\n\nYou can view your report by logging into the client portal:\n{{portal_url}}\n\nBest regards,\n{{partner_name}}",
+                'subject'       => 'Financial Insight Report — {{company_name}} | {{generated_date}}',
+                'body'          => "<p>Your financial insight report for {{company_name}} is ready. Please find the report attached to this email.</p>\n\n<p><strong>Report Details</strong></p>\n\n<ul>\n<li><strong>Report:</strong> {{insight_title}}</li>\n\n<li><strong>Prepared by:</strong> {{cfo_name}}, {{firm_name}}</li>\n\n<li><strong>Period:</strong> {{report_period}}</li>\n\n<li><strong>Date:</strong> {{generated_date}}</li>\n</ul>\n\n<p>If you have any questions or would like to discuss the findings, feel free to reach out.</p>\n\n<p>Best regards, <br>\n{{firm_name}}</p>",
             ],
         ];
 
